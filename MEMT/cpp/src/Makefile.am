@@ -20,8 +20,15 @@ TranslateMEMT_LDADD = \
 	@top_builddir@/src/LM/*.o \
 	@top_builddir@/src/SRI/*.o \
 	@top_builddir@/src/SALM/*.o \
-	@top_builddir@/src/MEMT/*.o
-
+	@top_builddir@/src/MEMT/Aligner.o \
+	@top_builddir@/src/MEMT/DecoderMEMT.o \
+	@top_builddir@/src/MEMT/ECParserPhraseDetector.o \
+	@top_builddir@/src/MEMT/LMPhraseDetector.o \
+	@top_builddir@/src/MEMT/MatcherInterface.o \
+	@top_builddir@/src/MEMT/MatcherPhraseDetector.o \
+	@top_builddir@/src/MEMT/PhraseDetector.o \
+	@top_builddir@/src/MEMT/PunctuationPhraseDetector.o \
+	@top_builddir@/src/MEMT/SourceChunkPhraseDetector.o
 
 AM_CPPFLAGS = \
 	-I. \
