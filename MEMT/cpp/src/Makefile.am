@@ -8,17 +8,12 @@ SUBDIRS = \
 	Share \
 	Text \
 	LM \
-	SRI \
 	SALM \
 	MEMT
-
-
 
 TranslateMEMT_LDADD = \
 	@top_builddir@/src/Share/*.o \
 	@top_builddir@/src/Text/*.o \
-	@top_builddir@/src/LM/*.o \
-	@top_builddir@/src/SRI/*.o \
 	@top_builddir@/src/SALM/*.o \
 	@top_builddir@/src/MEMT/Aligner.o \
 	@top_builddir@/src/MEMT/DecoderMEMT.o \
@@ -28,7 +23,13 @@ TranslateMEMT_LDADD = \
 	@top_builddir@/src/MEMT/MatcherPhraseDetector.o \
 	@top_builddir@/src/MEMT/PhraseDetector.o \
 	@top_builddir@/src/MEMT/PunctuationPhraseDetector.o \
-	@top_builddir@/src/MEMT/SourceChunkPhraseDetector.o
+	@top_builddir@/src/MEMT/SourceChunkPhraseDetector.o \
+	@top_builddir@/src/LM/libLm.a \
+	LM/sri/lib/i686-gcc4/liboolm.a \
+	LM/sri/lib/i686-gcc4/libflm.a \
+	LM/sri/lib/i686-gcc4/liblattice.a \
+	LM/sri/lib/i686-gcc4/libdstruct.a \
+	LM/sri/lib/i686-gcc4/libmisc.a 
 
 AM_CPPFLAGS = \
 	-I. \
@@ -36,7 +37,6 @@ AM_CPPFLAGS = \
 	-I@top_srcdir@/src/Share \
 	-I@top_srcdir@/src/Text \
 	-I@top_srcdir@/src/LM \
-	-I@top_srcdir@/src/SRI \
+	-I@top_srcdir@/src/LM/sri/include \
 	-I@top_srcdir@/src/SALM \
 	-I@top_srcdir@/src/MEMT
-
