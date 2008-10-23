@@ -3,13 +3,18 @@ bin_PROGRAMS = TranslateMEMT
 
 TranslateMEMT_SOURCES = TranslateMEMT.cc
 
-
 SUBDIRS = \
 	Share \
 	Text \
 	LM \
 	SALM \
 	MEMT
+
+SRI_LD = LM/sri/lib/@SRILM_MACHINE_TYPE@/liboolm.a \
+	 LM/sri/lib/@SRILM_MACHINE_TYPE@/libflm.a \
+	 LM/sri/lib/@SRILM_MACHINE_TYPE@/liblattice.a \
+	 LM/sri/lib/@SRILM_MACHINE_TYPE@/libdstruct.a \
+	 LM/sri/lib/@SRILM_MACHINE_TYPE@/libmisc.a
 
 TranslateMEMT_LDADD = \
 	@top_builddir@/src/Share/*.o \
@@ -25,11 +30,7 @@ TranslateMEMT_LDADD = \
 	@top_builddir@/src/MEMT/PunctuationPhraseDetector.o \
 	@top_builddir@/src/MEMT/SourceChunkPhraseDetector.o \
 	@top_builddir@/src/LM/libLm.a \
-	LM/sri/lib/i686-gcc4/liboolm.a \
-	LM/sri/lib/i686-gcc4/libflm.a \
-	LM/sri/lib/i686-gcc4/liblattice.a \
-	LM/sri/lib/i686-gcc4/libdstruct.a \
-	LM/sri/lib/i686-gcc4/libmisc.a 
+	$(SRI_LD)
 
 AM_CPPFLAGS = \
 	-I. \
