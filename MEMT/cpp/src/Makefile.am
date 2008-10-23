@@ -4,6 +4,7 @@ bin_PROGRAMS = TranslateMEMT
 TranslateMEMT_SOURCES = TranslateMEMT.cc
 
 SUBDIRS = \
+        Client \
 	Share \
 	Text \
 	LM \
