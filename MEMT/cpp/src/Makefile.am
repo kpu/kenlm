@@ -8,7 +8,6 @@ SUBDIRS = \
 	Share \
 	Text \
 	LM \
-	SALM \
 	MEMT
 
 SRI_LD = LM/sri/lib/@SRILM_MACHINE_TYPE@/liboolm.a \
@@ -20,7 +19,7 @@ SRI_LD = LM/sri/lib/@SRILM_MACHINE_TYPE@/liboolm.a \
 TranslateMEMT_LDADD = \
 	@top_builddir@/src/Share/*.o \
 	@top_builddir@/src/Text/*.o \
-	@top_builddir@/src/SALM/*.o \
+	@top_builddir@/src/LM/SALM/*.o \
 	@top_builddir@/src/MEMT/Aligner.o \
 	@top_builddir@/src/MEMT/DecoderMEMT.o \
 	@top_builddir@/src/MEMT/ECParserPhraseDetector.o \
@@ -40,5 +39,5 @@ AM_CPPFLAGS = \
 	-I@top_srcdir@/src/Text \
 	-I@top_srcdir@/src/LM \
 	-I@top_srcdir@/src/LM/sri/include \
-	-I@top_srcdir@/src/SALM \
+	-I@top_srcdir@/src/LM/SALM \
 	-I@top_srcdir@/src/MEMT
