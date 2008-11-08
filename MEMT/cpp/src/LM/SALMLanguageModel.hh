@@ -42,8 +42,8 @@ class SALMLanguageModel {
 			unsigned char match_len;
 		};
 
-		SALMLanguageModel(const SALMVocabulary &vocab, C_SingleCorpusSALM &salm_lm) 
-			: vocab_(vocab), salm_lm_(salm_lm_) {}
+		SALMLanguageModel(const SALMVocabulary &vocab, const C_SingleCorpusSALM &salm_lm) 
+			: vocab_(vocab), salm_lm_(salm_lm) {}
 
 		const SALMVocabulary &Vocabulary() const { return vocab_; }
 
@@ -72,12 +72,14 @@ class SALMLanguageModel {
 						state.match_len), true);
 		}
 
-		unsigned int Order() const { return salm_lm_.Order(); }
+		unsigned int Order() const {
+			return salm_lm_.Order();
+		}
 
 	private:
 		const SALMVocabulary &vocab_;
 		
-		C_SingleCorpusSALM &salm_lm_;
+		const C_SingleCorpusSALM &salm_lm_;
 };
 
 #endif // _LM_SALMLanguageModel_h
