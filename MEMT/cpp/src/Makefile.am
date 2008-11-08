@@ -21,6 +21,7 @@ TranslateMEMT_LDADD = \
 	@top_builddir@/src/Text/*.o \
 	@top_builddir@/src/LM/SALM/*.o \
 	@top_builddir@/src/MEMT/Aligner.o \
+	@top_builddir@/src/MEMT/Decoder.o \
 	@top_builddir@/src/MEMT/DecoderMEMT.o \
 	@top_builddir@/src/MEMT/ECParserPhraseDetector.o \
 	@top_builddir@/src/MEMT/LMPhraseDetector.o \
