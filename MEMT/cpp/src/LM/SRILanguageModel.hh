@@ -56,8 +56,9 @@ class SRILanguageModel {
 				unsigned int *ngram_length) const {
 			*ngram_length = 0;
 			VocabIndex vocab_history[order_];
-			unsigned int i = 0;
-			for (const LinkedHistory *hist = history; (i < order_ - 1) && hist; hist = hist->Previous(), ++i) {
+			unsigned int i;
+			const LinkedHistory *hist;
+			for (i = 0, hist = history; (i < order_ - 1) && hist; hist = hist->Previous(), ++i) {
 				vocab_history[i] = hist->Word();
 			}
 			// If we ran out of history, pad with begin sentence.
