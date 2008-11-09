@@ -15,11 +15,11 @@ class BaseVocabulary {
 		// sure that the underlying vocabularies don't change this.
 		virtual LMWordIndex Available() const = 0;
 
-		// These really should be const, but I have to convince SRI of that first.
+/*		// These really should be const, but I have to convince SRI of that first.
 		virtual LMWordIndex Index(const char *str) const = 0;
 
 		// Returns NULL for words not in vocabulary.  
-		virtual const char *Word(LMWordIndex index) const = 0;
+		virtual const char *Word(LMWordIndex index) const = 0;*/
 		
 	protected:
 		BaseVocabulary(LMWordIndex begin_sentence, LMWordIndex end_sentence, LMWordIndex not_found) :

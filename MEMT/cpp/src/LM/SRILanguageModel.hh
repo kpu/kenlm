@@ -65,7 +65,7 @@ class SRILanguageModel {
 		unsigned int Order() const { return order_; }
 
 	private:
-		// This should be const, but SRI is missing some const markers.
+		// This should be const, but sadly SRI's vocab isn't const because it caches inside.
 		SRIVocabulary &vocab_;
 
 		Ngram &sri_lm_;
