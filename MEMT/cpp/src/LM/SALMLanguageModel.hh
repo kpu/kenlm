@@ -51,25 +51,20 @@ class SALMLanguageModel {
 			return State(1, 1);
 		}
 
-		LogDouble IncrementalScoreReversed(
+		// This doesn't actually use history since everything SALM needs is in state.
+		template <class LinkedHistory> LogDouble IncrementalScore(
 				State &state,
-				const vector<LMWordIndex> &words,
-				unsigned int *current_ngram) const {
-			assert(!words.empty());
+				const LinkedHistory *history,
+				const LMWordIndex word,
+				unsigned int *ngram_length) const {
 			State current(state);
-			// TODO(kheafiel): edit SALM to avoid much duplicated computation.
-			*current_ngram = salm_lm_.NGramOrder(
+			return LogDouble(salm_lm_.LogProbAndNGramOrder(
 					current.match_start,
 					current.match_len,
-					words[0],
+					word,
 					state.match_start,
-					state.match_len);
-			return LogDouble(salm_lm_.LogProb(
-						current.match_start,
-						current.match_len,
-						words[0],
-						state.match_start,
-						state.match_len), true);
+					state.match_len,
+					ngram_length), true);		
 		}
 
 		unsigned int Order() const {

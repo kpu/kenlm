@@ -1,6 +1,7 @@
 #ifndef _LM_SRILanguageModel_h
 #define _LM_SRILanguageModel_h
 
+#include <cmath>
 #include "sri/include/Ngram.h"
 #include "LM/LanguageModel.hh"
 
@@ -46,20 +47,28 @@ class SRILanguageModel {
 			return State();
 		}
 
-		LogDouble IncrementalScoreReversed(
-				State &state,
-				const vector<LMWordIndex> &words,
-				unsigned int *current_ngram) const {
-			// Sadly, we don't have ngram sizes from SRI yet.
-			*current_ngram = 1;
-			unsigned int history_size = min<unsigned int>(words.size(), order_);
-			VocabIndex history[history_size];
-			for (int i = 0; i < history_size - 1; ++i) {
-				history[i] = words[i+1];
+		// In practice LinkedHistory is always HypHistory, but I didn't want to make this dependency explicit.
+		// If there's a need for other forms of calling the LM, I might make STL-style iterators for history.
+		template <class LinkedHistory> LogDouble IncrementalScore(
+				const State &state,
+				const LinkedHistory *history,
+				const LMWordIndex new_word,
+				unsigned int *ngram_length) const {
+			*ngram_length = 0;
+			VocabIndex vocab_history[order_];
+			unsigned int i = 0;
+			for (const LinkedHistory *hist = history; (i < order_ - 1) && hist; hist = hist->Previous(), ++i) {
+				vocab_history[i] = hist->Word();
 			}
-			history[history_size - 1] = Vocab_None;
-			// Convert from SRI's log10 to ln.
-			return LogDouble(sri_lm_.wordProb(words[0], history) * M_LN10, true);
+			// If we ran out of history, pad with begin sentence.
+			if (!hist) {
+				for (; i < order_ - 1; ++i) {
+					vocab_history[i] = vocab_.BeginSentence();
+				}
+			}
+			vocab_history[i] = Vocab_None;
+			// SRI uses log10, we use log.
+			return LogDouble(sri_lm_.wordProb(new_word, vocab_history) * M_LN10, true);
 		}
 
 		unsigned int Order() const { return order_; }
