@@ -18,19 +18,10 @@ SRI_LD = LM/sri/lib/@SRILM_MACHINE_TYPE@/liboolm.a \
 
 TranslateMEMT_LDADD = \
 	@top_builddir@/src/Share/libShare.a \
-	@top_builddir@/src/Text/*.o \
-	@top_builddir@/src/LM/SALM/*.o \
-	@top_builddir@/src/MEMT/Aligner.o \
-	@top_builddir@/src/MEMT/Decoder.o \
-	@top_builddir@/src/MEMT/DecoderMEMT.o \
-	@top_builddir@/src/MEMT/ECParserPhraseDetector.o \
-	@top_builddir@/src/MEMT/LMPhraseDetector.o \
-	@top_builddir@/src/MEMT/MatcherInterface.o \
-	@top_builddir@/src/MEMT/MatcherPhraseDetector.o \
-	@top_builddir@/src/MEMT/PhraseDetector.o \
-	@top_builddir@/src/MEMT/PunctuationPhraseDetector.o \
-	@top_builddir@/src/MEMT/SourceChunkPhraseDetector.o \
+	@top_builddir@/src/Text/libText.a \
+	@top_builddir@/src/MEMT/libDecoder.a \
 	@top_builddir@/src/LM/libLm.a \
+	@top_builddir@/src/LM/SALM/libSA.a \
 	$(SRI_LD)
 
 AM_CPPFLAGS = \
