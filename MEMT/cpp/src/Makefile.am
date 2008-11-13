@@ -21,6 +21,7 @@ TranslateMEMT_LDADD = \
 	@top_builddir@/src/Text/libText.a \
 	@top_builddir@/src/MEMT/libMEMT.a \
 	@top_builddir@/src/MEMT/Decoder/libDecoder.a \
+	@top_builddir@/src/MEMT/Output/libOutput.a \
 	@top_builddir@/src/MEMT/Phrase/libPhrase.a \
 	@top_builddir@/src/LM/libLm.a \
 	@top_builddir@/src/LM/SALM/libSA.a \
