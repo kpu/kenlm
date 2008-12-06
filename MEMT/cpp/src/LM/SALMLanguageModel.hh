@@ -12,12 +12,9 @@ class SALMVocabulary : public BaseVocabulary {
 			BaseVocabulary(
 					salm_vocab.returnId(C_String("_SENTENCE_START_")),
 					salm_vocab.returnId(C_String("_END_OF_SENTENCE_")),
-					salm_vocab.returnNullWordID()),
+					salm_vocab.returnNullWordID(),
+					salm_vocab.returnMaxID() + 1),
 			salm_vocab_(salm_vocab) {}
-
-		LMWordIndex Available() const {
-			return salm_vocab_.returnMaxID() + 1;
-		}
 
 		LMWordIndex Index(const char *str) const {
 			return salm_vocab_.returnId(C_String(str));

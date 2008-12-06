@@ -5,30 +5,36 @@
 #include "sri/include/Ngram.h"
 #include "LM/LanguageModel.hh"
 
+/* BIG SCARY WARNING:
+ * SRI's vocabulary is not threadsafe.  Ugh.
+ * No ngram length is provided.  
+ *
+ * Solution: use Jon's rewritten SRI LM, once he gets it stable.
+ */
+
 class SRIVocabulary : public BaseVocabulary {
 	public:
 		SRIVocabulary(Vocab &sri_vocab) 
 			: BaseVocabulary(
 					sri_vocab.getIndex(Vocab_SentStart), 
 					sri_vocab.getIndex(Vocab_SentEnd),
-					Vocab_None), 
+					Vocab_None,
+					sri_vocab.highIndex() + 1), 
 			sri_vocab_(sri_vocab) {}
 
 		~SRIVocabulary() {}
 
-		LMWordIndex Available() const { return sri_vocab_.highIndex() + 1; }
-
 		// Returns NotFound() if the string is not in the lexicon.
-		LMWordIndex Index(const char *str) {
+		LMWordIndex Index(const char *str) const {
 			return sri_vocab_.getIndex(str);
 		}
 
-		const char *Word(LMWordIndex index) {
+		const char *Word(LMWordIndex index) const {
 			return sri_vocab_.getWord(index);
 		}
 
 	private:
-		Vocab &sri_vocab_;
+		mutable Vocab &sri_vocab_;
 };
 
 class SRILanguageModel {
