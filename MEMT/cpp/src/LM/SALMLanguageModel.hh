@@ -6,6 +6,8 @@
 #include "LM/SALM/_IDVocabulary.h"
 #include "LM/SALM/_SingleCorpusSALM.h"
 
+#include <string>
+
 class SALMVocabulary : public BaseVocabulary {
 	public:
 		SALMVocabulary(const C_IDVocabulary &salm_vocab) :
@@ -72,6 +74,22 @@ class SALMLanguageModel {
 		const SALMVocabulary &vocab_;
 		
 		const C_SingleCorpusSALM &salm_lm_;
+};
+
+// Convenience loader that also owns everything.
+class SALMLoader {
+	public:
+		SALMLoader(const char *file_name, unsigned int ngram_length);
+
+		const SALMVocabulary &Vocabulary() const { return vocab_; }
+
+		const SALMLanguageModel &Model() const { return model_; }
+
+	private:
+		std::string salm_config_file_;
+		C_SingleCorpusSALM salm_;
+		SALMVocabulary vocab_;
+		SALMLanguageModel model_;
 };
 
 #endif // _LM_SALMLanguageModel_h

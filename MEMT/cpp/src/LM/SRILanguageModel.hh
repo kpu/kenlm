@@ -42,12 +42,12 @@ class SRILanguageModel {
 		// This LM requires no state other than history, which is externalized.
 		struct State {};
 
-		SRILanguageModel(SRIVocabulary &vocab, Ngram &sri_lm)
-			: vocab_(vocab), sri_lm_(sri_lm), order_(sri_lm.setorder()) {}
+		SRILanguageModel(const SRIVocabulary &vocab, const Ngram &sri_lm)
+			: vocab_(vocab), sri_lm_(const_cast<Ngram&>(sri_lm)), order_((const_cast<Ngram&>(sri_lm)).setorder()) {}
 
 		~SRILanguageModel() {}
 
-		SRIVocabulary &Vocabulary() { return vocab_; }
+		const SRIVocabulary &Vocabulary() const { return vocab_; }
 
 		State BeginSentenceState() const {
 			return State();
@@ -81,10 +81,9 @@ class SRILanguageModel {
 		unsigned int Order() const { return order_; }
 
 	private:
-		// This should be const, but sadly SRI's vocab isn't const because it caches inside.
-		SRIVocabulary &vocab_;
+		const SRIVocabulary &vocab_;
 
-		Ngram &sri_lm_;
+		mutable Ngram &sri_lm_;
 
 		const unsigned int order_;
 };
