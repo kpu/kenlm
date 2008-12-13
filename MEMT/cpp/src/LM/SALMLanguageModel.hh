@@ -55,7 +55,7 @@ class SALMLanguageModel {
 				State &state,
 				const LinkedHistory *history,
 				const LMWordIndex word,
-				unsigned int *ngram_length) const {
+				unsigned int &ngram_length) const {
 			State current(state);
 			return LogDouble(salm_lm_.LogProbAndNGramOrder(
 					current.match_start,

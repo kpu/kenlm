@@ -59,8 +59,7 @@ class SRILanguageModel {
 				const State &state,
 				const LinkedHistory *history,
 				const LMWordIndex new_word,
-				unsigned int *ngram_length) const {
-			*ngram_length = 0;
+				unsigned int &ngram_length) const {
 			VocabIndex vocab_history[order_];
 			unsigned int i;
 			const LinkedHistory *hist;
@@ -74,6 +73,8 @@ class SRILanguageModel {
 				}
 			}
 			vocab_history[i] = Vocab_None;
+
+			sri_lm_.contextID(new_word, vocab_history, ngram_length);
 			// SRI uses log10, we use log.
 			return LogDouble(sri_lm_.wordProb(new_word, vocab_history) * M_LN10, true);
 		}
