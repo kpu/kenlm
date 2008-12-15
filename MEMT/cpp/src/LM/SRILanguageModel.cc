@@ -14,7 +14,8 @@ LogDouble SRILanguageModel::IncrementalScore(
 	VocabIndex vocab_history[order_ + 1];
 	unsigned int i;
 	const HypHistory *hist;
-	for (i = 0, hist = history; (i < order_) && hist; hist = hist->Previous(), ++i) {
+	// In theory, it shouldn't matter which previous word is used.
+	for (i = 0, hist = history; (i < order_) && hist; hist = hist->AnyPrevious(), ++i) {
 		vocab_history[i] = hist->Entry().word;
 	}
 	// If we ran out of history, pad with begin sentence.
