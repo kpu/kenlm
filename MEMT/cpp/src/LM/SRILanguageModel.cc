@@ -15,7 +15,7 @@ LogDouble SRILanguageModel::IncrementalScore(
 	unsigned int i;
 	const HypHistory *hist;
 	for (i = 0, hist = history; (i < order_) && hist; hist = hist->Previous(), ++i) {
-		vocab_history[i] = hist->Word();
+		vocab_history[i] = hist->Entry().word;
 	}
 	// If we ran out of history, pad with begin sentence.
 	for (; i < order_; ++i) {
