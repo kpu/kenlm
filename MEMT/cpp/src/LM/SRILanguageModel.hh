@@ -1,9 +1,14 @@
 #ifndef _LM_SRILanguageModel_h
 #define _LM_SRILanguageModel_h
 
-#include <cmath>
-#include "sri/include/Ngram.h"
+#include "sri/include/Vocab.h"
 #include "LM/LanguageModel.hh"
+#include "Share/Numbers.hh"
+
+#include <cmath>
+
+class Ngram;
+class HypHistory;
 
 /* BIG SCARY WARNING:
  * SRI's vocabulary is not threadsafe.  Ugh.
@@ -42,8 +47,7 @@ class SRILanguageModel {
 		// This LM requires no state other than history, which is externalized.
 		struct State {};
 
-		SRILanguageModel(const SRIVocabulary &vocab, const Ngram &sri_lm)
-			: vocab_(vocab), sri_lm_(const_cast<Ngram&>(sri_lm)), order_((const_cast<Ngram&>(sri_lm)).setorder()) {}
+		SRILanguageModel(const SRIVocabulary &vocab, const Ngram &sri_lm);
 
 		~SRILanguageModel() {}
 
@@ -53,31 +57,12 @@ class SRILanguageModel {
 			return State();
 		}
 
-		// In practice LinkedHistory is always HypHistory, but I didn't want to make this dependency explicit.
 		// If there's a need for other forms of calling the LM, I might make STL-style iterators for history.
-		template <class LinkedHistory> LogDouble IncrementalScore(
+		LogDouble IncrementalScore(
 				const State &state,
-				const LinkedHistory *history,
+				const HypHistory *history,
 				const LMWordIndex new_word,
-				unsigned int &ngram_length) const {
-			VocabIndex vocab_history[order_];
-			unsigned int i;
-			const LinkedHistory *hist;
-			for (i = 0, hist = history; (i < order_ - 1) && hist; hist = hist->Previous(), ++i) {
-				vocab_history[i] = hist->Word();
-			}
-			// If we ran out of history, pad with begin sentence.
-			if (!hist) {
-				for (; i < order_ - 1; ++i) {
-					vocab_history[i] = vocab_.BeginSentence();
-				}
-			}
-			vocab_history[i] = Vocab_None;
-
-			sri_lm_.contextID(new_word, vocab_history, ngram_length);
-			// SRI uses log10, we use log.
-			return LogDouble(sri_lm_.wordProb(new_word, vocab_history) * M_LN10, true);
-		}
+				unsigned int &ngram_length) const;
 
 		unsigned int Order() const { return order_; }
 
@@ -88,5 +73,13 @@ class SRILanguageModel {
 
 		const unsigned int order_;
 };
+
+inline bool operator==(const SRILanguageModel::State &left, const SRILanguageModel::State &right) {
+        return true;
+}
+
+inline size_t hash_value(const SRILanguageModel::State &state) {
+        return 0;
+}
 
 #endif

@@ -6,6 +6,7 @@
 #include "LM/SALM/_IDVocabulary.h"
 #include "LM/SALM/_SingleCorpusSALM.h"
 
+#include <boost/functional/hash.hpp>
 #include <string>
 
 class SALMVocabulary : public BaseVocabulary {
@@ -75,6 +76,18 @@ class SALMLanguageModel {
 		
 		const C_SingleCorpusSALM &salm_lm_;
 };
+
+inline bool operator==(const SALMLanguageModel::State &left,
+                const SALMLanguageModel::State &right) {
+        return (left.match_start == right.match_start) && (left.match_len == right.match_len);
+}
+
+inline size_t hash_value(const SALMLanguageModel::State &state) {
+        size_t ret = 0;
+        boost::hash_combine(ret, state.match_start);
+        boost::hash_combine(ret, state.match_len);
+        return ret;
+}
 
 // Convenience loader that also owns everything.
 class SALMLoader {
