@@ -13,18 +13,18 @@ class SALMVocabulary : public BaseVocabulary {
 	public:
 		SALMVocabulary(const C_IDVocabulary &salm_vocab) :
 			BaseVocabulary(
-					salm_vocab.returnId(C_String("_SENTENCE_START_")),
-					salm_vocab.returnId(C_String("_END_OF_SENTENCE_")),
+					salm_vocab.returnId("_SENTENCE_START_"),
+					salm_vocab.returnId("_END_OF_SENTENCE_"),
 					salm_vocab.returnNullWordID(),
 					salm_vocab.returnMaxID() + 1),
 			salm_vocab_(salm_vocab) {}
 
 		LMWordIndex Index(const char *str) const {
-			return salm_vocab_.returnId(C_String(str));
+			return salm_vocab_.returnId(str);
 		}
 
 		const char *Word(LMWordIndex index) const {
-			return salm_vocab_.getText(index).toString();
+			return salm_vocab_.getText(index);
 		}
 
 	private:
