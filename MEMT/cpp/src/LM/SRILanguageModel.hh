@@ -29,6 +29,10 @@ class SRIVocabulary : public BaseVocabulary {
 
 		~SRIVocabulary() {}
 
+		LMWordIndex Index(const std::string &str) const {
+			return Index(str.c_str());
+		}
+
 		// Returns NotFound() if the string is not in the lexicon.
 		LMWordIndex Index(const char *str) const {
 			return sri_vocab_.getIndex(str);

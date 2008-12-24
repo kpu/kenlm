@@ -3,6 +3,8 @@
 
 #include "LM/WordIndex.hh"
 
+#include <string>
+
 class BaseVocabulary {
 	public:
 		virtual ~BaseVocabulary() {}
@@ -14,10 +16,10 @@ class BaseVocabulary {
 		LMWordIndex Available() const { return available_; }
 
 		// These really should be const, but I have to convince SRI of that first.
-		virtual LMWordIndex Index(const char *str) const = 0;
+		virtual LMWordIndex Index(const std::string &str) const = 0;
 
 		// Returns NULL for words not in vocabulary.  
-		virtual const char *Word(LMWordIndex index) const = 0;
+		//virtual const char *Word(LMWordIndex index) const = 0;
 		
 	protected:
 		BaseVocabulary(LMWordIndex begin_sentence, LMWordIndex end_sentence, LMWordIndex not_found, LMWordIndex available) :

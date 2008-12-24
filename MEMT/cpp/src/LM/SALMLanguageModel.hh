@@ -19,12 +19,8 @@ class SALMVocabulary : public BaseVocabulary {
 					salm_vocab.returnMaxID() + 1),
 			salm_vocab_(salm_vocab) {}
 
-		LMWordIndex Index(const char *str) const {
+		LMWordIndex Index(const std::string &str) const {
 			return salm_vocab_.returnId(str);
-		}
-
-		const char *Word(LMWordIndex index) const {
-			return salm_vocab_.getText(index);
 		}
 
 	private:
