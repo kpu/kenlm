@@ -1,7 +1,9 @@
 # the most important programs
-bin_PROGRAMS = TranslateMEMT
+bin_PROGRAMS = TranslateMEMT Server
 
 TranslateMEMT_SOURCES = TranslateMEMT.cc
+
+Server_SOURCES = Server.cc
 
 SUBDIRS = \
         Client \
@@ -29,6 +31,16 @@ TranslateMEMT_LDADD = \
 	@top_builddir@/src/LM/SALM/libSA.a \
 	$(SRI_LD)
 
+Server_LDADD = \
+	@top_builddir@/src/MEMT/Input/libInput.a \
+	@top_builddir@/src/Share/libShare.a \
+	@top_builddir@/src/MEMT/Input/Phrase/libPhrase.a \
+	@top_builddir@/src/MEMT/Decoder/libDecoder.a \
+	@top_builddir@/src/MEMT/Output/libOutput.a \
+	@top_builddir@/src/LM/SALM/libSA.a \
+	@top_builddir@/src/LM/libLm.a \
+	$(SRI_LD)
+       
 AM_CPPFLAGS = \
 	-I. \
 	-I@top_srcdir@/src \
