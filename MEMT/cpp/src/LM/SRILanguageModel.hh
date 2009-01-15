@@ -1,13 +1,17 @@
 #ifndef _LM_SRILanguageModel_h
 #define _LM_SRILanguageModel_h
 
-#include "sri/include/Vocab.h"
 #include "LM/LanguageModel.hh"
 #include "Share/Numbers.hh"
 
+#include <boost/scoped_ptr.hpp>
+
 #include <cmath>
+#include <exception>
 
 class Ngram;
+class Vocab;
+
 class HypHistory;
 
 /* BIG SCARY WARNING:
@@ -19,13 +23,7 @@ class HypHistory;
 
 class SRIVocabulary : public BaseVocabulary {
 	public:
-		SRIVocabulary(Vocab &sri_vocab) 
-			: BaseVocabulary(
-					sri_vocab.getIndex(Vocab_SentStart), 
-					sri_vocab.getIndex(Vocab_SentEnd),
-					Vocab_None,
-					sri_vocab.highIndex() + 1), 
-			sri_vocab_(sri_vocab) {}
+		SRIVocabulary(Vocab &sri_vocab);
 
 		~SRIVocabulary() {}
 
@@ -34,13 +32,9 @@ class SRIVocabulary : public BaseVocabulary {
 		}
 
 		// Returns NotFound() if the string is not in the lexicon.
-		LMWordIndex Index(const char *str) const {
-			return sri_vocab_.getIndex(str);
-		}
+		LMWordIndex Index(const char *str) const;
 
-		const char *Word(LMWordIndex index) const {
-			return sri_vocab_.getWord(index);
-		}
+		const char *Word(LMWordIndex index) const;
 
 	private:
 		mutable Vocab &sri_vocab_;
@@ -85,5 +79,37 @@ inline bool operator==(const SRILanguageModel::State &left, const SRILanguageMod
 inline size_t hash_value(const SRILanguageModel::State &state) {
         return 0;
 }
+
+class SRILoadException : public LMLoadException {
+	public:
+		SRILoadException(const char *file_name) throw () {
+			what_ = "SRILM failed to load ";
+			what_ += file_name;
+		}
+
+		virtual ~SRILoadException() throw () {}
+
+		virtual const char *what() const throw() {
+			return what_.c_str();
+		}
+
+	private:
+		std::string what_;
+};
+
+class SRILoader {
+	public:
+		SRILoader(const char *file_name, unsigned int ngram_length) throw (SRILoadException);
+
+		const SRIVocabulary &Vocabulary() const { return vocab_; }
+
+		const SRILanguageModel &Model() const { return model_; }
+
+	private:
+		boost::scoped_ptr<Vocab> sri_vocab_;
+		boost::scoped_ptr<Ngram> sri_model_;
+		SRIVocabulary vocab_;
+		SRILanguageModel model_;
+};
 
 #endif

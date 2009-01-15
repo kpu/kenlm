@@ -3,6 +3,7 @@
 
 #include "LM/WordIndex.hh"
 
+#include <exception>
 #include <string>
 
 class BaseVocabulary {
@@ -29,6 +30,14 @@ class BaseVocabulary {
 			available_(available) {}
 
 		const LMWordIndex begin_sentence_, end_sentence_, not_found_, available_;
+};
+
+class LMLoadException : public std::exception {
+	public:
+		virtual ~LMLoadException() throw() {}
+
+	protected:
+		LMLoadException() throw() {}
 };
 
 #endif
