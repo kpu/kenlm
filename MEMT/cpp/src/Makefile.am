@@ -8,7 +8,6 @@ Server_SOURCES = Server.cc
 SUBDIRS = \
         Client \
 	Share \
-	Text \
 	LM \
 	MEMT
 
@@ -21,8 +20,6 @@ SRI_LD = LM/sri/lib/@SRILM_MACHINE_TYPE@/liboolm.a \
 TranslateMEMT_LDADD = \
 	@top_builddir@/src/MEMT/Input/libInput.a \
 	@top_builddir@/src/Share/libShare.a \
-	@top_builddir@/src/Text/libText.a \
-	@top_builddir@/src/MEMT/libMEMT.a \
 	@top_builddir@/src/MEMT/Input/Phrase/libPhrase.a \
 	@top_builddir@/src/MEMT/Decoder/libDecoder.a \
 	@top_builddir@/src/MEMT/Output/libOutput.a \
