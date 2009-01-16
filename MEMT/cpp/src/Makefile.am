@@ -25,8 +25,8 @@ TranslateMEMT_LDADD = \
 	@top_builddir@/src/MEMT/Output/libOutput.a \
 	@top_builddir@/src/MEMT/OldPhrase/libPhrase.a \
 	@top_builddir@/src/LM/libLm.a \
-	@top_builddir@/src/LM/SALM/libSA.a \
-	$(SRI_LD)
+	@top_builddir@/src/LM/SALM/libSA.a
+#	$(SRI_LD)
 
 Server_LDADD = \
 	@top_builddir@/src/MEMT/Input/libInput.a \
@@ -35,8 +35,8 @@ Server_LDADD = \
 	@top_builddir@/src/MEMT/Decoder/libDecoder.a \
 	@top_builddir@/src/MEMT/Output/libOutput.a \
 	@top_builddir@/src/LM/SALM/libSA.a \
-	@top_builddir@/src/LM/libLm.a \
-	$(SRI_LD)
+	@top_builddir@/src/LM/libLm.a
+#	$(SRI_LD)
        
 AM_CPPFLAGS = \
 	-I. \
