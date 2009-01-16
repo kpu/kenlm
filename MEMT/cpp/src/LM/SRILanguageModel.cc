@@ -1,7 +1,8 @@
 #include "LM/SRILanguageModel.hh"
 #include "MEMT/Decoder/History.hh"
-#include "sri/include/Ngram.h"
-#include "sri/include/Vocab.h"
+
+#include <Ngram.h>
+#include <Vocab.h>
 
 SRIVocabulary::SRIVocabulary(Vocab &sri_vocab) : BaseVocabulary(
 		sri_vocab.getIndex(Vocab_SentStart),
