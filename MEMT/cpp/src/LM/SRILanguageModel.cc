@@ -61,3 +61,5 @@ SRILoader::SRILoader(const char *file_name, unsigned int ngram_length) throw (SR
 	sri_model_(MakeSRIModel(file_name, ngram_length, *sri_vocab_)),
 	vocab_(*sri_vocab_),
 	model_(vocab_, *sri_model_) {}
+
+SRILoader::~SRILoader() throw() {}

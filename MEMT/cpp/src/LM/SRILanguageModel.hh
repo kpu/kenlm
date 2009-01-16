@@ -101,6 +101,8 @@ class SRILoader {
 	public:
 		SRILoader(const char *file_name, unsigned int ngram_length) throw (SRILoadException);
 
+		~SRILoader() throw();
+
 		const SRIVocabulary &Vocabulary() const { return vocab_; }
 
 		const SRILanguageModel &Model() const { return model_; }
