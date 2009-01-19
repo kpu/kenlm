@@ -4,15 +4,14 @@
 #include "LM/LanguageModel.hh"
 #include "Share/Numbers.hh"
 
+#include <Vocab.h>
+
 #include <boost/scoped_ptr.hpp>
 
 #include <cmath>
 #include <exception>
 
 class Ngram;
-class Vocab;
-
-class HypHistory;
 
 /* BIG SCARY WARNING:
  * SRI's vocabulary is not threadsafe.  Ugh.
@@ -55,16 +54,39 @@ class SRILanguageModel {
 			return State();
 		}
 
-		// If there's a need for other forms of calling the LM, I might make STL-style iterators for history.
-		LogDouble IncrementalScore(
+		// See the big scary warning above.
+
+		/* ReverseHistoryIterator is an iterator such that:
+		 * operator* an LMWordIndex
+		 * operator++ goes _backwards_ in the sentence
+		 * new_word is not in the iterators.
+		 */
+		template <class ReverseHistoryIterator> LogDouble IncrementalScore(
 				const State &state,
-				const HypHistory *history,
+				const ReverseHistoryIterator &hist_begin,
+				const ReverseHistoryIterator &hist_end,
 				const LMWordIndex new_word,
-				unsigned int &ngram_length) const;
+				unsigned int &ngram_length) const {
+		        VocabIndex vocab_history[order_ + 1];
+		        VocabIndex *dest = vocab_history;
+			VocabIndex *dest_end = vocab_history + order_;
+			ReverseHistoryIterator src = hist_begin;
+			for (; (dest != dest_end) && (src != hist_end); ++dest, ++src) {
+				*dest = *src;
+			}
+		        // If we ran out of history, pad with begin sentence.
+		        for (; (dest != dest_end); ++dest) {
+		                *dest = vocab_.BeginSentence();
+		        }
+			*dest = Vocab_None;
+			return ActuallyCall(dest, new_word, ngram_length);
+		}
 
 		unsigned int Order() const { return order_; }
 
 	private:
+		LogDouble ActuallyCall(const VocabIndex *history, LMWordIndex new_word, unsigned int &ngram_length) const;
+
 		const SRIVocabulary &vocab_;
 
 		mutable Ngram &sri_lm_;

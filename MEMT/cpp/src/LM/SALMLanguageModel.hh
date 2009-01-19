@@ -3,25 +3,21 @@
 
 #include "Share/Log.hh"
 #include "LM/LanguageModel.hh"
-#include "LM/SALM/_IDVocabulary.h"
-#include "LM/SALM/_SingleCorpusSALM.h"
+#include "LM/SALM/text_length.h"
 
 #include <boost/functional/hash.hpp>
+#include <boost/scoped_ptr.hpp>
+
 #include <string>
+
+class C_SingleCorpusSALM;
+class C_IDVocabulary;
 
 class SALMVocabulary : public BaseVocabulary {
 	public:
-		SALMVocabulary(const C_IDVocabulary &salm_vocab) :
-			BaseVocabulary(
-					salm_vocab.returnId("_SENTENCE_START_"),
-					salm_vocab.returnId("_END_OF_SENTENCE_"),
-					salm_vocab.returnNullWordID(),
-					salm_vocab.returnMaxID() + 1),
-			salm_vocab_(salm_vocab) {}
+		SALMVocabulary(const C_IDVocabulary &salm_vocab);
 
-		LMWordIndex Index(const std::string &str) const {
-			return salm_vocab_.returnId(str);
-		}
+		LMWordIndex Index(const std::string &str) const;
 
 	private:
 		const C_IDVocabulary &salm_vocab_;
@@ -48,26 +44,20 @@ class SALMLanguageModel {
 		}
 
 		// This doesn't actually use history since everything SALM needs is in state.
-		template <class LinkedHistory> LogDouble IncrementalScore(
+		template <class ReverseHistoryIterator> LogDouble IncrementalScore(
 				State &state,
-				const LinkedHistory *history,
+				const ReverseHistoryIterator &hist_begin,
+				const ReverseHistoryIterator &hist_end,
 				const LMWordIndex word,
 				unsigned int &ngram_length) const {
-			State current(state);
-			return LogDouble(salm_lm_.LogProbAndNGramOrder(
-					current.match_start,
-					current.match_len,
-					word,
-					state.match_start,
-					state.match_len,
-					ngram_length), true);		
+			return ActuallyCall(state, word, ngram_length);
 		}
 
-		unsigned int Order() const {
-			return salm_lm_.Order();
-		}
+		unsigned int Order() const;
 
 	private:
+		LogDouble ActuallyCall(State &state, const LMWordIndex word, unsigned int &ngram_length) const;
+
 		const SALMVocabulary &vocab_;
 		
 		const C_SingleCorpusSALM &salm_lm_;
@@ -90,13 +80,18 @@ class SALMLoader {
 	public:
 		SALMLoader(const char *file_name, unsigned int ngram_length);
 
+		~SALMLoader();
+
 		const SALMVocabulary &Vocabulary() const { return vocab_; }
 
 		const SALMLanguageModel &Model() const { return model_; }
 
 	private:
 		std::string salm_config_file_;
-		C_SingleCorpusSALM salm_;
+
+		// This is a pointer so I can avoid including the header here.  
+		boost::scoped_ptr<C_SingleCorpusSALM> salm_;
+
 		SALMVocabulary vocab_;
 		SALMLanguageModel model_;
 };
