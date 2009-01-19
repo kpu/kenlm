@@ -1,4 +1,4 @@
-#include "LM/SALMLanguageModel.hh"
+#include "LM/SALanguageModel.hh"
 
 #include "LM/SALM/_IDVocabulary.h"
 #include "LM/SALM/_SingleCorpusSALM.h"
