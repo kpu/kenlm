@@ -9,7 +9,8 @@ SUBDIRS = \
         Client \
 	Share \
 	lm \
-	MEMT
+	MEMT \
+	util
 
 TranslateMEMT_LDADD = \
 	@top_builddir@/src/MEMT/Input/libInput.a \

@@ -40,7 +40,7 @@ Vocabulary::Vocabulary(const C_IDVocabulary &salm_vocab)
 			salm_vocab.returnMaxID() + 1),
 	salm_vocab_(salm_vocab) {}
 
-LMWordIndex Vocabulary::Index(const std::string &str) const {
+WordIndex Vocabulary::Index(const std::string &str) const {
 	return salm_vocab_.returnId(str);
 }
 
@@ -48,7 +48,7 @@ unsigned int Model::Order() const {
 	return salm_lm_.Order();
 }
 
-LogDouble Model::ActuallyCall(State &state, const LMWordIndex word, unsigned int &ngram_length) const {
+LogDouble Model::ActuallyCall(State &state, const WordIndex word, unsigned int &ngram_length) const {
 	State current(state);
 	return LogDouble(salm_lm_.LogProbAndNGramOrder(
 				current.match_start,
