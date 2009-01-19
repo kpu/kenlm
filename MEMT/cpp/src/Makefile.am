@@ -11,12 +11,6 @@ SUBDIRS = \
 	LM \
 	MEMT
 
-SRI_LD = LM/sri/lib/@SRILM_MACHINE_TYPE@/liboolm.a \
-	 LM/sri/lib/@SRILM_MACHINE_TYPE@/libflm.a \
-	 LM/sri/lib/@SRILM_MACHINE_TYPE@/liblattice.a \
-	 LM/sri/lib/@SRILM_MACHINE_TYPE@/libdstruct.a \
-	 LM/sri/lib/@SRILM_MACHINE_TYPE@/libmisc.a
-
 TranslateMEMT_LDADD = \
 	@top_builddir@/src/MEMT/Input/libInput.a \
 	@top_builddir@/src/Share/libShare.a \
@@ -26,7 +20,6 @@ TranslateMEMT_LDADD = \
 	@top_builddir@/src/MEMT/OldPhrase/libPhrase.a \
 	@top_builddir@/src/LM/libLm.a \
 	@top_builddir@/src/LM/SALM/libSA.a
-#	$(SRI_LD)
 
 Server_LDADD = \
 	@top_builddir@/src/MEMT/Input/libInput.a \
@@ -34,9 +27,8 @@ Server_LDADD = \
 	@top_builddir@/src/MEMT/Input/Phrase/libPhrase.a \
 	@top_builddir@/src/MEMT/Decoder/libDecoder.a \
 	@top_builddir@/src/MEMT/Output/libOutput.a \
-	@top_builddir@/src/LM/SALM/libSA.a \
-	@top_builddir@/src/LM/libLm.a
-#	$(SRI_LD)
+	@top_builddir@/src/LM/libLm.a \
+	@top_builddir@/src/LM/SALM/libSA.a
        
 AM_CPPFLAGS = \
 	-I. \

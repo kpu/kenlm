@@ -1,5 +1,4 @@
 #include "LM/SRILanguageModel.hh"
-#include "MEMT/Decoder/History.hh"
 
 #include <Ngram.h>
 #include <Vocab.h>
@@ -23,10 +22,13 @@ SRILanguageModel::SRILanguageModel(const SRIVocabulary &vocab, const Ngram &sri_
 	vocab_(vocab), sri_lm_(const_cast<Ngram&>(sri_lm)),
 	order_((const_cast<Ngram&>(sri_lm)).setorder()) {}
 
-LogDouble SRILanguageModel::ActuallyCall(const VocabIndex *history, LMWordIndex new_word, unsigned int &ngram_length) const {
-	sri_lm_.contextID(new_word, history, ngram_length);
+LogDouble SRILanguageModel::ActuallyCall(SRIVocabIndex *history, const LMWordIndex new_word, unsigned int &ngram_length) const {
+	// If you get a compiler in this function, change SRIVocabIndex in SRILanguageModel.hh to match the one found in SRI's Vocab.h.
+	history[order_] = Vocab_None;
+	const SRIVocabIndex *const_history = history;
+	sri_lm_.contextID(new_word, const_history, ngram_length);
 	// SRI uses log10, we use log.
-	return LogDouble(sri_lm_.wordProb(new_word, history) * M_LN10, true);
+	return LogDouble(sri_lm_.wordProb(new_word, const_history) * M_LN10, true);
 }
 
 namespace {

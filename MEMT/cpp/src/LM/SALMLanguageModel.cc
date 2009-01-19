@@ -69,3 +69,6 @@ SALMLoader::SALMLoader(const char *file_name, unsigned int ngram_length)
         //  'i' = "the way IBM suggested" (from Stephan Vogel)
         salm_->setParam_interpolationStrategy('e');
 }
+
+// Here so salm_ can be destroyed properly.
+SALMLoader::~SALMLoader() {}

@@ -4,14 +4,13 @@
 #include "LM/LanguageModel.hh"
 #include "Share/Numbers.hh"
 
-#include <Vocab.h>
-
 #include <boost/scoped_ptr.hpp>
 
 #include <cmath>
 #include <exception>
 
 class Ngram;
+class Vocab;
 
 /* BIG SCARY WARNING:
  * SRI's vocabulary is not threadsafe.  Ugh.
@@ -40,6 +39,15 @@ class SRIVocabulary : public BaseVocabulary {
 };
 
 class SRILanguageModel {
+	private:
+		/* This should match VocabIndex found in SRI's Vocab.h
+		 * The reason I define this here independently is that SRI's headers
+		 * pollute and increase compile time.
+		 * It's difficult to extract this from their header and anyway would
+		 * break packaging.
+		 * If these differ there will be a compiler error in ActuallyCall.
+		 */
+		typedef unsigned int SRIVocabIndex;
 	public:
 		// This LM requires no state other than history, which is externalized.
 		struct State {};
@@ -67,9 +75,9 @@ class SRILanguageModel {
 				const ReverseHistoryIterator &hist_end,
 				const LMWordIndex new_word,
 				unsigned int &ngram_length) const {
-		        VocabIndex vocab_history[order_ + 1];
-		        VocabIndex *dest = vocab_history;
-			VocabIndex *dest_end = vocab_history + order_;
+		        SRIVocabIndex vocab_history[order_ + 1];
+		        SRIVocabIndex *dest = vocab_history;
+			SRIVocabIndex *dest_end = vocab_history + order_;
 			ReverseHistoryIterator src = hist_begin;
 			for (; (dest != dest_end) && (src != hist_end); ++dest, ++src) {
 				*dest = *src;
@@ -78,14 +86,14 @@ class SRILanguageModel {
 		        for (; (dest != dest_end); ++dest) {
 		                *dest = vocab_.BeginSentence();
 		        }
-			*dest = Vocab_None;
 			return ActuallyCall(dest, new_word, ngram_length);
 		}
 
 		unsigned int Order() const { return order_; }
 
 	private:
-		LogDouble ActuallyCall(const VocabIndex *history, LMWordIndex new_word, unsigned int &ngram_length) const;
+		// history is an array of size order_ + 1.
+		LogDouble ActuallyCall(SRIVocabIndex *history, const LMWordIndex new_word, unsigned int &ngram_length) const;
 
 		const SRIVocabulary &vocab_;
 
