@@ -31,7 +31,7 @@ string AwfulInsecureSALMConfigFileHack(const char *file_name, unsigned int ngram
 
 }  // namespace
 
-SALMVocabulary::SALMVocabulary(const C_IDVocabulary &salm_vocab) 
+SAVocabulary::SAVocabulary(const C_IDVocabulary &salm_vocab) 
 	: BaseVocabulary(
 			salm_vocab.returnId("_SENTENCE_START_"),
 			salm_vocab.returnId("_END_OF_SENTENCE_"),
@@ -39,15 +39,15 @@ SALMVocabulary::SALMVocabulary(const C_IDVocabulary &salm_vocab)
 			salm_vocab.returnMaxID() + 1),
 	salm_vocab_(salm_vocab) {}
 
-LMWordIndex SALMVocabulary::Index(const std::string &str) const {
+LMWordIndex SAVocabulary::Index(const std::string &str) const {
 	return salm_vocab_.returnId(str);
 }
 
-unsigned int SALMLanguageModel::Order() const {
+unsigned int SALanguageModel::Order() const {
 	return salm_lm_.Order();
 }
 
-LogDouble SALMLanguageModel::ActuallyCall(State &state, const LMWordIndex word, unsigned int &ngram_length) const {
+LogDouble SALanguageModel::ActuallyCall(State &state, const LMWordIndex word, unsigned int &ngram_length) const {
 	State current(state);
 	return LogDouble(salm_lm_.LogProbAndNGramOrder(
 				current.match_start,
@@ -59,7 +59,7 @@ LogDouble SALMLanguageModel::ActuallyCall(State &state, const LMWordIndex word, 
 
 }
 
-SALMLoader::SALMLoader(const char *file_name, unsigned int ngram_length) 
+SALoader::SALoader(const char *file_name, unsigned int ngram_length) 
 	: salm_config_file_(AwfulInsecureSALMConfigFileHack(file_name, ngram_length)),
 	  salm_(new C_SingleCorpusSALM(salm_config_file_.c_str())),
 	  vocab_(salm_->GetVocabulary()),
@@ -71,4 +71,4 @@ SALMLoader::SALMLoader(const char *file_name, unsigned int ngram_length)
 }
 
 // Here so salm_ can be destroyed properly.
-SALMLoader::~SALMLoader() {}
+SALoader::~SALoader() {}

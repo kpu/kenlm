@@ -31,11 +31,6 @@ Server_LDADD = \
 	@top_builddir@/src/LM/SALM/libSA.a
        
 AM_CPPFLAGS = \
-	-I. \
 	-I@top_srcdir@/src \
 	-I@top_srcdir@/src/Share \
-	-I@top_srcdir@/src/Text \
-	-I@top_srcdir@/src/LM \
-	-I@top_srcdir@/src/LM/sri/include \
-	-I@top_srcdir@/src/LM/SALM \
-	-I@top_srcdir@/src/MEMT
+	-Wall

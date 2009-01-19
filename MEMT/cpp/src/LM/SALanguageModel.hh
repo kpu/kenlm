@@ -1,5 +1,5 @@
-#ifndef _LM_SALMLanguageModel_h
-#define _LM_SALMLanguageModel_h
+#ifndef _LM_SALanguageModel_h
+#define _LM_SALanguageModel_h
 
 #include "Share/Log.hh"
 #include "LM/LanguageModel.hh"
@@ -13,9 +13,9 @@
 class C_SingleCorpusSALM;
 class C_IDVocabulary;
 
-class SALMVocabulary : public BaseVocabulary {
+class SAVocabulary : public BaseVocabulary {
 	public:
-		SALMVocabulary(const C_IDVocabulary &salm_vocab);
+		SAVocabulary(const C_IDVocabulary &salm_vocab);
 
 		LMWordIndex Index(const std::string &str) const;
 
@@ -23,7 +23,7 @@ class SALMVocabulary : public BaseVocabulary {
 		const C_IDVocabulary &salm_vocab_;
 };
 
-class SALMLanguageModel {
+class SALanguageModel {
 	public:
 		struct State {
 			State() {}
@@ -34,10 +34,10 @@ class SALMLanguageModel {
 			unsigned char match_len;
 		};
 
-		SALMLanguageModel(const SALMVocabulary &vocab, const C_SingleCorpusSALM &salm_lm) 
+		SALanguageModel(const SAVocabulary &vocab, const C_SingleCorpusSALM &salm_lm) 
 			: vocab_(vocab), salm_lm_(salm_lm) {}
 
-		const SALMVocabulary &Vocabulary() const { return vocab_; }
+		const SAVocabulary &Vocabulary() const { return vocab_; }
 
 		State BeginSentenceState() const {
 			return State(1, 1);
@@ -58,17 +58,17 @@ class SALMLanguageModel {
 	private:
 		LogDouble ActuallyCall(State &state, const LMWordIndex word, unsigned int &ngram_length) const;
 
-		const SALMVocabulary &vocab_;
+		const SAVocabulary &vocab_;
 		
 		const C_SingleCorpusSALM &salm_lm_;
 };
 
-inline bool operator==(const SALMLanguageModel::State &left,
-                const SALMLanguageModel::State &right) {
+inline bool operator==(const SALanguageModel::State &left,
+                const SALanguageModel::State &right) {
         return (left.match_start == right.match_start) && (left.match_len == right.match_len);
 }
 
-inline size_t hash_value(const SALMLanguageModel::State &state) {
+inline size_t hash_value(const SALanguageModel::State &state) {
         size_t ret = 0;
         boost::hash_combine(ret, state.match_start);
         boost::hash_combine(ret, state.match_len);
@@ -76,15 +76,15 @@ inline size_t hash_value(const SALMLanguageModel::State &state) {
 }
 
 // Convenience loader that also owns everything.
-class SALMLoader {
+class SALoader {
 	public:
-		SALMLoader(const char *file_name, unsigned int ngram_length);
+		SALoader(const char *file_name, unsigned int ngram_length);
 
-		~SALMLoader();
+		~SALoader();
 
-		const SALMVocabulary &Vocabulary() const { return vocab_; }
+		const SAVocabulary &Vocabulary() const { return vocab_; }
 
-		const SALMLanguageModel &Model() const { return model_; }
+		const SALanguageModel &Model() const { return model_; }
 
 	private:
 		std::string salm_config_file_;
@@ -92,8 +92,8 @@ class SALMLoader {
 		// This is a pointer so I can avoid including the header here.  
 		boost::scoped_ptr<C_SingleCorpusSALM> salm_;
 
-		SALMVocabulary vocab_;
-		SALMLanguageModel model_;
+		SAVocabulary vocab_;
+		SALanguageModel model_;
 };
 
-#endif // _LM_SALMLanguageModel_h
+#endif // _LM_SALanguageModel_h
