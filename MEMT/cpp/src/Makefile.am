@@ -8,9 +8,9 @@ Server_SOURCES = Server.cc
 SUBDIRS = \
         Client \
 	Share \
+	util \
 	lm \
-	MEMT \
-	util
+	MEMT
 
 TranslateMEMT_LDADD = \
 	@top_builddir@/src/MEMT/Input/libInput.a \
@@ -20,7 +20,9 @@ TranslateMEMT_LDADD = \
 	@top_builddir@/src/MEMT/Output/libOutput.a \
 	@top_builddir@/src/MEMT/OldPhrase/libPhrase.a \
 	@top_builddir@/src/lm/liblm.a \
-	@top_builddir@/src/lm/SALM/libSA.a
+	@top_builddir@/src/lm/SALM/libSA.a \
+	@top_builddir@/src/lm/libexception.a \
+	@top_builddir@/src/util/libutil.a
 
 Server_LDADD = \
 	@top_builddir@/src/MEMT/Input/libInput.a \
@@ -29,7 +31,9 @@ Server_LDADD = \
 	@top_builddir@/src/MEMT/Decoder/libDecoder.a \
 	@top_builddir@/src/MEMT/Output/libOutput.a \
 	@top_builddir@/src/lm/liblm.a \
-	@top_builddir@/src/lm/SALM/libSA.a
+	@top_builddir@/src/lm/SALM/libSA.a \
+	@top_builddir@/src/lm/libexception.a \
+	@top_builddir@/src/util/libutil.a
        
 AM_CPPFLAGS = \
 	-I@top_srcdir@/src \
