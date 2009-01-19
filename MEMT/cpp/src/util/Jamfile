@@ -1,0 +1,1 @@
+lib string_piece : string_piece.cc ;
