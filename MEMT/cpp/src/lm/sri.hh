@@ -1,7 +1,7 @@
-#ifndef _LM_SRILanguageModel_h
-#define _LM_SRILanguageModel_h
+#ifndef LM_SRI_H__
+#define LM_SRI_H__
 
-#include "LM/LanguageModel.hh"
+#include "lm/base.hh"
 #include "Share/Numbers.hh"
 
 #include <boost/scoped_ptr.hpp>
@@ -14,31 +14,34 @@ class Vocab;
 
 /* BIG SCARY WARNING:
  * SRI's vocabulary is not threadsafe.  Ugh.
- * No ngram length is provided.  
+ * The ngram length reported uses some random API I found and may be wrong.
  *
  * Solution: use Jon's rewritten SRI LM, once he gets it stable.
  */
 
-class SRIVocabulary : public BaseVocabulary {
+namespace lm {
+namespace sri {
+
+class Vocabulary : public base::Vocabulary {
 	public:
-		SRIVocabulary(Vocab &sri_vocab);
+		Vocabulary(Vocab &sri_vocab);
 
-		~SRIVocabulary() {}
+		~Vocabulary() {}
 
-		LMWordIndex Index(const std::string &str) const {
+		WordIndex Index(const std::string &str) const {
 			return Index(str.c_str());
 		}
 
 		// Returns NotFound() if the string is not in the lexicon.
-		LMWordIndex Index(const char *str) const;
+		WordIndex Index(const char *str) const;
 
-		const char *Word(LMWordIndex index) const;
+		const char *Word(WordIndex index) const;
 
 	private:
 		mutable Vocab &sri_vocab_;
 };
 
-class SRILanguageModel {
+class Model {
 	private:
 		/* This should match VocabIndex found in SRI's Vocab.h
 		 * The reason I define this here independently is that SRI's headers
@@ -48,15 +51,14 @@ class SRILanguageModel {
 		 * If these differ there will be a compiler error in ActuallyCall.
 		 */
 		typedef unsigned int SRIVocabIndex;
+		
 	public:
 		// This LM requires no state other than history, which is externalized.
 		struct State {};
 
-		SRILanguageModel(const SRIVocabulary &vocab, const Ngram &sri_lm);
+		Model(const Vocabulary &vocab, const Ngram &sri_lm);
 
-		~SRILanguageModel() {}
-
-		const SRIVocabulary &Vocabulary() const { return vocab_; }
+		const Vocabulary &GetVocabulary() const { return vocab_; }
 
 		State BeginSentenceState() const {
 			return State();
@@ -65,7 +67,7 @@ class SRILanguageModel {
 		// See the big scary warning above.
 
 		/* ReverseHistoryIterator is an iterator such that:
-		 * operator* an LMWordIndex
+		 * operator* an WordIndex
 		 * operator++ goes _backwards_ in the sentence
 		 * new_word is not in the iterators.
 		 */
@@ -73,7 +75,7 @@ class SRILanguageModel {
 				const State &state,
 				const ReverseHistoryIterator &hist_begin,
 				const ReverseHistoryIterator &hist_end,
-				const LMWordIndex new_word,
+				const WordIndex new_word,
 				unsigned int &ngram_length) const {
 		        SRIVocabIndex vocab_history[order_ + 1];
 		        SRIVocabIndex *dest = vocab_history;
@@ -93,33 +95,33 @@ class SRILanguageModel {
 
 	private:
 		// history is an array of size order_ + 1.
-		LogDouble ActuallyCall(SRIVocabIndex *history, const LMWordIndex new_word, unsigned int &ngram_length) const;
+		LogDouble ActuallyCall(SRIVocabIndex *history, const WordIndex new_word, unsigned int &ngram_length) const;
 
-		const SRIVocabulary &vocab_;
+		const Vocabulary &vocab_;
 
 		mutable Ngram &sri_lm_;
 
 		const unsigned int order_;
 };
 
-inline bool operator==(const SRILanguageModel::State &left, const SRILanguageModel::State &right) {
+inline bool operator==(const Model::State &left, const Model::State &right) {
         return true;
 }
 
-inline size_t hash_value(const SRILanguageModel::State &state) {
+inline size_t hash_value(const Model::State &state) {
         return 0;
 }
 
-class SRILoadException : public LMLoadException {
+class FileReadException : public base::LoadException {
 	public:
-		SRILoadException(const char *file_name) throw () {
+		FileReadException(const char *file_name) throw () {
 			what_ = "SRILM failed to load ";
 			what_ += file_name;
 		}
 
-		virtual ~SRILoadException() throw () {}
+		~FileReadException() throw () {}
 
-		virtual const char *what() const throw() {
+		const char *what() const throw() {
 			return what_.c_str();
 		}
 
@@ -127,21 +129,24 @@ class SRILoadException : public LMLoadException {
 		std::string what_;
 };
 
-class SRILoader {
+class Loader {
 	public:
-		SRILoader(const char *file_name, unsigned int ngram_length) throw (SRILoadException);
+		Loader(const char *file_name, unsigned int ngram_length) throw (FileReadException);
 
-		~SRILoader() throw();
+		~Loader() throw();
 
-		const SRIVocabulary &Vocabulary() const { return vocab_; }
+		const Vocabulary &GetVocabulary() const { return vocab_; }
 
-		const SRILanguageModel &Model() const { return model_; }
+		const Model &GetModel() const { return model_; }
 
 	private:
 		boost::scoped_ptr<Vocab> sri_vocab_;
 		boost::scoped_ptr<Ngram> sri_model_;
-		SRIVocabulary vocab_;
-		SRILanguageModel model_;
+		Vocabulary vocab_;
+		Model model_;
 };
+
+} // namespace sri
+} // namespace lm
 
 #endif

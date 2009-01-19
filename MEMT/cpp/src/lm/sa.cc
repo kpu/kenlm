@@ -1,14 +1,15 @@
-#include "LM/SALanguageModel.hh"
+#include "lm/sa.hh"
 
-#include "LM/SALM/_IDVocabulary.h"
-#include "LM/SALM/_SingleCorpusSALM.h"
+#include "lm/SALM/_IDVocabulary.h"
+#include "lm/SALM/_SingleCorpusSALM.h"
 
 #include <fstream>
 
 #include <stdlib.h>
 #include <err.h>
 
-using namespace std;
+namespace lm {
+namespace sa {
 
 namespace {
 
@@ -31,23 +32,23 @@ string AwfulInsecureSALMConfigFileHack(const char *file_name, unsigned int ngram
 
 }  // namespace
 
-SAVocabulary::SAVocabulary(const C_IDVocabulary &salm_vocab) 
-	: BaseVocabulary(
+Vocabulary::Vocabulary(const C_IDVocabulary &salm_vocab) 
+	: base::Vocabulary(
 			salm_vocab.returnId("_SENTENCE_START_"),
 			salm_vocab.returnId("_END_OF_SENTENCE_"),
 			salm_vocab.returnNullWordID(),
 			salm_vocab.returnMaxID() + 1),
 	salm_vocab_(salm_vocab) {}
 
-LMWordIndex SAVocabulary::Index(const std::string &str) const {
+LMWordIndex Vocabulary::Index(const std::string &str) const {
 	return salm_vocab_.returnId(str);
 }
 
-unsigned int SALanguageModel::Order() const {
+unsigned int Model::Order() const {
 	return salm_lm_.Order();
 }
 
-LogDouble SALanguageModel::ActuallyCall(State &state, const LMWordIndex word, unsigned int &ngram_length) const {
+LogDouble Model::ActuallyCall(State &state, const LMWordIndex word, unsigned int &ngram_length) const {
 	State current(state);
 	return LogDouble(salm_lm_.LogProbAndNGramOrder(
 				current.match_start,
@@ -59,7 +60,7 @@ LogDouble SALanguageModel::ActuallyCall(State &state, const LMWordIndex word, un
 
 }
 
-SALoader::SALoader(const char *file_name, unsigned int ngram_length) 
+Loader::Loader(const char *file_name, unsigned int ngram_length) 
 	: salm_config_file_(AwfulInsecureSALMConfigFileHack(file_name, ngram_length)),
 	  salm_(new C_SingleCorpusSALM(salm_config_file_.c_str())),
 	  vocab_(salm_->GetVocabulary()),
@@ -71,4 +72,7 @@ SALoader::SALoader(const char *file_name, unsigned int ngram_length)
 }
 
 // Here so salm_ can be destroyed properly.
-SALoader::~SALoader() {}
+Loader::~Loader() {}
+
+} // namespace sa
+} // namespace lm
