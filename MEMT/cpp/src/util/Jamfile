@@ -1,1 +1,7 @@
+import testing ;
+
+lib boost_test_exec_monitor ;
+
 lib string_piece : string_piece.cc ;
+
+unit-test n_best_test : n_best_test.cc boost_test_exec_monitor ;
