@@ -549,7 +549,7 @@ template <class ValueT, class LessT> class OneBestMerge : public std::binary_fun
 		typedef ValueT Value;
 		typedef LessT Less;
 
-	        OneBestMerge() : less_() {}
+	        OneBestMerge(const Less &less = Less()) : less_(less) {}
 
         	bool operator()(Value &to, const Value &with) const {
 	                if (less_(to, with)) {
