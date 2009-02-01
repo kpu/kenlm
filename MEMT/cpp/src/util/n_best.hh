@@ -22,6 +22,7 @@
 /* A note on threadsafety: these act like STL classes in that they can be used
  * from different threads, but not simultaneously.  This note applies to const
  * methods as well.  
+ * Scroll down to the bottom for the public classes.
  */
 
 namespace nbest {
@@ -574,7 +575,7 @@ template <class ValueT> class NullMerge : public std::binary_function<ValueT &, 
 		}
 };
 
-/* The public NBest class.  
+/* The public NBest classes.
  * ValueT is the value to store.
  * LessT compares scores for purposes of dropping values and ordered iteration.
  * DupeT is the duplicate detection policy, usually NullDupe<ValueT> or

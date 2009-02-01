@@ -1,7 +1,9 @@
 import testing ;
 
-lib boost_test_exec_monitor ;
-
 lib string_piece : string_piece.cc ;
 
+lib icui18n ;
+lib unicode : unicode.cc : <use>icui18n ;
+
+lib boost_test_exec_monitor ;
 unit-test n_best_test : n_best_test.cc boost_test_exec_monitor ;
