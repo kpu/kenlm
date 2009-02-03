@@ -1,5 +1,5 @@
-#ifndef UTIL_N_BEST_H__
-#define UTIL_N_BEST_H__
+#ifndef UTIL_N_BEST__
+#define UTIL_N_BEST__
 
 #include "Share/Debug.hh"
 
@@ -576,6 +576,12 @@ template <class ValueT> class NullMerge : public std::binary_function<ValueT &, 
 };
 
 /* The public NBest classes.
+ * Disclaimers:
+ * Standard STL threadsafety applies.  const members may not be threadsafe.
+ *
+ * Duplicate detection interacts interestingly with falling off the n-best
+ * list.  Specifically, a hypothesis can fall off the beam
+ * 
  * ValueT is the value to store.
  * LessT compares scores for purposes of dropping values and ordered iteration.
  * DupeT is the duplicate detection policy, usually NullDupe<ValueT> or
@@ -609,7 +615,8 @@ template <class ValueT> class NullMerge : public std::binary_function<ValueT &, 
  * Reading
  * Unordered using unordered_iterator returned by unordered_begin and
  *   unordered_end.  
- * Ordered depends on NBest or SortedNBest, as documented below.
+ * Ordered depends on NBest or SortedNBest, as document in each class.  
+ * 
  */
 template <class ValueT, class LessT = std::less<ValueT>, class DupeT = NullDupe<ValueT>, class MergeT = NullMerge<ValueT> > class NBest
 		: public detail::BaseNBest<ValueT, detail::HeapDropper<ValueT, LessT>, DupeT, MergeT> {
@@ -692,4 +699,4 @@ template <class ValueT, class LessT = std::less<ValueT>, class DupeT = NullDupe<
 
 } // namespace nbest
 
-#endif // UTIL_N_BEST_H__
+#endif // UTIL_N_BEST__
