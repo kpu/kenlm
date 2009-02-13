@@ -693,7 +693,7 @@ template <class ValueT, class LessT = std::less<ValueT>, class DupeT = NullDupe<
 
 	private:
 		const detail::SetDropper<ValueT, LessT> &GetDropper() const {
-			return P::open_::ConstDropper();
+			return P::open_.ConstDropper();
 		}
 };
 
