@@ -31,7 +31,7 @@ LogDouble Model::ActuallyCall(SRIVocabIndex *history, const WordIndex new_word, 
 	const SRIVocabIndex *const_history = history;
 	sri_lm_.contextID(new_word, const_history, ngram_length);
 	// SRI uses log10, we use log.
-	return LogDouble(AlreadyLogTag(), sri_lm_.wordProb(new_word, const_history) * M_LN10);
+	return LogDouble(sri_lm_.wordProb(new_word, const_history) * M_LN10, true);
 }
 
 namespace {

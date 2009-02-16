@@ -50,15 +50,13 @@ unsigned int Model::Order() const {
 
 LogDouble Model::ActuallyCall(State &state, const WordIndex word, unsigned int &ngram_length) const {
 	State current(state);
-	return LogDouble(
-			AlreadyLogTag(), 
-			salm_lm_.LogProbAndNGramOrder(
+	return LogDouble(salm_lm_.LogProbAndNGramOrder(
 				current.match_start,
 				current.match_len,
 				word,
 				state.match_start,
 				state.match_len,
-				ngram_length));
+				ngram_length), true);
 
 }
 

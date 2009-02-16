@@ -3,7 +3,7 @@
 
 #include "lm/base.hh"
 #include "lm/SALM/text_length.h"
-#include "util/numbers.hh"
+#include "Share/Numbers.hh"
 
 #include <boost/functional/hash.hpp>
 #include <boost/scoped_ptr.hpp>
