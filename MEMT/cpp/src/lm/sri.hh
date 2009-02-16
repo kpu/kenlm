@@ -2,7 +2,7 @@
 #define LM_SRI_H__
 
 #include "lm/base.hh"
-#include "Share/Numbers.hh"
+#include "util/numbers.hh"
 
 #include <boost/scoped_ptr.hpp>
 
