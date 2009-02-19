@@ -1,4 +1,3 @@
-#include "lm/sa.hh"
 #include "MEMT/Decoder/Config.hh"
 #include "MEMT/Decoder/Hypothesis.hh"
 #include "MEMT/Decoder/Implementation.hh"
@@ -8,6 +7,9 @@
 #include "MEMT/Output/NullBeamDumper.hh"
 #include "MEMT/Output/Oracle.hh"
 #include "MEMT/Output/Top.hh"
+
+#include "lm/sa.hh"
+#include "lm/sri.hh"
 
 #include <boost/asio.hpp>
 #include <boost/lexical_cast.hpp>
@@ -213,6 +215,7 @@ void QueryConfigParser::Parse(std::istream &stream) {
 }
 
 struct LMConfig {
+	std::string type;
 	std::string file;
 	unsigned int order;
 };
@@ -222,10 +225,28 @@ struct ServiceConfig {
 	short int port;
 };
 
+class NoSuchLMError : public ArgumentParseError {
+	public:
+		NoSuchLMError(const std::string &type) : type_(type) {
+			what_ = "lm.type \"";
+			what_ += type;
+			what_ += "\" is not sri or salm.";
+		}
+		
+		virtual ~NoSuchLMError() throw() {}
+
+		virtual const char *what() throw() { return what_.c_str(); }
+
+	private:
+		std::string type_;
+		std::string what_;
+};
+
 void ParseService(int argc, char *argv[], ServiceConfig &config) {
 	po::options_description desc("Server Options");
 	desc.add_options()
-		("lm.file", po::value<std::string>(&config.lm.file), "SALM file")
+		("lm.type", po::value<std::string>(&config.lm.type)->default_value("salm"), "Language model type: sri or salm")
+		("lm.file", po::value<std::string>(&config.lm.file), "File for language model")
 		("lm.order", po::value<unsigned int>(&config.lm.order), "Order of language model")
 		("port", po::value<short int>(&config.port), "Port");
 	po::variables_map vm;
@@ -234,12 +255,15 @@ void ParseService(int argc, char *argv[], ServiceConfig &config) {
 
 	const char *mandatory_options[] = {"lm.file", "lm.order", "port"};
 	CheckOnce(vm, mandatory_options);
+	if (config.lm.type != "salm" && config.lm.type != "sri") {
+		throw NoSuchLMError(config.lm.type);
+	}
 }
 
-void RunDecoder(const lm::sa::Model &model, const QueryConfig &config) {
+template <class LanguageModel> void RunDecoder(const LanguageModel &model, const QueryConfig &config) {
 	input::Input text;
 	input::InputFactory factory;
-	DecoderImpl<HypothesisCollection<DetailedScorer<lm::sa::Model> > > decoder;
+	DecoderImpl<HypothesisCollection<DetailedScorer<LanguageModel> > > decoder;
 	NullBeamDumper dumper;
 	OracleOutput oracle(config.output_oracle_prefix.c_str(), true);
 	std::vector<CompletedHypothesis> nbest;
@@ -253,15 +277,14 @@ void RunDecoder(const lm::sa::Model &model, const QueryConfig &config) {
 	}
 }
 
-void RunService(const ServiceConfig &config) {
+template <class LMOwner> void RunLoadedService(const LMOwner &lm, short int port) {
 	using boost::asio::ip::tcp;
-	lm::sa::Loader salm(config.lm.file.c_str(), config.lm.order);
-	std::cout << config.lm.file << " with order " << config.lm.order << std::endl;
 
 	QueryConfigParser parser;
 
 	boost::asio::io_service io_service;
-	tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), config.port));
+	tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), port));
+	std::cerr << "Accepting connections." << std::endl;
 	while (1) {
 		try {
 			tcp::iostream stream;
@@ -270,7 +293,7 @@ void RunService(const ServiceConfig &config) {
 			try {
 				parser.Parse(stream);
 				stream.clear();
-				RunDecoder(salm.GetModel(), parser.Get());
+				RunDecoder(lm.GetModel(), parser.Get());
 				stream << "Done" << std::endl;
 			}
 			catch (ArgumentParseError &e) {
@@ -285,10 +308,20 @@ void RunService(const ServiceConfig &config) {
 	}
 }
 
+void LoadAndRunService(const ServiceConfig &config) {
+	if (config.lm.type == "sri") {
+		lm::sri::Owner sri(config.lm.file.c_str(), config.lm.order);
+		RunLoadedService(sri, config.port);
+	} else if (config.lm.type == "salm") {
+		lm::sa::Owner sa(config.lm.file.c_str(), config.lm.order);
+		RunLoadedService(sa, config.port);
+	}
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
 	ServiceConfig config;
 	ParseService(argc, argv, config);
-	RunService(config);
+	LoadAndRunService(config);
 }
