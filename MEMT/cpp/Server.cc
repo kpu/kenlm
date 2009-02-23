@@ -265,14 +265,14 @@ template <class LanguageModel> void RunDecoder(const LanguageModel &model, const
 	input::InputFactory factory;
 	DecoderImpl<HypothesisCollection<DetailedScorer<LanguageModel> > > decoder;
 	NullBeamDumper dumper;
-	OracleOutput oracle(config.output_oracle_prefix.c_str(), true);
+	output::FileOracle oracle(config.output_oracle_prefix.c_str(), true);
 	std::vector<CompletedHypothesis> nbest;
 	std::ifstream matched(config.input_matched.c_str(), ios::in);
 	std::ofstream one_best(config.output_one_best.c_str(), ios::out);
-	TopOutput top;
+	output::Top top(one_best, true);
 	while (factory.Make(config.text, matched, model.GetVocabulary(), text)) {
 		decoder.Run(config.decoder, model, text, dumper, nbest);
-		top.Write(nbest, text, one_best);
+		top.Write(nbest, text);
 		if (!config.output_oracle_prefix.empty()) oracle.Write(nbest, text);
 	}
 }
