@@ -96,10 +96,10 @@ class QueryConfigParser {
 		po::options_description desc_;
 		std::string confidence_string_;
 		QueryConfig config_;
+		bool first_;
 };
 
-
-QueryConfigParser::QueryConfigParser() : desc_("Query time options") {
+QueryConfigParser::QueryConfigParser() : desc_("Query time options"), first_(true) {
 	desc_.add_options()
 		("score.lm",
 		 po::value(&config_.decoder.scorer.lm),
@@ -203,8 +203,10 @@ void QueryConfigParser::Parse(std::istream &stream) {
 	po::variables_map vm;
 	po::store(po::parse_config_file(stream, desc_), vm);
 	po::notify(vm);
-	const char *mandatory_options[] = {"score.lm", "score.alignment", "score.ngram", "score.overlap", "output.one_best", "input.matched_file", "input.confidence"};
-	CheckOnce(vm, mandatory_options);
+	if (first_) {
+		const char *mandatory_options[] = {"score.lm", "score.alignment", "score.ngram", "score.overlap", "output.one_best", "input.matched_file", "input.confidence"};
+		CheckOnce(vm, mandatory_options);
+	}
 	ParseConfidences(confidence_string_, config_.text.confidences);
 			
 	config_.text.horizon_radius = config_.decoder.coverage.old_horizon;
@@ -212,6 +214,7 @@ void QueryConfigParser::Parse(std::istream &stream) {
 	std::cout << "input.matched_file = " << config_.input_matched << std::endl;
 	std::cout << config_.text << std::endl;
 	std::cout << config_.decoder << std::endl;
+	first_ = false;
 }
 
 struct LMConfig {
@@ -260,27 +263,79 @@ void ParseService(int argc, char *argv[], ServiceConfig &config) {
 	}
 }
 
-template <class LanguageModel> void RunDecoder(const LanguageModel &model, const QueryConfig &config) {
+void HandleConfig(std::iostream &stream, QueryConfigParser &parser) {
+	size_t length;
+	stream >> length;
+	// TODO: reduce string copies
+	boost::scoped_array<char> bytes(new char[length]);
+	stream.read(bytes.get(), length);
+	std::istringstream limited(std::string(bytes.get(), length));
+	parser.Parse(limited);
+}
+
+// TODO: move this into factory.
+class FactoryException : public std::exception {
+	public:
+		FactoryException() throw() {}
+		~FactoryException() throw() {}
+
+		const char *what() throw() {
+			return "Reading from matcher failed";
+		}
+};
+
+// TODO: convert this to a class and keep objects around.
+template <class LanguageModel> void HandleMatched(std::iostream &stream, const LanguageModel &model, const QueryConfig &config) {
 	input::Input text;
 	input::InputFactory factory;
 	DecoderImpl<HypothesisCollection<DetailedScorer<LanguageModel> > > decoder;
 	NullBeamDumper dumper;
-	output::FileOracle oracle(config.output_oracle_prefix.c_str(), true);
+	output::StreamOracle oracle(stream, true);
 	std::vector<CompletedHypothesis> nbest;
-	std::ifstream matched(config.input_matched.c_str(), ios::in);
-	std::ofstream one_best(config.output_one_best.c_str(), ios::out);
-	output::Top top(one_best, true);
-	while (factory.Make(config.text, matched, model.GetVocabulary(), text)) {
-		decoder.Run(config.decoder, model, text, dumper, nbest);
-		top.Write(nbest, text);
-		if (!config.output_oracle_prefix.empty()) oracle.Write(nbest, text);
+	if (!factory.Make(config.text, stream, model.GetVocabulary(), text)) throw FactoryException();
+	decoder.Run(config.decoder, model, text, dumper, nbest);
+	oracle.Write(nbest, text);
+}
+
+class BadTypeError : public std::exception {
+	public:
+		BadTypeError(const std::string &type) throw() : type_(type) {
+			what_ = "Bad type \"";
+			what_ += type;
+			what_ += "\"";
+		}
+
+		~BadTypeError() throw() {}
+
+		const char *what() throw() { return what_.c_str(); }
+		
+	private:
+		std::string type_, what_;
+};
+
+template <class LanguageModel> void HandleConnection(std::iostream &stream, const LanguageModel &lm) {
+	QueryConfigParser parser;
+	try {
+		std::string type;
+		while (stream >> type) {
+			if (type == "config") {
+				HandleConfig(stream, parser);
+			} else if (type == "matched") {
+				HandleMatched(stream, lm, parser.Get());
+			} else {
+				throw BadTypeError(type);
+			}
+		}
+	}
+	catch (std::exception &e) {
+		std::cerr << e.what() << std::endl;
+		stream.clear();
+		stream << "error " << '\n' << e.what() << std::endl;
 	}
 }
 
-template <class LMOwner> void RunLoadedService(const LMOwner &lm, short int port) {
+template <class LanguageModel> void RunLoadedService(const LanguageModel &lm, short int port) {
 	using boost::asio::ip::tcp;
-
-	QueryConfigParser parser;
 
 	boost::asio::io_service io_service;
 	tcp::acceptor acceptor(io_service, tcp::endpoint(tcp::v4(), port));
@@ -289,18 +344,8 @@ template <class LMOwner> void RunLoadedService(const LMOwner &lm, short int port
 		try {
 			tcp::iostream stream;
 			acceptor.accept(*stream.rdbuf());
-			std::cerr << "Got connection " << std::endl;
-			try {
-				parser.Parse(stream);
-				stream.clear();
-				RunDecoder(lm.GetModel(), parser.Get());
-				stream << "Done" << std::endl;
-			}
-			catch (ArgumentParseError &e) {
-				std::cerr << e.what() << std::endl;
-				stream.clear();
-				stream << e.what() << std::endl;
-			}
+			std::cerr << "Got connection." << std::endl;
+			HandleConnection(stream, lm);
 		}
 		catch (std::exception &e) {
 			std::cerr << e.what() << std::endl;
@@ -311,10 +356,10 @@ template <class LMOwner> void RunLoadedService(const LMOwner &lm, short int port
 void LoadAndRunService(const ServiceConfig &config) {
 	if (config.lm.type == "sri") {
 		lm::sri::Owner sri(config.lm.file.c_str(), config.lm.order);
-		RunLoadedService(sri, config.port);
+		RunLoadedService(sri.GetModel(), config.port);
 	} else if (config.lm.type == "salm") {
 		lm::sa::Owner sa(config.lm.file.c_str(), config.lm.order);
-		RunLoadedService(sa, config.port);
+		RunLoadedService(sa.GetModel(), config.port);
 	}
 }
 
