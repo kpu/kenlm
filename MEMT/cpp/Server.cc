@@ -179,11 +179,11 @@ class BadConfidence : public ArgumentParseError {
 	public:
 		BadConfidence(const std::string &provided) : provided_(provided) {}
 
-		virtual const char *what() const throw () {
+		const char *what() const throw () {
 			return provided_.c_str();
 		}
 
-		virtual ~BadConfidence() throw () {}
+		~BadConfidence() throw () {}
 
 	private:
 		std::string provided_;
@@ -306,7 +306,6 @@ class BadHeaderError : public std::exception {
 			what_ = "Bad header \"";
 			what_ += header;
 			what_ += "\"";
-			std::cout << what_ << std::endl;
 		}
 
 		~BadHeaderError() throw() {}
