@@ -279,7 +279,7 @@ class FactoryException : public std::exception {
 		FactoryException() throw() {}
 		~FactoryException() throw() {}
 
-		const char *what() throw() {
+		const char *what() const throw() {
 			return "Reading from matcher failed";
 		}
 };
@@ -306,11 +306,12 @@ class BadHeaderError : public std::exception {
 			what_ = "Bad header \"";
 			what_ += header;
 			what_ += "\"";
+			std::cout << what_ << std::endl;
 		}
 
 		~BadHeaderError() throw() {}
 
-		const char *what() throw() { return what_.c_str(); }
+		const char *what() const throw() { return what_.c_str(); }
 		
 	private:
 		std::string header_, what_;
