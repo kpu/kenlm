@@ -352,6 +352,7 @@ template <class LanguageModel> void RunLoadedService(const LanguageModel &lm, sh
 			acceptor.accept(*stream.rdbuf());
 			std::cerr << "Got connection." << std::endl;
 			HandleConnection(stream, lm);
+			std::cerr << "Closed connection." << std::endl;
 		}
 		catch (std::exception &e) {
 			std::cerr << e.what() << std::endl;
