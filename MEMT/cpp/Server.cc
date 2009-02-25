@@ -325,6 +325,8 @@ template <class LanguageModel> void HandleConnection(std::iostream &stream, cons
 				HandleConfig(stream, parser);
 			} else if (header == "matched") {
 				HandleMatched(stream, lm, parser.Get());
+			} else if (header == "bye") {
+				return;
 			} else {
 				throw BadHeaderError(header);
 			}
