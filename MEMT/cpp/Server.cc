@@ -204,7 +204,7 @@ void QueryConfigParser::Parse(std::istream &stream) {
 	po::store(po::parse_config_file(stream, desc_), vm);
 	po::notify(vm);
 	if (first_) {
-		const char *mandatory_options[] = {"score.lm", "score.alignment", "score.ngram", "score.overlap", "output.one_best", "input.matched_file", "input.confidence"};
+		const char *mandatory_options[] = {"score.lm", "score.alignment", "score.ngram", "score.overlap", "input.confidence"};
 		CheckOnce(vm, mandatory_options);
 	}
 	ParseConfidences(confidence_string_, config_.text.confidences);
@@ -286,6 +286,8 @@ class FactoryException : public std::exception {
 
 // TODO: convert this to a class and keep objects around.
 template <class LanguageModel> void HandleMatched(std::iostream &stream, const LanguageModel &model, const QueryConfig &config) {
+	unsigned int sent_id;
+	stream >> sent_id;
 	input::Input text;
 	input::InputFactory factory;
 	DecoderImpl<HypothesisCollection<DetailedScorer<LanguageModel> > > decoder;
@@ -294,36 +296,37 @@ template <class LanguageModel> void HandleMatched(std::iostream &stream, const L
 	std::vector<CompletedHypothesis> nbest;
 	if (!factory.Make(config.text, stream, model.GetVocabulary(), text)) throw FactoryException();
 	decoder.Run(config.decoder, model, text, dumper, nbest);
-	oracle.Write(nbest, text);
+	stream << "nbest" << '\n';
+	oracle.Write(nbest, text, sent_id);
 }
 
-class BadTypeError : public std::exception {
+class BadHeaderError : public std::exception {
 	public:
-		BadTypeError(const std::string &type) throw() : type_(type) {
-			what_ = "Bad type \"";
-			what_ += type;
+		BadHeaderError(const std::string &header) throw() : header_(header) {
+			what_ = "Bad header \"";
+			what_ += header;
 			what_ += "\"";
 		}
 
-		~BadTypeError() throw() {}
+		~BadHeaderError() throw() {}
 
 		const char *what() throw() { return what_.c_str(); }
 		
 	private:
-		std::string type_, what_;
+		std::string header_, what_;
 };
 
 template <class LanguageModel> void HandleConnection(std::iostream &stream, const LanguageModel &lm) {
 	QueryConfigParser parser;
 	try {
-		std::string type;
-		while (stream >> type) {
-			if (type == "config") {
+		std::string header;
+		while (stream >> header) {
+			if (header == "config") {
 				HandleConfig(stream, parser);
-			} else if (type == "matched") {
+			} else if (header == "matched") {
 				HandleMatched(stream, lm, parser.Get());
 			} else {
-				throw BadTypeError(type);
+				throw BadHeaderError(header);
 			}
 		}
 	}
@@ -343,6 +346,7 @@ template <class LanguageModel> void RunLoadedService(const LanguageModel &lm, sh
 	while (1) {
 		try {
 			tcp::iostream stream;
+			stream.exceptions(tcp::iostream::badbit | tcp::iostream::failbit);
 			acceptor.accept(*stream.rdbuf());
 			std::cerr << "Got connection." << std::endl;
 			HandleConnection(stream, lm);
