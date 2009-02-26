@@ -204,7 +204,7 @@ void QueryConfigParser::Parse(std::istream &stream) {
 	po::store(po::parse_config_file(stream, desc_), vm);
 	po::notify(vm);
 	if (first_) {
-		const char *mandatory_options[] = {"score.lm", "score.alignment", "score.ngram", "score.overlap", "input.confidence"};
+		const char *mandatory_options[] = {"score.lm", "score.alignment", "score.ngram", "score.overlap"};
 		CheckOnce(vm, mandatory_options);
 	}
 	ParseConfidences(confidence_string_, config_.text.confidences);
