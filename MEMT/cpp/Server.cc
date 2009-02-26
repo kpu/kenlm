@@ -114,7 +114,7 @@ QueryConfigParser::QueryConfigParser() : desc_("Query time options"), first_(tru
 		 "NGram scoring weight")
 
 		("score.ngram_base",
-		 po::value(&config_.decoder.scorer.ngram_base)->default_value(LogScore(1.0 / 3.0)),
+		 po::value(&config_.decoder.scorer.ngram_base),
 		 "NGram score base")
 
 		("score.overlap",
@@ -122,36 +122,36 @@ QueryConfigParser::QueryConfigParser() : desc_("Query time options"), first_(tru
 		 "Overlap scoring weight")
 
 		("score.fuzz.ratio",
-		 po::value(&config_.decoder.scorer.fuzz.ratio)->default_value(0.0),
+		 po::value(&config_.decoder.scorer.fuzz.ratio),
 		 "Proportion of scoring weight to randomly fuzz.  Useful for seeding MERT.")
 
 		("beam_size",
-		 po::value(&config_.decoder.internal_beam_size)->default_value(500), 
+		 po::value(&config_.decoder.internal_beam_size), 
 		 "Size of the decoder's internal search beam")
 
 		("length_normalize",
-		 po::value(&config_.decoder.length_normalize)->default_value(true),
+		 po::value(&config_.decoder.length_normalize),
 		 "Langth normalize before comparing sentence end scores?")
 
 		("output.nbest",
-		 po::value(&config_.decoder.end_beam_size)->default_value(1),
+		 po::value(&config_.decoder.end_beam_size),
 		 "Number of n-best hypotheses")
 
 		// Remember to copy to input::Config.
 		("horizon.radius",
-		 po::value(&config_.decoder.coverage.old_horizon)->default_value(5),
+		 po::value(&config_.decoder.coverage.old_horizon),
 		 "Horizon radius")
 
 		("horizon.new",
-		 po::value(&config_.decoder.coverage.use_new)->default_value(false),
+		 po::value(&config_.decoder.coverage.use_new),
 		 "Use the new horizon implementation?")
 
 		("horizon.threshold",
-		 po::value(&config_.decoder.coverage.stay_threshold)->default_value(0.8),
+		 po::value(&config_.decoder.coverage.stay_threshold),
 		 "New horizon threshold.")
 
 		("output.oracle_prefix",
-		 po::value(&config_.output_oracle_prefix)->default_value(std::string()),
+		 po::value(&config_.output_oracle_prefix),
 		 "Prefix for oracle output or empty for no oracle files")
 
 		("output.one_best",
@@ -167,12 +167,22 @@ QueryConfigParser::QueryConfigParser() : desc_("Query time options"), first_(tru
 		 "Confidence values.")
 
 		("align.pick_best",
-		 po::value(&config_.text.pick_best)->default_value(false),
+		 po::value(&config_.text.pick_best),
 		 "Pick the aligned word with most confidence?")
 
 		("align.transitive",
-		 po::value(&config_.text.transitive)->default_value(false),
+		 po::value(&config_.text.transitive),
 		 "Make alignments transitive?");
+	config_.decoder.scorer.fuzz.ratio = 0.0;
+	config_.decoder.internal_beam_size = 500;
+	config_.decoder.end_beam_size = 1;
+	config_.decoder.length_normalize = true;
+	config_.decoder.coverage.old_horizon = 5;
+	config_.decoder.coverage.use_new = false;
+	config_.decoder.scorer.ngram_base = LogScore(1.0 / 3.0);
+	config_.decoder.coverage.stay_threshold = 0.8;
+	config_.text.pick_best = false;
+	config_.text.transitive = false;
 }
 
 class BadConfidence : public ArgumentParseError {
