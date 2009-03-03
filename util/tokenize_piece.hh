@@ -32,7 +32,7 @@ class PieceIterator : public boost::iterator_facade<PieceIterator, const StringP
 		PieceIterator() {}
 
 		// delimiter must exist for life of iterator, sadly.
-		explicit PieceIterator(const StringPiece &str, const AnyCharacterDelimiter &delimit)
+		PieceIterator(const StringPiece &str, const AnyCharacterDelimiter &delimit)
 			  : after_(str), delimit_(&delimit) {
 			increment();
 		}
