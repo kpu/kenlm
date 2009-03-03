@@ -11,7 +11,7 @@ namespace tokenize {
 
 class AnyCharacterDelimiter {
 	public:
-		AnyCharacterDelimiter(const StringPiece &delimit) {
+		explicit AnyCharacterDelimiter(const StringPiece &delimit) {
 			for (StringPiece::iterator i = delimit.begin(); i != delimit.end(); ++i) {
 				delimit_[*i] = 1;
 			}
@@ -31,7 +31,7 @@ class PieceIterator : public boost::iterator_facade<PieceIterator, const StringP
 		// Default construct is end, which is also accessed by kEndPieceIterator;
 		PieceIterator() {}
 
-		// delimiter must exist for life of iterator.
+		// delimiter must exist for life of iterator, sadly.
 		explicit PieceIterator(const StringPiece &str, const AnyCharacterDelimiter &delimit)
 			  : after_(str), delimit_(&delimit) {
 			increment();
