@@ -7,6 +7,15 @@
 
 #include <bitset>
 
+/* Usage:
+ *
+ * AnyCharacterDelimiter delimit(" \r\n\t");
+ * for (PieceIterator i(" foo \r\n bar ", delimit); i != kEndPieceIterator; ++i) {
+ *   std::cout << *i << "\n";
+ * }
+ *
+ */
+
 namespace tokenize {
 
 class AnyCharacterDelimiter {
