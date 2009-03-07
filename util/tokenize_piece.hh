@@ -75,7 +75,7 @@ class PieceIterator : public boost::iterator_facade<PieceIterator, const StringP
 };
 
 // StringPiece is simple enough that this can be static.
-static const PieceIterator kEndPieceIterator;
+extern const PieceIterator kEndPieceIterator;
 
 } // namespace tokenize
 
