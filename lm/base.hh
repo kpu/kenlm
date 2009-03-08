@@ -9,6 +9,41 @@
 namespace lm {
 namespace base {
 
+// Not all LMs handle all errors with these.
+class LoadException : public std::exception {
+	public:
+  	virtual ~LoadException() throw() {}
+
+  protected:
+    LoadException() throw() {}
+};
+
+class SpecialWordMissingException : public LoadException {
+	public:
+  	virtual ~SpecialWordMissingException() throw() {}
+
+	protected:
+		SpecialWordMissingException() throw() {}
+};
+
+class BeginSentenceMissingException : public SpecialWordMissingException {
+	public:
+		BeginSentenceMissingException() throw() {}
+
+		~BeginSentenceMissingException() throw() {}
+
+		const char *what() const throw() { return "Begin of sentence marker missing from vocabulary"; }
+};
+
+class EndSentenceMissingException : public SpecialWordMissingException {
+	public:
+		EndSentenceMissingException() throw() {}
+
+		~EndSentenceMissingException() throw() {}
+
+		const char *what() const throw() { return "End of sentence marker missing from vocabulary"; }
+};
+
 class Vocabulary {
 	public:
 		virtual ~Vocabulary() {}
@@ -23,21 +58,24 @@ class Vocabulary {
 		virtual WordIndex Index(const std::string &str) const = 0;
 
 	protected:
-		Vocabulary(WordIndex begin_sentence, WordIndex end_sentence, WordIndex not_found, WordIndex available) :
-			begin_sentence_(begin_sentence),
-			end_sentence_(end_sentence),
-			not_found_(not_found),
-			available_(available) {}
+		// Delayed initialization of constant values.
+		Vocabulary() {}
 
-		const WordIndex begin_sentence_, end_sentence_, not_found_, available_;
-};
+		void SetSpecial(WordIndex begin_sentence, WordIndex end_sentence, WordIndex not_found, WordIndex available) {
+			begin_sentence_ = begin_sentence;
+			end_sentence_ = end_sentence;
+			not_found_ = not_found;
+			available_ = available;
+			if (begin_sentence_ == not_found_) throw BeginSentenceMissingException();
+			if (end_sentence_ == not_found_) throw EndSentenceMissingException();
+		}
 
-class LoadException : public std::exception {
-        public:
-                virtual ~LoadException() throw() {}
+		// Preferred: set constants at construction.
+		Vocabulary(WordIndex begin_sentence, WordIndex end_sentence, WordIndex not_found, WordIndex available) {
+			SetSpecial(begin_sentence, end_sentence, not_found, available);
+		}
 
-        protected:
-                LoadException() throw() {}
+		WordIndex begin_sentence_, end_sentence_, not_found_, available_;
 };
 
 } // mamespace base
