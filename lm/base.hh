@@ -57,6 +57,8 @@ class Vocabulary {
 		// Warning: not threadsafe for SRI.
 		virtual WordIndex Index(const std::string &str) const = 0;
 
+		virtual const char *Word(WordIndex index) const = 0;
+
 	protected:
 		// Delayed initialization of constant values.
 		Vocabulary() {}
