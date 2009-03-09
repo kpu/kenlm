@@ -18,6 +18,34 @@ class LoadException : public std::exception {
     LoadException() throw() {}
 };
 
+class OpenFileLoadException : public LoadException {
+	public:
+		OpenFileLoadException(const char *name) throw() : name_(name) {
+			what_ = "Error opening file ";
+			what_ += name;
+		}
+
+		~OpenFileLoadException() throw() {}
+
+		const char *what() const throw() { return what_.c_str(); }
+
+	private:
+		std::string name_;
+		std::string what_;
+};
+
+class FormatLoadException : public LoadException {
+	public:
+		FormatLoadException(const char *complaint) throw() : what_(complaint) {}
+
+		~FormatLoadException() throw() {}
+
+		const char *what() const throw() { return what_.c_str(); }
+
+	private:
+		std::string what_;
+};
+
 class SpecialWordMissingException : public LoadException {
 	public:
   	virtual ~SpecialWordMissingException() throw() {}
