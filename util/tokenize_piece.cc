@@ -1,5 +1,5 @@
 #include "util/tokenize_piece.hh"
 
-namespace tokenize {
+namespace util {
 const PieceIterator kEndPieceIterator;
-} // namespace tokenize
+} // namespace util

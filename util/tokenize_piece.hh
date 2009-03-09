@@ -16,7 +16,7 @@
  *
  */
 
-namespace tokenize {
+namespace util {
 
 class AnyCharacterDelimiter {
 	public:
@@ -77,6 +77,6 @@ class PieceIterator : public boost::iterator_facade<PieceIterator, const StringP
 // StringPiece is simple enough that this can be static.
 extern const PieceIterator kEndPieceIterator;
 
-} // namespace tokenize
+} // namespace util
 
 #endif // UTIL_TOKENIZE_PIECE__

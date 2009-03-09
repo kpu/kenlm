@@ -3,7 +3,7 @@
 #define BOOST_TEST_MODULE TokenIteratorTest
 #include <boost/test/unit_test.hpp>
 
-namespace tokenize {
+namespace util {
 namespace {
 
 BOOST_AUTO_TEST_CASE(simple) {
@@ -74,4 +74,4 @@ BOOST_AUTO_TEST_CASE(strange) {
 }
 
 } // namespace
-} // namespace tokenize
+} // namespace util
