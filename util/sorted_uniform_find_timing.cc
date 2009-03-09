@@ -103,7 +103,6 @@ void TimeLookup(const size_t entries) {
 
 	__gnu_cxx::hash_set<uint64_t> gnu_hash_set;
 	boost::unordered_set<uint64_t> boost_unordered_set;
-	std::set<uint64_t> std_set;
 
 	std::vector<uint64_t> sorted;
 	sorted.reserve(entries);
@@ -112,7 +111,6 @@ void TimeLookup(const size_t entries) {
 		const uint64_t val = gen();
 		if (gnu_hash_set.insert(val).second) {
 			boost_unordered_set.insert(val);
-			std_set.insert(val);
 			sorted.push_back(val);
 		}
 	}
@@ -140,8 +138,6 @@ void TimeLookup(const size_t entries) {
 	total += TimeTable(gnu_hash_set, hits, misses);
 	std::cout << ' ';
 	total += TimeTable(boost_unordered_set, hits, misses);
-	std::cout << ' ';
-	total += TimeTable(std_set, hits, misses);
 	std::cout << ' ';
 	total += TimeTable(sorted, hits, misses);
 	std::cout << std::endl;
