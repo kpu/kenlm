@@ -5,7 +5,11 @@
 
 namespace util {
 
-const uint64_t *SortedUniformFind(const uint64_t *left, const uint64_t *right, uint64_t key);
+/* This is a template, but it's not instantiated here because it depends on a
+ * special-case Pivot function to do double-width arithmetic.
+ * Currently uint64_t, uint32_t, uint16_t, and uint8_t are supported.
+ */
+template <class Value> const Value *SortedUniformFind(const Value *left, const Value *right, const Value key);
 
 } // namespace util
 
