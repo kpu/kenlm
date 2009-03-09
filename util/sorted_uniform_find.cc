@@ -5,6 +5,7 @@
 
 namespace util {
 namespace {
+// TODO: support 32-bit with float division.
 inline const uint64_t *Pivot(const uint64_t *left, const uint64_t *right, const uint64_t off) {
   typedef unsigned int local_uint128_t __attribute__((mode(TI)));
   return left + static_cast<size_t>(((local_uint128_t)off * (right - left)) / (*right - *left));
