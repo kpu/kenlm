@@ -10,7 +10,7 @@
 /* Usage:
  *
  * AnyCharacterDelimiter delimit(" \r\n\t");
- * for (PieceIterator i(" foo \r\n bar ", delimit); i != kEndPieceIterator; ++i) {
+ * for (PieceIterator i(" foo \r\n bar ", delimit); i; ++i) {
  *   std::cout << *i << "\n";
  * }
  *
@@ -44,6 +44,13 @@ class PieceIterator : public boost::iterator_facade<PieceIterator, const StringP
 		PieceIterator(const StringPiece &str, const AnyCharacterDelimiter &delimit)
 			  : after_(str), delimit_(&delimit) {
 			increment();
+		}
+
+		bool operator!() const {
+			return after_.data() == 0;
+		}
+		operator bool() const {
+			return after_.data() != 0;
 		}
 
 	private:
