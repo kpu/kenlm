@@ -41,7 +41,8 @@ class Vocabulary : public base::Vocabulary {
 		friend struct detail::VocabularyFriend;
 
 		WordIndex InsertUnique(std::auto_ptr<std::string> &word) {
-			if (__builtin_expect(!ids_.insert(std::make_pair(StringPiece(*word), available_)).second, 0)) throw base::DuplicateWordLoadException(*word);
+			std::pair<boost::unordered_map<StringPiece, WordIndex>::const_iterator, bool> res(ids_.insert(std::make_pair(StringPiece(*word), available_)));
+			if (__builtin_expect(!res.second, 0)) throw WordDuplicateVocabLoadException(*word, res.first->second, available_);
 			strings_.push_back(word);
 			return available_++;
 		}

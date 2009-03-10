@@ -57,14 +57,14 @@ void ParseDataCounts(std::istream &f, std::vector<size_t> &counts) {
 	for (unsigned int order = 1; getline(f, line) && !line.empty(); ++order) {
 		util::PieceIterator it(line, equals_delim);
 		if (!it || (*it != "ngram") || !(++it))
-			throw base::FormatLoadException("expected ngram length line", line);
+			throw FormatLoadException("expected ngram length line", line);
 		if (boost::lexical_cast<unsigned int>(it) != order) 
-			throw base::FormatLoadException(std::string("expected order ") + boost::lexical_cast<std::string>(order), line);
+			throw FormatLoadException(std::string("expected order ") + boost::lexical_cast<std::string>(order), line);
 		if (!(++it))
-			throw base::FormatLoadException("expected ngram count", line);
+			throw FormatLoadException("expected ngram count", line);
 		counts.push_back(boost::lexical_cast<size_t>(*it));
 		if (++it)
-			throw base::FormatLoadException("too many tokens in ngram count line", line);
+			throw FormatLoadException("too many tokens in ngram count line", line);
 	}
 }
 
@@ -80,31 +80,31 @@ struct VocabularyFriend {
 void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vector<ProbBackoff> &unigrams) {
 	std::string line;
 	while (getline(f, line) && line != "\\1-grams:") {}
-	if (!f) throw base::FormatLoadException("Did not get \\1-grams: line");
+	if (!f) throw FormatLoadException("Did not get \\1-grams: line");
 	// Special unigram reader because unigram's data structure is different and because we're inserting vocab words.
 	std::auto_ptr<std::string> unigram(new std::string);
 	for (size_t i = 0; i < count; ++i) {
 		float prob;
 		f >> prob;
 		if (f.get() != '\t')
-			throw base::FormatLoadException("Expected tab after probability");
+			throw FormatLoadException("Expected tab after probability");
 	  std::getline(f, *unigram, '\t');
-		if (!f) throw base::FormatLoadException("Actual unigram count less than reported");
+		if (!f) throw FormatLoadException("Actual unigram count less than reported");
 		ProbBackoff &ent = unigrams[VocabularyFriend::InsertUnique(vocab, unigram)];
 		ent.prob = prob;
 		int delim = f.get();
-		if (!f) throw base::FormatLoadException("Missing line termination while reading unigrams");
+		if (!f) throw FormatLoadException("Missing line termination while reading unigrams");
 		if (delim == '\t') {
-			if (!(f >> ent.backoff)) throw base::FormatLoadException("Failed to read backoff");
-			if ((f.get() != '\n') || !f) throw base::FormatLoadException("Expected newline after backoff");
+			if (!(f >> ent.backoff)) throw FormatLoadException("Failed to read backoff");
+			if ((f.get() != '\n') || !f) throw FormatLoadException("Expected newline after backoff");
 		} else if (delim != '\n') {
 			ent.backoff = 0.0;
-			throw base::FormatLoadException("Expected tab or newline after unigram");
+			throw FormatLoadException("Expected tab or newline after unigram");
 		}
 		unigram.reset(new std::string);
 	}
 	getline(f, line);
-	if (!f || !line.empty()) throw base::FormatLoadException("Blank line after ngrams not empty or missing", line);
+	if (!f || !line.empty()) throw FormatLoadException("Blank line after ngrams not empty or missing", line);
 	VocabularyFriend::FinishedLoading(vocab);
 }
 
@@ -118,7 +118,7 @@ void SetNGramEntry(boost::unordered_map<uint64_t, detail::ProbBackoff, detail::I
 		std::cerr << "Warning: hash collision." << std::endl;
 }
 void SetNGramEntry(boost::unordered_map<uint64_t, detail::Prob, detail::IdentityHash> &place, uint64_t key, float prob, float backoff) {
-	throw base::FormatLoadException("highest order n-gram has a backoff listed");
+	throw FormatLoadException("highest order n-gram has a backoff listed");
 }
 void SetNGramEntry(boost::unordered_map<uint64_t, detail::Prob, detail::IdentityHash> &place, uint64_t key, float prob) {
 	if (__builtin_expect(!place.insert(std::make_pair(key, Prob(prob))).second, 0))
@@ -127,8 +127,8 @@ void SetNGramEntry(boost::unordered_map<uint64_t, detail::Prob, detail::Identity
 
 template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, const size_t count, const Vocabulary &vocab, Place &place) {
 	std::string line;
-	if (!getline(f, line)) throw base::FormatLoadException("Error reading \\ngram header");
-	if (line != std::string("\\") + boost::lexical_cast<std::string>(n) + "-grams:") throw base::FormatLoadException("Bad \\n-grams: header", line);
+	if (!getline(f, line)) throw FormatLoadException("Error reading \\ngram header");
+	if (line != std::string("\\") + boost::lexical_cast<std::string>(n) + "-grams:") throw FormatLoadException("Bad \\n-grams: header", line);
 
 	util::AnyCharacterDelimiter tab_delim("\t");
 	util::AnyCharacterDelimiter space_delim(" ");
@@ -136,23 +136,23 @@ template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, co
 	// vocab ids of words in reverse order
 	uint32_t vocab_ids[n];
 	for (size_t i = 0; i < count; ++i) {
-		if (!getline(f, line)) throw base::FormatLoadException("Reading ngram line");
+		if (!getline(f, line)) throw FormatLoadException("Reading ngram line");
 		util::PieceIterator tab_it(line, tab_delim);
-		if (!tab_it) throw base::FormatLoadException("Blank n-gram line", line);
+		if (!tab_it) throw FormatLoadException("Blank n-gram line", line);
 		float prob = boost::lexical_cast<float>(*tab_it);
 		
-		if (!++tab_it) throw base::FormatLoadException("Missing words", line);
+		if (!++tab_it) throw FormatLoadException("Missing words", line);
 		uint32_t *vocab_out = &vocab_ids[n-1];
 		for (util::PieceIterator space_it(*tab_it, space_delim); space_it; ++space_it, --vocab_out) {
-			if (vocab_out < vocab_ids) throw base::FormatLoadException("Too many words", line);
+			if (vocab_out < vocab_ids) throw FormatLoadException("Too many words", line);
 			*vocab_out = vocab.Index(*space_it);
 		}
-		if (vocab_out != vocab_ids) throw base::FormatLoadException("Too few words", line);
+		if (vocab_out != vocab_ids) throw FormatLoadException("Too few words", line);
     uint64_t key = ChainedWordHash(vocab_ids, vocab_ids + n);
 
 		if (++tab_it) {
 			float backoff = boost::lexical_cast<float>(*tab_it);
-		  if (++tab_it) throw base::FormatLoadException("Too many columns", line);
+		  if (++tab_it) throw FormatLoadException("Too many columns", line);
 			SetNGramEntry(place, key, prob, backoff);
 		} else {
 			SetNGramEntry(place, key, prob);
@@ -164,18 +164,18 @@ template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, co
 
 Model::Model(const char *arpa) {
 	std::fstream f(arpa, std::ios::in);
-	if (!f) throw base::OpenFileLoadException(arpa);
+	if (!f) throw OpenFileLoadException(arpa);
 	f.exceptions(std::fstream::failbit | std::fstream::badbit);
 
 	std::string line;
 	while (getline(f, line) && line != "\\data\\") {}
-	if (!f) throw base::FormatLoadException("Did not get data line");
+	if (!f) throw FormatLoadException("Did not get data line");
 	// counts[n-1] is number of n-grams.
 	std::vector<size_t> counts;
 	detail::ParseDataCounts(f, counts);
 
 	if (counts.size() < 2)
-		throw base::FormatLoadException("This ngram implementation assumes at least a bigram model.");
+		throw FormatLoadException("This ngram implementation assumes at least a bigram model.");
 
 	const float kLoadFactor = 1.0;
 	unigram_.resize(counts[0]);

@@ -50,6 +50,82 @@ class WordDuplicateVocabLoadException : public VocabLoadException {
                 std::string what_;
 };
 
+class OpenFileLoadException : public LoadException {
+	public:
+		OpenFileLoadException(const char *name) throw() : name_(name) {
+			what_ = "Error opening file ";
+			what_ += name;
+		}
+
+		~OpenFileLoadException() throw() {}
+
+		const char *what() const throw() { return what_.c_str(); }
+
+	private:
+		std::string name_;
+		std::string what_;
+};
+
+class ReadFileLoadException : public LoadException {
+	public:
+		ReadFileLoadException(const char *name) throw() : name_(name) {
+			what_ = "Error reading file ";
+			what_ += name;
+		}
+
+		~ReadFileLoadException() throw() {}
+
+		const char *what() const throw() { return what_.c_str(); }
+
+	private:
+		std::string name_;
+		std::string what_;
+};
+
+class FormatLoadException : public LoadException {
+	public:
+		FormatLoadException(const StringPiece &complaint, const StringPiece &context = StringPiece()) throw() {
+			complaint.CopyToString(&what_);
+			if (!context.empty()) {
+				what_ += " at ";
+				context.AppendToString(&what_);
+			}
+		}
+
+		~FormatLoadException() throw() {}
+
+		const char *what() const throw() { return what_.c_str(); }
+
+	private:
+		std::string what_;
+};
+
+class SpecialWordMissingException : public LoadException {
+	public:
+  	virtual ~SpecialWordMissingException() throw() {}
+
+	protected:
+		SpecialWordMissingException() throw() {}
+};
+
+class BeginSentenceMissingException : public SpecialWordMissingException {
+	public:
+		BeginSentenceMissingException() throw() {}
+
+		~BeginSentenceMissingException() throw() {}
+
+		const char *what() const throw() { return "Begin of sentence marker missing from vocabulary"; }
+};
+
+class EndSentenceMissingException : public SpecialWordMissingException {
+	public:
+		EndSentenceMissingException() throw() {}
+
+		~EndSentenceMissingException() throw() {}
+
+		const char *what() const throw() { return "End of sentence marker missing from vocabulary"; }
+};
+
 } // namespace lm
 
 #endif
