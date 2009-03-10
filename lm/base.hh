@@ -27,7 +27,7 @@ class Vocabulary {
 
 	protected:
 		// Delayed initialization of constant values.
-		Vocabulary() {}
+		Vocabulary() : available_(0) {}
 
 		void SetSpecial(WordIndex begin_sentence, WordIndex end_sentence, WordIndex not_found, WordIndex available) {
 			begin_sentence_ = begin_sentence;
