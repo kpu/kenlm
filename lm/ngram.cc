@@ -14,14 +14,9 @@ namespace lm {
 namespace ngram {
 namespace detail {
 
-// On 64-bit this unrolls to just a size_t hash.  On 32-bit, each 32-bit entry is combined separately.
+// All of the entropy is in low order bits and boost::hash does poorly with these.
 inline uint64_t CombineWordHash(uint64_t current, const uint32_t next) {
-	for (unsigned int i = 0; i < sizeof(uint64_t); i += sizeof(size_t)) {
-		size_t seed = static_cast<size_t>(current >> i);
-		boost::hash_combine(seed, next);
-		current ^= (static_cast<uint64_t>(seed) << i);
-	}
-	return current;
+	return (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(next) * 17894857484156487943ULL);
 }
 
 void ChainedWordHash(const uint32_t *word, const uint32_t *word_end, uint64_t *out) {
@@ -58,8 +53,13 @@ void ParseDataCounts(std::istream &f, std::vector<size_t> &counts) {
 		util::PieceIterator it(line, equals_delim);
 		if (!it || (*it != "ngram") || !(++it))
 			throw FormatLoadException("expected ngram length line", line);
-		if (boost::lexical_cast<unsigned int>(it) != order) 
-			throw FormatLoadException(std::string("expected order ") + boost::lexical_cast<std::string>(order), line);
+		if (boost::lexical_cast<unsigned int>(*it) != order) {
+			std::string message("expected order ");
+			message += boost::lexical_cast<std::string>(order);
+			message += " but received ";
+			it->AppendToString(&message);
+			throw FormatLoadException(message, line);
+		}
 		if (!(++it))
 			throw FormatLoadException("expected ngram count", line);
 		counts.push_back(boost::lexical_cast<size_t>(*it));
@@ -88,7 +88,7 @@ void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vec
 		f >> prob;
 		if (f.get() != '\t')
 			throw FormatLoadException("Expected tab after probability");
-	  std::getline(f, *unigram, '\t');
+		f >> *unigram;
 		if (!f) throw FormatLoadException("Actual unigram count less than reported");
 		ProbBackoff &ent = unigrams[VocabularyFriend::InsertUnique(vocab, unigram)];
 		ent.prob = prob;
@@ -103,32 +103,34 @@ void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vec
 		}
 		unigram.reset(new std::string);
 	}
-	getline(f, line);
-	if (!f || !line.empty()) throw FormatLoadException("Blank line after ngrams not empty or missing", line);
+	if (getline(f, line)) FormatLoadException("Blank line after ngrams missing");
+	if (!line.empty()) throw FormatLoadException("Blank line after ngrams not blank", line);
 	VocabularyFriend::FinishedLoading(vocab);
 }
 
 void SetNGramEntry(boost::unordered_map<uint64_t, detail::ProbBackoff, detail::IdentityHash> &place, uint64_t key, float prob, float backoff) {
 	if (__builtin_expect(!place.insert(std::make_pair(key, ProbBackoff(prob, backoff))).second, 0))
-		std::cerr << "Warning: hash collision." << std::endl;
+		std::cerr << "Warning: hash collision with " << key <<  std::endl;
 }
 
 void SetNGramEntry(boost::unordered_map<uint64_t, detail::ProbBackoff, detail::IdentityHash> &place, uint64_t key, float prob) {
 	if (__builtin_expect(!place.insert(std::make_pair(key, ProbBackoff(prob, 0.0))).second, 0))
-		std::cerr << "Warning: hash collision." << std::endl;
+		std::cerr << "Warning: hash collision with " << key << std::endl;
 }
 void SetNGramEntry(boost::unordered_map<uint64_t, detail::Prob, detail::IdentityHash> &place, uint64_t key, float prob, float backoff) {
 	throw FormatLoadException("highest order n-gram has a backoff listed");
 }
 void SetNGramEntry(boost::unordered_map<uint64_t, detail::Prob, detail::IdentityHash> &place, uint64_t key, float prob) {
 	if (__builtin_expect(!place.insert(std::make_pair(key, Prob(prob))).second, 0))
-		std::cerr << "Warning: hash collision." << std::endl;
+		std::cerr << "Warning: hash collision with " << key << std::endl;
 }
 
 template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, const size_t count, const Vocabulary &vocab, Place &place) {
 	std::string line;
 	if (!getline(f, line)) throw FormatLoadException("Error reading \\ngram header");
-	if (line != std::string("\\") + boost::lexical_cast<std::string>(n) + "-grams:") throw FormatLoadException("Bad \\n-grams: header", line);
+	std::string expected("\\");
+	expected += boost::lexical_cast<std::string>(n) += "-grams:";
+	if (line != expected) throw FormatLoadException(std::string("Expected header \"") + expected + "\"", line);
 
 	util::AnyCharacterDelimiter tab_delim("\t");
 	util::AnyCharacterDelimiter space_delim(" ");
@@ -147,8 +149,8 @@ template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, co
 			if (vocab_out < vocab_ids) throw FormatLoadException("Too many words", line);
 			*vocab_out = vocab.Index(*space_it);
 		}
-		if (vocab_out != vocab_ids) throw FormatLoadException("Too few words", line);
-    uint64_t key = ChainedWordHash(vocab_ids, vocab_ids + n);
+		if (vocab_out + 1 != vocab_ids) throw FormatLoadException("Too few words", line);
+		uint64_t key = ChainedWordHash(vocab_ids, vocab_ids + n);
 
 		if (++tab_it) {
 			float backoff = boost::lexical_cast<float>(*tab_it);
@@ -158,6 +160,8 @@ template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, co
 			SetNGramEntry(place, key, prob);
 		}
 	}
+	if (getline(f, line)) FormatLoadException("Blank line after ngrams missing");
+	if (!line.empty()) throw FormatLoadException("Blank line after ngrams not blank", line);
 }
 
 } // namespace detail
@@ -180,7 +184,7 @@ Model::Model(const char *arpa) {
 	const float kLoadFactor = 1.0;
 	unigram_.resize(counts[0]);
 	middle_vec_.resize(counts.size() - 2);
-	for (unsigned int n = 1; n <= counts.size(); ++n) {
+	for (unsigned int n = 2; n < counts.size(); ++n) {
 		middle_vec_[n-2].rehash(1 + static_cast<size_t>(static_cast<float>(counts[n-1]) / kLoadFactor));
 	}
 	longest_.rehash(1 + static_cast<size_t>(static_cast<float>(counts[counts.size() - 1]) / kLoadFactor));
@@ -189,7 +193,7 @@ Model::Model(const char *arpa) {
 	for (unsigned int n = 2; n < counts.size(); ++n) {
 		ReadNGrams(f, n, counts[n-1], vocab_, middle_vec_[n-2]);
 	}
-	ReadNGrams(f, counts.size() - 1, counts[counts.size() - 1], vocab_, longest_);
+	ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab_, longest_);
 }
 
 // Assumes order at least 2.
