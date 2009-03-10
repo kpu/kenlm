@@ -180,6 +180,7 @@ Model::Model(const char *arpa) {
 
 	if (counts.size() < 2)
 		throw FormatLoadException("This ngram implementation assumes at least a bigram model.");
+	order_ = counts.size();
 
 	const float kLoadFactor = 1.0;
 	unigram_.resize(counts[0]);

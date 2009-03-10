@@ -88,12 +88,12 @@ class Model : boost::noncopyable {
 			return State();
 		}
 
-    template <class ReverseHistoryIterator> LogDouble IncrementalScore(
-        const State &state,
-        const ReverseHistoryIterator &hist_begin,
-        const ReverseHistoryIterator &hist_end,
-        const WordIndex new_word,
-        unsigned int &ngram_length) const {
+		template <class ReverseHistoryIterator> LogDouble IncrementalScore(
+			        const State &state,
+				const ReverseHistoryIterator &hist_begin,
+			        const ReverseHistoryIterator &hist_end,
+		        	const WordIndex new_word,
+			        unsigned int &ngram_length) const {
 			uint32_t words[order_];
 			words[0] = new_word;
 			uint32_t *dest = &words[1];
@@ -111,7 +111,7 @@ class Model : boost::noncopyable {
 			return InternalIncrementalScore(words, ngram_length);
 		}
 
-  private: 
+	private: 
 		LogDouble InternalIncrementalScore(const uint32_t *words, unsigned int &ngram_length) const;
 
 		size_t order_;
