@@ -211,7 +211,7 @@ LogDouble Model::InternalIncrementalScore(const uint32_t *words, unsigned int &n
 		Longest::const_iterator found(longest_.find(*hash_ent));
 		if (found != longest_.end()) {
 			ngram_length = order_;
-			return LogDouble(AlreadyLogTag(), found->second.prob);
+			return LogDouble(AlreadyLogTag(), found->second.prob * M_LN10);
 		}
 	}
 	--hash_ent;
@@ -229,7 +229,7 @@ LogDouble Model::InternalIncrementalScore(const uint32_t *words, unsigned int &n
 		Middle::const_iterator found(mid->find(*hash_ent));
 		if (found != mid->end()) {
 			ngram_length = hash_ent - lookup_hashes + 2;
-			return LogDouble(AlreadyLogTag(), backoff + found->second.prob);
+			return LogDouble(AlreadyLogTag(), (backoff + found->second.prob) * M_LN10);
 		}
 	}
 
@@ -241,7 +241,7 @@ LogDouble Model::InternalIncrementalScore(const uint32_t *words, unsigned int &n
 		ngram_length = 1;
 	}
 	// Unigram.
-	return LogDouble(AlreadyLogTag(), backoff + unigram_[words[0]].prob);
+	return LogDouble(AlreadyLogTag(), (backoff + unigram_[words[0]].prob) * M_LN10);
 }
 
 } // namespace ngram
