@@ -7,6 +7,7 @@
 
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/noncopyable.hpp>
 
 #include <vector>
 #include <memory>
@@ -74,7 +75,7 @@ struct ProbBackoff : Prob {
 } // namespace detail
 
 // Slow implementation just to verify Jon's description of SRI.
-class Model {
+class Model : boost::noncopyable {
 	public:
 		struct State {};
 
@@ -87,7 +88,7 @@ class Model {
 		}
 
     template <class ReverseHistoryIterator> LogDouble IncrementalScore(
-        State &state,
+        const State &state,
         const ReverseHistoryIterator &hist_begin,
         const ReverseHistoryIterator &hist_end,
         const WordIndex new_word,
