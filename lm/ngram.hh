@@ -40,6 +40,11 @@ class Vocabulary : public base::Vocabulary {
 		// friend interface for populating.
 		friend struct detail::VocabularyFriend;
 
+		void Reserve(size_t to) {
+			strings_.reserve(to);
+			ids_.rehash(to + 1);
+		}
+
 		WordIndex InsertUnique(std::string *word) {
 			std::pair<boost::unordered_map<StringPiece, WordIndex>::const_iterator, bool> res(ids_.insert(std::make_pair(StringPiece(*word), available_)));
 			if (__builtin_expect(!res.second, 0)) {

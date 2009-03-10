@@ -70,6 +70,9 @@ void ParseDataCounts(std::istream &f, std::vector<size_t> &counts) {
 }
 
 struct VocabularyFriend {
+	static void Reserve(Vocabulary &vocab, size_t to) {
+		vocab.Reserve(to);
+	}
 	static WordIndex InsertUnique(Vocabulary &vocab, std::string *word) {
 		return vocab.InsertUnique(word);
 	}
@@ -79,6 +82,7 @@ struct VocabularyFriend {
 };
 
 void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vector<ProbBackoff> &unigrams) {
+	VocabularyFriend::Reserve(vocab, count);
 	std::string line;
 	while (getline(f, line) && line != "\\1-grams:") {}
 	if (!f) throw FormatLoadException("Did not get \\1-grams: line");
