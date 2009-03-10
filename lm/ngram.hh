@@ -88,7 +88,7 @@ class Model : boost::noncopyable {
 	public:
 		struct State {};
 
-		Model(const char *arpa);
+		explicit Model(const char *arpa, bool status = false);
 
 		const Vocabulary &GetVocabulary() const { return vocab_; }
 
@@ -97,11 +97,11 @@ class Model : boost::noncopyable {
 		}
 
 		template <class ReverseHistoryIterator> LogDouble IncrementalScore(
-			        const State &state,
+			  const State &state,
 				const ReverseHistoryIterator &hist_begin,
-			        const ReverseHistoryIterator &hist_end,
-		        	const WordIndex new_word,
-			        unsigned int &ngram_length) const {
+			  const ReverseHistoryIterator &hist_end,
+		    const WordIndex new_word,
+			  unsigned int &ngram_length) const {
 			uint32_t words[order_];
 			words[0] = new_word;
 			uint32_t *dest = &words[1];

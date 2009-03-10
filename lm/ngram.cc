@@ -171,7 +171,7 @@ template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, co
 
 } // namespace detail
 
-Model::Model(const char *arpa) {
+Model::Model(const char *arpa, bool print_status) {
 	std::fstream f(arpa, std::ios::in);
 	if (!f) throw OpenFileLoadException(arpa);
 	f.exceptions(std::fstream::failbit | std::fstream::badbit);
@@ -196,10 +196,13 @@ Model::Model(const char *arpa) {
 	longest_.rehash(1 + static_cast<size_t>(static_cast<float>(counts[counts.size() - 1]) / kLoadFactor));
 
 	Read1Grams(f, counts[0], vocab_, unigram_);
+	if (print_status) std::cerr << "Loaded unigrams" << std::endl;
 	for (unsigned int n = 2; n < counts.size(); ++n) {
 		ReadNGrams(f, n, counts[n-1], vocab_, middle_vec_[n-2]);
+		if (print_status) std::cerr << "Loaded " << n << "-grams" << std::endl;
 	}
 	ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab_, longest_);
+	if (print_status) std::cerr << "Loading complete" << std::endl;
 }
 
 // Assumes order at least 2.
