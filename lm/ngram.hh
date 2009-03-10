@@ -83,25 +83,43 @@ struct ProbBackoff : Prob {
 
 } // namespace detail
 
-// Slow implementation just to verify Jon's description of SRI.
+// Should return the same results as SRI
 class Model : boost::noncopyable {
+	private:
+		// If you need more than 5 change this and recompile.
+		// Having this limit means that State can be
+		// (kMaxOrder - 1) * sizeof(float) bytes instead of
+		// sizeof(float*) + (kMaxOrder - 1) * sizeof(float) + malloc overhead
+		static const std::size_t kMaxOrder = 5;
+
 	public:
-		struct State {};
+		class State {
+			public:
+				State() {}
+
+				unsigned int NGramLength() const { return ngram_length_; }
+
+			private:
+				friend class Model;
+				unsigned int ngram_length_;
+		};
 
 		explicit Model(const char *arpa, bool status = false);
 
 		const Vocabulary &GetVocabulary() const { return vocab_; }
 
 		State BeginSentenceState() const {
-			return State();
+			State ret;
+			ret.ngram_length_ = 1;
+			return ret;
 		}
 
 		template <class ReverseHistoryIterator> LogDouble IncrementalScore(
-			  const State &state,
-				const ReverseHistoryIterator &hist_begin,
+			  const State &in_state,
+			  const ReverseHistoryIterator &hist_begin,
 			  const ReverseHistoryIterator &hist_end,
-		    const WordIndex new_word,
-			  unsigned int &ngram_length) const {
+			  const WordIndex new_word,
+			  State &out_state) const {
 			uint32_t words[order_];
 			words[0] = new_word;
 			uint32_t *dest = &words[1];
@@ -116,11 +134,11 @@ class Model : boost::noncopyable {
 				*dest = *src;
 			}
 			// words is in reverse order.
-			return InternalIncrementalScore(words, ngram_length);
+			return InternalIncrementalScore(in_state, words, out_state);
 		}
 
 	private: 
-		LogDouble InternalIncrementalScore(const uint32_t *words, unsigned int &ngram_length) const;
+		LogDouble InternalIncrementalScore(const State &in_state, const uint32_t *words, State &out_state) const;
 
 		size_t order_;
 

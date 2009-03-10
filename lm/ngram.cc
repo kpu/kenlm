@@ -205,7 +205,8 @@ Model::Model(const char *arpa, bool print_status) {
 }
 
 // Assumes order at least 2.
-LogDouble Model::InternalIncrementalScore(const uint32_t *words, unsigned int &ngram_length) const {
+LogDouble Model::InternalIncrementalScore(const State &in_state, const uint32_t *words, State &out_state) const {
+	// TODO: don't try above in_state.ngram_length_
 	// loookup_hashes[n-2] is the hash for n-gram, appropriate for lookup in
 	// middle_vec_[n-2] if 2 <= n < order_
 	// longest_ if n == order_
@@ -216,7 +217,7 @@ LogDouble Model::InternalIncrementalScore(const uint32_t *words, unsigned int &n
 	{
 		Longest::const_iterator found(longest_.find(*hash_ent));
 		if (found != longest_.end()) {
-			ngram_length = order_;
+			out_state.ngram_length_ = order_;
 			return LogDouble(AlreadyLogTag(), found->second.prob * M_LN10);
 		}
 	}
@@ -234,7 +235,7 @@ LogDouble Model::InternalIncrementalScore(const uint32_t *words, unsigned int &n
 		backoff += FindBackoff(*mid, *backoff_ent);
 		Middle::const_iterator found(mid->find(*hash_ent));
 		if (found != mid->end()) {
-			ngram_length = hash_ent - lookup_hashes + 2;
+			out_state.ngram_length_ = hash_ent - lookup_hashes + 2;
 			return LogDouble(AlreadyLogTag(), (backoff + found->second.prob) * M_LN10);
 		}
 	}
@@ -242,9 +243,9 @@ LogDouble Model::InternalIncrementalScore(const uint32_t *words, unsigned int &n
 	backoff += unigram_[words[1]].backoff;
 
 	if (words[0] == vocab_.NotFound()) {
-		ngram_length = 0;
+		out_state.ngram_length_ = 0;
 	} else {
-		ngram_length = 1;
+		out_state.ngram_length_ = 1;
 	}
 	// Unigram.
 	return LogDouble(AlreadyLogTag(), (backoff + unigram_[words[0]].prob) * M_LN10);
