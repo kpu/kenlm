@@ -209,7 +209,7 @@ LogDouble Model::InternalIncrementalScore(const uint32_t *words, unsigned int &n
 	{
 		Longest::const_iterator found(longest_.find(*hash_ent));
 		if (found != longest_.end()) {
-			ngram_length = 5;
+			ngram_length = order_;
 			return LogDouble(AlreadyLogTag(), found->second.prob);
 		}
 	}
