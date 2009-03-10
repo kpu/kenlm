@@ -15,6 +15,7 @@ namespace ngram {
 namespace detail {
 
 // All of the entropy is in low order bits and boost::hash does poorly with these.
+// These numbers came from mashing on the keyboard and were chosen to be near 2^64.
 inline uint64_t CombineWordHash(uint64_t current, const uint32_t next) {
 	return (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(next) * 17894857484156487943ULL);
 }
@@ -135,30 +136,42 @@ template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, co
 	util::AnyCharacterDelimiter tab_delim("\t");
 	util::AnyCharacterDelimiter space_delim(" ");
 
+	std::cerr << "Fail?" << std::endl;
+
 	// vocab ids of words in reverse order
 	uint32_t vocab_ids[n];
 	for (size_t i = 0; i < count; ++i) {
+		std::cerr << "Reading " << i << " in " << n << std::endl;
 		if (!getline(f, line)) throw FormatLoadException("Reading ngram line");
+		std::cerr << line << std::endl;
 		util::PieceIterator tab_it(line, tab_delim);
 		if (!tab_it) throw FormatLoadException("Blank n-gram line", line);
 		float prob = boost::lexical_cast<float>(*tab_it);
 		
-		if (!++tab_it) throw FormatLoadException("Missing words", line);
+		if (!(++tab_it)) throw FormatLoadException("Missing words", line);
 		uint32_t *vocab_out = &vocab_ids[n-1];
 		for (util::PieceIterator space_it(*tab_it, space_delim); space_it; ++space_it, --vocab_out) {
 			if (vocab_out < vocab_ids) throw FormatLoadException("Too many words", line);
 			*vocab_out = vocab.Index(*space_it);
 		}
+		std::cerr << "Made it through word loop." << std::endl;
 		if (vocab_out + 1 != vocab_ids) throw FormatLoadException("Too few words", line);
 		uint64_t key = ChainedWordHash(vocab_ids, vocab_ids + n);
 
+		std::cerr << "Hashed." << std::endl;
+
 		if (++tab_it) {
+			std::cerr << "Reading backoff " << std::endl;
 			float backoff = boost::lexical_cast<float>(*tab_it);
-		  if (++tab_it) throw FormatLoadException("Too many columns", line);
+			std::cerr << *tab_it << " maps to " << backoff << std::endl;
+		        if (++tab_it) throw FormatLoadException("Too many columns", line);
+			std::cerr << "Post second increment" << std::endl;
 			SetNGramEntry(place, key, prob, backoff);
 		} else {
+			std::cerr << "Setting without backoff " << std::endl;
 			SetNGramEntry(place, key, prob);
 		}
+		std::cerr << "Back from SetNGramEntry" << std::endl;
 	}
 	if (getline(f, line)) FormatLoadException("Blank line after ngrams missing");
 	if (!line.empty()) throw FormatLoadException("Blank line after ngrams not blank", line);
@@ -182,6 +195,8 @@ Model::Model(const char *arpa) {
 		throw FormatLoadException("This ngram implementation assumes at least a bigram model.");
 	order_ = counts.size();
 
+	std::cerr << "Read counts. " << std::endl;
+
 	const float kLoadFactor = 1.0;
 	unigram_.resize(counts[0]);
 	middle_vec_.resize(counts.size() - 2);
@@ -189,12 +204,17 @@ Model::Model(const char *arpa) {
 		middle_vec_[n-2].rehash(1 + static_cast<size_t>(static_cast<float>(counts[n-1]) / kLoadFactor));
 	}
 	longest_.rehash(1 + static_cast<size_t>(static_cast<float>(counts[counts.size() - 1]) / kLoadFactor));
+	std::cerr << "Rehashed. " << std::endl;
 
 	Read1Grams(f, counts[0], vocab_, unigram_);
+	std::cerr << "Read unigrams. " << std::endl;
 	for (unsigned int n = 2; n < counts.size(); ++n) {
+		std::cerr << "Reading " << n << std::endl;
 		ReadNGrams(f, n, counts[n-1], vocab_, middle_vec_[n-2]);
 	}
+	std::cerr << "Read middle" << std::endl;
 	ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab_, longest_);
+	std::cerr << "Ready" << std::endl;
 }
 
 // Assumes order at least 2.
