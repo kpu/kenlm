@@ -70,7 +70,7 @@ void ParseDataCounts(std::istream &f, std::vector<size_t> &counts) {
 }
 
 struct VocabularyFriend {
-	static WordIndex InsertUnique(Vocabulary &vocab, std::auto_ptr<std::string> &word) {
+	static WordIndex InsertUnique(Vocabulary &vocab, std::string *word) {
 		return vocab.InsertUnique(word);
 	}
 	static void FinishedLoading(Vocabulary &vocab) {
@@ -91,7 +91,8 @@ void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vec
 			throw FormatLoadException("Expected tab after probability");
 		f >> *unigram;
 		if (!f) throw FormatLoadException("Actual unigram count less than reported");
-		ProbBackoff &ent = unigrams[VocabularyFriend::InsertUnique(vocab, unigram)];
+		ProbBackoff &ent = unigrams[VocabularyFriend::InsertUnique(vocab, unigram.release())];
+		unigram.reset(new std::string);
 		ent.prob = prob;
 		int delim = f.get();
 		if (!f) throw FormatLoadException("Missing line termination while reading unigrams");
@@ -102,7 +103,6 @@ void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vec
 			ent.backoff = 0.0;
 			throw FormatLoadException("Expected tab or newline after unigram");
 		}
-		unigram.reset(new std::string);
 	}
 	if (getline(f, line)) FormatLoadException("Blank line after ngrams missing");
 	if (!line.empty()) throw FormatLoadException("Blank line after ngrams not blank", line);
@@ -136,14 +136,10 @@ template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, co
 	util::AnyCharacterDelimiter tab_delim("\t");
 	util::AnyCharacterDelimiter space_delim(" ");
 
-	std::cerr << "Fail?" << std::endl;
-
 	// vocab ids of words in reverse order
 	uint32_t vocab_ids[n];
 	for (size_t i = 0; i < count; ++i) {
-		std::cerr << "Reading " << i << " in " << n << std::endl;
 		if (!getline(f, line)) throw FormatLoadException("Reading ngram line");
-		std::cerr << line << std::endl;
 		util::PieceIterator tab_it(line, tab_delim);
 		if (!tab_it) throw FormatLoadException("Blank n-gram line", line);
 		float prob = boost::lexical_cast<float>(*tab_it);
@@ -154,24 +150,16 @@ template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, co
 			if (vocab_out < vocab_ids) throw FormatLoadException("Too many words", line);
 			*vocab_out = vocab.Index(*space_it);
 		}
-		std::cerr << "Made it through word loop." << std::endl;
 		if (vocab_out + 1 != vocab_ids) throw FormatLoadException("Too few words", line);
 		uint64_t key = ChainedWordHash(vocab_ids, vocab_ids + n);
 
-		std::cerr << "Hashed." << std::endl;
-
 		if (++tab_it) {
-			std::cerr << "Reading backoff " << std::endl;
 			float backoff = boost::lexical_cast<float>(*tab_it);
-			std::cerr << *tab_it << " maps to " << backoff << std::endl;
-		        if (++tab_it) throw FormatLoadException("Too many columns", line);
-			std::cerr << "Post second increment" << std::endl;
+		  if (++tab_it) throw FormatLoadException("Too many columns", line);
 			SetNGramEntry(place, key, prob, backoff);
 		} else {
-			std::cerr << "Setting without backoff " << std::endl;
 			SetNGramEntry(place, key, prob);
 		}
-		std::cerr << "Back from SetNGramEntry" << std::endl;
 	}
 	if (getline(f, line)) FormatLoadException("Blank line after ngrams missing");
 	if (!line.empty()) throw FormatLoadException("Blank line after ngrams not blank", line);
@@ -195,8 +183,6 @@ Model::Model(const char *arpa) {
 		throw FormatLoadException("This ngram implementation assumes at least a bigram model.");
 	order_ = counts.size();
 
-	std::cerr << "Read counts. " << std::endl;
-
 	const float kLoadFactor = 1.0;
 	unigram_.resize(counts[0]);
 	middle_vec_.resize(counts.size() - 2);
@@ -204,17 +190,12 @@ Model::Model(const char *arpa) {
 		middle_vec_[n-2].rehash(1 + static_cast<size_t>(static_cast<float>(counts[n-1]) / kLoadFactor));
 	}
 	longest_.rehash(1 + static_cast<size_t>(static_cast<float>(counts[counts.size() - 1]) / kLoadFactor));
-	std::cerr << "Rehashed. " << std::endl;
 
 	Read1Grams(f, counts[0], vocab_, unigram_);
-	std::cerr << "Read unigrams. " << std::endl;
 	for (unsigned int n = 2; n < counts.size(); ++n) {
-		std::cerr << "Reading " << n << std::endl;
 		ReadNGrams(f, n, counts[n-1], vocab_, middle_vec_[n-2]);
 	}
-	std::cerr << "Read middle" << std::endl;
 	ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab_, longest_);
-	std::cerr << "Ready" << std::endl;
 }
 
 // Assumes order at least 2.
