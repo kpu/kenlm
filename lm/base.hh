@@ -2,6 +2,7 @@
 #define LM_BASE_HH__
 
 #include "lm/word_index.hh"
+#include "util/string_piece.hh"
 
 #include <exception>
 #include <string>
@@ -36,13 +37,36 @@ class OpenFileLoadException : public LoadException {
 
 class FormatLoadException : public LoadException {
 	public:
-		FormatLoadException(const char *complaint) throw() : what_(complaint) {}
+		FormatLoadException(const StringPiece &complaint, const StringPiece &context = StringPiece()) throw() {
+			complaint.CopyToString(&what_);
+			if (!context.empty()) {
+				what_ += " at ";
+				context.AppendToString(&what_);
+			}
+		}
 
 		~FormatLoadException() throw() {}
 
 		const char *what() const throw() { return what_.c_str(); }
 
 	private:
+		std::string what_;
+};
+
+class DuplicateWordLoadException : public LoadException {
+	public:
+		DuplicateWordLoadException(const StringPiece &word) throw() {
+			word.CopyToString(&word_);
+			what_ = "Duplicate word ";
+			what_ += word_;
+		}
+
+		~DuplicateWordLoadException() throw() {}
+
+		const char *what() throw() { return what_.c_str(); }
+
+	private:
+		std::string word_;
 		std::string what_;
 };
 
