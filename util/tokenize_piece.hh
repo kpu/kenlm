@@ -9,8 +9,7 @@
 
 /* Usage:
  *
- * AnyCharacterDelimiter delimit(" \r\n\t");
- * for (PieceIterator i(" foo \r\n bar ", delimit); i; ++i) {
+ * for (PieceIterator<' '> i(" foo \r\n bar ", delimit); i; ++i) {
  *   std::cout << *i << "\n";
  * }
  *
@@ -18,31 +17,14 @@
 
 namespace util {
 
-class AnyCharacterDelimiter {
-	public:
-		explicit AnyCharacterDelimiter(const StringPiece &delimit) {
-			for (StringPiece::iterator i = delimit.begin(); i != delimit.end(); ++i) {
-				delimit_[*i] = 1;
-			}
-		}
-
-		bool operator()(const unsigned char val) const {
-			return delimit_[val];
-		}
-
-	private:
-		std::bitset<256> delimit_;
-};
-
 // Tokenize a StringPiece using an iterator interface.  boost::tokenizer doesn't work with StringPiece.
-class PieceIterator : public boost::iterator_facade<PieceIterator, const StringPiece, boost::forward_traversal_tag> {
+template <char d> class PieceIterator : public boost::iterator_facade<PieceIterator<d>, const StringPiece, boost::forward_traversal_tag> {
 	public:
 		// Default construct is end, which is also accessed by kEndPieceIterator;
 		PieceIterator() {}
 
-		// delimiter must exist for life of iterator, sadly.
-		PieceIterator(const StringPiece &str, const AnyCharacterDelimiter &delimit)
-			  : after_(str), delimit_(&delimit) {
+		PieceIterator(const StringPiece &str)
+			  : after_(str) {
 			increment();
 		}
 
@@ -53,19 +35,23 @@ class PieceIterator : public boost::iterator_facade<PieceIterator, const StringP
 			return after_.data() != 0;
 		}
 
+		static PieceIterator<d> end() {
+			return PieceIterator<d>();
+		}
+
 	private:
 		friend class boost::iterator_core_access;
 
 		void increment() {
 			StringPiece::iterator start(after_.begin());
-			for (; start != after_.end() && (*delimit_)(*start); ++start) {}
+			for (; start != after_.end() && (d == *start); ++start) {}
 			if (start == after_.end()) {
 				// End condition.
 				after_.clear();
 				return;
 			}
 			StringPiece::iterator finish(start);
-			for (; finish != after_.end() && !(*delimit_)(*finish); ++finish) {}
+			for (; finish != after_.end() && (d != *finish); ++finish) {}
 			current_.set(start, finish - start);
 			after_.set(finish, after_.end() - finish);
 		}
@@ -78,11 +64,7 @@ class PieceIterator : public boost::iterator_facade<PieceIterator, const StringP
 
 		StringPiece current_;
 		StringPiece after_;
-		const AnyCharacterDelimiter *delimit_;
 };
-
-// StringPiece is simple enough that this can be static.
-extern const PieceIterator kEndPieceIterator;
 
 } // namespace util
 

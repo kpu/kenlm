@@ -48,24 +48,26 @@ inline float FindBackoff(const boost::unordered_map<uint64_t, ProbBackoff, Ident
 }
 
 void ParseDataCounts(std::istream &f, std::vector<size_t> &counts) {
-	util::AnyCharacterDelimiter equals_delim(" =");
 	std::string line;
 	for (unsigned int order = 1; getline(f, line) && !line.empty(); ++order) {
-		util::PieceIterator it(line, equals_delim);
-		if (!it || (*it != "ngram") || !(++it))
+		util::PieceIterator<' '> space_it(line);
+		if (!space_it || (*space_it != "ngram") || !(++space_it))
 			throw FormatLoadException("expected ngram length line", line);
-		if (boost::lexical_cast<unsigned int>(*it) != order) {
+		util::PieceIterator<'='> equal_it(*space_it);
+		if (++space_it)
+			throw FormatLoadException("too many tokens in ngram count line", line);
+		if (boost::lexical_cast<unsigned int>(*equal_it) != order) {
 			std::string message("expected order ");
 			message += boost::lexical_cast<std::string>(order);
 			message += " but received ";
-			it->AppendToString(&message);
+			equal_it->AppendToString(&message);
 			throw FormatLoadException(message, line);
 		}
-		if (!(++it))
+		if (!(++equal_it))
 			throw FormatLoadException("expected ngram count", line);
-		counts.push_back(boost::lexical_cast<size_t>(*it));
-		if (++it)
-			throw FormatLoadException("too many tokens in ngram count line", line);
+		counts.push_back(boost::lexical_cast<size_t>(*equal_it));
+		if (++equal_it)
+			throw FormatLoadException("too many equals", line);
 	}
 }
 
@@ -137,20 +139,17 @@ template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, co
 	expected += boost::lexical_cast<std::string>(n) += "-grams:";
 	if (line != expected) throw FormatLoadException(std::string("Expected header \"") + expected + "\"", line);
 
-	util::AnyCharacterDelimiter tab_delim("\t");
-	util::AnyCharacterDelimiter space_delim(" ");
-
 	// vocab ids of words in reverse order
 	uint32_t vocab_ids[n];
 	for (size_t i = 0; i < count; ++i) {
 		if (!getline(f, line)) throw FormatLoadException("Reading ngram line");
-		util::PieceIterator tab_it(line, tab_delim);
+		util::PieceIterator<'\t'> tab_it(line);
 		if (!tab_it) throw FormatLoadException("Blank n-gram line", line);
 		float prob = boost::lexical_cast<float>(*tab_it);
 		
 		if (!(++tab_it)) throw FormatLoadException("Missing words", line);
 		uint32_t *vocab_out = &vocab_ids[n-1];
-		for (util::PieceIterator space_it(*tab_it, space_delim); space_it; ++space_it, --vocab_out) {
+		for (util::PieceIterator<' '> space_it(*tab_it); space_it; ++space_it, --vocab_out) {
 			if (vocab_out < vocab_ids) throw FormatLoadException("Too many words", line);
 			*vocab_out = vocab.Index(*space_it);
 		}
