@@ -64,7 +64,8 @@ BOOST_AUTO_TEST_CASE(starters) {
 				index, \
 				out).Log10(), 0.001); \
 	BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), out.NGramLength()); \
-	history.push_back(index);
+	history.push_back(index); \
+	state = out;
 
 BOOST_AUTO_TEST_CASE(continuation) {
 	Model::State state(model.BeginSentenceState());

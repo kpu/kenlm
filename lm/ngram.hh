@@ -5,10 +5,12 @@
 #include "util/numbers.hh"
 #include "util/string_piece.hh"
 
+#include <boost/array.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/noncopyable.hpp>
 
+#include <algorithm>
 #include <vector>
 #include <memory>
 
@@ -73,7 +75,7 @@ struct IdentityHash : public std::unary_function<uint64_t, size_t> {
 struct Prob {
 	Prob(float in_prob) : prob(in_prob) {}
 	Prob() {}
-  float prob;
+	float prob;
 };
 struct ProbBackoff : Prob {
 	ProbBackoff(float in_prob, float in_backoff) : Prob(in_prob), backoff(in_backoff) {}
@@ -101,6 +103,9 @@ class Model : boost::noncopyable {
 
 			private:
 				friend class Model;
+				// The first min(ngram_length_, Model::order_ - 1) entries are valid backoff weights.
+				// 0 is the backoff for unigrams.
+				boost::array<float, kMaxOrder - 1> backoff_;
 				unsigned int ngram_length_;
 		};
 
@@ -110,6 +115,7 @@ class Model : boost::noncopyable {
 
 		State BeginSentenceState() const {
 			State ret;
+			ret.backoff_[0] = begin_sentence_backoff_;
 			ret.ngram_length_ = 1;
 			return ret;
 		}
@@ -120,13 +126,15 @@ class Model : boost::noncopyable {
 			  const ReverseHistoryIterator &hist_end,
 			  const WordIndex new_word,
 			  State &out_state) const {
-			uint32_t words[order_];
+			const unsigned int words_len = std::min<unsigned int>(in_state.NGramLength() + 1, order_);
+			uint32_t words[words_len];
+			uint32_t *const words_end = words + words_len;
 			words[0] = new_word;
-			uint32_t *dest = &words[1];
+			uint32_t *dest = words + 1;
 			ReverseHistoryIterator src(hist_begin);
-			for (; dest < words + order_; ++dest, ++src) {
+			for (; dest != words_end; ++dest, ++src) {
 				if (src == hist_end) {
-					for (; dest < words + order_; ++dest) {
+					for (; dest != words_end; ++dest) {
 						*dest = vocab_.BeginSentence();
 					}
 					break;
@@ -134,22 +142,31 @@ class Model : boost::noncopyable {
 				*dest = *src;
 			}
 			// words is in reverse order.
-			return InternalIncrementalScore(in_state, words, out_state);
+			return LogDouble(AlreadyLogTag(), M_LN10 * InternalIncrementalScore(in_state, words, words_end, out_state));
 		}
 
 	private: 
-		LogDouble InternalIncrementalScore(const State &in_state, const uint32_t *words, State &out_state) const;
+		float InternalIncrementalScore(
+				const State &in_state,
+				const uint32_t *const words,
+				const uint32_t *const words_end,
+				State &out_state) const;
 
 		size_t order_;
 
 		Vocabulary vocab_;
 
-		typedef boost::unordered_map<uint64_t, detail::Prob, detail::IdentityHash> Longest;
-		Longest longest_;
-		typedef boost::unordered_map<uint64_t, detail::ProbBackoff, detail::IdentityHash> Middle;
-		std::vector<Middle> middle_vec_; 
+		// Cached unigram_[vocab_.BeginSentence()].backoff
+		float begin_sentence_backoff_;
+
 		typedef std::vector<detail::ProbBackoff> Unigram;
 		Unigram unigram_;
+		
+		typedef boost::unordered_map<uint64_t, detail::ProbBackoff, detail::IdentityHash> Middle;
+		std::vector<Middle> middle_vec_; 
+		
+		typedef boost::unordered_map<uint64_t, detail::Prob, detail::IdentityHash> Longest;
+		Longest longest_;
 };
 
 } // namespace ngram

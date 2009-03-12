@@ -8,6 +8,8 @@
 #include <fstream>
 #include <string>
 
+#include <cmath>
+
 #include <stdlib.h>
 
 namespace lm {
@@ -184,6 +186,8 @@ Model::Model(const char *arpa, bool print_status) {
 
 	if (counts.size() < 2)
 		throw FormatLoadException("This ngram implementation assumes at least a bigram model.");
+	if (counts.size() > kMaxOrder)
+		throw FormatLoadException(std::string("Edit ngram.hh and change kMaxOrder to at least ") + boost::lexical_cast<std::string>(counts.size()));
 	order_ = counts.size();
 
 	const float kLoadFactor = 1.0;
@@ -195,7 +199,11 @@ Model::Model(const char *arpa, bool print_status) {
 	longest_.rehash(1 + static_cast<size_t>(static_cast<float>(counts[counts.size() - 1]) / kLoadFactor));
 
 	Read1Grams(f, counts[0], vocab_, unigram_);
+	if (std::fabs(unigram_[vocab_.NotFound()].backoff) > 0.0000001)
+		throw FormatLoadException("Backoff for unknown word is not zero.");
+	begin_sentence_backoff_ = unigram_[vocab_.BeginSentence()].backoff;
 	if (print_status) std::cerr << "Loaded unigrams" << std::endl;
+	
 	for (unsigned int n = 2; n < counts.size(); ++n) {
 		ReadNGrams(f, n, counts[n-1], vocab_, middle_vec_[n-2]);
 		if (print_status) std::cerr << "Loaded " << n << "-grams" << std::endl;
@@ -204,51 +212,92 @@ Model::Model(const char *arpa, bool print_status) {
 	if (print_status) std::cerr << "Loading complete" << std::endl;
 }
 
-// Assumes order at least 2.
-LogDouble Model::InternalIncrementalScore(const State &in_state, const uint32_t *words, State &out_state) const {
-	// TODO: don't try above in_state.ngram_length_
-	// loookup_hashes[n-2] is the hash for n-gram, appropriate for lookup in
-	// middle_vec_[n-2] if 2 <= n < order_
-	// longest_ if n == order_
-	uint64_t lookup_hashes[order_ - 1];
-	detail::ChainedWordHash(words, words + order_, lookup_hashes);
+namespace {
 
-	const uint64_t *hash_ent = &lookup_hashes[order_ - 2];
-	{
-		Longest::const_iterator found(longest_.find(*hash_ent));
-		if (found != longest_.end()) {
-			out_state.ngram_length_ = order_;
-			return LogDouble(AlreadyLogTag(), found->second.prob * M_LN10);
-		}
+float SumBackoffs(const float *begin, const float *end) {
+	float ret = 0.0;
+	for (; begin != end; ++begin) {
+		ret += *begin;
 	}
-	--hash_ent;
+	return ret;
+}
 
-	// backoff_hashes[n-2] is the hash of the n-gram at the end of history.  Use in
-	// middle_vec_[n-2] if 2 <= n < order_.
-	uint64_t backoff_hashes[order_ - 2];
-	detail::ChainedWordHash(words + 1, words + order_, backoff_hashes);
+} // namespace
 
-	// Start at the end of backoff_hashes.  This should be safe since it's not derefenced until inside the loop.
-	const uint64_t *backoff_ent = backoff_hashes + order_ - 3;
-	float backoff = 0.0;
-	for (std::vector<Middle>::const_reverse_iterator mid(middle_vec_.rbegin()); mid != middle_vec_.rend(); ++mid, --hash_ent, --backoff_ent) {
-		backoff += FindBackoff(*mid, *backoff_ent);
-		Middle::const_iterator found(mid->find(*hash_ent));
-		if (found != mid->end()) {
-			out_state.ngram_length_ = hash_ent - lookup_hashes + 2;
-			return LogDouble(AlreadyLogTag(), (backoff + found->second.prob) * M_LN10);
-		}
-	}
+/* Ugly optimized function.
+ * in_state contains the previous ngram's length and backoff probabilites to
+ * be used here.  out_state is populated with the found ngram length and
+ * backoffs that the next call will find useful.  
+ *
+ * The search goes in increasing order of ngram length.  
+ */
+float Model::InternalIncrementalScore(
+		const State &in_state,
+		const uint32_t *const words_begin,
+		const uint32_t *const words_end,
+		State &out_state) const {
+	assert(words_end > words_begin);
 
-	backoff += unigram_[words[1]].backoff;
-
-	if (words[0] == vocab_.NotFound()) {
+	// This is end pointer passed to SumBackoffs.
+	const detail::ProbBackoff &unigram = unigram_[*words_begin];
+	if (*words_begin == vocab_.NotFound()) {
 		out_state.ngram_length_ = 0;
-	} else {
-		out_state.ngram_length_ = 1;
+		// all of backoff.
+		return unigram.prob + SumBackoffs(
+				in_state.backoff_.data(),
+				in_state.backoff_.data() + std::min<unsigned int>(in_state.NGramLength(), order_ - 1));
 	}
-	// Unigram.
-	return LogDouble(AlreadyLogTag(), (backoff + unigram_[words[0]].prob) * M_LN10);
+	boost::array<float, kMaxOrder - 1>::iterator backoff_out(out_state.backoff_.begin());
+	*backoff_out = unigram.backoff;
+	if (in_state.NGramLength() == 0) {
+		out_state.ngram_length_ = 1;
+		// No backoff because NGramLength() == 0 and unknown can't have backoff.
+		return unigram.prob;
+	}
+	++backoff_out;
+
+	// Ok now we now that the bigram contains known words.  Start by looking it up.
+	
+	float prob = unigram.prob;
+	uint64_t lookup_hash = static_cast<uint64_t>(*words_begin);
+	const uint32_t *words_iter = words_begin + 1;
+	std::vector<Middle>::const_iterator mid_iter(middle_vec_.begin());
+	for (; ; ++mid_iter, ++words_iter, ++backoff_out) {
+		if (words_iter == words_end) {
+			// ran out of words, so there shouldn't be backoff.
+			out_state.ngram_length_ = (words_iter - words_begin);
+			return prob;
+		}
+		lookup_hash = detail::CombineWordHash(lookup_hash, *words_iter);
+		if (mid_iter == middle_vec_.end()) break;
+		Middle::const_iterator found(mid_iter->find(lookup_hash));
+		if (found == mid_iter->end()) {
+			// Found an ngram of length words_iter - words_begin, but not of length words_iter - words_begin + 1.
+			// Sum up backoffs for histories of length
+			//   [words_iter - words_begin, std::min(in_state.NGramLength(), order_ - 1)).
+			// These correspond to
+			//   &in_state.backoff_[words_iter - words_begin - 1] to ending_backoff
+			// which is the same as
+			//   &in_state.backoff_[(mid_iter - middle_vec_.begin())] to ending_backoff.
+			out_state.ngram_length_ = (words_iter - words_begin);
+			return prob + SumBackoffs(
+					in_state.backoff_.data() + (mid_iter - middle_vec_.begin()), 
+					in_state.backoff_.data() + std::min<unsigned int>(in_state.NGramLength(), order_ - 1));
+		}
+		*backoff_out = found->second.backoff;
+		prob = found->second.prob;
+	}
+	
+	// A (order_-1)-gram was found.  Look for order_-gram.
+	Longest::const_iterator found(longest_.find(lookup_hash));
+	if (found == longest_.end()) {
+		// It's an (order_-1)-gram
+		out_state.ngram_length_ = order_ - 1;
+		return prob + in_state.backoff_[order_ - 1 - 1];
+	}
+	// It's an order_-gram
+	out_state.ngram_length_ = order_;
+	return found->second.prob;	
 }
 
 } // namespace ngram
