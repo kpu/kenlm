@@ -169,6 +169,20 @@ class Model : boost::noncopyable {
 		Longest longest_;
 };
 
+// This just owns Model, which in turn owns Vocabulary.  Only reason this class
+// exists is to provide the same interface as the other models.
+class Owner : boost::noncopyable {
+	public:
+		explicit Owner(const char *file_name) : model_(file_name) {}
+
+		const Vocabulary &GetVocabulary() const { return model_.GetVocabulary(); }
+
+		const Model &GetModel() const { return model_; }
+
+	private:
+		const Model model_;
+};
+
 } // namespace ngram
 } // namespace lm
 
