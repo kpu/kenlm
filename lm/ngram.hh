@@ -104,7 +104,7 @@ class Model : boost::noncopyable {
 			private:
 				friend class Model;
 				// The first min(ngram_length_, Model::order_ - 1) entries are valid backoff weights.
-				// 0 is the backoff for unigrams.
+				// backoff_[0] is the backoff for unigrams.
 				boost::array<float, kMaxOrder - 1> backoff_;
 				unsigned int ngram_length_;
 		};
