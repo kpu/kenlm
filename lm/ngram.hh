@@ -142,7 +142,7 @@ class Model : boost::noncopyable {
 				*dest = *src;
 			}
 			// words is in reverse order.
-			return LogDouble(AlreadyLogTag(), M_LN10 * InternalIncrementalScore(in_state, words, words_end, out_state));
+			return LogDouble(AlreadyLogTag(), InternalIncrementalScore(in_state, words, words_end, out_state));
 		}
 
 	private: 

@@ -40,15 +40,6 @@ uint64_t ChainedWordHash(const uint32_t *word, const uint32_t *word_end) {
 	return current;
 }
 
-inline float FindBackoff(const boost::unordered_map<uint64_t, ProbBackoff, IdentityHash> &in, uint64_t key) {
-	boost::unordered_map<uint64_t, ProbBackoff, IdentityHash>::const_iterator i = in.find(key);
-	if (i == in.end()) {
-		return 0.0;
-	} else {
-		return i->second.backoff;
-	}
-}
-
 void ParseDataCounts(std::istream &f, std::vector<size_t> &counts) {
 	std::string line;
 	for (unsigned int order = 1; getline(f, line) && !line.empty(); ++order) {
@@ -101,11 +92,12 @@ void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vec
 		if (!f) throw FormatLoadException("Actual unigram count less than reported");
 		ProbBackoff &ent = unigrams[VocabularyFriend::InsertUnique(vocab, unigram.release())];
 		unigram.reset(new std::string);
-		ent.prob = prob;
+		ent.prob = prob * M_LN10;
 		int delim = f.get();
 		if (!f) throw FormatLoadException("Missing line termination while reading unigrams");
 		if (delim == '\t') {
 			if (!(f >> ent.backoff)) throw FormatLoadException("Failed to read backoff");
+			ent.backoff *= M_LN10;
 			if ((f.get() != '\n') || !f) throw FormatLoadException("Expected newline after backoff");
 		} else if (delim != '\n') {
 			ent.backoff = 0.0;
@@ -161,9 +153,9 @@ template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, co
 		if (++tab_it) {
 			float backoff = boost::lexical_cast<float>(*tab_it);
 		  if (++tab_it) throw FormatLoadException("Too many columns", line);
-			SetNGramEntry(place, key, prob, backoff);
+			SetNGramEntry(place, key, prob * M_LN10, backoff * M_LN10);
 		} else {
-			SetNGramEntry(place, key, prob);
+			SetNGramEntry(place, key, prob * M_LN10);
 		}
 	}
 	if (getline(f, line)) FormatLoadException("Blank line after ngrams missing");
