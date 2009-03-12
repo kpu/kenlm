@@ -5,12 +5,14 @@
 #include "lm/word_index.hh"
 #include "util/string_piece.hh"
 
+#include <boost/noncopyable.hpp>
+
 #include <string>
 
 namespace lm {
 namespace base {
 
-class Vocabulary {
+class Vocabulary : boost::noncopyable {
 	public:
 		virtual ~Vocabulary() {}
 
