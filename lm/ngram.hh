@@ -99,14 +99,53 @@ class Model : boost::noncopyable {
 			public:
 				State() {}
 
+				// Faster copying using only the valid entries.
+			  State(const State &other) : ngram_length_(other.ngram_length_) {
+					CopyValid(other);
+				}
+
+				State &operator=(const State &other) {
+					ngram_length_ = other.ngram_length_;
+					CopyValid(other);
+					return *this;
+				}
+
+				bool operator==(const State &other) const {
+					if (ngram_length_ != other.ngram_length_) return false;
+					for (const float *first = backoff_.data(), *second = other.backoff_.data();
+							first != backoff_.data() + ValidLength(); ++first, ++second) {
+						// No arithmetic was performed on these values, so an exact comparison is justified.
+						if (*first != *second) return false;
+					}
+					return true;
+				}
+
 				unsigned int NGramLength() const { return ngram_length_; }
 
 			private:
 				friend class Model;
+				friend size_t hash_value(const State &state);
+
+				size_t ValidLength() const {
+				  return std::min<unsigned int>(ngram_length_, kMaxOrder - 1);
+				}
+
+				void CopyValid(const State &other) {
+					const float *from;
+					float *to;
+					for (from = other.backoff_.data(), to = backoff_.data();
+							to != backoff_.data() + ValidLength(); ++from, ++to) {
+						*to = *from;
+					}
+				}
+
+				unsigned int ngram_length_;
+
 				// The first min(ngram_length_, Model::order_ - 1) entries are valid backoff weights.
 				// backoff_[0] is the backoff for unigrams.
+				// The first min(ngram_length_, kMaxOrder - 1) entries must be copied and
+				// may be used for hashing or equality.   
 				boost::array<float, kMaxOrder - 1> backoff_;
-				unsigned int ngram_length_;
 		};
 
 		explicit Model(const char *arpa, bool status = false);
@@ -145,6 +184,8 @@ class Model : boost::noncopyable {
 			return LogDouble(AlreadyLogTag(), InternalIncrementalScore(in_state, words, words_end, out_state));
 		}
 
+		size_t Order() const { return order_; }
+
 	private: 
 		float InternalIncrementalScore(
 				const State &in_state,
@@ -168,6 +209,15 @@ class Model : boost::noncopyable {
 		typedef boost::unordered_map<uint64_t, detail::Prob, detail::IdentityHash> Longest;
 		Longest longest_;
 };
+
+size_t hash_value(const Model::State &state) {
+	size_t ret = 0;
+	boost::hash_combine(ret, state.ngram_length_);
+	for (const float *val = state.backoff_.data(); val != state.backoff_.data() + state.ValidLength(); ++val) {
+		boost::hash_combine(ret, *val);
+	}
+	return ret;
+}
 
 // This just owns Model, which in turn owns Vocabulary.  Only reason this class
 // exists is to provide the same interface as the other models.

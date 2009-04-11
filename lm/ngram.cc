@@ -289,6 +289,13 @@ float Model::InternalIncrementalScore(
 	}
 	// It's an order_-gram
 	out_state.ngram_length_ = order_;
+	if (order_ < kMaxOrder) {
+		// In this case, State hashing and equality will check ngram_length_ entries.
+		// However, the last entry is not a valid backoff weight, so here it is set
+		// to 0.0.  Specifically
+		// order_ - 1 = min(out_state.ngram_length_, order_ - 1) = min(out_state.ngram_length_, kMaxOrder - 1) - 1 = out_state.ngram_length_ - 1
+		out_state.backoff_[order_ - 1] = 0.0;
+	}
 	return found->second.prob;	
 }
 
