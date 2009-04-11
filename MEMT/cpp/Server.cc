@@ -300,13 +300,15 @@ template <class LanguageModel> void HandleMatched(std::iostream &stream, const L
 	stream >> sent_id;
 	input::Input text;
 	input::InputFactory factory;
-	DecoderImpl<HypothesisCollection<DetailedScorer<LanguageModel> > > decoder;
-	NullBeamDumper dumper;
-	output::StreamOracle oracle(stream, true);
-	std::vector<CompletedHypothesis> nbest;
 	if (!factory.Make(config.text, stream, model.GetVocabulary(), text)) throw FactoryException();
+
+	std::vector<CompletedHypothesis> nbest;
+	NullBeamDumper dumper;
+	DecoderImpl<HypothesisCollection<DetailedScorer<LanguageModel> > > decoder;
 	decoder.Run(config.decoder, model, text, dumper, nbest);
+
 	stream << "nbest" << '\n';
+	output::StreamOracle oracle(stream, true);
 	oracle.Write(nbest, text, sent_id);
 }
 
