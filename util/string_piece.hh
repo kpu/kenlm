@@ -45,6 +45,7 @@
 
 #include <algorithm>
 #include <iosfwd>
+#include <cstring>
 #include <string>
 
 class StringPiece {
@@ -61,7 +62,7 @@ class StringPiece {
   // expected.
   StringPiece() : ptr_(NULL), length_(0) { }
   StringPiece(const char* str)
-    : ptr_(str), length_((str == NULL) ? 0 : strlen(str)) { }
+    : ptr_(str), length_((str == NULL) ? 0 : std::strlen(str)) { }
   StringPiece(const std::string& str)
     : ptr_(str.data()), length_(str.size()) { }
   StringPiece(const char* offset, size_type len)
@@ -80,7 +81,7 @@ class StringPiece {
   void set(const char* data, size_type len) { ptr_ = data; length_ = len; }
   void set(const char* str) {
     ptr_ = str;
-    length_ = str ? strlen(str) : 0;
+    length_ = str ? std::strlen(str) : 0;
   }
   void set(const void* data, size_type len) {
     ptr_ = reinterpret_cast<const char*>(data);
@@ -173,7 +174,7 @@ class StringPiece {
   StringPiece substr(size_type pos, size_type n = npos) const;
 
   static int wordmemcmp(const char* p, const char* p2, size_type N) {
-    return memcmp(p, p2, N);
+    return std::memcmp(p, p2, N);
   }
 };
 
