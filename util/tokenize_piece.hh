@@ -9,7 +9,7 @@
 
 /* Usage:
  *
- * for (PieceIterator<' '> i(" foo \r\n bar ", delimit); i; ++i) {
+ * for (PieceIterator<' '> i(" foo \r\n bar "); i; ++i) {
  *   std::cout << *i << "\n";
  * }
  *
@@ -23,7 +23,7 @@ template <char d> class PieceIterator : public boost::iterator_facade<PieceItera
 		// Default construct is end, which is also accessed by kEndPieceIterator;
 		PieceIterator() {}
 
-		PieceIterator(const StringPiece &str)
+		explicit PieceIterator(const StringPiece &str)
 			  : after_(str) {
 			increment();
 		}
