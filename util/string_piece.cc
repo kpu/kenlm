@@ -30,10 +30,12 @@
 
 #include "util/string_piece.hh"
 
+#include <boost/functional/hash/hash.hpp>
+
 #include <algorithm>
 #include <iostream>
 
-#include <boost/functional/hash/hash.hpp>
+#include <limits.h>
 
 typedef StringPiece::size_type size_type;
 
