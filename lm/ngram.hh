@@ -210,7 +210,7 @@ class Model : boost::noncopyable {
 		Longest longest_;
 };
 
-size_t hash_value(const Model::State &state) {
+inline size_t hash_value(const Model::State &state) {
 	size_t ret = 0;
 	boost::hash_combine(ret, state.ngram_length_);
 	for (const float *val = state.backoff_.data(); val != state.backoff_.data() + state.ValidLength(); ++val) {
