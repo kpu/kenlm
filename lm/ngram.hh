@@ -223,7 +223,7 @@ inline size_t hash_value(const Model::State &state) {
 // exists is to provide the same interface as the other models.
 class Owner : boost::noncopyable {
 	public:
-		explicit Owner(const char *file_name) : model_(file_name) {}
+		explicit Owner(const char *file_name, bool status = false) : model_(file_name, status) {}
 
 		const Vocabulary &GetVocabulary() const { return model_.GetVocabulary(); }
 

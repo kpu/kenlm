@@ -17,9 +17,11 @@ namespace ngram {
 namespace detail {
 
 // All of the entropy is in low order bits and boost::hash does poorly with these.
-// These numbers came from mashing on the keyboard and were chosen to be near 2^64.
+// Odd numbers near 2^64 chosen by mashing on the keyboard.  
 inline uint64_t CombineWordHash(uint64_t current, const uint32_t next) {
-	return (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(next) * 17894857484156487943ULL);
+	uint64_t ret = (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(next) * 17894857484156487943ULL);
+	// Avoid 0 so the probing hash table has an illegal value.
+	return ret ? ret : 4178184149198184171ULL;
 }
 
 void ChainedWordHash(const uint32_t *word, const uint32_t *word_end, uint64_t *out) {
