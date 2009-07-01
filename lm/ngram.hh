@@ -34,6 +34,10 @@ class Vocabulary : public base::Vocabulary {
 			return (__builtin_expect(i == ids_.end(), 0)) ? not_found_ : i->second;
 		}
 
+    bool Known(const StringPiece &str) const {
+      return ids_.find(str) != ids_.end();
+    }
+
 		const char *Word(WordIndex index) const {
 			return strings_[index].c_str();
 		}
@@ -58,6 +62,10 @@ class Vocabulary : public base::Vocabulary {
 		}
 
 		void FinishedLoading() {
+      if (ids_.find(StringPiece("<s>")) == ids_.end()) throw BeginSentenceMissingException();
+      if (ids_.find(StringPiece("</s>")) == ids_.end()) throw EndSentenceMissingException();
+      // This is the responsibily of Read1Gram.
+      assert(ids_.find(StringPiece("<unk>")) != ids_.end());
 			SetSpecial(Index(StringPiece("<s>")), Index(StringPiece("</s>")), Index(StringPiece("<unk>")), available_);
 		}
 

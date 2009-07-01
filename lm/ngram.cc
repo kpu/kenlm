@@ -79,7 +79,8 @@ struct VocabularyFriend {
 };
 
 void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vector<ProbBackoff> &unigrams) {
-	VocabularyFriend::Reserve(vocab, count);
+  // +1 in case OOV is not found.
+	VocabularyFriend::Reserve(vocab, count + 1);
 	std::string line;
 	while (getline(f, line) && line != "\\1-grams:") {}
 	if (!f) throw FormatLoadException("Did not get \\1-grams: line");
@@ -108,6 +109,14 @@ void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vec
 	}
 	if (getline(f, line)) FormatLoadException("Blank line after ngrams missing");
 	if (!line.empty()) throw FormatLoadException("Blank line after ngrams not blank", line);
+  if (!vocab.Known("<unk>")) {
+    unigram->assign("<unk>");
+    WordIndex oov = VocabularyFriend::InsertUnique(vocab, unigram.release());
+    unigrams.resize(oov + 1);
+    ProbBackoff &ent = unigrams[oov];
+    ent.prob = -std::numeric_limits<typeof(ent.prob)>::infinity();
+    ent.backoff = 0.0;
+  }
 	VocabularyFriend::FinishedLoading(vocab);
 }
 
@@ -185,6 +194,8 @@ Model::Model(const char *arpa, bool print_status) {
 	order_ = counts.size();
 
 	const float kLoadFactor = 1.0;
+  // in case OOV needs to be added.
+  unigram_.reserve(counts[0] + 1);
 	unigram_.resize(counts[0]);
 	middle_vec_.resize(counts.size() - 2);
 	for (unsigned int n = 2; n < counts.size(); ++n) {
