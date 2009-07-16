@@ -205,7 +205,7 @@ Model::Model(const char *arpa, bool print_status) {
 
 	Read1Grams(f, counts[0], vocab_, unigram_);
 	if (std::fabs(unigram_[vocab_.NotFound()].backoff) > 0.0000001) {
-		throw FormatLoadException(std::string("Backoff for unknown word is ") + boost::lexical_cast<std::string>(unigram_[vocab_.NotFound()].backoff) + std::string(" not zero"));
+		throw FormatLoadException(std::string("Backoff for unknown word with index ") + boost::lexical_cast<std::string>(vocab_.NotFound()) + " is " + boost::lexical_cast<std::string>(unigram_[vocab_.NotFound()].backoff) + std::string(" not zero"));
   }
 	begin_sentence_backoff_ = unigram_[vocab_.BeginSentence()].backoff;
 	if (print_status) std::cerr << "Loaded unigrams" << std::endl;
