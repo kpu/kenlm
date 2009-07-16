@@ -102,7 +102,9 @@ void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vec
 			if (!(f >> ent.backoff)) throw FormatLoadException("Failed to read backoff");
 			ent.backoff *= M_LN10;
 			if ((f.get() != '\n') || !f) throw FormatLoadException("Expected newline after backoff");
-		} else if (delim != '\n') {
+		} else if (delim == '\n') {
+			ent.backoff = 0.0;
+		} else {
 			ent.backoff = 0.0;
 			throw FormatLoadException("Expected tab or newline after unigram");
 		}
