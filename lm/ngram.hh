@@ -103,6 +103,8 @@ class Model : boost::noncopyable {
 		static const std::size_t kMaxOrder = 5;
 
 	public:
+		typedef ::lm::ngram::Vocabulary Vocabulary;
+
 		class State {
 			public:
 				State() {}
