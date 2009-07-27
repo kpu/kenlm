@@ -4,6 +4,7 @@
 #include "util/string_piece.hh"
 
 #include <boost/iterator/iterator_facade.hpp>
+#include <unicode/stringpiece.h>
 
 #include <bitset>
 
@@ -43,17 +44,17 @@ template <char d> class PieceIterator : public boost::iterator_facade<PieceItera
 		friend class boost::iterator_core_access;
 
 		void increment() {
-			StringPiece::iterator start(after_.begin());
-			for (; start != after_.end() && (d == *start); ++start) {}
-			if (start == after_.end()) {
+			const char *start = after_.data();
+			for (; (start != after_.data() + after_.size()) && (d == *start); ++start) {}
+			if (start == after_.data() + after_.size()) {
 				// End condition.
 				after_.clear();
 				return;
 			}
-			StringPiece::iterator finish(start);
-			for (; finish != after_.end() && (d != *finish); ++finish) {}
-			current_.set(start, finish - start);
-			after_.set(finish, after_.end() - finish);
+			const char *finish = start;
+			for (; (finish != after_.data() + after_.size()) && (d != *finish); ++finish) {}
+			current_ = StringPiece(start, finish - start);
+			after_ = StringPiece(finish, after_.data() + after_.size() - finish);
 		}
 
 		bool equal(const PieceIterator &other) const {
