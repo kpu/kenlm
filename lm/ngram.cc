@@ -55,7 +55,7 @@ void ParseDataCounts(std::istream &f, std::vector<size_t> &counts) {
 			std::string message("expected order ");
 			message += boost::lexical_cast<std::string>(order);
 			message += " but received ";
-			equal_it->AppendToString(&message);
+			message.append(equal_it->data(), equal_it->size());
 			throw FormatLoadException(message, line);
 		}
 		if (!(++equal_it))
