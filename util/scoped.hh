@@ -7,7 +7,7 @@ namespace util {
 
 template <class T, class R, R (*Free)(T*)> class scoped_thing : boost::noncopyable {
   public:
-    explicit scoped_thing(T *c = NULL) : c_(c) {}
+    explicit scoped_thing(T *c = static_cast<T*>(0)) : c_(c) {}
 
     ~scoped_thing() { if (c_) Free(c_); }
 
