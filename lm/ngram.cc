@@ -3,6 +3,7 @@
 
 #include <boost/functional/hash/hash.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/progress.hpp>
 
 #include <algorithm>
 #include <fstream>
@@ -79,6 +80,7 @@ struct VocabularyFriend {
 };
 
 void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vector<ProbBackoff> &unigrams) {
+	boost::progress_display progress(count, std::cerr, "Loading 1-grams");
   // +1 in case OOV is not found.
 	VocabularyFriend::Reserve(vocab, count + 1);
 	std::string line;
@@ -108,6 +110,7 @@ void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vec
 			ent.backoff = 0.0;
 			throw FormatLoadException("Expected tab or newline after unigram");
 		}
+		++progress;
 	}
 	if (getline(f, line)) FormatLoadException("Blank line after ngrams missing");
 	if (!line.empty()) throw FormatLoadException("Blank line after ngrams not blank", line);
@@ -132,6 +135,7 @@ void SetNGramEntry(boost::unordered_map<uint64_t, detail::Prob, detail::Identity
 }
 
 template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, const size_t count, const Vocabulary &vocab, Place &place) {
+	boost::progress_display progress(count, std::cerr, std::string("Loading ") + boost::lexical_cast<std::string>(n) + "-grams");
 	std::string line;
 	if (!getline(f, line)) throw FormatLoadException("Error reading \\ngram header");
 	std::string expected("\\");
@@ -162,6 +166,7 @@ template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, co
 		} else {
 			SetNGramEntry(place, key, prob * M_LN10);
 		}
+		++progress;
 	}
 	if (getline(f, line)) FormatLoadException("Blank line after ngrams missing");
 	if (!line.empty()) throw FormatLoadException("Blank line after ngrams not blank", line);
