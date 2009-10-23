@@ -16,6 +16,7 @@
 
 #include <iostream>
 #include <istream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -51,7 +52,7 @@ class MultipleVocabFilter {
 	public:
 		typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Map;
 
-		explicit MultipleVocabFilter(Map &vocabs) : vocabs_(vocabs) {}
+		explicit MultipleVocabFilter(const Map &vocabs) : vocabs_(vocabs) {}
 
 		template <class Iterator> bool Keep(unsigned int length, const Iterator &begin, const Iterator &end) const {
 			std::vector<util::BeginEnd<const unsigned int*> > sets;
@@ -68,6 +69,45 @@ class MultipleVocabFilter {
 
 	private:
 		const Map &vocabs_;
+};
+
+class PrepareMultipleVocab {
+	private:
+		typedef  boost::unordered_map<StringPiece, std::vector<unsigned int> > Vocabs;
+	public:
+		PrepareMultipleVocab() : temp_str_(new std::string) {
+			to_insert_.second.push_back(0);
+		}
+
+		void StartSentence(unsigned int number) {
+			to_insert_.second.front() = number;
+		}
+
+		std::string &TempStr() {
+			return *temp_str_;
+		}
+
+		void Insert() {
+			to_insert_.first = StringPiece(*temp_str_);
+			std::pair<Vocabs::iterator,bool> table(vocabs_.insert(to_insert_));
+			if (table.second) {
+				storage_.push_back(temp_str_);
+				temp_str_.reset(new std::string());
+			} else {
+				table.first->second.push_back(to_insert_.second.front());
+			}
+		}
+
+		// The PrepareMultipleVocab must still exist for the life of the MultipleVocabFilter.
+	  MultipleVocabFilter Filter() const {
+			return MultipleVocabFilter(vocabs_);
+		}
+
+	private:
+		boost::ptr_vector<std::string> storage_;
+		Vocabs vocabs_;
+		std::pair<StringPiece, std::vector<unsigned int> > to_insert_;
+		std::auto_ptr<std::string> temp_str_;
 };
 
 class OutputLM {
