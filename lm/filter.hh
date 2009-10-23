@@ -8,6 +8,8 @@
 #include "util/string_piece.hh"
 #include "util/tokenize_piece.hh"
 
+#include <boost/lexical_cast.hpp>
+#include <boost/progress.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/unordered/unordered_map.hpp>
 #include <boost/unordered/unordered_set.hpp>
@@ -96,10 +98,9 @@ template <class Filter> void FilterNGrams(std::istream &in, unsigned int l, size
 	std::string line;
   ReadNGramHeader(in, l);
   out.BeginLength(l);
+  boost::progress_display display(number, std::cerr, std::string("Length ") + boost::lexical_cast<std::string>(l) + "\n");
 	for (unsigned int i = 0; i < number; ++i) {
-		if (!(i % 100000)) {
-			std::cerr << "Length " << l << ": " << i << "/" << number << std::endl;
-		}
+    ++display;
 		if (!std::getline(in, line))
 			err(2, "Reading ngram failed.  Maybe the counts are wrong?");
 
