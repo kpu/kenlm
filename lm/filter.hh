@@ -4,19 +4,16 @@
  * plus <s>, </s>, and <unk>.
  */
 
-
 #include "util/null_intersection.hh"
 #include "util/string_piece.hh"
 #include "util/tokenize_piece.hh"
 
-#include <boost/lexical_cast.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/unordered/unordered_map.hpp>
 #include <boost/unordered/unordered_set.hpp>
 
 #include <iostream>
 #include <istream>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -33,22 +30,7 @@ inline bool IsTag(const StringPiece &value) {
 
 class SingleVocabFilter {
 	public:
-		explicit SingleVocabFilter(std::istream &in) {
-			// Insert SRI's custom words.
-			words_.insert("<s>");
-			words_.insert("</s>");
-			words_.insert("<unk>");
-
-			std::auto_ptr<std::string> word(new std::string());
-
-			while (in >> *word) {
-				if (words_.insert(StringPiece(*word)).second) {
-					backing_.push_back(word);
-					word.reset(new std::string());
-				}
-			}
-			if (!in.eof()) err(1, "Reading text from stdin");
-		}
+		explicit SingleVocabFilter(std::istream &in);
 
 		template <class Iterator> bool Keep(unsigned int length, const Iterator &begin, const Iterator &end) const {
 			for (Iterator i = begin; i != end; ++i) {
@@ -108,11 +90,11 @@ class OutputLM {
     std::vector<size_t> counts_;
 };
 
+void ReadNGramHeader(std::istream &in_lm, unsigned int length);
+
 template <class Filter> void FilterNGrams(std::istream &in, unsigned int l, size_t number, const Filter &filter, OutputLM &out) {
 	std::string line;
-	if (!getline(in, line)) err(2, "Reading from input lm");
-	if (line != (std::string("\\") + boost::lexical_cast<std::string>(l) + "-grams:"))
-		errx(3, "Wrong ngram line: %s", line.c_str());
+  ReadNGramHeader(in, l);
   out.BeginLength(l);
 	for (unsigned int i = 0; i < number; ++i) {
 		if (!(i % 100000)) {

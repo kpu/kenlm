@@ -24,6 +24,21 @@
 
 namespace lm {
 
+SingleVocabFilter::SingleVocabFilter(std::istream &in) {
+  // Insert SRI's custom words.
+  words_.insert("<s>");
+  words_.insert("</s>");
+  words_.insert("<unk>");
+  std::auto_ptr<std::string> word(new std::string());
+  while (in >> *word) {
+    if (words_.insert(StringPiece(*word)).second) {
+      backing_.push_back(word);
+      word.reset(new std::string());
+    }
+  }
+  if (!in.eof()) err(1, "Reading text from stdin");
+}
+
 OutputLM::OutputLM(std::ostream &file, std::streampos max_count_space) : file_(file), max_count_space_(max_count_space) {
   file_.exceptions(std::ostream::eofbit | std::ostream::failbit | std::ostream::badbit);
  	for (std::streampos i = 0; i < max_count_space; i += std::streampos(1)) {
@@ -79,6 +94,13 @@ void ReadData(std::istream &in, std::vector<size_t> &number) {
 		number.push_back(count);		
 	}
 	err(2, "Reading input lm");
+}
+
+void ReadNGramHeader(std::istream &in, unsigned int length) {
+  std::string line;
+  if (!getline(in, line)) err(2, "Reading from input lm");
+  if (line != (std::string("\\") + boost::lexical_cast<std::string>(length) + "-grams:"))
+    errx(3, "Wrong ngram line: %s", line.c_str());
 }
 
 void ReadEnd(std::istream &in_lm) {
