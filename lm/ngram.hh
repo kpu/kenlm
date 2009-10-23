@@ -64,8 +64,14 @@ class Vocabulary : public base::Vocabulary {
 		void FinishedLoading() {
       if (ids_.find(StringPiece("<s>")) == ids_.end()) throw BeginSentenceMissingException();
       if (ids_.find(StringPiece("</s>")) == ids_.end()) throw EndSentenceMissingException();
-      // This is the responsibily of Read1Gram.
-      assert(ids_.find(StringPiece("<unk>")) != ids_.end());
+      // Allow lowercase form of unknown if found, otherwise complain.  It's better to not tolerate an LM without OOV.   
+      if (ids_.find(StringPiece("<unk>")) == ids_.end()) {
+        if (ids_.find(StringPiece("<UNK>")) == ids_.end()) {
+          throw UnknownMissingException();
+        } else {
+          ids_["<unk>"] = Index(StringPiece("<UNK>"));
+        }
+      }
 			SetSpecial(Index(StringPiece("<s>")), Index(StringPiece("</s>")), Index(StringPiece("<unk>")), available_);
 		}
 

@@ -120,6 +120,16 @@ class EndSentenceMissingException : public SpecialWordMissingException {
     const char *what() const throw() { return "End of sentence marker missing from vocabulary"; }
 };
 
+class UnknownMissingException : public SpecialWordMissingException {
+  public:
+    UnknownMissingException() throw() {}
+
+    ~UnknownMissingException() throw() {}
+
+    const char *what() const throw() { return "Unknown word missing from vocabulary"; }
+};
+
+
 } // namespace lm
 
 #endif

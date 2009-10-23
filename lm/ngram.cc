@@ -111,14 +111,6 @@ void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vec
 	}
 	if (getline(f, line)) FormatLoadException("Blank line after ngrams missing");
 	if (!line.empty()) throw FormatLoadException("Blank line after ngrams not blank", line);
-  if (!vocab.Known("<unk>")) {
-    unigram->assign("<unk>");
-    WordIndex oov = VocabularyFriend::InsertUnique(vocab, unigram.release());
-    unigrams.resize(oov + 1);
-    ProbBackoff &ent = unigrams[oov];
-    ent.prob = -std::numeric_limits<typeof(ent.prob)>::infinity();
-    ent.backoff = 0.0;
-  }
 	VocabularyFriend::FinishedLoading(vocab);
 }
 

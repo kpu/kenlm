@@ -98,7 +98,7 @@ template <class Filter> void FilterNGrams(std::istream &in, unsigned int l, size
 	std::string line;
   ReadNGramHeader(in, l);
   out.BeginLength(l);
-  boost::progress_display display(number, std::cerr, std::string("Length ") + boost::lexical_cast<std::string>(l) + "\n");
+  boost::progress_display display(number, std::cerr, std::string("Length ") + boost::lexical_cast<std::string>(l) + ": " + boost::lexical_cast<std::string>(number) + " total\n");
 	for (unsigned int i = 0; i < number; ++i) {
     ++display;
 		if (!std::getline(in, line))
