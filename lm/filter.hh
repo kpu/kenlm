@@ -94,7 +94,9 @@ class PrepareMultipleVocab : boost::noncopyable {
 				storage_.push_back(temp_str_);
 				temp_str_.reset(new std::string());
 			} else {
-				table.first->second.push_back(to_insert_.second.front());
+        if (table.first->second.back() != to_insert_.second.front()) {
+  				table.first->second.push_back(to_insert_.second.front());
+        }
 			}
 		}
 
