@@ -17,11 +17,10 @@ void ReadFilter(std::istream &in, PrepareMultipleVocab &out) {
 	for (unsigned int sent = 0; in; ++sent) {
 		out.StartSentence(sent);
 		// Read words in a sentence.
-		while (in) {
+		do {
 			in >> out.TempStr();
 			out.Insert();
-			if (in.peek() == '\n') break;
-		}
+		} while (in && in.peek() != '\n');
 	}
 }
 

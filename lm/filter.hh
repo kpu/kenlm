@@ -71,7 +71,7 @@ class MultipleVocabFilter {
 		const Map &vocabs_;
 };
 
-class PrepareMultipleVocab {
+class PrepareMultipleVocab : boost::noncopyable {
 	private:
 		typedef  boost::unordered_map<StringPiece, std::vector<unsigned int> > Vocabs;
 	public:
