@@ -1,4 +1,4 @@
-#include "util/sorted_uniform_find.hh"
+#include "util/sorted_uniform.hh"
 
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
@@ -76,7 +76,8 @@ bool Found(const std::set<uint64_t> &lookup, uint64_t key) {
 	return lookup.find(key) != lookup.end();
 }
 bool Found(const std::vector<uint64_t> &lookup, uint64_t key) {
-	return 0 != util::SortedUniformFind(&*lookup.begin(), &*(lookup.end() - 1), key);
+	const uint64_t *ret = util::SortedUniformLowerBound(&*lookup.begin(), &*(lookup.end()), key);
+	return ret != &*(lookup.end()) && (*ret == key);
 }
 
 template <class L> size_t TimeTable(const L &lookup, const std::vector<uint64_t> &hits, const std::vector<uint64_t> &misses) {
