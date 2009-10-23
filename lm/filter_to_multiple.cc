@@ -18,9 +18,9 @@ void ReadFilter(std::istream &in, PrepareMultipleVocab &out) {
 		out.StartSentence(sent);
 		// Read words in a sentence.
 		while (in) {
-			if (in.peek() == '\n') break;
 			in >> out.TempStr();
 			out.Insert();
+			if (in.peek() == '\n') break;
 		}
 	}
 }
