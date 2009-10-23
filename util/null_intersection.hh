@@ -36,7 +36,7 @@ template <class Iterator> struct BeginEndLessBySize : public std::binary_functio
  */
 template <class Iterator, class Less> bool NullIntersection(std::vector<BeginEnd<Iterator> > &sets, const Less &less) {
 	typedef std::vector<BeginEnd<Iterator> > Sets;
-	if (sets.empty()) return true;
+	if (sets.empty()) return false;
 	std::sort(sets.begin(), sets.end(), detail::BeginEndLessBySize<Iterator>());
 
 	if (sets.front().begin == sets.front().end) return true;

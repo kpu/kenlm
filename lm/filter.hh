@@ -61,7 +61,7 @@ class MultipleVocabFilter {
 				if (vocabs_.end() == (found = vocabs_.find(*i))) return false;
 				sets.push_back(util::BeginEnd<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
 			}
-			return !util::NullIntersection(sets, std::less<unsigned int>());
+			return !util::NullIntersection(sets);
 		}
 
 	private:

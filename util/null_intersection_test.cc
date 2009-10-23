@@ -8,7 +8,7 @@ namespace {
 
 BOOST_AUTO_TEST_CASE(Empty) {
 	std::vector<BeginEnd<const unsigned int*> > sets;
-	BOOST_CHECK(NullIntersection(sets));
+	BOOST_CHECK(!NullIntersection(sets));
 	
 	sets.push_back(BeginEnd<const unsigned int*>(NULL, NULL));
 	BOOST_CHECK(NullIntersection(sets));
