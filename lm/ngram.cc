@@ -80,7 +80,7 @@ struct VocabularyFriend {
 };
 
 void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vector<ProbBackoff> &unigrams) {
-	boost::progress_display progress(count, std::cerr, "Loading 1-grams");
+	boost::progress_display progress(count, std::cerr, "Loading 1-grams\n");
   // +1 in case OOV is not found.
 	VocabularyFriend::Reserve(vocab, count + 1);
 	std::string line;
@@ -135,7 +135,7 @@ void SetNGramEntry(boost::unordered_map<uint64_t, detail::Prob, detail::Identity
 }
 
 template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, const size_t count, const Vocabulary &vocab, Place &place) {
-	boost::progress_display progress(count, std::cerr, std::string("Loading ") + boost::lexical_cast<std::string>(n) + "-grams");
+	boost::progress_display progress(count, std::cerr, std::string("Loading ") + boost::lexical_cast<std::string>(n) + "-grams\n");
 	std::string line;
 	if (!getline(f, line)) throw FormatLoadException("Error reading \\ngram header");
 	std::string expected("\\");
