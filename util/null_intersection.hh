@@ -40,12 +40,13 @@ template <class Iterator, class Less> bool NullIntersection(std::vector<BeginEnd
 	std::sort(sets.begin(), sets.end(), detail::BeginEndLessBySize<Iterator>());
 
 	if (sets.front().begin == sets.front().end) return true;
-	Iterator highest(sets.front().begin);
+  // Possibly suboptimal to copy; makes unsigned int go slighly faster.  
+	typename std::iterator_traits<Iterator>::value_type highest(*sets.front().begin);
 	for (typename Sets::iterator i(sets.begin()); i != sets.end(); ) {
-		i->begin = std::lower_bound(i->begin, i->end, *highest, less);
+		i->begin = std::lower_bound(i->begin, i->end, highest, less);
 		if (i->begin == i->end) return true;
-		if (*(i->begin) > *highest) {
-			highest = i->begin;
+		if (*(i->begin) > highest) {
+			highest = *i->begin;
 			// start over
 			i = sets.begin();
 		} else {
