@@ -55,14 +55,14 @@ class MultipleVocabFilter {
 		explicit MultipleVocabFilter(const Map &vocabs) : vocabs_(vocabs) {}
 
 		template <class Iterator> bool Keep(unsigned int length, const Iterator &begin, const Iterator &end) const {
-			std::vector<util::BeginEnd<const unsigned int*> > sets;
+			std::vector<boost::iterator_range<const unsigned int*> > sets;
 			sets.reserve(length);
 
 			Map::const_iterator found;
 			for (Iterator i(begin); i != end; ++i) {
 				if (IsTag(*i)) continue;
 				if (vocabs_.end() == (found = vocabs_.find(*i))) return false;
-				sets.push_back(util::BeginEnd<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
+				sets.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
 			}
 			return !util::NullIntersection(sets);
 		}
