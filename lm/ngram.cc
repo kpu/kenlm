@@ -21,8 +21,7 @@ namespace detail {
 // Odd numbers near 2^64 chosen by mashing on the keyboard.  
 inline uint64_t CombineWordHash(uint64_t current, const uint32_t next) {
 	uint64_t ret = (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(next) * 17894857484156487943ULL);
-	// Avoid 0 so the probing hash table has an illegal value.
-	return ret ? ret : 4178184149198184171ULL;
+	return ret;
 }
 
 void ChainedWordHash(const uint32_t *word, const uint32_t *word_end, uint64_t *out) {
@@ -117,19 +116,19 @@ void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vec
 	VocabularyFriend::FinishedLoading(vocab);
 }
 
-void SetNGramEntry(boost::unordered_map<uint64_t, detail::ProbBackoff, detail::IdentityHash> &place, uint64_t key, float prob, float backoff) {
+void SetNGramEntry(boost::unordered_map<uint64_t, ProbBackoff, IdentityHash> &place, uint64_t key, float prob, float backoff) {
 	if (__builtin_expect(!place.insert(std::make_pair(key, ProbBackoff(prob, backoff))).second, 0))
 		std::cerr << "Warning: hash collision with " << key <<  std::endl;
 }
 
-void SetNGramEntry(boost::unordered_map<uint64_t, detail::ProbBackoff, detail::IdentityHash> &place, uint64_t key, float prob) {
+void SetNGramEntry(boost::unordered_map<uint64_t, ProbBackoff, IdentityHash> &place, uint64_t key, float prob) {
 	if (__builtin_expect(!place.insert(std::make_pair(key, ProbBackoff(prob, 0.0))).second, 0))
 		std::cerr << "Warning: hash collision with " << key << std::endl;
 }
-void SetNGramEntry(boost::unordered_map<uint64_t, detail::Prob, detail::IdentityHash> &place, uint64_t key, float prob, float backoff) {
+void SetNGramEntry(boost::unordered_map<uint64_t, Prob, IdentityHash> &place, uint64_t key, float prob, float backoff) {
 	throw FormatLoadException("highest order n-gram has a backoff listed");
 }
-void SetNGramEntry(boost::unordered_map<uint64_t, detail::Prob, detail::IdentityHash> &place, uint64_t key, float prob) {
+void SetNGramEntry(boost::unordered_map<uint64_t, Prob, IdentityHash> &place, uint64_t key, float prob) {
 	if (__builtin_expect(!place.insert(std::make_pair(key, Prob(prob))).second, 0))
 		std::cerr << "Warning: hash collision with " << key << std::endl;
 }
@@ -192,6 +191,7 @@ Model::Model(const char *arpa, bool print_status) {
 		throw FormatLoadException(std::string("Edit ngram.hh and change kMaxOrder to at least ") + boost::lexical_cast<std::string>(counts.size()));
 	order_ = counts.size();
 
+	// Make space in the data structures
 	const float kLoadFactor = 1.0;
   // in case OOV needs to be added.
   unigram_.reserve(counts[0] + 1);
@@ -202,6 +202,7 @@ Model::Model(const char *arpa, bool print_status) {
 	}
 	longest_.rehash(1 + static_cast<size_t>(static_cast<float>(counts[counts.size() - 1]) / kLoadFactor));
 
+	// Read the unigrams.
 	Read1Grams(f, counts[0], vocab_, unigram_);
 	if (std::fabs(unigram_[vocab_.NotFound()].backoff) > 0.0000001) {
 		throw FormatLoadException(std::string("Backoff for unknown word with index ") + boost::lexical_cast<std::string>(vocab_.NotFound()) + " is " + boost::lexical_cast<std::string>(unigram_[vocab_.NotFound()].backoff) + std::string(" not zero"));
@@ -209,6 +210,7 @@ Model::Model(const char *arpa, bool print_status) {
 	begin_sentence_backoff_ = unigram_[vocab_.BeginSentence()].backoff;
 	if (print_status) std::cerr << "Loaded unigrams" << std::endl;
 	
+	// Read the n-grams.
 	for (unsigned int n = 2; n < counts.size(); ++n) {
 		ReadNGrams(f, n, counts[n-1], vocab_, middle_vec_[n-2]);
 		if (print_status) std::cerr << "Loaded " << n << "-grams" << std::endl;
