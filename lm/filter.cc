@@ -90,7 +90,6 @@ void ReadData(std::istream &in, std::vector<size_t> &number) {
 		if (equals == std::string::npos)
 			errx(3, "no equals in \"%s\".", line.c_str());
 		unsigned int length = boost::lexical_cast<unsigned int>(line.substr(6, equals - 6));
-#include <boost/lexical_cast.hpp>
 		if (length - 1 != number.size()) errx(3, "ngram length %i is not expected %i in line %s", length, static_cast<unsigned int>(number.size() + 1), line.c_str());
 		unsigned int count = boost::lexical_cast<unsigned int>(line.substr(equals + 1));
 		number.push_back(count);		
