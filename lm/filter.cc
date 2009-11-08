@@ -99,7 +99,9 @@ void ReadData(std::istream &in, std::vector<size_t> &number) {
 
 void ReadNGramHeader(std::istream &in, unsigned int length) {
   std::string line;
-  if (!getline(in, line)) err(2, "Reading from input lm");
+  do {
+    if (!getline(in, line)) err(2, "Reading from input lm");
+  } while (line.empty());
   if (line != (std::string("\\") + boost::lexical_cast<std::string>(length) + "-grams:"))
     errx(3, "Wrong ngram line: %s", line.c_str());
 }
