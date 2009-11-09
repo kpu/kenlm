@@ -147,12 +147,7 @@ class Model : boost::noncopyable {
 				}
 
 				void CopyValid(const State &other) {
-					const float *from;
-					float *to;
-					for (from = other.backoff_.data(), to = backoff_.data();
-							to != backoff_.data() + ValidLength(); ++from, ++to) {
-						*to = *from;
-					}
+          std::copy(other.backoff_.data(), other.backoff_.data() + ValidLength(), backoff_.data());
 				}
 
 				unsigned char ngram_length_;
