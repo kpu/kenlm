@@ -136,14 +136,14 @@ class Model : boost::noncopyable {
 					return true;
 				}
 
-				unsigned int NGramLength() const { return ngram_length_; }
+				unsigned char NGramLength() const { return ngram_length_; }
 
 			private:
 				friend class Model;
 				friend size_t hash_value(const State &state);
 
 				size_t ValidLength() const {
-				  return std::min<unsigned int>(ngram_length_, kMaxOrder - 1);
+				  return std::min<size_t>(static_cast<size_t>(ngram_length_), kMaxOrder - 1);
 				}
 
 				void CopyValid(const State &other) {
@@ -155,7 +155,7 @@ class Model : boost::noncopyable {
 					}
 				}
 
-				unsigned int ngram_length_;
+				unsigned char ngram_length_;
 
 				// The first min(ngram_length_, Model::order_ - 1) entries are valid backoff weights.
 				// backoff_[0] is the backoff for unigrams.
