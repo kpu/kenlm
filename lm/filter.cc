@@ -25,11 +25,6 @@
 namespace lm {
 
 SingleVocabFilter::SingleVocabFilter(std::istream &in) {
-  // Insert SRI's custom words.
-  words_.insert("<s>");
-  words_.insert("</s>");
-  words_.insert("<unk>");
-  words_.insert("<UNK>");
   std::auto_ptr<std::string> word(new std::string());
   while (in >> *word) {
     if (words_.insert(StringPiece(*word)).second) {

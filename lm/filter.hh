@@ -37,6 +37,7 @@ class SingleVocabFilter {
 
 		template <class Iterator> bool Keep(unsigned int length, const Iterator &begin, const Iterator &end) const {
 			for (Iterator i = begin; i != end; ++i) {
+				if (IsTag(*i)) continue;
 				if (words_.find(*i) == words_.end()) return false;
 			}
 			return true;
