@@ -211,10 +211,6 @@ class PrepareMultipleVocab : boost::noncopyable {
 			to_insert_.second.push_back(0);
 		}
 
-		void StartSentence() {
-			++MutableSentenceCount();
-		}
-
 		std::string &TempStr() {
 			return *temp_str_;
 		}
@@ -232,6 +228,10 @@ class PrepareMultipleVocab : boost::noncopyable {
 			}
 		}
 
+		void EndSentence() {
+			++MutableSentenceIndex();
+		}
+
 		// The PrepareMultipleVocab must still exist while this is used.
 		const Vocabs &GetVocabs() const {
 			return vocabs_;
@@ -242,7 +242,7 @@ class PrepareMultipleVocab : boost::noncopyable {
 		}
 
 	private:
-		unsigned int &MutableSentenceCount() {
+		unsigned int &MutableSentenceIndex() {
 			return to_insert_.second.front();
 		}
 		boost::ptr_vector<std::string> storage_;

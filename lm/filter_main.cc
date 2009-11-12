@@ -17,12 +17,12 @@ typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Vocabs;
 void ReadFilter(std::istream &in, PrepareMultipleVocab &out) {
 	// Read sentences
 	while (in) {
-		out.StartSentence();
 		// Read words in a sentence.
 		do {
 			in >> out.TempStr();
 			out.Insert();
 		} while (in && in.peek() != '\n');
+		out.EndSentence();
 	}
 }
 
