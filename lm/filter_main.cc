@@ -59,10 +59,10 @@ int main(int argc, char *argv[]) {
 	lm::PrepareMultipleVocab prep;
 	lm::ReadFilter(std::cin, prep);
 
-	if (!std::strcmp(type, "multiple")) {
+	if (!std::strcmp(type, "union")) {
 		lm::MultipleVocabSingleOutputFilter filter(prep.GetVocabs(), out_name);
 	  lm::FilterARPA(in_lm, filter);
-	} else if (!std::strcmp(type, "union")) {
+	} else if (!std::strcmp(type, "multiple")) {
 		lm::MultipleVocabMultipleOutputFilter filter(prep.GetVocabs(), prep.SentenceCount(), out_name);
 	  lm::FilterARPA(in_lm, filter);
 	} else {
