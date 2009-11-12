@@ -9,6 +9,7 @@
 #include "util/tokenize_piece.hh"
 
 #include <boost/lexical_cast.hpp>
+#include <boost/noncopyable.hpp>
 #include <boost/progress.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/unordered/unordered_map.hpp>
@@ -64,7 +65,7 @@ inline bool IsTag(const StringPiece &value) {
 	return (value.data()[0] == '<' && value.data()[value.size() - 1] == '>');
 }
 
-class SingleOutputFilter {
+class SingleOutputFilter : boost::noncopyable {
 	public:
 		void ReserveForCounts(std::streampos reserve) {
 			out_.ReserveForCounts(reserve);
@@ -171,11 +172,11 @@ class MultipleVocabMultipleOutputFilter {
 			Map::const_iterator found;
 			for (Iterator i(begin); i != end; ++i) {
 				if (IsTag(*i)) continue;
-				if (vocabs_.end() == (found = vocabs_.find(*i))) return false;
+				if (vocabs_.end() == (found = vocabs_.find(*i))) return;
 				sets.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
 			}
 			if (sets.empty()) {
-				for (boost::ptr_vector<OutputLM>::const_iterator i = files_.begin(); i != files_.end(); ++i) {
+				for (boost::ptr_vector<OutputLM>::iterator i = files_.begin(); i != files_.end(); ++i) {
 					i->AddNGram(line);
 				}
 				return;
