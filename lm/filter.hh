@@ -14,7 +14,7 @@
 #include <boost/unordered/unordered_map.hpp>
 #include <boost/unordered/unordered_set.hpp>
 
-#include <iostream>
+#include <fstream>
 #include <istream>
 #include <memory>
 #include <string>
@@ -25,23 +25,81 @@
 
 namespace lm {
 
+void WriteCounts(std::ostream &out, const std::vector<size_t> &number);
+size_t SizeNeededForCounts(const std::vector<size_t> &number);
+void ReadCounts(std::istream &in, std::vector<size_t> &number);
+
+void ReadNGramHeader(std::istream &in_lm, unsigned int length);
+void ReadEnd(std::istream &in_lm);
+
+// Writes an ARPA file.  This has to be seekable so the counts can be written
+// at the end.  Hence, I just have it own a std::fstream instead of accepting
+// a separately held std::ostream.  
+class OutputLM {
+  public:
+    explicit OutputLM(const char *name);
+
+		void ReserveForCounts(std::streampos reserve);
+
+    void BeginLength(unsigned int length);
+
+    inline void AddNGram(const std::string &line) {
+      file_ << line << '\n';
+      ++fast_counter_;
+    }
+
+    void EndLength(unsigned int length);
+
+    void Finish();
+
+  private:
+    std::fstream file_;
+    size_t fast_counter_;
+    std::vector<size_t> counts_;
+};
+
 inline bool IsTag(const StringPiece &value) {
 	// The parser should never give an empty string.
 	assert(!value.empty());
 	return (value.data()[0] == '<' && value.data()[value.size() - 1] == '>');
 }
 
-class SingleVocabFilter {
+class SingleOutputFilter {
 	public:
-		explicit SingleVocabFilter(std::istream &in);
+		void ReserveForCounts(std::streampos reserve) {
+			out_.ReserveForCounts(reserve);
+		}
 
-		template <class Iterator> bool Keep(unsigned int length, const Iterator &begin, const Iterator &end) const {
+		void BeginLength(unsigned int length) {
+			out_.BeginLength(length);
+		}
+
+		void EndLength(unsigned int length) {
+			out_.EndLength(length);
+		}
+
+		void Finish() {
+			out_.Finish();
+		}
+
+	protected:
+		explicit SingleOutputFilter(const char *out) : out_(out) {}
+
+		OutputLM out_;
+};
+
+class SingleVocabFilter : public SingleOutputFilter {
+	public:
+		SingleVocabFilter(std::istream &vocab, const char *out);
+
+		template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
 			for (Iterator i = begin; i != end; ++i) {
 				if (IsTag(*i)) continue;
-				if (words_.find(*i) == words_.end()) return false;
+				if (words_.find(*i) == words_.end()) return;
 			}
-			return true;
+			out_.AddNGram(line);
 		}
+
 	private:
 		// Keep this order so backing_ is deleted after words_.
 		boost::ptr_vector<std::string> backing_;
@@ -49,13 +107,64 @@ class SingleVocabFilter {
 		boost::unordered_set<StringPiece> words_;
 };
 
-class MultipleVocabFilter {
+class MultipleVocabSingleOutputFilter : public SingleOutputFilter {
 	public:
 		typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Map;
 
-		explicit MultipleVocabFilter(const Map &vocabs) : vocabs_(vocabs) {}
+		MultipleVocabSingleOutputFilter(const Map &vocabs, const char *out) : SingleOutputFilter(out), vocabs_(vocabs) {}
 
-		template <class Iterator> bool Keep(unsigned int length, const Iterator &begin, const Iterator &end) const {
+		template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
+			std::vector<boost::iterator_range<const unsigned int*> > sets;
+			sets.reserve(length);
+
+			Map::const_iterator found;
+			for (Iterator i(begin); i != end; ++i) {
+				if (IsTag(*i)) continue;
+				if (vocabs_.end() == (found = vocabs_.find(*i))) return;
+				sets.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
+			}
+			if (sets.empty() || util::FirstIntersection(sets)) {
+				out_.AddNGram(line);
+			}
+		}
+
+	private:
+		const Map &vocabs_;
+};
+
+class MultipleVocabMultipleOutputFilter {
+	public:
+		typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Map;
+
+		MultipleVocabMultipleOutputFilter(const Map &vocabs, unsigned int sentence_count, const char *prefix);
+
+		void ReserveForCounts(std::streampos reserve) {
+			for (boost::ptr_vector<OutputLM>::iterator i = files_.begin(); i != files_.end(); ++i) {
+				i->ReserveForCounts(reserve);
+			}
+		}
+
+		void BeginLength(unsigned int length) {
+			for (boost::ptr_vector<OutputLM>::iterator i = files_.begin(); i != files_.end(); ++i) {
+				i->BeginLength(length);
+			}
+		}
+
+		// Callback from AllIntersection that does AddNGram.
+		class Callback {
+			public:
+				Callback(boost::ptr_vector<OutputLM> &files, const std::string &line) : files_(files), line_(line) {}
+
+				void operator()(unsigned int index) {
+					files_[index].AddNGram(line_);
+				}
+
+			private:
+				boost::ptr_vector<OutputLM> &files_;
+				const std::string &line_;
+		};
+
+		template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
 			std::vector<boost::iterator_range<const unsigned int*> > sets;
 			sets.reserve(length);
 
@@ -65,23 +174,44 @@ class MultipleVocabFilter {
 				if (vocabs_.end() == (found = vocabs_.find(*i))) return false;
 				sets.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
 			}
-			return util::FirstIntersection(sets);
+			if (sets.empty()) {
+				for (boost::ptr_vector<OutputLM>::const_iterator i = files_.begin(); i != files_.end(); ++i) {
+					i->AddNGram(line);
+				}
+				return;
+			}
+			
+			Callback cb(files_, line);
+			util::AllIntersection(sets, cb);
+		}
+
+		void EndLength(unsigned int length) {
+			for (boost::ptr_vector<OutputLM>::iterator i = files_.begin(); i != files_.end(); ++i) {
+				i->EndLength(length);
+			}
+		}
+
+		void Finish() {
+			for (boost::ptr_vector<OutputLM>::iterator i = files_.begin(); i != files_.end(); ++i) {
+				i->Finish();
+			}
 		}
 
 	private:
+		boost::ptr_vector<OutputLM> files_;
 		const Map &vocabs_;
 };
 
 class PrepareMultipleVocab : boost::noncopyable {
-	private:
-		typedef  boost::unordered_map<StringPiece, std::vector<unsigned int> > Vocabs;
 	public:
+		typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Vocabs;
+
 		PrepareMultipleVocab() : temp_str_(new std::string) {
 			to_insert_.second.push_back(0);
 		}
 
-		void StartSentence(unsigned int number) {
-			to_insert_.second.front() = number;
+		void StartSentence() {
+			++MutableSentenceCount();
 		}
 
 		std::string &TempStr() {
@@ -101,47 +231,30 @@ class PrepareMultipleVocab : boost::noncopyable {
 			}
 		}
 
-		// The PrepareMultipleVocab must still exist for the life of the MultipleVocabFilter.
-	  MultipleVocabFilter Filter() const {
-			return MultipleVocabFilter(vocabs_);
+		// The PrepareMultipleVocab must still exist while this is used.
+		const Vocabs &GetVocabs() const {
+			return vocabs_;
+		}
+
+		unsigned int SentenceCount() const {
+			return to_insert_.second.front();
 		}
 
 	private:
+		unsigned int &MutableSentenceCount() {
+			return to_insert_.second.front();
+		}
 		boost::ptr_vector<std::string> storage_;
 		Vocabs vocabs_;
 		std::pair<StringPiece, std::vector<unsigned int> > to_insert_;
 		std::auto_ptr<std::string> temp_str_;
 };
 
-class OutputLM {
-  public:
-    OutputLM(std::ostream &file, std::streampos max_count_space);
-
-    void BeginLength(unsigned int length);
-
-    inline void AddNGram(const std::string &line) {
-      file_ << line << '\n';
-      ++fast_counter_;
-    }
-
-    void EndLength(unsigned int length);
-
-    void Finish();
-
-  private:
-    std::ostream &file_;
-    size_t fast_counter_;
-    std::streampos max_count_space_;
-    std::vector<size_t> counts_;
-};
-
-void ReadNGramHeader(std::istream &in_lm, unsigned int length);
-
-template <class Filter> void FilterNGrams(std::istream &in, unsigned int l, size_t number, const Filter &filter, OutputLM &out) {
+template <class Filter> void FilterNGrams(std::istream &in, unsigned int length, size_t number, Filter &to) {
 	std::string line;
-  ReadNGramHeader(in, l);
-  out.BeginLength(l);
-  boost::progress_display display(number, std::cerr, std::string("Length ") + boost::lexical_cast<std::string>(l) + ": " + boost::lexical_cast<std::string>(number) + " total\n");
+  ReadNGramHeader(in, length);
+  to.BeginLength(length);
+  boost::progress_display display(number, std::cerr, std::string("Length ") + boost::lexical_cast<std::string>(length) + ": " + boost::lexical_cast<std::string>(number) + " total\n");
 	for (unsigned int i = 0; i < number; ++i) {
     ++display;
 		if (!std::getline(in, line))
@@ -153,30 +266,22 @@ template <class Filter> void FilterNGrams(std::istream &in, unsigned int l, size
 		if (!++tabber)
 			errx(3, "No tab in line \"%s\"", line.c_str());
 
-		if (filter.Keep(l, util::PieceIterator<' '>(*tabber), util::PieceIterator<' '>::end())) {
-			out.AddNGram(line);
-		}
+		to.AddNGram(length, util::PieceIterator<' '>(*tabber), util::PieceIterator<' '>::end(), line);
 	}
 	if (!getline(in, line)) err(2, "Reading from input lm");
 	if (!line.empty()) errx(3, "Expected blank line after ngrams");
-	out.EndLength(l);
+	to.EndLength(length);
 }
 
-void WriteCounts(std::ostream &out, const std::vector<size_t> &number);
-size_t SizeNeededForCounts(const std::vector<size_t> &number);
-void ReadCounts(std::istream &in, std::vector<size_t> &number);
-void ReadEnd(std::istream &in_lm);
-
-template <class Filter> void FilterARPA(const Filter &to, std::istream &in_lm, std::ostream &out_file) {
+template <class Filter> void FilterARPA(std::istream &in_lm, Filter &to) {
 	std::vector<size_t> number;
 	ReadCounts(in_lm, number);
-  OutputLM out(out_file, SizeNeededForCounts(number));
+	to.ReserveForCounts(SizeNeededForCounts(number));
 	for (unsigned int i = 0; i < number.size(); ++i) {
-		FilterNGrams(in_lm, i + 1, number[i], to, out);
+		FilterNGrams(in_lm, i + 1, number[i], to);
 	}
 	ReadEnd(in_lm);
-
-  out.Finish();
+  to.Finish();
 }
 
 } // namespace lm

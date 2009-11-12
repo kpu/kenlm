@@ -24,48 +24,6 @@
 
 namespace lm {
 
-SingleVocabFilter::SingleVocabFilter(std::istream &in) {
-  std::auto_ptr<std::string> word(new std::string());
-  while (in >> *word) {
-    if (words_.insert(StringPiece(*word)).second) {
-      backing_.push_back(word);
-      word.reset(new std::string());
-    }
-  }
-  if (!in.eof()) err(1, "Reading text from stdin");
-}
-
-OutputLM::OutputLM(std::ostream &file, std::streampos max_count_space) : file_(file), max_count_space_(max_count_space) {
-  file_.exceptions(std::ostream::eofbit | std::ostream::failbit | std::ostream::badbit);
- 	for (std::streampos i = 0; i < max_count_space; i += std::streampos(1)) {
- 		file_ << '\n';
- 	}
-}
-
-void OutputLM::BeginLength(unsigned int length) {
-  fast_counter_ = 0;
-  file_ << '\\' << length << "-grams:" << '\n';
-}
-
-void OutputLM::EndLength(unsigned int length) {
-  file_ << '\n';
-  if (length > counts_.size()) {
-    counts_.resize(length);
-  }
-  counts_[length - 1] = fast_counter_;
-}
-
-void OutputLM::Finish() {
-  file_ << "\\end\\\n";
-
-  file_.seekp(0);
-  WriteCounts(file_, counts_);
-  if (max_count_space_ < file_.tellp()) {
-    errx(1, "Oops messed up padding somehow.  This shouldn't happen.");
-  }
-  file_ << std::flush;
-}
-
 // Seeking is the responsibility of the caller.
 void WriteCounts(std::ostream &out, const std::vector<size_t> &number) {
   out << "\n\\data\\\n";
@@ -116,6 +74,59 @@ void ReadEnd(std::istream &in_lm) {
 	std::string line;
 	if (!getline(in_lm, line)) err(2, "Reading from input lm");
 	if (line != "\\end\\") errx(3, "Bad end \"%s\"", line.c_str());
+}
+
+OutputLM::OutputLM(const char *name)  {
+  file_.exceptions(std::ostream::eofbit | std::ostream::failbit | std::ostream::badbit);
+	file_.open(name, std::ios::out);
+}
+
+void OutputLM::ReserveForCounts(std::streampos reserve) {
+ 	for (std::streampos i = 0; i < reserve; i += std::streampos(1)) {
+ 		file_ << '\n';
+ 	}
+}
+
+void OutputLM::BeginLength(unsigned int length) {
+  fast_counter_ = 0;
+  file_ << '\\' << length << "-grams:" << '\n';
+}
+
+void OutputLM::EndLength(unsigned int length) {
+  file_ << '\n';
+  if (length > counts_.size()) {
+    counts_.resize(length);
+  }
+  counts_[length - 1] = fast_counter_;
+}
+
+void OutputLM::Finish() {
+  file_ << "\\end\\\n";
+
+  file_.seekp(0);
+  WriteCounts(file_, counts_);
+  file_ << std::flush;
+}
+
+SingleVocabFilter::SingleVocabFilter(std::istream &vocab, const char *out) : SingleOutputFilter(out) {
+  std::auto_ptr<std::string> word(new std::string());
+  while (vocab >> *word) {
+    if (words_.insert(StringPiece(*word)).second) {
+      backing_.push_back(word);
+      word.reset(new std::string());
+    }
+  }
+  if (!vocab.eof()) err(1, "Reading text from stdin");
+}
+
+MultipleVocabMultipleOutputFilter::MultipleVocabMultipleOutputFilter(const Map &vocabs, unsigned int sentence_count, const char *prefix) : vocabs_(vocabs) {
+	files_.reserve(sentence_count);
+	std::string tmp;
+	for (unsigned int i = 0; i < sentence_count; ++i) {
+		tmp = prefix;
+		tmp += boost::lexical_cast<std::string>(i);
+		files_.push_back(new OutputLM(tmp.c_str()));
+	}
 }
 
 } // namespace lm

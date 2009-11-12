@@ -14,8 +14,8 @@ typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Vocabs;
 
 void ReadFilter(std::istream &in, PrepareMultipleVocab &out) {
 	// Read sentences
-	for (unsigned int sent = 0; in; ++sent) {
-		out.StartSentence(sent);
+	while (in) {
+		out.StartSentence();
 		// Read words in a sentence.
 		do {
 			in >> out.TempStr();
@@ -36,8 +36,7 @@ int main(int argc, char *argv[]) {
 	lm::PrepareMultipleVocab prep;
 	lm::ReadFilter(std::cin, prep);
   std::ifstream in_lm(argv[1], std::ios::in);
-  std::ofstream out_lm(argv[2], std::ios::out);
-
-	lm::FilterARPA(prep.Filter(), in_lm, out_lm);
+	lm::MultipleVocabSingleOutputFilter filter(prep.GetVocabs(), argv[2]);
+	lm::FilterARPA(in_lm, filter);
 	return 0;
 }
