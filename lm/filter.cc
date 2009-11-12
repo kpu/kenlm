@@ -4,7 +4,7 @@
 
 #include "lm/filter.hh"
 
-#include "util/null_intersection.hh"
+#include "util/multi_intersection.hh"
 #include "util/string_piece.hh"
 #include "util/tokenize_piece.hh"
 
@@ -64,18 +64,29 @@ void OutputLM::Finish() {
   file_ << "\\end\\\n";
 
   file_.seekp(0);
-  file_ << "\n\\data\\\n";
-  for (unsigned int i = 0; i < counts_.size(); ++i) {
-    file_ << "ngram " << i+1 << "=" << counts_[i] << '\n';
-  }
-  file_ << '\n';
+  WriteCounts(file_, counts_);
   if (max_count_space_ < file_.tellp()) {
     errx(1, "Oops messed up padding somehow.  This shouldn't happen.");
   }
   file_ << std::flush;
 }
 
-void ReadData(std::istream &in, std::vector<size_t> &number) {
+// Seeking is the responsibility of the caller.
+void WriteCounts(std::ostream &out, const std::vector<size_t> &number) {
+  out << "\n\\data\\\n";
+  for (unsigned int i = 0; i < number.size(); ++i) {
+    out << "ngram " << i+1 << "=" << number[i] << '\n';
+  }
+  out << '\n';
+}
+
+size_t SizeNeededForCounts(const std::vector<size_t> &number) {
+  std::ostringstream buf;
+  WriteCounts(buf, number);
+  return buf.tellp();
+}
+
+void ReadCounts(std::istream &in, std::vector<size_t> &number) {
 	number.clear();
 	std::string line;
 	if (!getline(in, line)) err(2, "Reading input lm");

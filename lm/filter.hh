@@ -1,10 +1,10 @@
-#ifndef LM_FILTER_H
-#define LM_FILTER_H
+#ifndef LM_FILTER_H__
+#define LM_FILTER_H__
 /* Filter an ARPA language model to only contain words found in a vocabulary
  * plus <s>, </s>, and <unk>.
  */
 
-#include "util/null_intersection.hh"
+#include "util/multi_intersection.hh"
 #include "util/string_piece.hh"
 #include "util/tokenize_piece.hh"
 
@@ -64,7 +64,7 @@ class MultipleVocabFilter {
 				if (vocabs_.end() == (found = vocabs_.find(*i))) return false;
 				sets.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
 			}
-			return !util::NullIntersection(sets);
+			return util::FirstIntersection(sets);
 		}
 
 	private:
@@ -161,13 +161,15 @@ template <class Filter> void FilterNGrams(std::istream &in, unsigned int l, size
 	out.EndLength(l);
 }
 
-void ReadData(std::istream &in, std::vector<size_t> &number);
+void WriteCounts(std::ostream &out, const std::vector<size_t> &number);
+size_t SizeNeededForCounts(const std::vector<size_t> &number);
+void ReadCounts(std::istream &in, std::vector<size_t> &number);
 void ReadEnd(std::istream &in_lm);
 
 template <class Filter> void FilterARPA(const Filter &to, std::istream &in_lm, std::ostream &out_file) {
 	std::vector<size_t> number;
-	ReadData(in_lm, number);
-  OutputLM out(out_file, in_lm.tellg());
+	ReadCounts(in_lm, number);
+  OutputLM out(out_file, SizeNeededForCounts(number));
 	for (unsigned int i = 0; i < number.size(); ++i) {
 		FilterNGrams(in_lm, i + 1, number[i], to, out);
 	}
@@ -178,4 +180,4 @@ template <class Filter> void FilterARPA(const Filter &to, std::istream &in_lm, s
 
 } // namespace lm
 
-#endif // LM_FILTER_H
+#endif // LM_FILTER_H__
