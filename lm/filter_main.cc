@@ -15,14 +15,9 @@ typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Vocabs;
 
 // Read space separated words in enter separated lines.  
 void ReadFilter(std::istream &in, PrepareMultipleVocab &out) {
-	// Read sentences
-	while (in) {
-		// Read words in a sentence.
-		do {
-			in >> out.TempStr();
-			out.Insert();
-		} while (in && in.peek() != '\n');
-		out.EndSentence();
+	while (in >> out.TempStr()) {
+		out.Insert();
+		if (in.get() == '\n') out.EndSentence();
 	}
 }
 
