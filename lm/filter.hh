@@ -4,18 +4,17 @@
  * plus <s>, </s>, and <unk>.
  */
 
+#include "lm/arpa_io.hh"
 #include "util/multi_intersection.hh"
 #include "util/string_piece.hh"
 #include "util/tokenize_piece.hh"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/progress.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/unordered/unordered_map.hpp>
 #include <boost/unordered/unordered_set.hpp>
 
-#include <fstream>
 #include <istream>
 #include <memory>
 #include <string>
@@ -25,43 +24,6 @@
 #include <string.h>
 
 namespace lm {
-
-// Handling for the counts of n-grams at the beginning of ARPA files.
-void WriteCounts(std::ostream &out, const std::vector<size_t> &number);
-size_t SizeNeededForCounts(const std::vector<size_t> &number);
-void ReadCounts(std::istream &in, std::vector<size_t> &number);
-
-// Read and verify the headers like \1-grams: 
-void ReadNGramHeader(std::istream &in_lm, unsigned int length);
-// Read and verify end marker.  
-void ReadEnd(std::istream &in_lm);
-
-/* Writes an ARPA file.  This has to be seekable so the counts can be written
- * at the end.  Hence, I just have it own a std::fstream instead of accepting
- * a separately held std::ostream.  
- */
-class OutputLM {
-  public:
-    explicit OutputLM(const char *name);
-
-    void ReserveForCounts(std::streampos reserve);
-
-    void BeginLength(unsigned int length);
-
-    inline void AddNGram(const std::string &line) {
-      file_ << line << '\n';
-      ++fast_counter_;
-    }
-
-    void EndLength(unsigned int length);
-
-    void Finish();
-
-  private:
-    std::fstream file_;
-    size_t fast_counter_;
-    std::vector<size_t> counts_;
-};
 
 /* Is this a special tag like <s> or <UNK>?  This actually includes anything
  * surrounded with < and >, which most tokenizers separate for real words, so
@@ -95,7 +57,7 @@ class SingleOutputFilter : boost::noncopyable {
   protected:
     explicit SingleOutputFilter(const char *out) : out_(out) {}
 
-    OutputLM out_;
+    ARPAOutput out_;
 };
 
 
@@ -152,13 +114,13 @@ class MultipleVocabMultipleOutputFilter {
     MultipleVocabMultipleOutputFilter(const Map &vocabs, unsigned int sentence_count, const char *prefix);
 
     void ReserveForCounts(std::streampos reserve) {
-      for (boost::ptr_vector<OutputLM>::iterator i = files_.begin(); i != files_.end(); ++i) {
+      for (boost::ptr_vector<ARPAOutput>::iterator i = files_.begin(); i != files_.end(); ++i) {
         i->ReserveForCounts(reserve);
       }
     }
 
     void BeginLength(unsigned int length) {
-      for (boost::ptr_vector<OutputLM>::iterator i = files_.begin(); i != files_.end(); ++i) {
+      for (boost::ptr_vector<ARPAOutput>::iterator i = files_.begin(); i != files_.end(); ++i) {
         i->BeginLength(length);
       }
     }
@@ -166,14 +128,14 @@ class MultipleVocabMultipleOutputFilter {
     // Callback from AllIntersection that does AddNGram.
     class Callback {
       public:
-        Callback(boost::ptr_vector<OutputLM> &files, const std::string &line) : files_(files), line_(line) {}
+        Callback(boost::ptr_vector<ARPAOutput> &files, const std::string &line) : files_(files), line_(line) {}
 
         void operator()(unsigned int index) {
           files_[index].AddNGram(line_);
         }
 
       private:
-        boost::ptr_vector<OutputLM> &files_;
+        boost::ptr_vector<ARPAOutput> &files_;
         const std::string &line_;
     };
 
@@ -188,7 +150,7 @@ class MultipleVocabMultipleOutputFilter {
         sets.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
       }
       if (sets.empty()) {
-        for (boost::ptr_vector<OutputLM>::iterator i = files_.begin(); i != files_.end(); ++i) {
+        for (boost::ptr_vector<ARPAOutput>::iterator i = files_.begin(); i != files_.end(); ++i) {
           i->AddNGram(line);
         }
         return;
@@ -199,19 +161,19 @@ class MultipleVocabMultipleOutputFilter {
     }
 
     void EndLength(unsigned int length) {
-      for (boost::ptr_vector<OutputLM>::iterator i = files_.begin(); i != files_.end(); ++i) {
+      for (boost::ptr_vector<ARPAOutput>::iterator i = files_.begin(); i != files_.end(); ++i) {
         i->EndLength(length);
       }
     }
 
     void Finish() {
-      for (boost::ptr_vector<OutputLM>::iterator i = files_.begin(); i != files_.end(); ++i) {
+      for (boost::ptr_vector<ARPAOutput>::iterator i = files_.begin(); i != files_.end(); ++i) {
         i->Finish();
       }
     }
 
   private:
-    boost::ptr_vector<OutputLM> files_;
+    boost::ptr_vector<ARPAOutput> files_;
     const Map &vocabs_;
 };
 
@@ -262,40 +224,6 @@ class PrepareMultipleVocab : boost::noncopyable {
     std::pair<StringPiece, std::vector<unsigned int> > to_insert_;
     std::auto_ptr<std::string> temp_str_;
 };
-
-template <class Filter> void FilterNGrams(std::istream &in, unsigned int length, size_t number, Filter &to) {
-  std::string line;
-  ReadNGramHeader(in, length);
-  to.BeginLength(length);
-  boost::progress_display display(number, std::cerr, std::string("Length ") + boost::lexical_cast<std::string>(length) + ": " + boost::lexical_cast<std::string>(number) + " total\n");
-  for (unsigned int i = 0; i < number; ++i) {
-    ++display;
-    if (!std::getline(in, line))
-      err(2, "Reading ngram failed.  Maybe the counts are wrong?");
-
-    util::PieceIterator<'\t'> tabber(line);
-    if (!tabber) 
-      errx(3, "Empty \"%s\"", line.c_str());
-    if (!++tabber)
-      errx(3, "No tab in line \"%s\"", line.c_str());
-
-    to.AddNGram(length, util::PieceIterator<' '>(*tabber), util::PieceIterator<' '>::end(), line);
-  }
-  if (!getline(in, line)) err(2, "Reading from input lm");
-  if (!line.empty()) errx(3, "Expected blank line after ngrams");
-  to.EndLength(length);
-}
-
-template <class Filter> void FilterARPA(std::istream &in_lm, Filter &to) {
-  std::vector<size_t> number;
-  ReadCounts(in_lm, number);
-  to.ReserveForCounts(SizeNeededForCounts(number));
-  for (unsigned int i = 0; i < number.size(); ++i) {
-    FilterNGrams(in_lm, i + 1, number[i], to);
-  }
-  ReadEnd(in_lm);
-  to.Finish();
-}
 
 } // namespace lm
 

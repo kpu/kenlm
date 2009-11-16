@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
 
   if (!std::strcmp(type, "single")) {
     lm::SingleVocabFilter filter(std::cin, out_name);
-    lm::FilterARPA(in_lm, filter);
+    lm::ReadARPA(in_lm, filter);
     return 0;
   }
 
@@ -75,10 +75,10 @@ int main(int argc, char *argv[]) {
 
   if (!std::strcmp(type, "union")) {
     lm::MultipleVocabSingleOutputFilter filter(prep.GetVocabs(), out_name);
-    lm::FilterARPA(in_lm, filter);
+    lm::ReadARPA(in_lm, filter);
   } else if (!std::strcmp(type, "multiple")) {
     lm::MultipleVocabMultipleOutputFilter filter(prep.GetVocabs(), prep.SentenceCount(), out_name);
-    lm::FilterARPA(in_lm, filter);
+    lm::ReadARPA(in_lm, filter);
   }
   return 0;
 }
