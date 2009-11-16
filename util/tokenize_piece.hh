@@ -5,8 +5,6 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 
-#include <bitset>
-
 /* Usage:
  *
  * for (PieceIterator<' '> i(" foo \r\n bar "); i; ++i) {
