@@ -1,7 +1,7 @@
 #ifndef LM_ARPA_IO_H__
 #define LM_ARPA_IO_H__
-/* Filter an ARPA language model to only contain words found in a vocabulary
- * plus <s>, </s>, and <unk>.
+/* Input and output for ARPA format language model files.
+ * TODO: throw exceptions instead of using err.  
  */
 
 #include "util/string_piece.hh"
