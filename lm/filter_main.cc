@@ -15,18 +15,32 @@ typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Vocabs;
 
 // Read space separated words in enter separated lines.  
 void ReadFilter(std::istream &in, PrepareMultipleVocab &out) {
-	while (in >> out.TempStr()) {
-		out.Insert();
-		if (in.get() == '\n') out.EndSentence();
-	}
+  while (true) {
+    bool empty = true;
+    while (in >> out.TempStr()) {
+      out.Insert();
+      empty = false;
+      int got = in.get();
+      if (!in) break;
+      if (got == '\n') break;
+    }
+    if (!in) {
+      if (!empty) out.EndSentence();
+      break;
+    }
+    out.EndSentence();
+  }
+  if (!in.eof()) {
+    err(2, "Reading vocabulary");
+  }
 }
 
 void DisplayHelp(const char *name) {
   std::cerr
-		<< "Usage: " << name << " mode input.arpa output.arpa\n\n"
-		   "single mode computes the vocabulary of stdin and filters to that vocabulary.\n\n"
-			 "multiple mode computes a separate vocabulary from each line of stdin.  For each line, a separate language is filtered to that line's vocabulary, with the 0-indexed line number appended to the output file name.\n\n"
-			 "union mode produces one filtered model that is the union of models created by multiple mode.\n";
+    << "Usage: " << name << " mode input.arpa output.arpa\n\n"
+    "single mode computes the vocabulary of stdin and filters to that vocabulary.\n\n"
+    "multiple mode computes a separate vocabulary from each line of stdin.  For each line, a separate language is filtered to that line's vocabulary, with the 0-indexed line number appended to the output file name.\n\n"
+    "union mode produces one filtered model that is the union of models created by multiple mode.\n";
 }
 
 } // namespace
@@ -34,37 +48,37 @@ void DisplayHelp(const char *name) {
 
 int main(int argc, char *argv[]) {
   if (argc < 4) {
-		lm::DisplayHelp(argv[0]);
+    lm::DisplayHelp(argv[0]);
     return 1;
   }
 
-	const char *type = argv[1], *in_name = argv[2], *out_name = argv[3];
+  const char *type = argv[1], *in_name = argv[2], *out_name = argv[3];
 
-	if (std::strcmp(type, "single") && std::strcmp(type, "union") && std::strcmp(type, "multiple")) {
-		lm::DisplayHelp(argv[0]);
-		return 1;
+  if (std::strcmp(type, "single") && std::strcmp(type, "union") && std::strcmp(type, "multiple")) {
+    lm::DisplayHelp(argv[0]);
+    return 1;
   }
 
   std::ifstream in_lm(in_name, std::ios::in);
-	if (!in_lm) {
-		err(2, "Could not open input file %s", in_name);
-	}
+  if (!in_lm) {
+    err(2, "Could not open input file %s", in_name);
+  }
 
-	if (!std::strcmp(type, "single")) {
-		lm::SingleVocabFilter filter(std::cin, out_name);
-		lm::FilterARPA(in_lm, filter);
-		return 0;
-	}
-	
-	lm::PrepareMultipleVocab prep;
-	lm::ReadFilter(std::cin, prep);
+  if (!std::strcmp(type, "single")) {
+    lm::SingleVocabFilter filter(std::cin, out_name);
+    lm::FilterARPA(in_lm, filter);
+    return 0;
+  }
 
-	if (!std::strcmp(type, "union")) {
-		lm::MultipleVocabSingleOutputFilter filter(prep.GetVocabs(), out_name);
-	  lm::FilterARPA(in_lm, filter);
-	} else if (!std::strcmp(type, "multiple")) {
-		lm::MultipleVocabMultipleOutputFilter filter(prep.GetVocabs(), prep.SentenceCount(), out_name);
-	  lm::FilterARPA(in_lm, filter);
-	}
-	return 0;
+  lm::PrepareMultipleVocab prep;
+  lm::ReadFilter(std::cin, prep);
+
+  if (!std::strcmp(type, "union")) {
+    lm::MultipleVocabSingleOutputFilter filter(prep.GetVocabs(), out_name);
+    lm::FilterARPA(in_lm, filter);
+  } else if (!std::strcmp(type, "multiple")) {
+    lm::MultipleVocabMultipleOutputFilter filter(prep.GetVocabs(), prep.SentenceCount(), out_name);
+    lm::FilterARPA(in_lm, filter);
+  }
+  return 0;
 }
