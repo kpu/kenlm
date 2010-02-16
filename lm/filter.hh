@@ -226,6 +226,9 @@ class PrepareMultipleVocab : boost::noncopyable {
     std::auto_ptr<std::string> temp_str_;
 };
 
+// Read space separated words in enter separated lines.  
+void ReadVocabLines(std::istream &in, PrepareMultipleVocab &out);
+
 } // namespace lm
 
 #endif // LM_FILTER_H__

@@ -10,31 +10,6 @@
 namespace lm {
 namespace {
 
-typedef boost::ptr_vector<std::string> Storage;
-typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Vocabs;
-
-// Read space separated words in enter separated lines.  
-void ReadFilter(std::istream &in, PrepareMultipleVocab &out) {
-  while (true) {
-    bool empty = true;
-    while (in >> out.TempStr()) {
-      out.Insert();
-      empty = false;
-      int got = in.get();
-      if (!in) break;
-      if (got == '\n') break;
-    }
-    if (!in) {
-      if (!empty) out.EndSentence();
-      break;
-    }
-    out.EndSentence();
-  }
-  if (!in.eof()) {
-    err(2, "Reading vocabulary");
-  }
-}
-
 void DisplayHelp(const char *name) {
   std::cerr
     << "Usage: " << name << " mode input.arpa output.arpa\n\n"
@@ -71,7 +46,7 @@ int main(int argc, char *argv[]) {
   }
 
   lm::PrepareMultipleVocab prep;
-  lm::ReadFilter(std::cin, prep);
+  lm::ReadVocabLines(std::cin, prep);
 
   if (!std::strcmp(type, "union")) {
     lm::MultipleVocabSingleOutputFilter filter(prep.GetVocabs(), out_name);
