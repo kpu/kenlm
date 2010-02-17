@@ -1,4 +1,5 @@
 #include "lm/filter.hh"
+#include "lm/multiple_vocab.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
 
@@ -46,7 +47,7 @@ int main(int argc, char *argv[]) {
   }
 
   lm::PrepareMultipleVocab prep;
-  lm::ReadVocabLines(std::cin, prep);
+  lm::ReadMultipleVocab(std::cin, prep);
 
   if (!std::strcmp(type, "union")) {
     lm::MultipleVocabSingleOutputFilter filter(prep.GetVocabs(), out_name);
