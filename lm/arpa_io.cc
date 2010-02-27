@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include <ctype.h>
 #include <err.h>
 #include <string.h>
 
@@ -30,15 +31,24 @@ size_t SizeNeededForCounts(const std::vector<size_t> &number) {
   return buf.tellp();
 }
 
+bool IsEntirelyWhiteSpace(const std::string &line) {
+  for (size_t i = 0; i < line.size(); ++i) {
+    if (!isspace(line[i])) return false;
+  }
+  return true;
+}
+
 void ReadCounts(std::istream &in, std::vector<size_t> &number) {
   number.clear();
   std::string line;
   if (!getline(in, line)) err(2, "Reading input lm");
-  if (!line.empty()) errx(3, "First line was \"%s\", not blank.", line.c_str());
+  if (!IsEntirelyWhiteSpace(line)) errx(3, "First line was \"%s\", not blank.", line.c_str());
   if (!getline(in, line)) err(2, "Reading \\data\\");
   if (!(line == "\\data\\")) err(3, "Second line was \"%s\", not blank.", line.c_str());
   while (getline(in, line)) {
-    if (line.empty()) return;
+    if (IsEntirelyWhiteSpace(line)) {
+      return;
+    }
     if (strncmp(line.c_str(), "ngram ", 6))
       errx(3, "data line \"%s\" doesn't begin with \"ngram \"", line.c_str());
     size_t equals = line.find('=');
@@ -56,7 +66,7 @@ void ReadNGramHeader(std::istream &in, unsigned int length) {
   std::string line;
   do {
     if (!getline(in, line)) err(2, "Reading from input lm");
-  } while (line.empty());
+  } while (IsEntirelyWhiteSpace(line));
   if (line != (std::string("\\") + boost::lexical_cast<std::string>(length) + "-grams:"))
     errx(3, "Wrong ngram line: %s", line.c_str());
 }
