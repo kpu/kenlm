@@ -59,13 +59,13 @@ void ReadCounts(std::istream &in, std::vector<size_t> &number) {
     unsigned int count = boost::lexical_cast<unsigned int>(line.substr(equals + 1));
     number.push_back(count);		
   }
-  err(2, "Reading input lm");
+  errx(2, "Reading counts from input lm failed");
 }
 
 void ReadNGramHeader(std::istream &in, unsigned int length) {
   std::string line;
   do {
-    if (!getline(in, line)) err(2, "Reading from input lm");
+    if (!getline(in, line)) errx(2, "Reading header for n-gram length %i from input lm failed", length);
   } while (IsEntirelyWhiteSpace(line));
   if (line != (std::string("\\") + boost::lexical_cast<std::string>(length) + "-grams:"))
     errx(3, "Wrong ngram line: %s", line.c_str());
@@ -73,7 +73,7 @@ void ReadNGramHeader(std::istream &in, unsigned int length) {
 
 void ReadEnd(std::istream &in_lm) {
   std::string line;
-  if (!getline(in_lm, line)) errx(2, "Reading \\end\\ from input lm failed.");
+  if (!getline(in_lm, line)) errx(2, "Reading \\end\\ from input lm failed");
   if (line != "\\end\\") errx(3, "Bad end \"%s\"; should be \\end\\", line.c_str());
 }
 
