@@ -73,8 +73,8 @@ void ReadNGramHeader(std::istream &in, unsigned int length) {
 
 void ReadEnd(std::istream &in_lm) {
   std::string line;
-  if (!getline(in_lm, line)) err(2, "Reading from input lm");
-  if (line != "\\end\\") errx(3, "Bad end \"%s\"", line.c_str());
+  if (!getline(in_lm, line)) errx(2, "Reading \\end\\ from input lm failed.");
+  if (line != "\\end\\") errx(3, "Bad end \"%s\"; should be \\end\\", line.c_str());
 }
 
 ARPAOutput::ARPAOutput(const char *name)  {
