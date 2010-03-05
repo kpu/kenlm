@@ -14,6 +14,8 @@
 #include <vector>
 #include <memory>
 
+/* TODO: use vocab.hh and arpa_io.hh */
+
 namespace lm {
 namespace ngram {
 
