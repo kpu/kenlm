@@ -86,8 +86,6 @@ class GenericVocabulary {
     WordIndex available_;
 };
 
-const char *GenericVocabulary::kNotFoundWord = "<unk>";
-
 } // namespace lm
 
 #endif // LM_VOCAB_H__
