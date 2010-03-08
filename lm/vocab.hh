@@ -2,6 +2,7 @@
 #define LM_VOCAB_H__
 
 #include "lm/exception.hh"
+#include "lm/word_index.hh"
 
 #include <boost/unordered_map.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
