@@ -137,7 +137,6 @@ void MicrosoftQuery::MakeRequest(const std::vector<std::string> &phrases, std::o
     "Content-Type: application/soap+xml; charset=utf-8\n"
     "Content-Length: " << made.size() << "\n\n";
   out << made;
-  std::cerr << made << std::endl;
 }
 
 namespace {
