@@ -3,6 +3,7 @@
 #include <boost/asio.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <algorithm>
 #include <cstring>
 #include <iostream>
 #include <string>
@@ -212,9 +213,11 @@ void MicrosoftQuery::ParseResponse(std::istream &in, size_t expected, std::vecto
 int main() {
   MicrosoftQuery q("GetProbabilities", "1dfc6983-83c5-41a0-8572-a8c3579bf838", "urn:ngram:bing-body:jun09:3");
   std::vector<std::string> queries(1);
-  std::vector<float> probs;
-  while (getline(std::cin, queries.front())) {
-    q.Run(queries, probs);
-    std::cout << probs[0] << std::endl;
+  while (getline(std::cin, queries.back())) {
+    queries.resize(queries.size() + 1);
   }
+  queries.resize(queries.size() - 1);
+  std::vector<float> probs;
+  q.Run(queries, probs);
+  std::copy(probs.begin(), probs.end(), std::ostream_iterator<float>(std::cout, "\n"));
 }
