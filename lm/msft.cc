@@ -74,8 +74,9 @@ class MicrosoftQuery {
 
 void EscapeToOStream(const StringPiece &str, std::ostream &out) {
   for (const char *i = str.data(); i != str.data() + str.length(); ++i) {
-    if (*i < 32) {
-      out << "&#" << static_cast<unsigned int>(*i) << ';';
+    if ((0 < *i && *i < 32) || *i == 127) {
+      unsigned int tmp = *i;
+      out << "&#" << tmp << ';';
       continue;
     }
     switch (*i) {
@@ -95,7 +96,7 @@ void EscapeToOStream(const StringPiece &str, std::ostream &out) {
         out << "&apos;";
         break;
       default:
-        out << *i;
+        out.put(*i);
     }
   }
 }
@@ -136,6 +137,7 @@ void MicrosoftQuery::MakeRequest(const std::vector<std::string> &phrases, std::o
     "Content-Type: application/soap+xml; charset=utf-8\n"
     "Content-Length: " << made.size() << "\n\n";
   out << made;
+  std::cerr << made << std::endl;
 }
 
 namespace {
