@@ -17,11 +17,11 @@ namespace lm {
  */
 class GenericVocabulary {
 	public:
-    static const WordIndex kNotFoundIndex = 0;
-    static const char *kNotFoundWord;
+    static const WordIndex kNotFoundIndex;
+    static const char *const kNotFoundWord;
 
 	  GenericVocabulary() {
-      strings_.push_back(new std::string(kNotFoundIndex));
+      strings_.push_back(new std::string(kNotFoundWord));
       ids_[strings_[0]] = kNotFoundIndex;
       strings_.push_back(new std::string());
       available_ = 1;
