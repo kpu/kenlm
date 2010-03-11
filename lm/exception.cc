@@ -4,6 +4,12 @@
 
 namespace lm {
 
+NotFoundInVocabException::NotFoundInVocabException(const StringPiece &word) : word_(word.data(), word.length()) {
+  what_ = "Word '";
+  what += word_;
+  what += "' was not found in the vocabulary.";
+}
+
 IDDuplicateVocabLoadException::IDDuplicateVocabLoadException(unsigned int id, const StringPiece &first, const StringPiece &second) throw() {
   std::ostringstream tmp;
   tmp << "Vocabulary id " << id << " is same for " << first << " and " << second;

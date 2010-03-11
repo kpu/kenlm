@@ -29,14 +29,17 @@ class GenericVocabulary {
 
     /* Query API */
 
-		WordIndex Index(const std::string &str) const {
-			return Index(StringPiece(str));
-		}
-
 		WordIndex Index(const StringPiece &str) const {
 			boost::unordered_map<StringPiece, WordIndex>::const_iterator i(ids_.find(str));
 			return (__builtin_expect(i == ids_.end(), 0)) ? kNotFoundIndex : i->second;
 		}
+
+    // Note that the literal token <unk> is in the index.  
+    WordIndex IndexOrThrow(const StringPiece &str) const {
+			boost::unordered_map<StringPiece, WordIndex>::const_iterator i(ids_.find(str));
+      if (i == ids_.end()) throw NotFoundInVocabException(str);
+      return i->second;
+    }
 
     bool Known(const StringPiece &str) const {
       return ids_.find(str) != ids_.end();

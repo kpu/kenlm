@@ -8,6 +8,21 @@
 
 namespace lm {
 
+class NotFoundInVocabException : public std::exception {
+  public:
+    explicit NotFoundInVocabException(const StringPiece &word) throw();
+
+    ~NotFoundInVocabException() throw() {}
+
+    const std::string &Word() const throw() { return word_; }
+
+    virtual const char *what() const throw() { return what_.c_str(); }
+
+  private:
+    std::string word_;
+    std::string what_;
+};
+
 class LoadException : public std::exception {
    public:
       virtual ~LoadException() throw() {}
