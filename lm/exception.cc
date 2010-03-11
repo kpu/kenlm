@@ -4,10 +4,10 @@
 
 namespace lm {
 
-NotFoundInVocabException::NotFoundInVocabException(const StringPiece &word) : word_(word.data(), word.length()) {
+NotFoundInVocabException::NotFoundInVocabException(const StringPiece &word) throw() : word_(word.data(), word.length()) {
   what_ = "Word '";
-  what += word_;
-  what += "' was not found in the vocabulary.";
+  what_ += word_;
+  what_ += "' was not found in the vocabulary.";
 }
 
 IDDuplicateVocabLoadException::IDDuplicateVocabLoadException(unsigned int id, const StringPiece &first, const StringPiece &second) throw() {
