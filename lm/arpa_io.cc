@@ -77,9 +77,9 @@ void ReadEnd(std::istream &in_lm) {
   if (line != "\\end\\") errx(3, "Bad end \"%s\"; should be \\end\\", line.c_str());
 }
 
-ARPAOutput::ARPAOutput(const char *name)  {
+ARPAOutput::ARPAOutput(const char *name) : file_(name, std::ios::out) {
+  if (!file_) err(2, "Could not open output lm file '%s'", name);
   file_.exceptions(std::ostream::eofbit | std::ostream::failbit | std::ostream::badbit);
-  file_.open(name, std::ios::out);
 }
 
 void ARPAOutput::ReserveForCounts(std::streampos reserve) {
