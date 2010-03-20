@@ -108,7 +108,7 @@ class Model : boost::noncopyable {
 		// Having this limit means that State can be
 		// (kMaxOrder - 1) * sizeof(float) bytes instead of
 		// sizeof(float*) + (kMaxOrder - 1) * sizeof(float) + malloc overhead
-		static const std::size_t kMaxOrder = 5;
+		static const std::size_t kMaxOrder = 6;
 
 	public:
 		typedef ::lm::ngram::Vocabulary Vocabulary;
