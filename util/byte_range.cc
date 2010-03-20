@@ -66,7 +66,10 @@ loff_t RoundUp(int from_fd, char delim, loff_t start) {
   const size_t kBufferSize = 1024;
   boost::scoped_array<char> buffer(new char[kBufferSize]);
   while (1) {
-    size_t got = ReadOrDie(from_fd, buffer.get(), kBufferSize);
+    ssize_t got = read(from_fd, buffer.get(), kBufferSize);
+    // EOF
+    if (!got) return start;
+    if (got < 0) err(kExitInput, "RoundUp: read");
     for (const char * i = buffer.get(); i < buffer.get() + got; ++i) {
       if (*i == delim) {
         return start + (i - buffer.get());
