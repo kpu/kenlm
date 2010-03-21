@@ -69,7 +69,9 @@ class Vocabulary : public base::Vocabulary {
       // Allow lowercase form of unknown if found, otherwise complain.  It's better to not tolerate an LM without OOV.   
       if (ids_.find(StringPiece("<unk>")) == ids_.end()) {
         if (ids_.find(StringPiece("<UNK>")) == ids_.end()) {
-          throw UnknownMissingException();
+          // TODO: throw up unless there's a command line option saying not to.
+          //throw UnknownMissingException();
+          InsertUnique(new std::string("<unk>"));
         } else {
           ids_["<unk>"] = Index(StringPiece("<UNK>"));
         }
