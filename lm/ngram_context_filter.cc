@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
   Filter filter(prep.GetVocabs());
 
   std::string line;
-  while (std::cin >> line) {
+  while (getline(std::cin, line)) {
     util::PieceIterator<'\t'> tabber(line);
     if (!tabber) errx(2, "Bad line %s", line.c_str());
     util::PieceIterator<' '> words(*tabber);
