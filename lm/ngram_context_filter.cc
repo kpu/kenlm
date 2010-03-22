@@ -50,6 +50,7 @@ class Filter {
 int main(int argc, char *argv[]) {
   if (argc < 2) {
     std::cerr << "Expected vocabulary file on command line." << std::endl;
+    return 3;
   }
   lm::PrepareMultipleVocab prep;
   {
