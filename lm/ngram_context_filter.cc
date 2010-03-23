@@ -18,7 +18,7 @@ inline bool IsTag(const StringPiece &value) {
 
 class Filter {
   public:
-    explicit Filter(const boost::unordered_map<StringPiece, std::vector<unsigned int> > &vocabs) : vocabs_(vocabs) {
+    explicit Filter(const boost::unordered_map<StringPiece, std::vector<unsigned int> > &vocabs, bool replace_meta) : vocabs_(vocabs), replace_meta_(replace_meta) {
       sets_.reserve(6);
     }
 
@@ -26,8 +26,9 @@ class Filter {
       sets_.clear();
       if (!words) errx(2, "Empty words");
       // This loop collects all but the last word.  
+      StringPiece current;
       while (true) {
-        StringPiece current(*words);
+        current = *words;
         if (!++words) break;
 
         if (IsTag(current)) continue;
@@ -37,7 +38,11 @@ class Filter {
         sets_.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
       }
       if (sets_.empty() || util::FirstIntersection(sets_)) {
-        std::cout << line << '\n';
+        if (replace_meta_ && !IsTag(current) && (vocabs_.end() == vocabs_.find(current))) {
+          std::cout << StringPiece(line.c_str(), current.data() - line.c_str()) << "__meta__" << '\t' << count << '\n';
+        } else {
+          std::cout << line << '\n';
+        }
       }
     }
 
@@ -45,6 +50,8 @@ class Filter {
     const boost::unordered_map<StringPiece, std::vector<unsigned int> > vocabs_;
 
     std::vector<boost::iterator_range<const unsigned int*> > sets_;
+
+    bool replace_meta_;
 };
 
 int main(int argc, char *argv[]) {
@@ -52,12 +59,20 @@ int main(int argc, char *argv[]) {
     std::cerr << "Expected vocabulary file on command line." << std::endl;
     return 3;
   }
+  bool replace_with_meta = false;
+  if (argc == 3) {
+    if (strcmp(argv[2], "meta")) {
+      std::cerr << argv[0] << " vocabulary [meta]" << std::endl;
+      return 3;
+    }
+    replace_with_meta = true;
+  }
   lm::PrepareMultipleVocab prep;
   {
     std::ifstream vocab_in(argv[1], std::ios::in);
     ReadMultipleVocab(vocab_in, prep);
   }
-  Filter filter(prep.GetVocabs());
+  Filter filter(prep.GetVocabs(), replace_with_meta);
 
   std::string line;
   while (getline(std::cin, line)) {
