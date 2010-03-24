@@ -104,6 +104,50 @@ class MultipleVocabSingleOutputFilter : public SingleOutputFilter {
     const Map &vocabs_;
 };
 
+// This one only filters the context.  
+class MultipleVocabSingleOutputContextFilter : public SingleOutputFilter {
+  public:
+    typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Map;
+
+    MultipleVocabSingleOutputContextFilter(const Map &vocabs, const char *out) : SingleOutputFilter(out), vocabs_(vocabs) {}
+
+    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
+      sets_.clear();
+      Map::const_iterator found;
+
+      Iterator i(begin);
+      for (unsigned int counter = 1; counter < length; ++i, ++counter) {
+        if (IsTag(*i)) continue;
+        if (vocabs_.end() == (found = vocabs_.find(*i))) return;
+        sets_.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
+      }
+      if (sets_.empty() || util::FirstIntersection(sets_)) {
+        if (ReplaceMetaTest(*i)) {
+          // Nobody cares about backoff for a __meta__ anyway.
+          temp_.assign(line, 0, i->data() - line.c_str());
+          temp_ += "__meta__";
+          out_.AddNGram(temp_);
+        } else {
+          out_.AddNGram(line);
+        }
+      }
+    }
+
+  private:
+    bool ReplaceMetaTest(const StringPiece &str) {
+      if (IsTag(str)) return false;
+      boost::unordered_map<StringPiece, std::vector<unsigned int> >::const_iterator found(vocabs_.find(str));
+      if (found == vocabs_.end()) return true;
+      sets_.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
+      return !util::FirstIntersection(sets_);
+    }
+
+    std::vector<boost::iterator_range<const unsigned int*> > sets_;
+    std::string temp_;
+
+    const Map &vocabs_;
+};
+
 class MultipleVocabMultipleOutputFilter {
   public:
     typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Map;
