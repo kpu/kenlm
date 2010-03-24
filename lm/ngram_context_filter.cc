@@ -38,7 +38,7 @@ class Filter {
         sets_.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
       }
       if (sets_.empty() || util::FirstIntersection(sets_)) {
-        if (replace_meta_ && !IsTag(current) && (vocabs_.end() == vocabs_.find(current))) {
+        if (ReplaceMetaTest(current)) {
           std::cout << StringPiece(line.c_str(), current.data() - line.c_str()) << "__meta__" << '\t' << count << '\n';
         } else {
           std::cout << line << '\n';
@@ -47,6 +47,15 @@ class Filter {
     }
 
   private:
+    bool ReplaceMetaTest(const StringPiece &str) {
+      if (!replace_meta_) return false;
+      if (IsTag(str)) return false;
+      boost::unordered_map<StringPiece, std::vector<unsigned int> >::const_iterator found(vocabs_.find(str));
+      if (found == vocabs_.end()) return true;
+      sets_.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
+      return !util::FirstIntersection(sets_);
+    }
+
     const boost::unordered_map<StringPiece, std::vector<unsigned int> > vocabs_;
 
     std::vector<boost::iterator_range<const unsigned int*> > sets_;
