@@ -18,7 +18,8 @@ void DisplayHelp(const char *name) {
     "single mode computes the vocabulary of stdin and filters to that vocabulary.\n\n"
     "multiple mode computes a separate vocabulary from each line of stdin.  For each line, a separate language is filtered to that line's vocabulary, with the 0-indexed line number appended to the output file name.\n\n"
     "union mode produces one filtered model that is the union of models created by multiple mode.\n\n"
-    "context mode is like union mode but replaces the last word with __meta__ if all but the last word match; useful for filtering before backoff weight estimation.\n";
+    "first mode is like single mode, but only checks the first word.\n\n"
+    "context mode is like union, but only requires that the context match the filter.\n";
 }
 
 } // namespace
@@ -32,7 +33,7 @@ int main(int argc, char *argv[]) {
 
   const char *type = argv[1], *in_name = argv[2], *out_name = argv[3];
 
-  if (std::strcmp(type, "copy") && std::strcmp(type, "single") && std::strcmp(type, "multiple") && std::strcmp(type, "union") && std::strcmp(type, "context")) {
+  if (std::strcmp(type, "copy") && std::strcmp(type, "single") && std::strcmp(type, "multiple") && std::strcmp(type, "union") && std::strcmp(type, "context") && strcmp(type, "first")) {
     lm::DisplayHelp(argv[0]);
     return 1;
   }
@@ -50,6 +51,10 @@ int main(int argc, char *argv[]) {
 
   if (!std::strcmp(type, "single")) {
     lm::SingleVocabFilter filter(std::cin, out_name);
+    lm::ReadARPA(in_lm, filter);
+    return 0;
+  } else if (!std::strcmp(type, "first")) {
+    lm::FirstWordFilter filter(std::cin, out_name);
     lm::ReadARPA(in_lm, filter);
     return 0;
   }
