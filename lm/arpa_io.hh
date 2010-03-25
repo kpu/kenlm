@@ -67,21 +67,22 @@ template <class Output> void ReadNGrams(std::istream &in, unsigned int length, s
   ReadNGramHeader(in, length);
   out.BeginLength(length);
   boost::progress_display display(number, std::cerr, std::string("Length ") + boost::lexical_cast<std::string>(length) + ": " + boost::lexical_cast<std::string>(number) + " total\n");
-  for (unsigned int i = 0; i < number; ++i) {
-    ++display;
+  for (unsigned int i = 0; i < number;) {
     if (!std::getline(in, line))
       err(2, "Reading ngram failed.  Maybe the counts are wrong?");
 
     util::PieceIterator<'\t'> tabber(line);
-    if (!tabber) 
-      errx(3, "Empty \"%s\"", line.c_str());
+    if (!tabber) {
+      std::cerr << "Warning: empty line inside list of " << length << "-grams." << std::endl;
+      continue;
+    }
     if (!++tabber)
       errx(3, "No tab in line \"%s\"", line.c_str());
 
     out.AddNGram(length, util::PieceIterator<' '>(*tabber), util::PieceIterator<' '>::end(), line);
+    ++i;
+    ++display;
   }
-  if (!getline(in, line)) err(2, "Reading from input lm");
-  if (!line.empty()) errx(3, "Expected blank line after ngrams");
   out.EndLength(length);
 }
 

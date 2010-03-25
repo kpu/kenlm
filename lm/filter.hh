@@ -122,28 +122,13 @@ class MultipleVocabSingleOutputContextFilter : public SingleOutputFilter {
         sets_.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
       }
       if (sets_.empty() || util::FirstIntersection(sets_)) {
-        if (ReplaceMetaTest(*i)) {
-          // Nobody cares about backoff for a __meta__ anyway.
-          temp_.assign(line, 0, i->data() - line.c_str());
-          temp_ += "__meta__";
-          out_.AddNGram(temp_);
-        } else {
-          out_.AddNGram(line);
-        }
+        // Don't replace with __meta__ here because the plan is to renormalize and ngram doesn't accept -meta-tag
+        out_.AddNGram(line);
       }
     }
 
   private:
-    bool ReplaceMetaTest(const StringPiece &str) {
-      if (IsTag(str)) return false;
-      boost::unordered_map<StringPiece, std::vector<unsigned int> >::const_iterator found(vocabs_.find(str));
-      if (found == vocabs_.end()) return true;
-      sets_.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
-      return !util::FirstIntersection(sets_);
-    }
-
     std::vector<boost::iterator_range<const unsigned int*> > sets_;
-    std::string temp_;
 
     const Map &vocabs_;
 };

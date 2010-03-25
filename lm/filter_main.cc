@@ -14,6 +14,7 @@ namespace {
 void DisplayHelp(const char *name) {
   std::cerr
     << "Usage: " << name << " mode input.arpa output.arpa\n\n"
+    "copy mode just copies, but makes the format nicer for e.g. irstlm's broken parser.\n\n"
     "single mode computes the vocabulary of stdin and filters to that vocabulary.\n\n"
     "multiple mode computes a separate vocabulary from each line of stdin.  For each line, a separate language is filtered to that line's vocabulary, with the 0-indexed line number appended to the output file name.\n\n"
     "union mode produces one filtered model that is the union of models created by multiple mode.\n\n"
@@ -31,7 +32,7 @@ int main(int argc, char *argv[]) {
 
   const char *type = argv[1], *in_name = argv[2], *out_name = argv[3];
 
-  if (std::strcmp(type, "single") && std::strcmp(type, "multiple") && std::strcmp(type, "union") && std::strcmp(type, "context")) {
+  if (std::strcmp(type, "copy") && std::strcmp(type, "single") && std::strcmp(type, "multiple") && std::strcmp(type, "union") && std::strcmp(type, "context")) {
     lm::DisplayHelp(argv[0]);
     return 1;
   }
@@ -39,6 +40,11 @@ int main(int argc, char *argv[]) {
   std::ifstream in_lm(in_name, std::ios::in);
   if (!in_lm) {
     err(2, "Could not open input file %s", in_name);
+  }
+
+  if (!std::strcmp(type, "copy")) {
+    lm::ARPAOutput out(out_name);
+    lm::ReadARPA(in_lm, out);
   }
 
   if (!std::strcmp(type, "single")) {
