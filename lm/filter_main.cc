@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
   if (!std::strcmp(type, "copy")) {
     lm::ARPAOutput out(out_name);
     lm::ReadARPA(in_lm, out);
+    return 0;
   }
 
   if (!std::strcmp(type, "single")) {
