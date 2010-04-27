@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
 
   const char *type = argv[1], *in_name = argv[2], *out_name = argv[3];
 
-  if (std::strcmp(type, "copy") && std::strcmp(type, "single") && std::strcmp(type, "multiple") && std::strcmp(type, "union") && std::strcmp(type, "context") && strcmp(type, "first")) {
+  if (std::strcmp(type, "copy") && std::strcmp(type, "single") && std::strcmp(type, "multiple") && std::strcmp(type, "union") && std::strcmp(type, "context")) {
     lm::DisplayHelp(argv[0]);
     return 1;
   }
@@ -51,10 +51,6 @@ int main(int argc, char *argv[]) {
 
   if (!std::strcmp(type, "single")) {
     lm::SingleVocabFilter filter(std::cin, out_name);
-    lm::ReadARPA(in_lm, filter);
-    return 0;
-  } else if (!std::strcmp(type, "first")) {
-    lm::FirstWordFilter filter(std::cin, out_name);
     lm::ReadARPA(in_lm, filter);
     return 0;
   }

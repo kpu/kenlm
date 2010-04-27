@@ -79,17 +79,6 @@ class SingleVocabFilter : public SingleOutputFilter {
     boost::unordered_set<StringPiece> words_;
 };
 
-class FirstWordFilter : public SingleVocabFilter {
-  public:
-    FirstWordFilter(std::istream &vocab, const char *out) : SingleVocabFilter(vocab, out) {}
-
-    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
-      if (IsTag(*begin) || (words_.find(*begin) != words_.end()))
-        out_.AddNGram(line);
-    }
-};
-
-
 class MultipleVocabSingleOutputFilter : public SingleOutputFilter {
   public:
     typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Map;
