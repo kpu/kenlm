@@ -18,7 +18,6 @@ void DisplayHelp(const char *name) {
     "single mode computes the vocabulary of stdin and filters to that vocabulary.\n\n"
     "multiple mode computes a separate vocabulary from each line of stdin.  For each line, a separate language is filtered to that line's vocabulary, with the 0-indexed line number appended to the output file name.\n\n"
     "union mode produces one filtered model that is the union of models created by multiple mode.\n\n"
-    "first mode is like single mode, but only checks the first word.\n\n"
     "context mode is like union, but only requires that the context match the filter.\n";
 }
 
