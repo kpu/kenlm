@@ -1,3 +1,5 @@
+#include "lm/arpa_io.hh"
+#include "lm/arpa_filter.hh"
 #include "lm/filter.hh"
 #include "lm/multiple_vocab.hh"
 
@@ -13,12 +15,73 @@ namespace {
 
 void DisplayHelp(const char *name) {
   std::cerr
-    << "Usage: " << name << " mode input.arpa output.arpa\n\n"
-    "copy mode just copies, but makes the format nicer for e.g. irstlm's broken parser.\n\n"
-    "single mode computes the vocabulary of stdin and filters to that vocabulary.\n\n"
-    "multiple mode computes a separate vocabulary from each line of stdin.  For each line, a separate language is filtered to that line's vocabulary, with the 0-indexed line number appended to the output file name.\n\n"
-    "union mode produces one filtered model that is the union of models created by multiple mode.\n\n"
-    "context mode is like union, but only requires that the context match the filter.\n";
+    << "Usage: " << name << " mode [context] input.arpa output.arpa\n\n"
+    "copy mode just copies, but makes the format nicer for e.g. irstlm's broken\n"
+    "    parser.\n"
+    "single mode computes the vocabulary of stdin and filters to that vocabulary.\n"
+    "multiple mode computes a separate vocabulary from each line of stdin.  For\n"
+    "    each line, a separate language is filtered to that line's vocabulary, with\n"
+    "    the 0-indexed line number appended to the output file name.\n"
+    "union mode produces one filtered model that is the union of models created by\n"
+    "    multiple mode.\n\n"
+    "If context is specified, only the context (all but last word) has to pass the\n"
+    "filter, but the entire n-gram is output.\n";
+}
+
+typedef enum { COPY, SINGLE, MULTIPLE, UNION } FilterMode;
+
+template <class Filter> void RunFilter(std::istream &in_lm, Filter &filter) {
+  DispatchARPAInput<Filter> dispatcher(filter);
+  ReadARPA(in_lm, dispatcher);
+}
+
+template <class Filter> void RunContextFilter(bool context, std::istream &in_lm, Filter &filter) {
+  if (context) {
+    ContextFilter<Filter> context(filter);
+    RunFilter(in_lm, context);
+  } else {
+    RunFilter(in_lm, filter);
+  }
+}
+
+void DispatchFilterModes(FilterMode mode, bool context, const char *in_name, const char *out_name) {
+  std::ifstream in_lm(in_name, std::ios::in);
+  if (!in_lm) {
+    err(2, "Could not open input file %s", in_name);
+  }
+
+  PrepareMultipleVocab prep;
+  if (mode == MULTIPLE || mode == UNION) {
+    ReadMultipleVocab(std::cin, prep);
+  }
+
+  if (mode == MULTIPLE) {
+    MultipleARPAOutput out(out_name, prep.SentenceCount());
+    MultipleOutputFilter<MultipleARPAOutput> filter(prep.GetVocabs(), out);
+    RunContextFilter(context, in_lm, filter);
+    return;
+  }
+
+  ARPAOutput out(out_name);
+
+  if (mode == COPY) {
+    ReadARPA(in_lm, out);
+    return;
+  }
+
+  if (mode == SINGLE) {
+    SingleBinary binary(std::cin);
+    SingleOutputFilter<SingleBinary, ARPAOutput> filter(binary, out);
+    RunContextFilter(context, in_lm, filter);
+    return;
+  }
+
+  if (mode == UNION) {
+    UnionBinary binary(prep.GetVocabs());
+    SingleOutputFilter<UnionBinary, ARPAOutput> filter(binary, out);
+    RunContextFilter(context, in_lm, filter);
+    return;
+  }
 }
 
 } // namespace
@@ -30,42 +93,31 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  const char *type = argv[1], *in_name = argv[2], *out_name = argv[3];
-
-  if (std::strcmp(type, "copy") && std::strcmp(type, "single") && std::strcmp(type, "multiple") && std::strcmp(type, "union") && std::strcmp(type, "context")) {
+  bool context = false;
+  boost::optional<lm::FilterMode> mode;
+  for (int i = 1; i < argc - 2; ++i) {
+    const char *str = argv[i];
+    if (!std::strcmp(str, "copy")) {
+      mode = lm::COPY;
+    } else if (!std::strcmp(str, "single")) {
+      mode = lm::SINGLE;
+    } else if (!std::strcmp(str, "multiple")) {
+      mode = lm::MULTIPLE;
+    } else if (!std::strcmp(str, "union")) {
+      mode = lm::UNION;
+    } else if (!std::strcmp(str, "context")) {
+      context = true;
+    } else {
+      lm::DisplayHelp(argv[0]);
+      return 1;
+    }
+  }
+  
+  if (!mode) {
     lm::DisplayHelp(argv[0]);
     return 1;
   }
 
-  std::ifstream in_lm(in_name, std::ios::in);
-  if (!in_lm) {
-    err(2, "Could not open input file %s", in_name);
-  }
-
-  if (!std::strcmp(type, "copy")) {
-    lm::ARPAOutput out(out_name);
-    lm::ReadARPA(in_lm, out);
-    return 0;
-  }
-
-  if (!std::strcmp(type, "single")) {
-    lm::SingleVocabFilter filter(std::cin, out_name);
-    lm::ReadARPA(in_lm, filter);
-    return 0;
-  }
-
-  lm::PrepareMultipleVocab prep;
-  lm::ReadMultipleVocab(std::cin, prep);
-
-  if (!std::strcmp(type, "multiple")) {
-    lm::MultipleVocabMultipleOutputFilter filter(prep.GetVocabs(), prep.SentenceCount(), out_name);
-    lm::ReadARPA(in_lm, filter);
-  } else if (!std::strcmp(type, "union")) {
-    lm::MultipleVocabSingleOutputFilter filter(prep.GetVocabs(), out_name);
-    lm::ReadARPA(in_lm, filter);
-  } else if (!std::strcmp(type, "context")) {
-    lm::MultipleVocabSingleOutputContextFilter filter(prep.GetVocabs(), out_name);
-    lm::ReadARPA(in_lm, filter);
-  }
+  lm::DispatchFilterModes(*mode, context, argv[argc - 2], argv[argc - 1]);
   return 0;
 }

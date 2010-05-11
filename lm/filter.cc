@@ -14,7 +14,7 @@
 
 namespace lm {
 
-SingleVocabFilter::SingleVocabFilter(std::istream &vocab, const char *out) : SingleOutputFilter(out) {
+SingleBinary::SingleBinary(std::istream &vocab) {
   std::auto_ptr<std::string> word(new std::string());
   while (vocab >> *word) {
     if (words_.insert(StringPiece(*word)).second) {
@@ -23,16 +23,6 @@ SingleVocabFilter::SingleVocabFilter(std::istream &vocab, const char *out) : Sin
     }
   }
   if (!vocab.eof()) err(1, "Reading text from stdin");
-}
-
-MultipleVocabMultipleOutputFilter::MultipleVocabMultipleOutputFilter(const Map &vocabs, unsigned int sentence_count, const char *prefix) : vocabs_(vocabs) {
-  files_.reserve(sentence_count);
-  std::string tmp;
-  for (unsigned int i = 0; i < sentence_count; ++i) {
-    tmp = prefix;
-    tmp += boost::lexical_cast<std::string>(i);
-    files_.push_back(new ARPAOutput(tmp.c_str()));
-  }
 }
 
 } // namespace lm

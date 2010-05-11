@@ -62,11 +62,11 @@ class ARPAOutput : boost::noncopyable {
     std::vector<size_t> counts_;
 };
 
-template <class Output> void ReadNGrams(std::istream &in, unsigned int length, size_t number, Output &out) {
+template <class Output> void ReadNGrams(std::istream &in, unsigned int length, size_t max_length, size_t number, Output &out) {
   std::string line;
   ReadNGramHeader(in, length);
   out.BeginLength(length);
-  boost::progress_display display(number, std::cerr, std::string("Length ") + boost::lexical_cast<std::string>(length) + ": " + boost::lexical_cast<std::string>(number) + " total\n");
+  boost::progress_display display(number, std::cerr, std::string("Length ") + boost::lexical_cast<std::string>(length) + "/" + boost::lexical_cast<std::string>(max_length) + ": " + boost::lexical_cast<std::string>(number) + " total\n");
   for (unsigned int i = 0; i < number;) {
     if (!std::getline(in, line))
       err(2, "Reading ngram failed.  Maybe the counts are wrong?");
@@ -91,7 +91,7 @@ template <class Output> void ReadARPA(std::istream &in_lm, Output &out) {
   ReadCounts(in_lm, number);
   out.ReserveForCounts(SizeNeededForCounts(number));
   for (unsigned int i = 0; i < number.size(); ++i) {
-    ReadNGrams(in_lm, i + 1, number[i], out);
+    ReadNGrams(in_lm, i + 1, number.size(), number[i], out);
   }
   ReadEnd(in_lm);
   out.Finish();

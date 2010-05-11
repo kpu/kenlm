@@ -4,7 +4,6 @@
  * plus <s>, </s>, and <unk>.
  */
 
-#include "lm/arpa_io.hh"
 #include "util/multi_intersection.hh"
 #include "util/string_piece.hh"
 #include "util/tokenize_piece.hh"
@@ -32,44 +31,18 @@ inline bool IsTag(const StringPiece &value) {
   return (value.data()[0] == '<' && value.data()[value.size() - 1] == '>');
 }
 
-/* Base class for filters that have a single output */
-class SingleOutputFilter : boost::noncopyable {
-  public:
-    void ReserveForCounts(std::streampos reserve) {
-      out_.ReserveForCounts(reserve);
-    }
-
-    void BeginLength(unsigned int length) {
-      out_.BeginLength(length);
-    }
-
-    void EndLength(unsigned int length) {
-      out_.EndLength(length);
-    }
-
-    void Finish() {
-      out_.Finish();
-    }
-
-  protected:
-    explicit SingleOutputFilter(const char *out) : out_(out) {}
-
-    ARPAOutput out_;
-};
-
-
-class SingleVocabFilter : public SingleOutputFilter {
+class SingleBinary {
   public:
     typedef boost::unordered_set<StringPiece> Set;
 
-    SingleVocabFilter(std::istream &vocab, const char *out);
+    explicit SingleBinary(std::istream &vocab);
 
-    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
+    template <class Iterator> bool PassNGram(unsigned int length, const Iterator &begin, const Iterator &end) {
       for (Iterator i = begin; i != end; ++i) {
         if (IsTag(*i)) continue;
-        if (words_.find(*i) == words_.end()) return;
+        if (words_.find(*i) == words_.end()) return false;
       }
-      out_.AddNGram(line);
+      return true;
     }
 
   protected:
@@ -79,128 +52,122 @@ class SingleVocabFilter : public SingleOutputFilter {
     boost::unordered_set<StringPiece> words_;
 };
 
-class MultipleVocabSingleOutputFilter : public SingleOutputFilter {
+class UnionBinary {
   public:
     typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Map;
 
-    MultipleVocabSingleOutputFilter(const Map &vocabs, const char *out) : SingleOutputFilter(out), vocabs_(vocabs) {}
+    explicit UnionBinary(const Map &vocabs) : vocabs_(vocabs) {}
 
-    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
-      std::vector<boost::iterator_range<const unsigned int*> > sets;
-      sets.reserve(length);
-
-      Map::const_iterator found;
-      for (Iterator i(begin); i != end; ++i) {
-        if (IsTag(*i)) continue;
-        if (vocabs_.end() == (found = vocabs_.find(*i))) return;
-        sets.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
-      }
-      if (sets.empty() || util::FirstIntersection(sets)) {
-        out_.AddNGram(line);
-      }
-    }
-
-  private:
-    const Map &vocabs_;
-};
-
-// This one only filters the context.  
-class MultipleVocabSingleOutputContextFilter : public SingleOutputFilter {
-  public:
-    typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Map;
-
-    MultipleVocabSingleOutputContextFilter(const Map &vocabs, const char *out) : SingleOutputFilter(out), vocabs_(vocabs) {}
-
-    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
+    template <class Iterator> bool PassNGram(unsigned int length, const Iterator &begin, const Iterator &end) {
       sets_.clear();
       Map::const_iterator found;
 
-      Iterator i(begin);
-      for (unsigned int counter = 1; counter < length; ++i, ++counter) {
+      for (Iterator i(begin); i != end; ++i) {
         if (IsTag(*i)) continue;
-        if (vocabs_.end() == (found = vocabs_.find(*i))) return;
+        if (vocabs_.end() == (found = vocabs_.find(*i))) return false;
         sets_.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
       }
-      if (sets_.empty() || util::FirstIntersection(sets_)) {
-        // Don't replace with __meta__ here because the plan is to renormalize and ngram doesn't accept -meta-tag
-        out_.AddNGram(line);
-      }
+      return (sets_.empty() || util::FirstIntersection(sets_));
     }
 
   private:
-    std::vector<boost::iterator_range<const unsigned int*> > sets_;
-
     const Map &vocabs_;
+
+    std::vector<boost::iterator_range<const unsigned int*> > sets_;
 };
 
-class MultipleVocabMultipleOutputFilter {
+template <class Binary, class OutputT> class SingleOutputFilter {
   public:
+    typedef OutputT Output;
+
+    SingleOutputFilter(Binary &binary, Output &output) : binary_(binary), output_(output) {}
+
+    Output &GetOutput() { return output_; }
+
+    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
+      if (binary_.PassNGram(length, begin, end))
+        output_.AddNGram(line);
+    }
+
+  private:
+    Binary &binary_;
+    Output &output_;
+};
+
+template <class OutputT> class MultipleOutputFilter {
+  public:
+    typedef OutputT Output;
     typedef boost::unordered_map<StringPiece, std::vector<unsigned int> > Map;
 
-    MultipleVocabMultipleOutputFilter(const Map &vocabs, unsigned int sentence_count, const char *prefix);
+    MultipleOutputFilter(const Map &vocabs, Output &output) : vocabs_(vocabs), output_(output) {}
 
-    void ReserveForCounts(std::streampos reserve) {
-      for (boost::ptr_vector<ARPAOutput>::iterator i = files_.begin(); i != files_.end(); ++i) {
-        i->ReserveForCounts(reserve);
-      }
-    }
-
-    void BeginLength(unsigned int length) {
-      for (boost::ptr_vector<ARPAOutput>::iterator i = files_.begin(); i != files_.end(); ++i) {
-        i->BeginLength(length);
-      }
-    }
+    Output &GetOutput() { return output_; }
 
     // Callback from AllIntersection that does AddNGram.
     class Callback {
       public:
-        Callback(boost::ptr_vector<ARPAOutput> &files, const std::string &line) : files_(files), line_(line) {}
+        Callback(Output &out, const std::string &line) : out_(out), line_(line) {}
 
         void operator()(unsigned int index) {
-          files_[index].AddNGram(line_);
+          out_.SingleAddNGram(index, line_);
         }
 
       private:
-        boost::ptr_vector<ARPAOutput> &files_;
+        Output &out_;
         const std::string &line_;
     };
 
     template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
-      std::vector<boost::iterator_range<const unsigned int*> > sets;
-      sets.reserve(length);
-
+      sets_.clear();
       Map::const_iterator found;
       for (Iterator i(begin); i != end; ++i) {
         if (IsTag(*i)) continue;
         if (vocabs_.end() == (found = vocabs_.find(*i))) return;
-        sets.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
+        sets_.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
       }
-      if (sets.empty()) {
-        for (boost::ptr_vector<ARPAOutput>::iterator i = files_.begin(); i != files_.end(); ++i) {
-          i->AddNGram(line);
-        }
+      if (sets_.empty()) {
+        output_.AddNGram(line);
         return;
       }
 
-      Callback cb(files_, line);
-      util::AllIntersection(sets, cb);
-    }
-
-    void EndLength(unsigned int length) {
-      for (boost::ptr_vector<ARPAOutput>::iterator i = files_.begin(); i != files_.end(); ++i) {
-        i->EndLength(length);
-      }
-    }
-
-    void Finish() {
-      for (boost::ptr_vector<ARPAOutput>::iterator i = files_.begin(); i != files_.end(); ++i) {
-        i->Finish();
-      }
+      Callback cb(output_, line);
+      util::AllIntersection(sets_, cb);
     }
 
   private:
-    boost::ptr_vector<ARPAOutput> files_;
     const Map &vocabs_;
+
+    Output &output_;
+
+    std::vector<boost::iterator_range<const unsigned int*> > sets_;
+};
+
+/* Wrap another filter to pay attention only to context words */
+template <class FilterT> class ContextFilter {
+  public:
+    typedef FilterT Filter;
+    typedef typename Filter::Output Output;
+
+    ContextFilter(Filter &backend) : backend_(backend) {}
+
+    Output &GetOutput() { return backend_.GetOutput(); }
+
+    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
+      assert(length);
+      // TODO: check this is more efficient than just parsing the string twice.  
+      pieces_.clear();
+      unsigned int i;
+      Iterator it(begin);
+      for (i = 0; i < length - 1; ++i, ++it) {
+        pieces_.push_back(*it);
+      }
+      backend_.AddNGram(length - 1, pieces_.begin(), pieces_.end(), line);
+    }
+
+  private:
+    std::vector<StringPiece> pieces_;
+
+    Filter &backend_;
 };
 
 } // namespace lm
