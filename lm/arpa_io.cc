@@ -57,7 +57,7 @@ void ReadCounts(std::istream &in, std::vector<size_t> &number) {
     unsigned int length = boost::lexical_cast<unsigned int>(line.substr(6, equals - 6));
     if (length - 1 != number.size()) errx(3, "ngram length %i is not expected %i in line %s", length, static_cast<unsigned int>(number.size() + 1), line.c_str());
     unsigned int count = boost::lexical_cast<unsigned int>(line.substr(equals + 1));
-    number.push_back(count);		
+    number.push_back(count);
   }
   errx(2, "Reading counts from input lm failed");
 }
