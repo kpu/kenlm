@@ -37,7 +37,7 @@ class SingleBinary {
 
     explicit SingleBinary(std::istream &vocab);
 
-    template <class Iterator> bool PassNGram(unsigned int length, const Iterator &begin, const Iterator &end) {
+    template <class Iterator> bool PassNGram(const Iterator &begin, const Iterator &end) {
       for (Iterator i = begin; i != end; ++i) {
         if (IsTag(*i)) continue;
         if (words_.find(*i) == words_.end()) return false;
@@ -58,7 +58,7 @@ class UnionBinary {
 
     explicit UnionBinary(const Map &vocabs) : vocabs_(vocabs) {}
 
-    template <class Iterator> bool PassNGram(unsigned int length, const Iterator &begin, const Iterator &end) {
+    template <class Iterator> bool PassNGram(const Iterator &begin, const Iterator &end) {
       sets_.clear();
       Map::const_iterator found;
 
@@ -84,8 +84,8 @@ template <class Binary, class OutputT> class SingleOutputFilter {
 
     Output &GetOutput() { return output_; }
 
-    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
-      if (binary_.PassNGram(length, begin, end))
+    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
+      if (binary_.PassNGram(begin, end))
         output_.AddNGram(line);
     }
 
@@ -117,7 +117,7 @@ template <class OutputT> class MultipleOutputFilter {
         const std::string &line_;
     };
 
-    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
+    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
       sets_.clear();
       Map::const_iterator found;
       for (Iterator i(begin); i != end; ++i) {
@@ -152,16 +152,12 @@ template <class FilterT> class ContextFilter {
 
     Output &GetOutput() { return backend_.GetOutput(); }
 
-    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
-      assert(length);
-      // TODO: check this is more efficient than just parsing the string twice.  
+    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
+      assert(begin != end);
+      // TODO: this copy could be avoided by a lookahead iterator.
       pieces_.clear();
-      unsigned int i;
-      Iterator it(begin);
-      for (i = 0; i < length - 1; ++i, ++it) {
-        pieces_.push_back(*it);
-      }
-      backend_.AddNGram(length - 1, pieces_.begin(), pieces_.end(), line);
+      std::copy(begin, end, std::back_insert_iterator<std::vector<StringPiece> >(pieces_));
+      backend_.AddNGram(pieces_.begin(), pieces_.end() - 1, line);
     }
 
   private:

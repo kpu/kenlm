@@ -48,7 +48,7 @@ class ARPAOutput : boost::noncopyable {
       ++fast_counter_;
     }
 
-    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string &line) {
+    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
       AddNGram(line);
     }
 
@@ -79,7 +79,7 @@ template <class Output> void ReadNGrams(std::istream &in, unsigned int length, s
     if (!++tabber)
       errx(3, "No tab in line \"%s\"", line.c_str());
 
-    out.AddNGram(length, util::PieceIterator<' '>(*tabber), util::PieceIterator<' '>::end(), line);
+    out.AddNGram(util::PieceIterator<' '>(*tabber), util::PieceIterator<' '>::end(), line);
     ++i;
     ++display;
   }

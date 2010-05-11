@@ -28,9 +28,9 @@ class MultipleARPAOutput {
         i->AddNGram(line);
     }
 
-    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string      &line) {
+    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string      &line) {
       for (boost::ptr_vector<ARPAOutput>::iterator i = files_.begin(); i != files_.end(); ++i)
-        i->AddNGram(length, begin, end, line);
+        i->AddNGram(begin, end, line);
     }
 
     void SingleAddNGram(size_t offset, const std::string &line) {
@@ -62,8 +62,8 @@ template <class Filter> class DispatchARPAInput {
     void ReserveForCounts(std::streampos reserve) { output_.ReserveForCounts(reserve); }
     void BeginLength(unsigned int length) { output_.BeginLength(length); }
 
-    template <class Iterator> void AddNGram(unsigned int length, const Iterator &begin, const Iterator &end, const std::string      &line) {
-      filter_.AddNGram(length, begin, end, line);
+    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string      &line) {
+      filter_.AddNGram(begin, end, line);
     }
 
     void EndLength(unsigned int length) { output_.EndLength(length); }

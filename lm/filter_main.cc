@@ -28,7 +28,7 @@ void DisplayHelp(const char *name) {
     "filter, but the entire n-gram is output.\n";
 }
 
-typedef enum { COPY, SINGLE, MULTIPLE, UNION } FilterMode;
+typedef enum { MODE_COPY, MODE_SINGLE, MODE_MULTIPLE, MODE_UNION } FilterMode;
 
 template <class Filter> void RunFilter(std::istream &in_lm, Filter &filter) {
   DispatchARPAInput<Filter> dispatcher(filter);
@@ -51,11 +51,11 @@ void DispatchFilterModes(FilterMode mode, bool context, const char *in_name, con
   }
 
   PrepareMultipleVocab prep;
-  if (mode == MULTIPLE || mode == UNION) {
+  if (mode == MODE_MULTIPLE || mode == MODE_UNION) {
     ReadMultipleVocab(std::cin, prep);
   }
 
-  if (mode == MULTIPLE) {
+  if (mode == MODE_MULTIPLE) {
     MultipleARPAOutput out(out_name, prep.SentenceCount());
     MultipleOutputFilter<MultipleARPAOutput> filter(prep.GetVocabs(), out);
     RunContextFilter(context, in_lm, filter);
@@ -64,19 +64,19 @@ void DispatchFilterModes(FilterMode mode, bool context, const char *in_name, con
 
   ARPAOutput out(out_name);
 
-  if (mode == COPY) {
+  if (mode == MODE_COPY) {
     ReadARPA(in_lm, out);
     return;
   }
 
-  if (mode == SINGLE) {
+  if (mode == MODE_SINGLE) {
     SingleBinary binary(std::cin);
     SingleOutputFilter<SingleBinary, ARPAOutput> filter(binary, out);
     RunContextFilter(context, in_lm, filter);
     return;
   }
 
-  if (mode == UNION) {
+  if (mode == MODE_UNION) {
     UnionBinary binary(prep.GetVocabs());
     SingleOutputFilter<UnionBinary, ARPAOutput> filter(binary, out);
     RunContextFilter(context, in_lm, filter);
@@ -98,13 +98,13 @@ int main(int argc, char *argv[]) {
   for (int i = 1; i < argc - 2; ++i) {
     const char *str = argv[i];
     if (!std::strcmp(str, "copy")) {
-      mode = lm::COPY;
+      mode = lm::MODE_COPY;
     } else if (!std::strcmp(str, "single")) {
-      mode = lm::SINGLE;
+      mode = lm::MODE_SINGLE;
     } else if (!std::strcmp(str, "multiple")) {
-      mode = lm::MULTIPLE;
+      mode = lm::MODE_MULTIPLE;
     } else if (!std::strcmp(str, "union")) {
-      mode = lm::UNION;
+      mode = lm::MODE_UNION;
     } else if (!std::strcmp(str, "context")) {
       context = true;
     } else {
