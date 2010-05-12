@@ -15,21 +15,26 @@ namespace {
 
 void DisplayHelp(const char *name) {
   std::cerr
-    << "Usage: " << name << " mode [context] [raw|arpa] input_file output_file\n\n"
+    << "Usage: " << name << " mode [context] [raw|arpa] (vocab|model):input_file output_file\n\n"
     "copy mode just copies, but makes the format nicer for e.g. irstlm's broken\n"
     "    parser.\n"
-    "single mode computes the vocabulary of stdin and filters to that vocabulary.\n"
-    "multiple mode computes a separate vocabulary from each line of stdin.  For\n"
-    "    each line, a separate language is filtered to that line's vocabulary, with\n"
-    "    the 0-indexed line number appended to the output file name.\n"
+    "single mode filters to a vocabulary.\n"
+    "multiple mode computes a separate vocabulary from each line.  For each line, a\n"
+    "    separate language is filtered to that line's vocabulary, with the\n"
+    "    0-indexed line number appended to the output file name.\n"
     "union mode produces one filtered model that is the union of models created by\n"
     "    multiple mode.\n\n"
     "context means only the context (all but last word) has to pass the filter, but\n"
-    "the entire n-gram is output.\n\n"
+    "    the entire n-gram is output.\n\n"
     "The file format is set by [raw|arpa] with default arpa:\n"
     "raw means space-separated tokens, optionally followed by a tab and aribitrary\n"
     "    text.  This is useful for ngram count files.\n"
-    "arpa means the ARPA file format for n-gram language models.\n";
+    "arpa means the ARPA file format for n-gram language models.\n\n"
+    "There are two inputs: vocabulary and model.  Either may be given as a file\n"
+    "    while the other is on stdin.  Specify the type given as a file using\n"
+    "    vocab: or model: before the file name.  \n\n"
+    "For ARPA format, the output must be seekable.  For raw format, it can be a\n"
+    "    stream i.e. /dev/stdout\n";
 }
 
 typedef enum { MODE_COPY, MODE_SINGLE, MODE_MULTIPLE, MODE_UNION } FilterMode;
@@ -43,15 +48,10 @@ template <class Format, class Filter> void RunContextFilter(bool context, std::i
   }
 }
 
-template <class Format> void DispatchFilterModes(FilterMode mode, bool context, const char *in_name, const char *out_name) {
-  std::ifstream in_lm(in_name, std::ios::in);
-  if (!in_lm) {
-    err(2, "Could not open input file %s", in_name);
-  }
-
+template <class Format> void DispatchFilterModes(FilterMode mode, bool context, std::istream &in_vocab, std::istream &in_lm, const char *out_name) {
   PrepareMultipleVocab prep;
   if (mode == MODE_MULTIPLE || mode == MODE_UNION) {
-    ReadMultipleVocab(std::cin, prep);
+    ReadMultipleVocab(in_vocab, prep);
   }
 
   if (mode == MODE_MULTIPLE) {
@@ -70,7 +70,7 @@ template <class Format> void DispatchFilterModes(FilterMode mode, bool context, 
   }
 
   if (mode == MODE_SINGLE) {
-    SingleBinary binary(std::cin);
+    SingleBinary binary(in_vocab);
     typedef SingleOutputFilter<SingleBinary, typename Format::Output> Filter;
     Filter filter(binary, out);
     RunContextFilter<Format, Filter>(context, in_lm, filter);
@@ -126,10 +126,36 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  bool cmd_is_model = true;
+  const char *cmd_input = argv[argc - 2];
+  if (!strncmp(cmd_input, "vocab:", 6)) {
+    cmd_is_model = false;
+    cmd_input += 6;
+  } else if (!strncmp(cmd_input, "model:", 6)) {
+    cmd_input += 6;
+  } else if (strchr(cmd_input, ':')) {
+    errx(1, "Specify vocab: or model: before the input file name, not \"%s\"", cmd_input);
+  } else {
+    std::cerr << "Assuming that " << cmd_input << " is a model file" << std::endl;
+  }
+  std::ifstream cmd_file(cmd_input, std::ios::in);
+  if (!cmd_file) {
+    err(2, "Could not open input file %s", cmd_input);
+  }
+
+  std::istream *vocab, *model;
+  if (cmd_is_model) {
+    vocab = &std::cin;
+    model = &cmd_file;
+  } else {
+    vocab = &cmd_file;
+    model = &std::cin;
+  }
+
   if (format == FORMAT_ARPA) {
-    lm::DispatchFilterModes<lm::ARPAFormat>(*mode, context, argv[argc - 2], argv[argc - 1]);
+    lm::DispatchFilterModes<lm::ARPAFormat>(*mode, context, *vocab, *model, argv[argc - 1]);
   } else if (format == FORMAT_COUNT) {
-    lm::DispatchFilterModes<lm::CountFormat>(*mode, context, argv[argc - 2], argv[argc - 1]);
+    lm::DispatchFilterModes<lm::CountFormat>(*mode, context, *vocab, *model, argv[argc - 1]);
   }
   return 0;
 }
