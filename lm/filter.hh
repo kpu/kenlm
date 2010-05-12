@@ -15,7 +15,6 @@
 #include <boost/unordered/unordered_map.hpp>
 #include <boost/unordered/unordered_set.hpp>
 
-#include <istream>
 #include <string>
 #include <vector>
 

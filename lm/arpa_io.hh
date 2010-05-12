@@ -43,7 +43,7 @@ class ARPAOutput : boost::noncopyable {
 
     void BeginLength(unsigned int length);
 
-    inline void AddNGram(const std::string &line) {
+    void AddNGram(const std::string &line) {
       file_ << line << '\n';
       ++fast_counter_;
     }
