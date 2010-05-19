@@ -16,7 +16,7 @@
 
 #include <assert.h>
 
-const size_t kBatchBytes = 8192;
+const size_t kBatchBytes = 65536;
 const size_t kBatchBuffer = 3;
 
 struct LineItem {
@@ -57,12 +57,14 @@ bool ReadBatch(std::istream &file, Batch &batch) {
     batch.lines.push_back(item);
   }
 
+  if (!file && !file.eof()) throw std::runtime_error("File reading error");
+
   return file;
 }
 
 class Reader : boost::noncopyable {
   public:
-    Reader(const char *name, util::PCQueue<Batch*> &incoming) : file_(name), incoming_(incoming), outgoing_(kBatchBuffer) {
+    Reader(const char *name, util::PCQueue<Batch*> &incoming) : name_(name), file_(name), incoming_(incoming), outgoing_(kBatchBuffer) {
       decomp_.push(boost::iostreams::gzip_decompressor());
       decomp_.push(file_);
       thread_ = boost::thread(boost::ref(*this)).move();
@@ -73,7 +75,15 @@ class Reader : boost::noncopyable {
       bool ret;
       do {
         incoming_.Consume(batch);
-        ret = ReadBatch(decomp_, *batch);
+        try {
+          ret = ReadBatch(decomp_, *batch);
+        }
+        catch(...) {
+          std::cerr << "Caught error on " << name_ << std::endl;
+          incoming_.Produce(batch);
+          outgoing_.Produce(NULL);
+          throw;
+        }
         outgoing_.Produce(batch);
       } while (ret);
       outgoing_.Produce(NULL);
@@ -83,6 +93,7 @@ class Reader : boost::noncopyable {
     util::PCQueue<Batch*> &Outgoing() { return outgoing_; }
 
   private:
+    std::string name_;
     std::ifstream file_;
     boost::iostreams::filtering_istream decomp_;
 
@@ -140,7 +151,7 @@ struct FileIteratorNgramLess : public std::binary_function<const FileIterator *,
 
 class Joiner {
   public:
-    Joiner(const char **names_begin, const char **names_end) : batches_((names_end - names_begin) * kBatchBuffer), recycle_(batches_.size()) {
+    Joiner(const char **names_begin, const char **names_end) : batches_((names_end - names_begin) * kBatchBuffer * 2), recycle_(batches_.size()) {
       for (std::vector<Batch>::iterator i = batches_.begin(); i != batches_.end(); ++i) {
         recycle_.Produce(&*i);
       }
