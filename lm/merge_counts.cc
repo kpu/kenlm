@@ -9,10 +9,12 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/thread.hpp>
 
+#include <algorithm>
 #include <fstream>
 #include <functional>
 #include <iostream>
 #include <queue>
+#include <vector>
 
 #include <assert.h>
 
@@ -20,8 +22,9 @@ const size_t kBatchBytes = 65536;
 const size_t kBatchBuffer = 3;
 
 struct LineItem {
+  std::vector<StringPiece> tokenized;
   StringPiece ngrams;
-  StringPiece count;
+  unsigned long long count;
 };
 
 struct Batch {
@@ -50,10 +53,12 @@ bool ReadBatch(std::istream &file, Batch &batch) {
       throw std::runtime_error("Empty line");
     }
     item.ngrams = *t;
+    item.tokenized.clear();
+    std::copy(util::PieceIterator<' '>(item.ngrams), util::PieceIterator<' '>::end(), std::back_insert_iterator<std::vector<StringPiece> >(item.tokenized));
     if (!++t) {
       throw std::runtime_error("No count");
     }
-    item.count = *t;
+    item.count = boost::lexical_cast<unsigned long long>(*t);
     batch.lines.push_back(item);
   }
 
@@ -145,7 +150,7 @@ class FileIterator : boost::noncopyable {
 
 struct FileIteratorNgramGreater : public std::binary_function<const FileIterator *, const FileIterator *, bool> {
   bool operator()(const FileIterator *left, const FileIterator *right) const {
-    return (*left)->ngrams > (*right)->ngrams;
+    return (*left)->tokenized > (*right)->tokenized;
   }
 };
 
@@ -166,22 +171,15 @@ void Join(const char **names_begin, const char **names_end, std::ostream &out) {
   while (!queue.empty()) {
     FileIterator *top = queue.top();
     queue.pop();
-    out << (*top)->ngrams << '\t';
-    if ((*queue.top())->ngrams != (*top)->ngrams) {
-      // Unique.
-      out << (*top)->count;
-    } else {
-      unsigned long long sum = boost::lexical_cast<unsigned long long>((*top)->count);
-      while (!queue.empty()) {
-        FileIterator *same = queue.top();
-        if ((*same)->ngrams != (*top)->ngrams) break;
-        sum += boost::lexical_cast<unsigned long long>((*same)->count);
-        queue.pop();
-        if (++*same) queue.push(same);
-      }
-      out << sum;
+    unsigned long long sum = (*top)->count;
+    while (!queue.empty()) {
+      FileIterator *same = queue.top();
+      if ((*same)->ngrams != (*top)->ngrams) break;
+      sum += (*same)->count;
+      queue.pop();
+      if (++*same) queue.push(same);
     }
-    out << '\n';
+    out << (*top)->ngrams << '\t' << sum << '\n';
     if (++*top) queue.push(top);
   }
 }
