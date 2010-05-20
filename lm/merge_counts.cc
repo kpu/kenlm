@@ -143,60 +143,49 @@ class FileIterator : boost::noncopyable {
     std::vector<LineItem>::const_iterator line_;
 };
 
-struct FileIteratorNgramLess : public std::binary_function<const FileIterator *, const FileIterator *, bool> {
+struct FileIteratorNgramGreater : public std::binary_function<const FileIterator *, const FileIterator *, bool> {
   bool operator()(const FileIterator *left, const FileIterator *right) const {
-    return (*left)->ngrams < (*right)->ngrams;
+    return (*left)->ngrams > (*right)->ngrams;
   }
 };
 
-class Joiner {
-  public:
-    Joiner(const char **names_begin, const char **names_end) : batches_((names_end - names_begin) * kBatchBuffer * 2), recycle_(batches_.size()) {
-      for (std::vector<Batch>::iterator i = batches_.begin(); i != batches_.end(); ++i) {
-        recycle_.Produce(&*i);
+void Join(const char **names_begin, const char **names_end, std::ostream &out) {
+  std::vector<Batch> batches((names_end - names_begin) * kBatchBuffer * 2);
+  util::PCQueue<Batch*> recycle(batches.size());
+  for (std::vector<Batch>::iterator i = batches.begin(); i != batches.end(); ++i) {
+    recycle.Produce(&*i);
+  }
+
+  boost::ptr_vector<FileIterator> iterators;
+  std::priority_queue<FileIterator*, std::vector<FileIterator*>, FileIteratorNgramGreater> queue;
+  for (const char **i = names_begin; i != names_end; ++i) {
+    iterators.push_back(new FileIterator(*i, recycle));
+    queue.push(&iterators.back());
+  }
+
+  while (!queue.empty()) {
+    FileIterator *top = queue.top();
+    queue.pop();
+    out << (*top)->ngrams << '\t';
+    if ((*queue.top())->ngrams != (*top)->ngrams) {
+      // Unique.
+      out << (*top)->count;
+    } else {
+      unsigned long long sum = boost::lexical_cast<unsigned long long>((*top)->count);
+      while (!queue.empty()) {
+        FileIterator *same = queue.top();
+        if ((*same)->ngrams != (*top)->ngrams) break;
+        sum += boost::lexical_cast<unsigned long long>((*same)->count);
+        queue.pop();
+        if (++*same) queue.push(same);
       }
-      for (const char **i = names_begin; i != names_end; ++i) {
-        iterators_.push_back(new FileIterator(*i, recycle_));
-        queue_.push(&iterators_.back());
-      }
+      out << sum;
     }
-
-    void Run(std::ostream &out) {
-      FileIteratorNgramLess less;
-      while (!queue_.empty()) {
-        FileIterator *top = queue_.top();
-        queue_.pop();
-        out << (*top)->ngrams << '\t';
-        // Unique.
-        if (less(top, queue_.top())) {
-          out << (*top)->count;
-        } else {
-          unsigned long long sum = boost::lexical_cast<unsigned long long>((*top)->count);
-          while (!queue_.empty()) {
-            FileIterator *same = queue_.top();
-            if (less(top, same)) break;
-            sum += boost::lexical_cast<unsigned long long>((*same)->count);
-            queue_.pop();
-            if (++*same) queue_.push(same);
-          }
-          out << sum;
-        }
-        out << '\n';
-        if (++*top) queue_.push(top);
-      }
-    }
-
-  private:
-    std::vector<Batch> batches_;
-
-    util::PCQueue<Batch*> recycle_;
-
-    boost::ptr_vector<FileIterator> iterators_;
-
-    std::priority_queue<FileIterator*, std::vector<FileIterator*>, FileIteratorNgramLess> queue_;
-};
+    out << '\n';
+    if (++*top) queue.push(top);
+  }
+}
 
 int main(int argc, const char *argv[]) {
-  Joiner join(argv + 1, argv + argc);
-  join.Run(std::cout);
+  Join(argv + 1, argv + argc, std::cout);
 }
