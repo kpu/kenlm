@@ -81,6 +81,24 @@ extern std::ostream& operator<<(std::ostream& o, const StringPiece& piece);
 
 size_t hash_value(const StringPiece &str);
 
+/* Support for lookup of StringPiece in boost::unordered_map<std::string> */
+struct StringPieceCompatibleHash : public std::unary_function<const StringPiece &, size_t> {
+  size_t operator()(const StringPiece &str) const {
+    return hash_value(str);
+  }
+};
+struct StringPieceCompatibleEquals : public std::binary_function<const StringPiece &, const std::string &, bool> {
+  bool operator()(const StringPiece &first, const StringPiece &second) const {
+    return first == second;
+  }
+};
+template <class T> typename T::const_iterator FindStringPiece(const T &t, const StringPiece &key) {
+  return t.find(key, StringPieceCompatibleHash(), StringPieceCompatibleEquals());
+}
+template <class T> typename T::iterator FindStringPiece(T &t, const StringPiece &key) {
+  return t.find(key, StringPieceCompatibleHash(), StringPieceCompatibleEquals());
+}
+
 U_NAMESPACE_END
 
 #endif  // BASE_STRING_PIECE_H__
