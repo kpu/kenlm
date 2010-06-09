@@ -1,7 +1,7 @@
 #include "lm/arpa_io.hh"
 #include "lm/filter_format.hh"
 #include "lm/filter.hh"
-#include "lm/multiple_vocab.hh"
+#include "lm/read_vocab.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
 
@@ -39,7 +39,7 @@ void DisplayHelp(const char *name) {
 
 typedef enum { MODE_COPY, MODE_SINGLE, MODE_MULTIPLE, MODE_UNION } FilterMode;
 
-template <class Format, class Filter> void RunContextFilter(bool context, std::istream &in_lm, Filter &filter) {
+template <class Format, class Filter> void RunContextFilter(bool context, std::istream &in_lm, Filter filter) {
   if (context) {
     ContextFilter<Filter> context(filter);
     Format::RunFilter(in_lm, context);
@@ -49,16 +49,12 @@ template <class Format, class Filter> void RunContextFilter(bool context, std::i
 }
 
 template <class Format> void DispatchFilterModes(FilterMode mode, bool context, std::istream &in_vocab, std::istream &in_lm, const char *out_name) {
-  PrepareMultipleVocab prep;
-  if (mode == MODE_MULTIPLE || mode == MODE_UNION) {
-    ReadMultipleVocab(in_vocab, prep);
-  }
-
   if (mode == MODE_MULTIPLE) {
-    typename Format::Multiple out(out_name, prep.SentenceCount());
     typedef MultipleOutputFilter<typename Format::Multiple> Filter;
-    Filter filter(prep.GetVocabs(), out);
-    RunContextFilter<Format, Filter>(context, in_lm, filter);
+    boost::unordered_map<std::string, std::vector<unsigned int> > words;
+    unsigned int sentence_count = ReadMultipleVocab(in_vocab, words);
+    typename Format::Multiple out(out_name, sentence_count);
+    RunContextFilter<Format, Filter>(context, in_lm, Filter(words, out));
     return;
   }
 
@@ -70,18 +66,18 @@ template <class Format> void DispatchFilterModes(FilterMode mode, bool context, 
   }
 
   if (mode == MODE_SINGLE) {
-    SingleBinary binary(in_vocab);
+    SingleBinary::Words words;
+    ReadSingleVocab(in_vocab, words);
     typedef SingleOutputFilter<SingleBinary, typename Format::Output> Filter;
-    Filter filter(binary, out);
-    RunContextFilter<Format, Filter>(context, in_lm, filter);
+    RunContextFilter<Format, Filter>(context, in_lm, Filter(SingleBinary(words), out));
     return;
   }
 
   if (mode == MODE_UNION) {
-    UnionBinary binary(prep.GetVocabs());
+    UnionBinary::Words words;
+    ReadMultipleVocab(in_vocab, words);
     typedef SingleOutputFilter<UnionBinary, typename Format::Output> Filter;
-    Filter filter(binary, out);
-    RunContextFilter<Format, Filter>(context, in_lm, filter);
+    RunContextFilter<Format, Filter>(context, in_lm, Filter(UnionBinary(words), out));
     return;
   }
 }
