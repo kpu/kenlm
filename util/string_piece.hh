@@ -52,12 +52,6 @@
 
 U_NAMESPACE_BEGIN
 
-bool operator==(const StringPiece& x, const StringPiece& y);
-
-inline bool operator!=(const StringPiece& x, const StringPiece& y) {
-  return !(x == y);
-}
-
 inline bool operator<(const StringPiece& x, const StringPiece& y) {
   const int r = std::memcmp(x.data(), y.data(),
                                        std::min(x.size(), y.size()));

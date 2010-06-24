@@ -42,13 +42,6 @@ std::ostream& operator<<(std::ostream& o, const StringPiece& piece) {
   return o;
 }
 
-bool operator==(const StringPiece& x, const StringPiece& y) {
-  if (x.size() != y.size())
-    return false;
-
-  return std::memcmp(x.data(), y.data(), x.size()) == 0;
-}
-
 size_t hash_value(const StringPiece &str) {
   return boost::hash_range(str.data(), str.data() + str.length());
 }
