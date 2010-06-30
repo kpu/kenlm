@@ -12,6 +12,7 @@
 
 #include <ctype.h>
 #include <err.h>
+#include <errno.h>
 #include <string.h>
 
 namespace lm {
@@ -79,24 +80,57 @@ void ReadEnd(std::istream &in_lm) {
   if (line != "\\end\\") errx(3, "Bad end \"%s\"; should be \\end\\", line.c_str());
 }
 
-ARPAOutput::ARPAOutput(const char *name) : file_(name, std::ios::out) {
-  if (!file_) err(2, "Could not open output lm file '%s'", name);
-  file_.exceptions(std::ostream::eofbit | std::ostream::failbit | std::ostream::badbit);
+ARPAOutputException::ARPAOutputException(const char *message, const std::string &file_name) throw()
+  : what_(std::string(message) + " file " + file_name), file_name_(file_name) {
+  if (errno) {
+    char buf[1024];
+    buf[0] = 0;
+#if (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
+    const char *add = buf;
+    if (!strerror_r(errno, buf, 1024)) {
+#else
+    const char *add = strerror_r(errno, buf, 1024);
+    if (add) {
+#endif
+      what_ += " :";
+      what_ += add;
+    }
+  }
+}
+
+ARPAOutput::ARPAOutput(const char *name) : file_name_(name), file_(name, std::ios::out) {
+  try {
+    file_.exceptions(std::ostream::eofbit | std::ostream::failbit | std::ostream::badbit);
+  } catch (const std::ios_base::failure &f) {
+    throw ARPAOutputException("Opening", file_name_);
+  }
 }
 
 void ARPAOutput::ReserveForCounts(std::streampos reserve) {
-  for (std::streampos i = 0; i < reserve; i += std::streampos(1)) {
-    file_ << '\n';
+  try {
+    for (std::streampos i = 0; i < reserve; i += std::streampos(1)) {
+      file_ << '\n';
+    }
+  } catch (const std::ios_base::failure &f) {
+    throw ARPAOutputException("Writing blanks to reserve space for counts to ", file_name_);
   }
 }
 
 void ARPAOutput::BeginLength(unsigned int length) {
   fast_counter_ = 0;
-  file_ << '\\' << length << "-grams:" << '\n';
+  try {
+    file_ << '\\' << length << "-grams:" << '\n';
+  } catch (const std::ios_base::failure &f) {
+    throw ARPAOutputException("Writing n-gram header to ", file_name_);
+  }
 }
 
 void ARPAOutput::EndLength(unsigned int length) {
-  file_ << '\n';
+  try {
+    file_ << '\n';
+  } catch (const std::ios_base::failure &f) {
+    throw ARPAOutputException("Writing blank at end of count list to ", file_name_);
+  }
   if (length > counts_.size()) {
     counts_.resize(length);
   }
@@ -104,11 +138,14 @@ void ARPAOutput::EndLength(unsigned int length) {
 }
 
 void ARPAOutput::Finish() {
-  file_ << "\\end\\\n";
-
-  file_.seekp(0);
-  WriteCounts(file_, counts_);
-  file_ << std::flush;
+  try {
+    file_ << "\\end\\\n";
+    file_.seekp(0);
+    WriteCounts(file_, counts_);
+    file_ << std::flush;
+  } catch (const std::ios_base::failure &f) {
+    throw ARPAOutputException("Finishing including writing counts at beginning to ", file_name_);
+  }
 }
 
 } // namespace lm

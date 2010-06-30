@@ -31,6 +31,20 @@ void ReadNGramHeader(std::istream &in_lm, unsigned int length);
 // Read and verify end marker.  
 void ReadEnd(std::istream &in_lm);
 
+class ARPAOutputException : public std::exception {
+  public:
+    ARPAOutputException(const char *prefix, const std::string &file_name) throw();
+    virtual ~ARPAOutputException() throw() {}
+
+    const char *what() const throw() { return what_.c_str(); }
+
+    const std::string &File() const throw() { return file_name_; }
+
+  private:
+    std::string what_;
+    const std::string file_name_;
+};
+
 /* Writes an ARPA file.  This has to be seekable so the counts can be written
  * at the end.  Hence, I just have it own a std::fstream instead of accepting
  * a separately held std::ostream.  
@@ -44,7 +58,11 @@ class ARPAOutput : boost::noncopyable {
     void BeginLength(unsigned int length);
 
     void AddNGram(const std::string &line) {
-      file_ << line << '\n';
+      try {
+        file_ << line << '\n';
+      } catch (const std::ios_base::failure &f) {
+        throw ARPAOutputException("Writing an n-gram", file_name_);
+      }
       ++fast_counter_;
     }
 
@@ -57,6 +75,7 @@ class ARPAOutput : boost::noncopyable {
     void Finish();
 
   private:
+    const std::string file_name_;
     std::fstream file_;
     size_t fast_counter_;
     std::vector<size_t> counts_;
