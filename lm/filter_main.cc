@@ -27,7 +27,7 @@ void DisplayHelp(const char *name) {
     "context means only the context (all but last word) has to pass the filter, but\n"
     "    the entire n-gram is output.\n\n"
     "The file format is set by [raw|arpa] with default arpa:\n"
-    "raw means space-separated tokens, optionally followed by a tab and aribitrary\n"
+    "raw means space-separated tokens, optionally followed by a tab and arbitrary\n"
     "    text.  This is useful for ngram count files.\n"
     "arpa means the ARPA file format for n-gram language models.\n\n"
     "There are two inputs: vocabulary and model.  Either may be given as a file\n"
