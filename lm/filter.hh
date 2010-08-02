@@ -124,16 +124,7 @@ template <class OutputT> class MultipleOutputVocabFilter {
 };
 
 namespace detail {
-template <class Iterator> void MakePhraseHashes(Iterator begin, const Iterator &end, std::vector<size_t> &hashes) {
-  hashes.clear();
-  if (begin == end) return;
-  // TODO: check strict phrase boundaries after <s> and before </s>.  For now, just skip tags.  
-  if (IsTag(*begin)) ++begin;
-  boost::hash<StringPiece> hasher;
-  for (Iterator i(begin); i != end && (*i != "</s>"); ++i) {
-    hashes.push_back(hasher(*i));
-  }
-}
+const StringPiece kEndSentence("</s>");
 } // namespace detail
 
 class PhraseBinary {
@@ -141,49 +132,63 @@ class PhraseBinary {
     explicit PhraseBinary(const PhraseSubstrings &substrings) : substrings_(substrings) {}
 
     template <class Iterator> bool PassNGram(const Iterator &begin, const Iterator &end) {
-      detail::MakePhraseHashes(begin, end, hashes_);
-      return hashes_.empty() || Evaluate();
+      MakePhraseHashes(begin, end);
+      return hashes_.empty() || Evaluate<true>();
     }
 
-  private:
-    bool Evaluate() const;
+  protected:
+    template <class Iterator> void MakePhraseHashes(Iterator i, const Iterator &end) {
+      swap(hashes_, pre_hashes_);
+      hashes_.clear();
+      if (i == end) return;
+      // TODO: check strict phrase boundaries after <s> and before </s>.  For now, just skip tags.  
+      if (IsTag(*i)) ++i;
+      boost::hash<StringPiece> hasher;
+      for (; i != end && (*i != detail::kEndSentence); ++i) {
+        hashes_.push_back(hasher(*i));
+      }
+    }
 
+    template <bool ExitEarly> bool Evaluate();
+
+    const std::set<unsigned int> &Matches() const { return matches_; }
+
+    bool HashesEmpty() const { return hashes_.empty(); }
+
+  private:
     const PhraseSubstrings &substrings_;
-    std::vector<size_t> hashes_;
+    // Vector of hash codes for each string in the n-gram.  
+    // pre_hashes_ is the vector for the previous n-gram.  
+    std::vector<size_t> pre_hashes_, hashes_;
+
+    // Reach vector.  Used in evaluate.  Keeps state if previous n-gram is the same.  
+    std::vector<std::set<unsigned int> > reach_;
+
+    // Matches come out here.  
+    std::set<unsigned int> matches_;
 };
 
-namespace detail {
-void MultipleOutputPhraseFilterEvaluate(const PhraseSubstrings &substrings, const std::vector<size_t> &hashes, std::set<unsigned int> &matches);
-} // namespace detail
-
-template <class OutputT> class MultipleOutputPhraseFilter {
+template <class OutputT> class MultipleOutputPhraseFilter : public PhraseBinary {
   public:
     typedef OutputT Output;
     
-    explicit MultipleOutputPhraseFilter(const PhraseSubstrings &substrings, Output &output) : substrings_(substrings), output_(output) {}
+    explicit MultipleOutputPhraseFilter(const PhraseSubstrings &substrings, Output &output) : PhraseBinary(substrings), output_(output) {}
 
     Output &GetOutput() { return output_; }
 
   public:
     template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
-      detail::MakePhraseHashes(begin, end, hashes_);
-      if (hashes_.empty()) {
+      MakePhraseHashes(begin, end);
+      if (HashesEmpty()) {
         output_.AddNGram(line);
         return;
       }
-      std::set<unsigned int> matches;
-      detail::MultipleOutputPhraseFilterEvaluate(substrings_, hashes_, matches);
-      for (std::set<unsigned int>::const_iterator i = matches.begin(); i != matches.end(); ++i) {
+      Evaluate<false>();
+      for (std::set<unsigned int>::const_iterator i = Matches().begin(); i != Matches().end(); ++i)
         output_.SingleAddNGram(*i, line);
-      }
     }
 
   private:
-    void Evaluate();
-
-    const PhraseSubstrings &substrings_;
-    std::vector<size_t> hashes_;
-
     Output &output_;
 };
 
