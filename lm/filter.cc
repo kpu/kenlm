@@ -8,7 +8,7 @@ namespace lm {
 
 namespace {
 // Optimized for sorted vector.
-void VectorToSet(const std::vector<unsigned int> &vec, std::set<unsigned int> &out) {
+inline void VectorToSet(const std::vector<unsigned int> &vec, std::set<unsigned int> &out) {
   for (std::vector<unsigned int>::const_iterator i = vec.begin(); i != vec.end(); ++i)
     out.insert(out.end(), *i);
 }
@@ -29,19 +29,20 @@ template <bool EarlyExit> bool GenericEvaluate(const PhraseSubstrings &substring
 
   // Partial phrases off the beginning.  
   hash = 0;
-  for (reach_write = reach.begin(), hash_finish = hashes.begin(); hash_finish < last_word; ++reach_write, ++hash_finish) {
+  for (reach_write = reach.begin(), hash_finish = hashes.begin(); ; ++reach_write, ++hash_finish) {
     boost::hash_combine(hash, *hash_finish);
+    // n-gram is a substring of a phrase: special case of off beginning that is also off end.  
+    if (hash_finish == last_word) {
+      // if (term) then we know !term->empty() because FindSubstring is the weakest criterion.   
+      if ((term = substrings.FindSubstring(hash))) {
+        if (EarlyExit) return true;
+        VectorToSet(*term, matches);
+      }
+      break;
+    }
+
     if (!(term = substrings.FindRight(hash))) break;
     VectorToSet(*term, *reach_write);
-  }
-  // n-gram is a substring of a phrase: special case of off beginning that is also off end.  
-  if (hash_finish == last_word) {
-    boost::hash_combine(hash, *hash_finish);
-    // if (term) then we know !term->empty() because FindSubstring is the weakest criterion.   
-    if ((term = substrings.FindSubstring(hash))) {
-      if (EarlyExit) return true;
-      VectorToSet(*term, matches);
-    }
   }
 
   // All starting points except the beginning.  
@@ -52,18 +53,18 @@ template <bool EarlyExit> bool GenericEvaluate(const PhraseSubstrings &substring
       hash_start != hashes.end();
       ++hash_start, ++reach_intersect, ++reach_write_begin) {
     hash = 0;
-    for (hash_finish = hash_start, reach_write = reach_write_begin; hash_finish < last_word; ++hash_finish, ++reach_write) {
+    for (hash_finish = hash_start, reach_write = reach_write_begin; ; ++hash_finish, ++reach_write) {
       boost::hash_combine(hash, *hash_finish);
+      // Allow phrases to go off the end of the n-gram.  
+      if (hash_finish == last_word) {
+        if ((term = substrings.FindLeft(hash))) {
+          set_intersection(reach_intersect->begin(), reach_intersect->end(), term->begin(), term->end(), inserter(matches, matches.end()));
+          if (EarlyExit && !matches.empty()) return true;
+        }
+        break;
+      }
       if (!(term = substrings.FindPhrase(hash))) break;
       set_intersection(reach_intersect->begin(), reach_intersect->end(), term->begin(), term->end(), inserter(*reach_write, reach_write->end()));
-    }
-    // Allow phrases to go off the end of the n-gram.  
-    if (hash_finish == last_word) {
-      boost::hash_combine(hash, *hash_finish);
-      if ((term = substrings.FindLeft(hash))) {
-        set_intersection(reach_intersect->begin(), reach_intersect->end(), term->begin(), term->end(), inserter(matches, matches.end()));
-        if (EarlyExit && !matches.empty()) return true;
-      }
     }
   }
 
