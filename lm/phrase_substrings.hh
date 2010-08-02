@@ -77,7 +77,7 @@ class PhraseSubstrings {
 
 // Read a file with one sentence per line containing tab-delimited phrases of
 // space-separated words.  
-void ReadMultiplePhrase(std::istream &in, PhraseSubstrings &out);
+unsigned int ReadMultiplePhrase(std::istream &in, PhraseSubstrings &out);
 
 } // namespace lm
 #endif // LM_PHRASE_SUBSTRINGS_H__

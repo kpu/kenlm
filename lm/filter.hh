@@ -13,6 +13,7 @@
 #include <boost/unordered/unordered_map.hpp>
 #include <boost/unordered/unordered_set.hpp>
 
+#include <set>
 #include <string>
 #include <vector>
 
@@ -72,58 +73,16 @@ class UnionBinary {
     std::vector<boost::iterator_range<const unsigned int*> > sets_;
 };
 
-class PhraseBinary {
-  public:
-    explicit PhraseBinary(const PhraseSubstrings &substrings) : substrings_(substrings), end_sentence_("</s>") {}
-
-    template <class Iterator> bool PassNGram(Iterator begin, const Iterator &end) {
-      if (begin == end) return true;
-      // TODO: check strict phrase boundaries after <s> and before </s>.  For now, just skip tags.  
-      if (IsTag(*begin)) ++begin;
-      hashes_.clear();
-      boost::hash<StringPiece> hasher;
-      for (Iterator i(begin); i != end && (*i != end_sentence_); ++i) {
-        hashes_.push_back(hasher(*i));
-      }
-      return Evaluate();
-    }
-
-  private:
-    bool Evaluate() const;
-
-    const PhraseSubstrings &substrings_;
-    std::vector<size_t> hashes_;
-    const StringPiece end_sentence_;
-};
-
-template <class Binary, class OutputT> class SingleOutputFilter {
-  public:
-    typedef OutputT Output;
-
-    // Binary modles are just references (and a set) and it makes the API cleaner to copy them.  
-    SingleOutputFilter(Binary binary, Output &output) : binary_(binary), output_(output) {}
-
-    Output &GetOutput() { return output_; }
-
-    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
-      if (binary_.PassNGram(begin, end))
-        output_.AddNGram(line);
-    }
-
-  private:
-    Binary binary_;
-    Output &output_;
-};
-
-template <class OutputT> class MultipleOutputFilter {
+template <class OutputT> class MultipleOutputVocabFilter {
   public:
     typedef OutputT Output;
     typedef boost::unordered_map<std::string, std::vector<unsigned int> > Words;
 
-    MultipleOutputFilter(const Words &vocabs, Output &output) : vocabs_(vocabs), output_(output) {}
+    MultipleOutputVocabFilter(const Words &vocabs, Output &output) : vocabs_(vocabs), output_(output) {}
 
     Output &GetOutput() { return output_; }
 
+  private:
     // Callback from AllIntersection that does AddNGram.
     class Callback {
       public:
@@ -138,6 +97,7 @@ template <class OutputT> class MultipleOutputFilter {
         const std::string &line_;
     };
 
+  public:
     template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
       sets_.clear();
       for (Iterator i(begin); i != end; ++i) {
@@ -161,6 +121,89 @@ template <class OutputT> class MultipleOutputFilter {
     Output &output_;
 
     std::vector<boost::iterator_range<const unsigned int*> > sets_;
+};
+
+namespace detail {
+template <class Iterator> void MakePhraseHashes(Iterator begin, const Iterator &end, std::vector<size_t> &hashes) {
+  hashes.clear();
+  if (begin == end) return;
+  // TODO: check strict phrase boundaries after <s> and before </s>.  For now, just skip tags.  
+  if (IsTag(*begin)) ++begin;
+  boost::hash<StringPiece> hasher;
+  for (Iterator i(begin); i != end && (*i != "</s>"); ++i) {
+    hashes.push_back(hasher(*i));
+  }
+}
+} // namespace detail
+
+class PhraseBinary {
+  public:
+    explicit PhraseBinary(const PhraseSubstrings &substrings) : substrings_(substrings) {}
+
+    template <class Iterator> bool PassNGram(const Iterator &begin, const Iterator &end) {
+      detail::MakePhraseHashes(begin, end, hashes_);
+      return hashes_.empty() || Evaluate();
+    }
+
+  private:
+    bool Evaluate() const;
+
+    const PhraseSubstrings &substrings_;
+    std::vector<size_t> hashes_;
+};
+
+namespace detail {
+void MultipleOutputPhraseFilterEvaluate(const PhraseSubstrings &substrings, const std::vector<size_t> &hashes, std::set<unsigned int> &matches);
+} // namespace detail
+
+template <class OutputT> class MultipleOutputPhraseFilter {
+  public:
+    typedef OutputT Output;
+    
+    explicit MultipleOutputPhraseFilter(const PhraseSubstrings &substrings, Output &output) : substrings_(substrings), output_(output) {}
+
+    Output &GetOutput() { return output_; }
+
+  public:
+    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
+      detail::MakePhraseHashes(begin, end, hashes_);
+      if (hashes_.empty()) {
+        output_.AddNGram(line);
+        return;
+      }
+      std::set<unsigned int> matches;
+      detail::MultipleOutputPhraseFilterEvaluate(substrings_, hashes_, matches);
+      for (std::set<unsigned int>::const_iterator i = matches.begin(); i != matches.end(); ++i) {
+        output_.SingleAddNGram(*i, line);
+      }
+    }
+
+  private:
+    void Evaluate();
+
+    const PhraseSubstrings &substrings_;
+    std::vector<size_t> hashes_;
+
+    Output &output_;
+};
+
+template <class Binary, class OutputT> class SingleOutputFilter {
+  public:
+    typedef OutputT Output;
+
+    // Binary modles are just references (and a set) and it makes the API cleaner to copy them.  
+    SingleOutputFilter(Binary binary, Output &output) : binary_(binary), output_(output) {}
+
+    Output &GetOutput() { return output_; }
+
+    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
+      if (binary_.PassNGram(begin, end))
+        output_.AddNGram(line);
+    }
+
+  private:
+    Binary binary_;
+    Output &output_;
 };
 
 /* Wrap another filter to pay attention only to context words */

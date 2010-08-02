@@ -10,7 +10,7 @@
 
 namespace lm {
 
-void ReadMultiplePhrase(std::istream &in, PhraseSubstrings &out) {
+unsigned int ReadMultiplePhrase(std::istream &in, PhraseSubstrings &out) {
   bool sentence_content = false;
   unsigned int sentence_id = 0;
   std::vector<size_t> phrase;
@@ -42,6 +42,7 @@ void ReadMultiplePhrase(std::istream &in, PhraseSubstrings &out) {
     }
   }
   if (!in.eof()) in.exceptions(std::istream::failbit | std::istream::badbit);
+  return sentence_id + sentence_content;
 }
 
 } // namespace lm
