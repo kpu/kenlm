@@ -18,6 +18,8 @@
 
 namespace lm {
 
+class PhraseSubstrings;
+
 /* Is this a special tag like <s> or <UNK>?  This actually includes anything
  * surrounded with < and >, which most tokenizers separate for real words, so
  * this should not catch real words as it looks at a single token.   
@@ -68,6 +70,30 @@ class UnionBinary {
     const Words &vocabs_;
 
     std::vector<boost::iterator_range<const unsigned int*> > sets_;
+};
+
+class PhraseBinary {
+  public:
+    explicit PhraseBinary(const PhraseSubstrings &substrings) : substrings_(substrings), end_sentence_("</s>") {}
+
+    template <class Iterator> bool PassNGram(Iterator begin, const Iterator &end) {
+      if (begin == end) return true;
+      // TODO: check strict phrase boundaries after <s> and before </s>.  For now, just skip tags.  
+      if (IsTag(*begin)) ++begin;
+      hashes_.clear();
+      boost::hash<StringPiece> hasher;
+      for (Iterator i(begin); i != end && (*i != end_sentence_); ++i) {
+        hashes_.push_back(hasher(*i));
+      }
+      return Evaluate();
+    }
+
+  private:
+    bool Evaluate() const;
+
+    const PhraseSubstrings &substrings_;
+    std::vector<size_t> hashes_;
+    const StringPiece end_sentence_;
 };
 
 template <class Binary, class OutputT> class SingleOutputFilter {

@@ -1,6 +1,7 @@
 #include "lm/arpa_io.hh"
 #include "lm/filter_format.hh"
 #include "lm/filter.hh"
+#include "lm/phrase_substrings.hh"
 #include "lm/read_vocab.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -15,7 +16,7 @@ namespace {
 
 void DisplayHelp(const char *name) {
   std::cerr
-    << "Usage: " << name << " mode [context] [raw|arpa] (vocab|model):input_file output_file\n\n"
+    << "Usage: " << name << " mode [context] [phrase] [raw|arpa] (vocab|model):input_file output_file\n\n"
     "copy mode just copies, but makes the format nicer for e.g. irstlm's broken\n"
     "    parser.\n"
     "single mode filters to a vocabulary.\n"
@@ -26,6 +27,9 @@ void DisplayHelp(const char *name) {
     "    multiple mode.\n\n"
     "context means only the context (all but last word) has to pass the filter, but\n"
     "    the entire n-gram is output.\n\n"
+    "phrase means that the vocabulary is actually tab-delimited phrases and that the\n"
+    "    phrases can generate the n-gram when assembled in arbitrary order and\n"
+    "    clipped.\n\n"
     "The file format is set by [raw|arpa] with default arpa:\n"
     "raw means space-separated tokens, optionally followed by a tab and arbitrary\n"
     "    text.  This is useful for ngram count files.\n"
@@ -48,7 +52,12 @@ template <class Format, class Filter> void RunContextFilter(bool context, std::i
   }
 }
 
-template <class Format> void DispatchFilterModes(FilterMode mode, bool context, std::istream &in_vocab, std::istream &in_lm, const char *out_name) {
+template <class Format, class Binary> void DispatchBinaryFilter(bool context, std::istream &in_lm, const Binary &binary, typename Format::Output &out) {
+  typedef SingleOutputFilter<Binary, typename Format::Output> Filter;
+  RunContextFilter<Format, Filter>(context, in_lm, Filter(binary, out));
+}
+
+template <class Format> void DispatchFilterModes(FilterMode mode, bool context, bool phrase, std::istream &in_vocab, std::istream &in_lm, const char *out_name) {
   if (mode == MODE_MULTIPLE) {
     typedef MultipleOutputFilter<typename Format::Multiple> Filter;
     boost::unordered_map<std::string, std::vector<unsigned int> > words;
@@ -68,16 +77,20 @@ template <class Format> void DispatchFilterModes(FilterMode mode, bool context, 
   if (mode == MODE_SINGLE) {
     SingleBinary::Words words;
     ReadSingleVocab(in_vocab, words);
-    typedef SingleOutputFilter<SingleBinary, typename Format::Output> Filter;
-    RunContextFilter<Format, Filter>(context, in_lm, Filter(SingleBinary(words), out));
+    DispatchBinaryFilter<Format, SingleBinary>(context, in_lm, SingleBinary(words), out);
     return;
   }
 
   if (mode == MODE_UNION) {
-    UnionBinary::Words words;
-    ReadMultipleVocab(in_vocab, words);
-    typedef SingleOutputFilter<UnionBinary, typename Format::Output> Filter;
-    RunContextFilter<Format, Filter>(context, in_lm, Filter(UnionBinary(words), out));
+    if (phrase) {
+      PhraseSubstrings substrings;
+      ReadMultiplePhrase(in_vocab, substrings);
+      DispatchBinaryFilter<Format, PhraseBinary>(context, in_lm, PhraseBinary(substrings), out);
+    } else {
+      UnionBinary::Words words;
+      ReadMultipleVocab(in_vocab, words);
+      DispatchBinaryFilter<Format, UnionBinary>(context, in_lm, UnionBinary(words), out);
+    }
     return;
   }
 }
@@ -92,6 +105,7 @@ int main(int argc, char *argv[]) {
   }
 
   bool context = false;
+  bool phrase = false;
   typedef enum {FORMAT_ARPA, FORMAT_COUNT} Format;
   Format format = FORMAT_ARPA;
   boost::optional<lm::FilterMode> mode;
@@ -105,6 +119,8 @@ int main(int argc, char *argv[]) {
       mode = lm::MODE_MULTIPLE;
     } else if (!std::strcmp(str, "union")) {
       mode = lm::MODE_UNION;
+    } else if (!std::strcmp(str, "phrase")) {
+      phrase = true;
     } else if (!std::strcmp(str, "context")) {
       context = true;
     } else if (!std::strcmp(str, "arpa")) {
@@ -119,6 +135,11 @@ int main(int argc, char *argv[]) {
   
   if (!mode) {
     lm::DisplayHelp(argv[0]);
+    return 1;
+  }
+
+  if (phrase && mode != lm::MODE_UNION) {
+    std::cerr << "Phrase constraint currently only works in union mode." << std::endl;
     return 1;
   }
 
@@ -149,9 +170,9 @@ int main(int argc, char *argv[]) {
   }
 
   if (format == FORMAT_ARPA) {
-    lm::DispatchFilterModes<lm::ARPAFormat>(*mode, context, *vocab, *model, argv[argc - 1]);
+    lm::DispatchFilterModes<lm::ARPAFormat>(*mode, context, phrase, *vocab, *model, argv[argc - 1]);
   } else if (format == FORMAT_COUNT) {
-    lm::DispatchFilterModes<lm::CountFormat>(*mode, context, *vocab, *model, argv[argc - 1]);
+    lm::DispatchFilterModes<lm::CountFormat>(*mode, context, phrase, *vocab, *model, argv[argc - 1]);
   }
   return 0;
 }
