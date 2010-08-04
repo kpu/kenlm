@@ -1,4 +1,4 @@
-#include "lm/phrase_substrings.hh"
+#include "lm/filter_phrase.hh"
 
 #include <boost/functional/hash.hpp>
 

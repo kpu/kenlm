@@ -1,5 +1,5 @@
-#ifndef LM_PHRASE_SUBSTRINGS_H__
-#define LM_PHRASE_SUBSTRINGS_H__
+#ifndef LM_FILTER_PHRASE_H__
+#define LM_FILTER_PHRASE_H__
 
 #include "util/string_piece.hh"
 
@@ -9,7 +9,7 @@
 #include <iosfwd>
 #include <vector>
 
-#define LM_PHRASE_SUBSTRINGS_METHOD(caps, lower) \
+#define LM_FILTER_PHRASE_METHOD(caps, lower) \
 bool Find##caps(size_t key, const std::vector<unsigned int> *&out) const {\
   Table::const_iterator i(table_.find(key));\
   if (i==table_.end()) return false; \
@@ -48,10 +48,10 @@ class PhraseSubstrings {
      * matching phrases.  This set may be empty for Left, Right, or Phrase.
      * Example: const std::vector<unsigned int> *FindSubstring(size_t key)
      */
-    LM_PHRASE_SUBSTRINGS_METHOD(Substring, substring)
-    LM_PHRASE_SUBSTRINGS_METHOD(Left, left)
-    LM_PHRASE_SUBSTRINGS_METHOD(Right, right)
-    LM_PHRASE_SUBSTRINGS_METHOD(Phrase, phrase)
+    LM_FILTER_PHRASE_METHOD(Substring, substring)
+    LM_FILTER_PHRASE_METHOD(Left, left)
+    LM_FILTER_PHRASE_METHOD(Right, right)
+    LM_FILTER_PHRASE_METHOD(Phrase, phrase)
 
     // sentence_id must be non-decreasing.  Iterators are over words in the phrase.  
     template <class Iterator> void AddPhrase(unsigned int sentence_id, const Iterator &begin, const Iterator &end) {
@@ -119,4 +119,4 @@ class PhraseBinary {
 };
 
 } // namespace lm
-#endif // LM_PHRASE_SUBSTRINGS_H__
+#endif // LM_FILTER_PHRASE_H__
