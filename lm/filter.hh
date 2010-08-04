@@ -123,41 +123,6 @@ template <class OutputT> class MultipleOutputVocabFilter {
     std::vector<boost::iterator_range<const unsigned int*> > sets_;
 };
 
-namespace detail {
-extern const StringPiece kEndSentence;
-} // namespace detail
-
-class PhraseBinary {
-  public:
-    explicit PhraseBinary(const PhraseSubstrings &substrings) : substrings_(substrings) {}
-
-    template <class Iterator> bool PassNGram(const Iterator &begin, const Iterator &end) {
-      MakePhraseHashes(begin, end);
-      return HashesEmpty() || EvaluateUnion();
-    }
-
-  protected:
-    template <class Iterator> void MakePhraseHashes(Iterator i, const Iterator &end) {
-      hashes_.clear();
-      if (i == end) return;
-      // TODO: check strict phrase boundaries after <s> and before </s>.  For now, just skip tags.  
-      if (IsTag(*i)) ++i;
-      boost::hash<StringPiece> hasher;
-      for (; i != end && (*i != detail::kEndSentence); ++i) {
-        hashes_.push_back(hasher(*i));
-      }
-    }
-
-    bool HashesEmpty() const { return hashes_.empty(); }
-
-  private:
-    bool EvaluateUnion();
-
-    std::vector<size_t> hashes_;
-
-    const PhraseSubstrings &substrings_;
-};
-
 /*template <class OutputT> class MultipleOutputPhraseFilter : public PhraseBinary {
   public:
     typedef OutputT Output;
