@@ -82,6 +82,7 @@ class Vertex {
 
     // Precondition: !Empty()
     void LowerBound(const Sentence to) {
+      assert(!Empty());
       // Union lower bound.  
       while (true) {
         Arc *top = incoming_.top();
@@ -122,6 +123,10 @@ void Arc::LowerBound(const Sentence to) {
   // from_ may be useful for another one of its outgoing arcs.
   if (!from_ || Empty() || (Current() > to)) return;
   assert(Current() == to);
+  if (from_->Empty()) {
+    current_ = last_;
+    return;
+  }
   from_->LowerBound(to);
   if (from_->Empty()) {
     current_ = last_;
