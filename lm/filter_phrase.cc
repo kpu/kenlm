@@ -1,7 +1,5 @@
 #include "lm/filter_phrase.hh"
 
-#include <boost/functional/hash.hpp>
-
 #include <algorithm>
 #include <functional>
 #include <iostream>
@@ -16,9 +14,8 @@ namespace lm {
 unsigned int ReadMultiplePhrase(std::istream &in, PhraseSubstrings &out) {
   bool sentence_content = false;
   unsigned int sentence_id = 0;
-  std::vector<size_t> phrase;
+  std::vector<PhraseHash> phrase;
   std::string word;
-  boost::hash<std::string> hasher;
   while (in) {
     char c;
     // Gather a word.
@@ -27,7 +24,7 @@ unsigned int ReadMultiplePhrase(std::istream &in, PhraseSubstrings &out) {
     if (!in) c = '\n';
     // Add the word to the phrase.
     if (!word.empty()) {
-      phrase.push_back(hasher(word));
+      phrase.push_back(detail::StringHash(word));
       word.clear();
     }
     if (c == ' ') continue;
@@ -187,19 +184,19 @@ void Arc::Set(Vertex &to, const Sentences &sentences) {
 }
 
 
-void BuildGraph(const PhraseSubstrings &phrase, const std::vector<size_t> &hashes, Vertex *const vertices, Arc *free_arc) {
+void BuildGraph(const PhraseSubstrings &phrase, const std::vector<PhraseHash> &hashes, Vertex *const vertices, Arc *free_arc) {
   assert(!hashes.empty());
 
-  const size_t *const first_word = &*hashes.begin();
-  const size_t *const last_word = &*hashes.end() - 1;
+  const PhraseHash *const first_word = &*hashes.begin();
+  const PhraseHash *const last_word = &*hashes.end() - 1;
 
-  size_t hash = 0;
+  PhraseHash hash = 0;
   const Sentences *found;
   // Phrases starting at or before the first word in the n-gram.
   {
     Vertex *vertex = vertices;
-    for (const size_t *word = first_word; ; ++word, ++vertex) {
-      boost::hash_combine(hash, *word);
+    for (const PhraseHash *word = first_word; ; ++word, ++vertex) {
+      detail::CombineHash(hash, *word);
       // Now hash is [hashes.begin(), word].
       if (word == last_word) {
         if (phrase.FindSubstring(hash, found))
@@ -213,12 +210,12 @@ void BuildGraph(const PhraseSubstrings &phrase, const std::vector<size_t> &hashe
 
   // Phrases starting at the second or later word in the n-gram.   
   Vertex *vertex_from = vertices;
-  for (const size_t *word_from = first_word + 1; word_from != &*hashes.end(); ++word_from, ++vertex_from) {
+  for (const PhraseHash *word_from = first_word + 1; word_from != &*hashes.end(); ++word_from, ++vertex_from) {
     hash = 0;
     Vertex *vertex_to = vertex_from + 1;
-    for (const size_t *word_to = word_from; ; ++word_to, ++vertex_to) {
+    for (const PhraseHash *word_to = word_from; ; ++word_to, ++vertex_to) {
       // Notice that word_to and vertex_to have the same index.  
-      boost::hash_combine(hash, *word_to);
+      detail::CombineHash(hash, *word_to);
       // Now hash covers [word_from, word_to].
       if (word_to == last_word) {
         if (phrase.FindLeft(hash, found))

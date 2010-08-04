@@ -3,14 +3,13 @@
 
 #include "util/string_piece.hh"
 
-#include <boost/functional/hash.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <iosfwd>
 #include <vector>
 
 #define LM_FILTER_PHRASE_METHOD(caps, lower) \
-bool Find##caps(size_t key, const std::vector<unsigned int> *&out) const {\
+bool Find##caps(PhraseHash key, const std::vector<unsigned int> *&out) const {\
   Table::const_iterator i(table_.find(key));\
   if (i==table_.end()) return false; \
   out = &i->second.lower; \
@@ -18,6 +17,26 @@ bool Find##caps(size_t key, const std::vector<unsigned int> *&out) const {\
 }
 
 namespace lm {
+
+typedef uint64_t PhraseHash;
+
+namespace detail {
+
+// 64-bit extension of boost's hash_combine with arbitrary number prepended.
+inline void CombineHash(PhraseHash &seed, PhraseHash with) {
+  seed ^= with + 0x8fd2736e9e3779b9ULL + (seed<<6) + (seed>>2);
+}
+
+inline PhraseHash StringHash(const StringPiece &str) {
+  PhraseHash ret = 0;
+  for (const char *i = str.data(); i != str.data() + str.size(); ++i) {
+    char val = *i;
+    CombineHash(ret, static_cast<PhraseHash>(val));
+  }
+  return ret;
+}
+
+} // namespace detail
 
 class PhraseSubstrings {
   private:
@@ -38,7 +57,7 @@ class PhraseSubstrings {
      * In that case, the filter will be slightly more permissive.  
      * The key here is the same as boost's hash of std::vector<std::string>.  
      */
-    typedef boost::unordered_map<size_t, SentenceRelation> Table;
+    typedef boost::unordered_map<PhraseHash, SentenceRelation> Table;
 
   public:
     PhraseSubstrings() {}
@@ -46,7 +65,7 @@ class PhraseSubstrings {
     /* If the string isn't a substring of any phrase, return NULL.  Otherwise,
      * return a pointer to std::vector<unsigned int> listing sentences with
      * matching phrases.  This set may be empty for Left, Right, or Phrase.
-     * Example: const std::vector<unsigned int> *FindSubstring(size_t key)
+     * Example: const std::vector<unsigned int> *FindSubstring(PhraseHash key)
      */
     LM_FILTER_PHRASE_METHOD(Substring, substring)
     LM_FILTER_PHRASE_METHOD(Left, left)
@@ -57,10 +76,10 @@ class PhraseSubstrings {
     template <class Iterator> void AddPhrase(unsigned int sentence_id, const Iterator &begin, const Iterator &end) {
       // Iterate over all substrings.  
       for (Iterator start = begin; start != end; ++start) {
-        size_t hash = 0;
+        PhraseHash hash = 0;
         SentenceRelation *relation;
         for (Iterator finish = start; finish != end; ++finish) {
-          boost::hash_combine(hash, *finish);
+          detail::CombineHash(hash, *finish);
           // Now hash is of [start, finish].
           relation = &table_[hash];
           AppendSentence(relation->substring, sentence_id);
@@ -102,9 +121,8 @@ class PhraseBinary {
       if (i == end) return;
       // TODO: check strict phrase boundaries after <s> and before </s>.  For now, just skip tags.  
       if (IsTag(*i)) ++i;
-      boost::hash<StringPiece> hasher;
       for (; i != end && (*i != detail::kEndSentence); ++i) {
-        hashes_.push_back(hasher(*i));
+        hashes_.push_back(detail::StringHash(*i));
       }
     }
 
@@ -113,7 +131,7 @@ class PhraseBinary {
   private:
     bool EvaluateUnion();
 
-    std::vector<size_t> hashes_;
+    std::vector<PhraseHash> hashes_;
 
     const PhraseSubstrings &substrings_;
 };

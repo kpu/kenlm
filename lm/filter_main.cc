@@ -1,7 +1,7 @@
 #include "lm/arpa_io.hh"
 #include "lm/filter_format.hh"
 #include "lm/filter.hh"
-#include "lm/phrase_substrings.hh"
+#include "lm/filter_phrase.hh"
 #include "lm/read_vocab.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
