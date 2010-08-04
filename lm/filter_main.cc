@@ -60,11 +60,11 @@ template <class Format, class Binary> void DispatchBinaryFilter(bool context, st
 template <class Format> void DispatchFilterModes(FilterMode mode, bool context, bool phrase, std::istream &in_vocab, std::istream &in_lm, const char *out_name) {
   if (mode == MODE_MULTIPLE) {
     if (phrase) {
-      typedef MultipleOutputPhraseFilter<typename Format::Multiple> Filter;
+/*      typedef MultipleOutputPhraseFilter<typename Format::Multiple> Filter;
       PhraseSubstrings substrings;
       unsigned int sentence_count = ReadMultiplePhrase(in_vocab, substrings);
       typename Format::Multiple out(out_name, sentence_count);
-      RunContextFilter<Format, Filter>(context, in_lm, Filter(substrings, out));
+      RunContextFilter<Format, Filter>(context, in_lm, Filter(substrings, out));*/
     } else {
       typedef MultipleOutputVocabFilter<typename Format::Multiple> Filter;
       boost::unordered_map<std::string, std::vector<unsigned int> > words;
@@ -146,8 +146,8 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  if (phrase && mode != lm::MODE_MULTIPLE && mode != lm::MODE_UNION) {
-    std::cerr << "Phrase constraint currently only works in multiple or union mode.  If you really need it for single, put everything on one line and use union." << std::endl;
+  if (phrase && mode != lm::MODE_UNION) {
+    std::cerr << "Phrase constraint currently only works in union mode.  If you really need it for single, put everything on one line and use union." << std::endl;
     return 1;
   }
 

@@ -1,123 +1,208 @@
 #include "lm/filter.hh"
 #include "lm/phrase_substrings.hh"
 
-#include <boost/function_output_iterator.hpp>
-
 #include <algorithm>
-#include <set>
+#include <functional>
+#include <queue>
+#include <vector>
 
 namespace lm {
-
+namespace detail { const StringPiece kEndSentence("</s>"); }
 namespace {
-// Optimized for sorted vector.
-inline void VectorToSet(const std::vector<unsigned int> &vec, std::set<unsigned int> &out) {
-  for (std::vector<unsigned int>::const_iterator i = vec.begin(); i != vec.end(); ++i)
-    out.insert(out.end(), *i);
-}
 
-// Return iterator in first so that [first.begin(), return) agrees with second.  
-std::vector<size_t>::const_iterator AgreeRange(const std::vector<size_t> &first, const std::vector<size_t> &second) {
-  std::vector<size_t>::const_iterator f(first.begin()), s(second.begin());
-  for (; f != first.end() && s != second.end() && (*f == *s); ++f, ++s) {}
-  return f;
-}
+typedef unsigned int Sentence;
+typedef std::vector<Sentence> Sentences;
 
-/* inserter from STL sends a position which makes the set insert slower.  This does random insert. */
-class SetInsertAnywhere {
+class Vertex;
+
+class Arc {
   public:
-    explicit SetInsertAnywhere(std::set<unsigned int> &to) : set_(to) {}
+    Arc() {}
 
-    void operator()(unsigned int value) { set_.insert(value); }
+    // For arcs from one vertex to another.  
+    void SetPhrase(Vertex &from, Vertex &to, const Sentences &intersect) {
+      Set(to, intersect);
+      from_ = &from;
+    }
+
+    /* For arcs from before the n-gram begins to somewhere in the n-gram (right
+     * aligned).  These have no from_ vertex; it implictly matches every
+     * sentence.  This also handles when the n-gram is a substring of a phrase. 
+     */
+    void SetRight(Vertex &to, const Sentences &complete) {
+      Set(to, complete);
+      from_ = NULL;
+    }
+
+    Sentence Current() const {
+      return *current_;
+    }
+
+    bool Empty() const {
+      return current_ == last_;
+    }
+
+    /* When this function returns:
+     * If Empty() then there's nothing left from this intersection.
+     *
+     * If Current() == to then to is part of the intersection. 
+     *
+     * Otherwise, Current() > to.  In this case, to is not part of the
+     * intersection and neither is anything < Current().  To determine if
+     * any value >= Current() is in the intersection, call LowerBound again
+     * with the value.   
+     */
+    void LowerBound(const Sentence to);
+
   private:
-    std::set<unsigned int> &set_;
+    void Set(Vertex &to, const Sentences &sentences);
+
+    const Sentence *current_;
+    const Sentence *last_;
+    Vertex *from_;
 };
 
-boost::function_output_iterator<SetInsertAnywhere> FasterInserter(std::set<unsigned int> &to) {
-  return boost::function_output_iterator<SetInsertAnywhere>(SetInsertAnywhere(to));
+struct ArcLess : public std::binary_function<const Arc *, const Arc *, bool> {
+  bool operator()(const Arc *first, const Arc *second) const {
+    return first->Current() < second->Current();
+  }
+};
+
+class Vertex {
+  public:
+    Vertex() : current_(0) {}
+
+    Sentence Current() const {
+      return current_;
+    }
+
+    bool Empty() const {
+      return incoming_.empty();
+    }
+
+    // Precondition: !Empty()
+    void LowerBound(const Sentence to) {
+      // Union lower bound.  
+      while (true) {
+        Arc *top = incoming_.top();
+        if (top->Current() > to) {
+          current_ = top->Current();
+          return;
+        }
+        // If top->Current() == to, we still need to verify that's an actual 
+        // element and not just a bound.  
+        incoming_.pop();
+        top->LowerBound(to);
+        if (!top->Empty()) {
+          incoming_.push(top);
+          if (top->Current() == to) {
+            current_ = to;
+            return;
+          }
+        } else if (Empty()) {
+          return;
+        }
+      }
+    }
+
+  private:
+    friend class Arc;
+
+    void AddIncoming(Arc *arc) {
+      if (!arc->Empty()) incoming_.push(arc);
+    }
+
+    unsigned int current_;
+    std::priority_queue<Arc*, std::vector<Arc*>, ArcLess> incoming_;
+};
+
+void Arc::LowerBound(const Sentence to) {
+  current_ = std::lower_bound(current_, last_, to);
+  // If *current_ > to, don't advance from_.  The intervening values of
+  // from_ may be useful for another one of its outgoing arcs.
+  if (!from_ || Empty() || (Current() > to)) return;
+  assert(Current() == to);
+  from_->LowerBound(to);
+  if (from_->Empty()) {
+    current_ = last_;
+    return;
+  }
+  assert(from_->Current() >= to);
+  if (from_->Current() > to) {
+    current_ = std::lower_bound(current_ + 1, last_, from_->Current());
+  }
+}
+
+void Arc::Set(Vertex &to, const Sentences &sentences) {
+  current_ = &*sentences.begin();
+  last_ = &*sentences.end();
+  to.AddIncoming(this);
+}
+
+
+void BuildGraph(const PhraseSubstrings &phrase, const std::vector<size_t> &hashes, Vertex *const vertices, Arc *free_arc) {
+  assert(!hashes.empty());
+
+  const size_t *const first_word = &*hashes.begin();
+  const size_t *const last_word = &*hashes.end() - 1;
+
+  size_t hash = 0;
+  const Sentences *found;
+  // Phrases starting at or before the first word in the n-gram.
+  {
+    Vertex *vertex = vertices;
+    for (const size_t *word = first_word; ; ++word, ++vertex) {
+      boost::hash_combine(hash, *word);
+      // Now hash is [hashes.begin(), word].
+      if (word == last_word) {
+        if (phrase.FindSubstring(hash, found))
+          (free_arc++)->SetRight(*vertex, *found);
+        break;
+      }
+      if (!phrase.FindRight(hash, found)) break;
+      (free_arc++)->SetRight(*vertex, *found);
+    }
+  }
+
+  // Phrases starting at the second or later word in the n-gram.   
+  Vertex *vertex_from = vertices;
+  for (const size_t *word_from = first_word + 1; word_from != &*hashes.end(); ++word_from, ++vertex_from) {
+    hash = 0;
+    Vertex *vertex_to = vertex_from + 1;
+    for (const size_t *word_to = word_from; ; ++word_to, ++vertex_to) {
+      // Notice that word_to and vertex_to have the same index.  
+      boost::hash_combine(hash, *word_to);
+      // Now hash covers [word_from, word_to].
+      if (word_to == last_word) {
+        if (phrase.FindLeft(hash, found))
+          (free_arc++)->SetPhrase(*vertex_from, *vertex_to, *found);
+        break;
+      }
+      if (!phrase.FindPhrase(hash, found)) break;
+      (free_arc++)->SetPhrase(*vertex_from, *vertex_to, *found);
+    }
+  }
 }
 
 } // namespace
 
-// Precondition: !hashes.empty()
-template <bool EarlyExit> bool PhraseBinary::Evaluate() {
+bool PhraseBinary::EvaluateUnion() {
   assert(!hashes_.empty());
-  // How much can we keep from the previous n-gram?  
-  const std::vector<size_t>::const_iterator hash_agree = AgreeRange(hashes_, pre_hashes_);
-  const size_t agree = hash_agree - hashes_.begin();
-  if (hash_agree == hashes_.end()) {
-    if (hashes_.size() != pre_hashes_.size()) {
-      // Shorter than previous one.  
-      swap(matches_, reach_[agree]);
-      reach_.resize(agree - 1);
-    }
-    return !matches_.empty();
+  // Usually there are at most 6 words in an n-gram, so stack allocation is reasonable.  
+  Vertex vertices[hashes_.size()];
+  // One for every substring.  
+  Arc arcs[((hashes_.size() + 1) * hashes_.size()) / 2];
+  BuildGraph(substrings_, hashes_, vertices, arcs);
+  Vertex &last_vertex = vertices[hashes_.size() - 1];
+
+  if (last_vertex.Empty()) return false;
+  unsigned int lower = 0;
+  while (true) {
+    last_vertex.LowerBound(lower);
+    if (last_vertex.Empty()) return false;
+    if (last_vertex.Current() == lower) return true;
+    lower = last_vertex.Current();
   }
-  // reach_[i] is the set of sentences that reach _after_ word i.  There isn't a reach_[hashes.size() - 1] as this is called matches_.
-  matches_.clear();
-  reach_.resize(hashes_.size() - 1);
-  for (std::vector<std::set<unsigned int> >::iterator i = reach_.begin() + agree; i != reach_.end(); ++i)
-    i->clear();
-
-  const std::vector<size_t>::const_iterator last_word = hashes_.end() - 1;
-
-  size_t hash;
-  std::vector<std::set<unsigned int> >::iterator reach_write;
-  std::vector<size_t>::const_iterator hash_finish;
-
-  const std::vector<unsigned int> *term;
-
-  // Partial phrases off the beginning.  
-  hash = 0;
-  for (hash_finish = hashes_.begin(); hash_finish != hash_agree; ++hash_finish) {
-    boost::hash_combine(hash, *hash_finish);
-  }
-  for (reach_write = reach_.begin() + agree; ; ++reach_write, ++hash_finish) {
-    boost::hash_combine(hash, *hash_finish);
-    // n-gram is a substring of a phrase: special case of off beginning that is also off end.  
-    if (hash_finish == last_word) {
-      // if (term) then we know !term->empty() because FindSubstring is the weakest criterion.   
-      if ((term = substrings_.FindSubstring(hash))) {
-//        if (EarlyExit) return true;
-        VectorToSet(*term, matches_);
-      }
-      break;
-    }
-
-    if (!(term = substrings_.FindRight(hash))) break;
-    VectorToSet(*term, *reach_write);
-  }
-
-  std::vector<size_t>::const_iterator hash_start;
-  std::vector<std::set<unsigned int> >::const_iterator reach_intersect;
-  // Loop over starting positions for phrases except the beginning which was already covered.  
-  for (hash_start = hashes_.begin() + 1, reach_intersect = reach_.begin();
-      hash_start != hashes_.end();
-      ++hash_start, ++reach_intersect) {
-    hash = 0;
-    for (hash_finish = hash_start; hash_finish < hash_agree; ++hash_finish) {
-      boost::hash_combine(hash, *hash_finish);
-    }
-
-    // Look over finishing positions for phrases.  
-    for (reach_write = reach_.begin() + (hash_finish - hashes_.begin()); ; ++hash_finish, ++reach_write) {
-      boost::hash_combine(hash, *hash_finish);
-      // Allow phrases to go off the end of the n-gram.  
-      if (hash_finish == last_word) {
-        if ((term = substrings_.FindLeft(hash))) {
-          set_intersection(reach_intersect->begin(), reach_intersect->end(), term->begin(), term->end(), FasterInserter(matches_));
-//          if (EarlyExit && !matches.empty()) return true;
-        }
-        break;
-      }
-      if (!(term = substrings_.FindPhrase(hash))) break;
-      set_intersection(reach_intersect->begin(), reach_intersect->end(), term->begin(), term->end(), FasterInserter(*reach_write));
-    }
-  }
-
-  return !matches_.empty();
 }
-
-template bool PhraseBinary::Evaluate<true>();
-template bool PhraseBinary::Evaluate<false>();
 
 } // namespace lm

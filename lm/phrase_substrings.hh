@@ -8,9 +8,11 @@
 #include <vector>
 
 #define LM_PHRASE_SUBSTRINGS_METHOD(caps, lower) \
-const std::vector<unsigned int> *Find##caps(size_t key) const {\
+bool Find##caps(size_t key, const std::vector<unsigned int> *&out) const {\
   Table::const_iterator i(table_.find(key));\
-  return (i==table_.end()) ? NULL : &i->second.lower;\
+  if (i==table_.end()) return false; \
+  out = &i->second.lower; \
+  return true; \
 }
 
 namespace lm {

@@ -124,7 +124,7 @@ template <class OutputT> class MultipleOutputVocabFilter {
 };
 
 namespace detail {
-const StringPiece kEndSentence("</s>");
+extern const StringPiece kEndSentence;
 } // namespace detail
 
 class PhraseBinary {
@@ -133,12 +133,11 @@ class PhraseBinary {
 
     template <class Iterator> bool PassNGram(const Iterator &begin, const Iterator &end) {
       MakePhraseHashes(begin, end);
-      return hashes_.empty() || Evaluate<true>();
+      return HashesEmpty() || EvaluateUnion();
     }
 
   protected:
     template <class Iterator> void MakePhraseHashes(Iterator i, const Iterator &end) {
-      swap(hashes_, pre_hashes_);
       hashes_.clear();
       if (i == end) return;
       // TODO: check strict phrase boundaries after <s> and before </s>.  For now, just skip tags.  
@@ -149,26 +148,17 @@ class PhraseBinary {
       }
     }
 
-    template <bool ExitEarly> bool Evaluate();
-
-    const std::set<unsigned int> &Matches() const { return matches_; }
-
     bool HashesEmpty() const { return hashes_.empty(); }
 
   private:
+    bool EvaluateUnion();
+
+    std::vector<size_t> hashes_;
+
     const PhraseSubstrings &substrings_;
-    // Vector of hash codes for each string in the n-gram.  
-    // pre_hashes_ is the vector for the previous n-gram.  
-    std::vector<size_t> pre_hashes_, hashes_;
-
-    // Reach vector.  Used in evaluate.  Keeps state if previous n-gram is the same.  
-    std::vector<std::set<unsigned int> > reach_;
-
-    // Matches come out here.  
-    std::set<unsigned int> matches_;
 };
 
-template <class OutputT> class MultipleOutputPhraseFilter : public PhraseBinary {
+/*template <class OutputT> class MultipleOutputPhraseFilter : public PhraseBinary {
   public:
     typedef OutputT Output;
     
@@ -190,7 +180,7 @@ template <class OutputT> class MultipleOutputPhraseFilter : public PhraseBinary 
 
   private:
     Output &output_;
-};
+};*/
 
 template <class Binary, class OutputT> class SingleOutputFilter {
   public:
