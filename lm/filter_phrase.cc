@@ -101,9 +101,9 @@ class Arc {
     Vertex *from_;
 };
 
-struct ArcLess : public std::binary_function<const Arc *, const Arc *, bool> {
+struct ArcGreater : public std::binary_function<const Arc *, const Arc *, bool> {
   bool operator()(const Arc *first, const Arc *second) const {
-    return first->Current() < second->Current();
+    return first->Current() > second->Current();
   }
 };
 
@@ -153,7 +153,7 @@ class Vertex {
     }
 
     unsigned int current_;
-    std::priority_queue<Arc*, std::vector<Arc*>, ArcLess> incoming_;
+    std::priority_queue<Arc*, std::vector<Arc*>, ArcGreater> incoming_;
 };
 
 void Arc::LowerBound(const Sentence to) {

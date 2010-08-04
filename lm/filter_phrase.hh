@@ -31,7 +31,7 @@ inline PhraseHash StringHash(const StringPiece &str) {
   PhraseHash ret = 0;
   for (const char *i = str.data(); i != str.data() + str.size(); ++i) {
     char val = *i;
-    CombineHash(ret, static_cast<PhraseHash>(val));
+    CombineHash(ret, static_cast<PhraseHash>(val) * 0x478387ef381de5e3ULL);
   }
   return ret;
 }
