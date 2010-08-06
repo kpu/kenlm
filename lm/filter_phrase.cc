@@ -1,4 +1,5 @@
 #include "lm/filter_phrase.hh"
+#include "lm/filter_format.hh"
 
 #include <algorithm>
 #include <functional>
@@ -119,31 +120,7 @@ class Vertex {
       return incoming_.empty();
     }
 
-    // Precondition: !Empty()
-    void LowerBound(const Sentence to) {
-      assert(!Empty());
-      // Union lower bound.  
-      while (true) {
-        Arc *top = incoming_.top();
-        if (top->Current() > to) {
-          current_ = top->Current();
-          return;
-        }
-        // If top->Current() == to, we still need to verify that's an actual 
-        // element and not just a bound.  
-        incoming_.pop();
-        top->LowerBound(to);
-        if (!top->Empty()) {
-          incoming_.push(top);
-          if (top->Current() == to) {
-            current_ = to;
-            return;
-          }
-        } else if (Empty()) {
-          return;
-        }
-      }
-    }
+    void LowerBound(const Sentence to);
 
   private:
     friend class Arc;
@@ -162,10 +139,6 @@ void Arc::LowerBound(const Sentence to) {
   // from_ may be useful for another one of its outgoing arcs.
   if (!from_ || Empty() || (Current() > to)) return;
   assert(Current() == to);
-  if (from_->Empty()) {
-    current_ = last_;
-    return;
-  }
   from_->LowerBound(to);
   if (from_->Empty()) {
     current_ = last_;
@@ -183,6 +156,30 @@ void Arc::Set(Vertex &to, const Sentences &sentences) {
   to.AddIncoming(this);
 }
 
+void Vertex::LowerBound(const Sentence to) {
+  if (Empty()) return;
+  // Union lower bound.  
+  while (true) {
+    Arc *top = incoming_.top();
+    if (top->Current() > to) {
+      current_ = top->Current();
+      return;
+    }
+    // If top->Current() == to, we still need to verify that's an actual 
+    // element and not just a bound.  
+    incoming_.pop();
+    top->LowerBound(to);
+    if (!top->Empty()) {
+      incoming_.push(top);
+      if (top->Current() == to) {
+        current_ = to;
+        return;
+      }
+    } else if (Empty()) {
+      return;
+    }
+  }
+}
 
 void BuildGraph(const PhraseSubstrings &phrase, const std::vector<PhraseHash> &hashes, Vertex *const vertices, Arc *free_arc) {
   assert(!hashes.empty());
@@ -230,7 +227,11 @@ void BuildGraph(const PhraseSubstrings &phrase, const std::vector<PhraseHash> &h
 
 } // namespace
 
-bool PhraseBinary::EvaluateUnion() {
+namespace detail {
+
+} // namespace detail
+
+bool PhraseBinary::Evaluate() {
   assert(!hashes_.empty());
   // Usually there are at most 6 words in an n-gram, so stack allocation is reasonable.  
   Vertex vertices[hashes_.size()];
@@ -239,7 +240,6 @@ bool PhraseBinary::EvaluateUnion() {
   BuildGraph(substrings_, hashes_, vertices, arcs);
   Vertex &last_vertex = vertices[hashes_.size() - 1];
 
-  if (last_vertex.Empty()) return false;
   unsigned int lower = 0;
   while (true) {
     last_vertex.LowerBound(lower);
@@ -248,5 +248,26 @@ bool PhraseBinary::EvaluateUnion() {
     lower = last_vertex.Current();
   }
 }
+
+template <class OutputT> void MultipleOutputPhraseFilter<OutputT>::Evaluate(const std::string &line) {
+  assert(!hashes_.empty());
+  // Usually there are at most 6 words in an n-gram, so stack allocation is reasonable.  
+  Vertex vertices[hashes_.size()];
+  // One for every substring.  
+  Arc arcs[((hashes_.size() + 1) * hashes_.size()) / 2];
+  BuildGraph(substrings_, hashes_, vertices, arcs);
+  Vertex &last_vertex = vertices[hashes_.size() - 1];
+
+  unsigned int lower = 0;
+  while (true) {
+    last_vertex.LowerBound(lower);
+    if (last_vertex.Empty()) return;
+    if (last_vertex.Current() == lower) output_.SingleAddNGram(lower, line);
+    lower = last_vertex.Current();
+  }
+}
+
+template void MultipleOutputPhraseFilter<CountFormat::Multiple>::Evaluate(const std::string &line);
+template void MultipleOutputPhraseFilter<ARPAFormat::Multiple>::Evaluate(const std::string &line);
 
 } // namespace lm

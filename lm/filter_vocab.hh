@@ -18,6 +18,11 @@
 
 namespace lm {
 
+void ReadSingleVocab(std::istream &in, boost::unordered_set<std::string> &out);
+
+// Read one sentence vocabulary per line.  Return the number of sentences.
+unsigned int ReadMultipleVocab(std::istream &in, boost::unordered_map<std::string, std::vector<unsigned int> > &out);
+
 /* Is this a special tag like <s> or <UNK>?  This actually includes anything
  * surrounded with < and >, which most tokenizers separate for real words, so
  * this should not catch real words as it looks at a single token.   
@@ -119,30 +124,6 @@ template <class OutputT> class MultipleOutputVocabFilter {
 
     std::vector<boost::iterator_range<const unsigned int*> > sets_;
 };
-
-/*template <class OutputT> class MultipleOutputPhraseFilter : public PhraseBinary {
-  public:
-    typedef OutputT Output;
-    
-    explicit MultipleOutputPhraseFilter(const PhraseSubstrings &substrings, Output &output) : PhraseBinary(substrings), output_(output) {}
-
-    Output &GetOutput() { return output_; }
-
-  public:
-    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
-      MakePhraseHashes(begin, end);
-      if (HashesEmpty()) {
-        output_.AddNGram(line);
-        return;
-      }
-      Evaluate<false>();
-      for (std::set<unsigned int>::const_iterator i = Matches().begin(); i != Matches().end(); ++i)
-        output_.SingleAddNGram(*i, line);
-    }
-
-  private:
-    Output &output_;
-};*/
 
 template <class Binary, class OutputT> class SingleOutputFilter {
   public:

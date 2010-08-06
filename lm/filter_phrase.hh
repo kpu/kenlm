@@ -104,6 +104,17 @@ unsigned int ReadMultiplePhrase(std::istream &in, PhraseSubstrings &out);
 
 namespace detail {
 extern const StringPiece kEndSentence;
+
+template <class Iterator> void MakePhraseHashes(Iterator i, const Iterator &end, std::vector<size_t> &hashes) {
+  hashes.clear();
+  if (i == end) return;
+  // TODO: check strict phrase boundaries after <s> and before </s>.  For now, just skip tags.  
+  if (IsTag(*i)) ++i;
+  for (; i != end && (*i != kEndSentence); ++i) {
+    hashes.push_back(detail::StringHash(*i));
+  }
+}
+
 } // namespace detail
 
 class PhraseBinary {
@@ -111,25 +122,39 @@ class PhraseBinary {
     explicit PhraseBinary(const PhraseSubstrings &substrings) : substrings_(substrings) {}
 
     template <class Iterator> bool PassNGram(const Iterator &begin, const Iterator &end) {
-      MakePhraseHashes(begin, end);
-      return HashesEmpty() || EvaluateUnion();
+      detail::MakePhraseHashes(begin, end, hashes_);
+      return hashes_.empty() || Evaluate();
     }
-
-  protected:
-    template <class Iterator> void MakePhraseHashes(Iterator i, const Iterator &end) {
-      hashes_.clear();
-      if (i == end) return;
-      // TODO: check strict phrase boundaries after <s> and before </s>.  For now, just skip tags.  
-      if (IsTag(*i)) ++i;
-      for (; i != end && (*i != detail::kEndSentence); ++i) {
-        hashes_.push_back(detail::StringHash(*i));
-      }
-    }
-
-    bool HashesEmpty() const { return hashes_.empty(); }
 
   private:
-    bool EvaluateUnion();
+    bool Evaluate();
+
+    std::vector<PhraseHash> hashes_;
+
+    const PhraseSubstrings &substrings_;
+};
+
+template <class OutputT> class MultipleOutputPhraseFilter {
+  public:
+    typedef OutputT Output;
+    
+    explicit MultipleOutputPhraseFilter(const PhraseSubstrings &substrings, Output &output) : output_(output), substrings_(substrings) {}
+
+    Output &GetOutput() { return output_; }
+
+    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
+      detail::MakePhraseHashes(begin, end, hashes_);
+      if (hashes_.empty()) {
+        output_.AddNGram(line);
+        return;
+      }
+      Evaluate(line);
+    }
+
+  private:
+    void Evaluate(const std::string &line);
+
+    Output &output_;
 
     std::vector<PhraseHash> hashes_;
 
