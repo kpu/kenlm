@@ -154,6 +154,8 @@ template <class OutputT> class Multiple {
       Evaluate(line);
     }
 
+    void Flush() const {}
+
   private:
     void Evaluate(const std::string &line);
 

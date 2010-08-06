@@ -24,6 +24,8 @@ template <class Binary, class OutputT> class SingleOutputFilter {
         output_.AddNGram(line);
     }
 
+    void Flush() const {}
+
   private:
     Binary binary_;
     Output &output_;
@@ -46,6 +48,8 @@ template <class FilterT> class ContextFilter {
       std::copy(begin, end, std::back_insert_iterator<std::vector<StringPiece> >(pieces_));
       backend_.AddNGram(pieces_.begin(), pieces_.end() - 1, line);
     }
+
+    void Flush() const {}
 
   private:
     std::vector<StringPiece> pieces_;

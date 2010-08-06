@@ -117,6 +117,8 @@ template <class OutputT> class Multiple {
       util::AllIntersection(sets_, cb);
     }
 
+    void Flush() {}
+
   private:
     const Words &vocabs_;
 
