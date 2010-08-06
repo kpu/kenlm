@@ -1,7 +1,8 @@
 #include "lm/arpa_io.hh"
 #include "lm/filter_format.hh"
-#include "lm/filter_vocab.hh"
 #include "lm/filter_phrase.hh"
+#include "lm/filter_vocab.hh"
+#include "lm/filter_wrapper.hh"
 #include "lm/read_vocab.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -60,16 +61,14 @@ template <class Format, class Binary> void DispatchBinaryFilter(bool context, st
 template <class Format> void DispatchFilterModes(FilterMode mode, bool context, bool phrase, std::istream &in_vocab, std::istream &in_lm, const char *out_name) {
   if (mode == MODE_MULTIPLE) {
     if (phrase) {
-      typedef MultipleOutputPhraseFilter<typename Format::Multiple> Filter;
-      PhraseSubstrings substrings;
-      unsigned int sentence_count = ReadMultiplePhrase(in_vocab, substrings);
-      typename Format::Multiple out(out_name, sentence_count);
+      typedef phrase::Multiple<typename Format::Multiple> Filter;
+      phrase::Substrings substrings;
+      typename Format::Multiple out(out_name, phrase::ReadMultiple(in_vocab, substrings));
       RunContextFilter<Format, Filter>(context, in_lm, Filter(substrings, out));
     } else {
-      typedef MultipleOutputVocabFilter<typename Format::Multiple> Filter;
+      typedef vocab::Multiple<typename Format::Multiple> Filter;
       boost::unordered_map<std::string, std::vector<unsigned int> > words;
-      unsigned int sentence_count = ReadMultipleVocab(in_vocab, words);
-      typename Format::Multiple out(out_name, sentence_count);
+      typename Format::Multiple out(out_name, vocab::ReadMultiple(in_vocab, words));
       RunContextFilter<Format, Filter>(context, in_lm, Filter(words, out));
     }
     return;
@@ -83,21 +82,21 @@ template <class Format> void DispatchFilterModes(FilterMode mode, bool context, 
   }
 
   if (mode == MODE_SINGLE) {
-    SingleBinary::Words words;
-    ReadSingleVocab(in_vocab, words);
-    DispatchBinaryFilter<Format, SingleBinary>(context, in_lm, SingleBinary(words), out);
+    vocab::Single::Words words;
+    vocab::ReadSingle(in_vocab, words);
+    DispatchBinaryFilter<Format, vocab::Single>(context, in_lm, vocab::Single(words), out);
     return;
   }
 
   if (mode == MODE_UNION) {
     if (phrase) {
-      PhraseSubstrings substrings;
-      ReadMultiplePhrase(in_vocab, substrings);
-      DispatchBinaryFilter<Format, PhraseBinary>(context, in_lm, PhraseBinary(substrings), out);
+      phrase::Substrings substrings;
+      phrase::ReadMultiple(in_vocab, substrings);
+      DispatchBinaryFilter<Format, phrase::Union>(context, in_lm, phrase::Union(substrings), out);
     } else {
-      UnionBinary::Words words;
-      ReadMultipleVocab(in_vocab, words);
-      DispatchBinaryFilter<Format, UnionBinary>(context, in_lm, UnionBinary(words), out);
+      vocab::Union::Words words;
+      vocab::ReadMultiple(in_vocab, words);
+      DispatchBinaryFilter<Format, vocab::Union>(context, in_lm, vocab::Union(words), out);
     }
     return;
   }

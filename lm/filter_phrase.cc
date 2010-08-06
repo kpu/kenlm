@@ -11,11 +11,12 @@
 #include <ctype.h>
 
 namespace lm {
+namespace phrase {
 
-unsigned int ReadMultiplePhrase(std::istream &in, PhraseSubstrings &out) {
+unsigned int ReadMultiple(std::istream &in, Substrings &out) {
   bool sentence_content = false;
   unsigned int sentence_id = 0;
-  std::vector<PhraseHash> phrase;
+  std::vector<Hash> phrase;
   std::string word;
   while (in) {
     char c;
@@ -181,18 +182,18 @@ void Vertex::LowerBound(const Sentence to) {
   }
 }
 
-void BuildGraph(const PhraseSubstrings &phrase, const std::vector<PhraseHash> &hashes, Vertex *const vertices, Arc *free_arc) {
+void BuildGraph(const Substrings &phrase, const std::vector<Hash> &hashes, Vertex *const vertices, Arc *free_arc) {
   assert(!hashes.empty());
 
-  const PhraseHash *const first_word = &*hashes.begin();
-  const PhraseHash *const last_word = &*hashes.end() - 1;
+  const Hash *const first_word = &*hashes.begin();
+  const Hash *const last_word = &*hashes.end() - 1;
 
-  PhraseHash hash = 0;
+  Hash hash = 0;
   const Sentences *found;
   // Phrases starting at or before the first word in the n-gram.
   {
     Vertex *vertex = vertices;
-    for (const PhraseHash *word = first_word; ; ++word, ++vertex) {
+    for (const Hash *word = first_word; ; ++word, ++vertex) {
       detail::CombineHash(hash, *word);
       // Now hash is [hashes.begin(), word].
       if (word == last_word) {
@@ -207,10 +208,10 @@ void BuildGraph(const PhraseSubstrings &phrase, const std::vector<PhraseHash> &h
 
   // Phrases starting at the second or later word in the n-gram.   
   Vertex *vertex_from = vertices;
-  for (const PhraseHash *word_from = first_word + 1; word_from != &*hashes.end(); ++word_from, ++vertex_from) {
+  for (const Hash *word_from = first_word + 1; word_from != &*hashes.end(); ++word_from, ++vertex_from) {
     hash = 0;
     Vertex *vertex_to = vertex_from + 1;
-    for (const PhraseHash *word_to = word_from; ; ++word_to, ++vertex_to) {
+    for (const Hash *word_to = word_from; ; ++word_to, ++vertex_to) {
       // Notice that word_to and vertex_to have the same index.  
       detail::CombineHash(hash, *word_to);
       // Now hash covers [word_from, word_to].
@@ -231,7 +232,7 @@ namespace detail {
 
 } // namespace detail
 
-bool PhraseBinary::Evaluate() {
+bool Union::Evaluate() {
   assert(!hashes_.empty());
   // Usually there are at most 6 words in an n-gram, so stack allocation is reasonable.  
   Vertex vertices[hashes_.size()];
@@ -249,7 +250,7 @@ bool PhraseBinary::Evaluate() {
   }
 }
 
-template <class OutputT> void MultipleOutputPhraseFilter<OutputT>::Evaluate(const std::string &line) {
+template <class OutputT> void Multiple<OutputT>::Evaluate(const std::string &line) {
   assert(!hashes_.empty());
   // Usually there are at most 6 words in an n-gram, so stack allocation is reasonable.  
   Vertex vertices[hashes_.size()];
@@ -267,7 +268,8 @@ template <class OutputT> void MultipleOutputPhraseFilter<OutputT>::Evaluate(cons
   }
 }
 
-template void MultipleOutputPhraseFilter<CountFormat::Multiple>::Evaluate(const std::string &line);
-template void MultipleOutputPhraseFilter<ARPAFormat::Multiple>::Evaluate(const std::string &line);
+template void Multiple<CountFormat::Multiple>::Evaluate(const std::string &line);
+template void Multiple<ARPAFormat::Multiple>::Evaluate(const std::string &line);
 
+} // namespace phrase
 } // namespace lm
