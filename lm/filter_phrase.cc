@@ -263,8 +263,12 @@ template <class OutputT> void Multiple<OutputT>::Evaluate(const std::string &lin
   while (true) {
     last_vertex.LowerBound(lower);
     if (last_vertex.Empty()) return;
-    if (last_vertex.Current() == lower) output_.SingleAddNGram(lower, line);
-    lower = last_vertex.Current();
+    if (last_vertex.Current() == lower) {
+      output_.SingleAddNGram(lower, line);
+      ++lower;
+    } else {
+      lower = last_vertex.Current();
+    }
   }
 }
 
