@@ -1,6 +1,6 @@
 #include "lm/arpa_io.hh"
 #include "lm/filter_format.hh"
-#include "lm/filter.hh"
+#include "lm/filter_vocab.hh"
 #include "lm/filter_phrase.hh"
 #include "lm/read_vocab.hh"
 

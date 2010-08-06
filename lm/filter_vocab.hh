@@ -13,13 +13,10 @@
 #include <boost/unordered/unordered_map.hpp>
 #include <boost/unordered/unordered_set.hpp>
 
-#include <set>
 #include <string>
 #include <vector>
 
 namespace lm {
-
-class PhraseSubstrings;
 
 /* Is this a special tag like <s> or <UNK>?  This actually includes anything
  * surrounded with < and >, which most tokenizers separate for real words, so
