@@ -54,7 +54,7 @@ template <class Format, class Filter> void RunContextFilter(bool context, std::i
 }
 
 template <class Format, class Binary> void DispatchBinaryFilter(bool context, std::istream &in_lm, const Binary &binary, typename Format::Output &out) {
-  typedef SingleOutputFilter<Binary, typename Format::Output> Filter;
+  typedef typename BinaryWrapper<Binary>::template SingleOutputFilter<typename Format::Output> Filter;
   RunContextFilter<Format, Filter>(context, in_lm, Filter(binary, out));
 }
 

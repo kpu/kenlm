@@ -10,25 +10,27 @@ namespace lm {
 
 // Provide a single-output filter with the same interface as a
 // multiple-output filter so clients code against one interface.
-template <class Binary, class OutputT> class SingleOutputFilter {
-  public:
-    typedef OutputT Output;
+template <class Binary> struct BinaryWrapper {
+  template <class OutputT> class SingleOutputFilter {
+    public:
+      typedef OutputT Output;
 
-    // Binary modles are just references (and a set) and it makes the API cleaner to copy them.  
-    SingleOutputFilter(Binary binary, Output &output) : binary_(binary), output_(output) {}
+      // Binary modles are just references (and a set) and it makes the API cleaner to copy them.  
+      SingleOutputFilter(Binary binary, Output &output) : binary_(binary), output_(output) {}
 
-    Output &GetOutput() { return output_; }
+      Output &GetOutput() { return output_; }
 
-    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
-      if (binary_.PassNGram(begin, end))
-        output_.AddNGram(line);
-    }
+      template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
+        if (binary_.PassNGram(begin, end))
+          output_.AddNGram(line);
+      }
 
-    void Flush() const {}
+      void Flush() const {}
 
-  private:
-    Binary binary_;
-    Output &output_;
+    private:
+      Binary binary_;
+      Output &output_;
+  };
 };
 
 // Wrap another filter to pay attention only to context words
@@ -56,6 +58,8 @@ template <class FilterT> class ContextFilter {
 
     Filter &backend_;
 };
+
+
 
 } // namespace lm
 
