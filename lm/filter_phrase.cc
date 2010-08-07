@@ -250,7 +250,7 @@ bool Union::Evaluate() {
   }
 }
 
-template <class OutputT> void Multiple<OutputT>::Evaluate(const std::string &line) {
+template <class Output> void Multiple::Evaluate(const std::string &line, Output &output) {
   assert(!hashes_.empty());
   // Usually there are at most 6 words in an n-gram, so stack allocation is reasonable.  
   Vertex vertices[hashes_.size()];
@@ -264,7 +264,7 @@ template <class OutputT> void Multiple<OutputT>::Evaluate(const std::string &lin
     last_vertex.LowerBound(lower);
     if (last_vertex.Empty()) return;
     if (last_vertex.Current() == lower) {
-      output_.SingleAddNGram(lower, line);
+      output.SingleAddNGram(lower, line);
       ++lower;
     } else {
       lower = last_vertex.Current();
@@ -272,8 +272,8 @@ template <class OutputT> void Multiple<OutputT>::Evaluate(const std::string &lin
   }
 }
 
-template void Multiple<CountFormat::Multiple>::Evaluate(const std::string &line);
-template void Multiple<ARPAFormat::Multiple>::Evaluate(const std::string &line);
+template void Multiple::Evaluate<CountFormat::Multiple>(const std::string &line, CountFormat::Multiple &output);
+template void Multiple::Evaluate<ARPAFormat::Multiple>(const std::string &line, ARPAFormat::Multiple &output);
 
 } // namespace phrase
 } // namespace lm

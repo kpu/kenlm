@@ -137,29 +137,23 @@ class Union {
     const Substrings &substrings_;
 };
 
-template <class OutputT> class Multiple {
+class Multiple {
   public:
-    typedef OutputT Output;
-    
-    explicit Multiple(const Substrings &substrings, Output &output) : output_(output), substrings_(substrings) {}
+    explicit Multiple(const Substrings &substrings) : substrings_(substrings) {}
 
-    Output &GetOutput() { return output_; }
-
-    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
+    template <class Iterator, class Output> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line, Output &output) {
       detail::MakeHashes(begin, end, hashes_);
       if (hashes_.empty()) {
-        output_.AddNGram(line);
+        output.AddNGram(line);
         return;
       }
-      Evaluate(line);
+      Evaluate(line, output);
     }
 
     void Flush() const {}
 
   private:
-    void Evaluate(const std::string &line);
-
-    Output &output_;
+    template <class Output> void Evaluate(const std::string &line, Output &output);
 
     std::vector<Hash> hashes_;
 

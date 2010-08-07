@@ -73,26 +73,34 @@ class MultipleARPAOutput : public MultipleOutput<ARPAOutput> {
     }
 };
 
-template <class Filter> class DispatchARPAInput {
+template <class Filter, class Output> class DispatchInput {
   public:
-    explicit DispatchARPAInput(Filter &filter) : filter_(filter), output_(filter_.GetOutput()) {}
-
-    void ReserveForCounts(std::streampos reserve) { output_.ReserveForCounts(reserve); }
-    void BeginLength(unsigned int length) { output_.BeginLength(length); }
+    DispatchInput(Filter &filter, Output &output) : filter_(filter), output_(output) {}
 
     template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
-      filter_.AddNGram(begin, end, line);
+      filter_.AddNGram(begin, end, line, output_);
     }
+
+  protected:
+    Filter &filter_;
+    Output &output_;
+};
+
+template <class Filter, class Output> class DispatchARPAInput : public DispatchInput<Filter, Output> {
+  private:
+    typedef DispatchInput<Filter, Output> B;
+
+  public:
+    DispatchARPAInput(Filter &filter, Output &output) : B(filter, output) {}
+
+    void ReserveForCounts(std::streampos reserve) { B::output_.ReserveForCounts(reserve); }
+    void BeginLength(unsigned int length) { B::output_.BeginLength(length); }
 
     void EndLength(unsigned int length) {
-      filter_.Flush();
-      output_.EndLength(length);
+      B::filter_.Flush();
+      B::output_.EndLength(length);
     }
-    void Finish() { output_.Finish(); }
-
-  private:
-    Filter &filter_;
-    typename Filter::Output &output_;
+    void Finish() { B::output_.Finish(); }
 };
 
 struct ARPAFormat {
@@ -101,8 +109,8 @@ struct ARPAFormat {
   static void Copy(std::istream &in, Output &out) {
     ReadARPA(in, out);
   }
-  template <class Filter> static void RunFilter(std::istream &in, Filter &filter) {
-    DispatchARPAInput<Filter> dispatcher(filter);
+  template <class Filter, class Out> static void RunFilter(std::istream &in, Filter &filter, Out &output) {
+    DispatchARPAInput<Filter, Out> dispatcher(filter, output);
     ReadARPA(in, dispatcher);
   }
 };
@@ -113,8 +121,9 @@ struct CountFormat {
   static void Copy(std::istream &in, Output &out) {
     ReadCount(in, out);
   }
-  template <class Filter> static void RunFilter(std::istream &in, Filter &filter) {
-    ReadCount(in, filter);
+  template <class Filter, class Out> static void RunFilter(std::istream &in, Filter &filter, Out &output) {
+    DispatchInput<Filter, Out> dispatcher(filter, output);
+    ReadCount(in, dispatcher);
   }
 };
 

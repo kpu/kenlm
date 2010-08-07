@@ -75,18 +75,15 @@ class Union {
     std::vector<boost::iterator_range<const unsigned int*> > sets_;
 };
 
-template <class OutputT> class Multiple {
+class Multiple {
   public:
-    typedef OutputT Output;
     typedef boost::unordered_map<std::string, std::vector<unsigned int> > Words;
 
-    Multiple(const Words &vocabs, Output &output) : vocabs_(vocabs), output_(output) {}
-
-    Output &GetOutput() { return output_; }
+    Multiple(const Words &vocabs) : vocabs_(vocabs) {}
 
   private:
     // Callback from AllIntersection that does AddNGram.
-    class Callback {
+    template <class Output> class Callback {
       public:
         Callback(Output &out, const std::string &line) : out_(out), line_(line) {}
 
@@ -100,7 +97,7 @@ template <class OutputT> class Multiple {
     };
 
   public:
-    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
+    template <class Iterator, class Output> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line, Output &output) {
       sets_.clear();
       for (Iterator i(begin); i != end; ++i) {
         if (IsTag(*i)) continue;
@@ -109,11 +106,11 @@ template <class OutputT> class Multiple {
         sets_.push_back(boost::iterator_range<const unsigned int*>(&*found->second.begin(), &*found->second.end()));
       }
       if (sets_.empty()) {
-        output_.AddNGram(line);
+        output.AddNGram(line);
         return;
       }
 
-      Callback cb(output_, line);
+      Callback<Output> cb(output, line);
       util::AllIntersection(sets_, cb);
     }
 
@@ -121,8 +118,6 @@ template <class OutputT> class Multiple {
 
   private:
     const Words &vocabs_;
-
-    Output &output_;
 
     std::vector<boost::iterator_range<const unsigned int*> > sets_;
 };

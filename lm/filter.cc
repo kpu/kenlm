@@ -44,32 +44,32 @@ void DisplayHelp(const char *name) {
 
 typedef enum { MODE_COPY, MODE_SINGLE, MODE_MULTIPLE, MODE_UNION } FilterMode;
 
-template <class Format, class Filter> void RunContextFilter(bool context, std::istream &in_lm, Filter filter) {
+template <class Format, class Filter, class Output> void RunContextFilter(bool context, std::istream &in_lm, Filter filter, Output &output) {
   if (context) {
     ContextFilter<Filter> context(filter);
-    Format::RunFilter(in_lm, context);
+    Format::RunFilter(in_lm, context, output);
   } else {
-    Format::RunFilter(in_lm, filter);
+    Format::RunFilter(in_lm, filter, output);
   }
 }
 
 template <class Format, class Binary> void DispatchBinaryFilter(bool context, std::istream &in_lm, const Binary &binary, typename Format::Output &out) {
-  typedef typename BinaryWrapper<Binary>::template SingleOutputFilter<typename Format::Output> Filter;
-  RunContextFilter<Format, Filter>(context, in_lm, Filter(binary, out));
+  typedef BinaryFilter<Binary> Filter;
+  RunContextFilter<Format, Filter>(context, in_lm, Filter(binary), out);
 }
 
 template <class Format> void DispatchFilterModes(FilterMode mode, bool context, bool phrase, std::istream &in_vocab, std::istream &in_lm, const char *out_name) {
   if (mode == MODE_MULTIPLE) {
     if (phrase) {
-      typedef phrase::Multiple<typename Format::Multiple> Filter;
+      typedef phrase::Multiple Filter;
       phrase::Substrings substrings;
       typename Format::Multiple out(out_name, phrase::ReadMultiple(in_vocab, substrings));
-      RunContextFilter<Format, Filter>(context, in_lm, Filter(substrings, out));
+      RunContextFilter<Format, Filter, typename Format::Multiple>(context, in_lm, Filter(substrings), out);
     } else {
-      typedef vocab::Multiple<typename Format::Multiple> Filter;
+      typedef vocab::Multiple Filter;
       boost::unordered_map<std::string, std::vector<unsigned int> > words;
       typename Format::Multiple out(out_name, vocab::ReadMultiple(in_vocab, words));
-      RunContextFilter<Format, Filter>(context, in_lm, Filter(words, out));
+      RunContextFilter<Format, Filter, typename Format::Multiple>(context, in_lm, Filter(words), out);
     }
     return;
   }
