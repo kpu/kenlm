@@ -98,9 +98,14 @@ ARPAOutputException::ARPAOutputException(const char *message, const std::string 
   }
 }
 
-ARPAOutput::ARPAOutput(const char *name) : file_name_(name), file_(name, std::ios::out) {
+ARPAOutput::ARPAOutput(const char *name, size_t buffer_size) : file_name_(name), buffer_(new char[buffer_size]) {
   try {
     file_.exceptions(std::ostream::eofbit | std::ostream::failbit | std::ostream::badbit);
+    if (!file_.rdbuf()->pubsetbuf(buffer_.get(), buffer_size)) {
+      std::cerr << "Warning: could not enlarge buffer for " << name << std::endl;
+      buffer_.reset();
+    }
+    file_.open(name, std::ios::out | std::ios::binary);
   } catch (const std::ios_base::failure &f) {
     throw ARPAOutputException("Opening", file_name_);
   }

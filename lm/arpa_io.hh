@@ -10,6 +10,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/progress.hpp>
+#include <boost/scoped_array.hpp>
 
 #include <fstream>
 #include <istream>
@@ -51,7 +52,7 @@ class ARPAOutputException : public std::exception {
  */
 class ARPAOutput : boost::noncopyable {
   public:
-    explicit ARPAOutput(const char *name);
+    explicit ARPAOutput(const char *name, size_t buffer_size = 1048576);
 
     void ReserveForCounts(std::streampos reserve);
 
@@ -76,6 +77,7 @@ class ARPAOutput : boost::noncopyable {
 
   private:
     const std::string file_name_;
+    boost::scoped_array<char> buffer_;
     std::fstream file_;
     size_t fast_counter_;
     std::vector<size_t> counts_;
