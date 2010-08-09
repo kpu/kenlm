@@ -95,7 +95,7 @@ void ReadNGramHeader(std::istream &in, unsigned int length) {
   do {
     if (!getline(in, line)) throw ARPAInputException(std::string("Reading header for n-gram length ") + boost::lexical_cast<std::string>(length) + " from input lm failed");
   } while (IsEntirelyWhiteSpace(line));
-  if (line != (std::string("\\") + boost::lexical_cast<std::string>(length) + "-grams:")) throw ARPAInputException("wrong ngram count header", line);
+  if (line != (std::string("\\") + boost::lexical_cast<std::string>(length) + "-grams:")) throw ARPAInputException("wrong ngram header", line);
 }
 
 void ReadEnd(std::istream &in_lm) {

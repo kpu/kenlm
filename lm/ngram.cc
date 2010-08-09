@@ -1,3 +1,4 @@
+#include "lm/arpa_io.hh"
 #include "lm/ngram.hh"
 #include "util/tokenize_piece.hh"
 
@@ -42,30 +43,6 @@ uint64_t ChainedWordHash(const uint32_t *word, const uint32_t *word_end) {
 	return current;
 }
 
-void ParseDataCounts(std::istream &f, std::vector<size_t> &counts) {
-	std::string line;
-	for (unsigned int order = 1; getline(f, line) && !line.empty(); ++order) {
-		util::PieceIterator<' '> space_it(line);
-		if (!space_it || (*space_it != "ngram") || !(++space_it))
-			throw FormatLoadException("expected ngram length line", line);
-		util::PieceIterator<'='> equal_it(*space_it);
-		if (++space_it)
-			throw FormatLoadException("too many tokens in ngram count line", line);
-		if (boost::lexical_cast<unsigned int>(*equal_it) != order) {
-			std::string message("expected order ");
-			message += boost::lexical_cast<std::string>(order);
-			message += " but received ";
-			message.append(equal_it->data(), equal_it->size());
-			throw FormatLoadException(message, line);
-		}
-		if (!(++equal_it))
-			throw FormatLoadException("expected ngram count", line);
-		counts.push_back(boost::lexical_cast<size_t>(*equal_it));
-		if (++equal_it)
-			throw FormatLoadException("too many equals", line);
-	}
-}
-
 struct VocabularyFriend {
 	static void Reserve(Vocabulary &vocab, size_t to) {
 		vocab.Reserve(to);
@@ -79,12 +56,11 @@ struct VocabularyFriend {
 };
 
 void Read1Grams(std::fstream &f, const size_t count, Vocabulary &vocab, std::vector<ProbBackoff> &unigrams) {
+  ReadNGramHeader(f, 1);
 	boost::progress_display progress(count, std::cerr, "Loading 1-grams\n");
   // +1 in case OOV is not found.
 	VocabularyFriend::Reserve(vocab, count + 1);
 	std::string line;
-	while (getline(f, line) && line != "\\1-grams:") {}
-	if (!f) throw FormatLoadException("Did not get \\1-grams: line");
 	// Special unigram reader because unigram's data structure is different and because we're inserting vocab words.
 	std::auto_ptr<std::string> unigram(new std::string);
 	for (size_t i = 0; i < count; ++i) {
@@ -136,10 +112,8 @@ void SetNGramEntry(boost::unordered_map<uint64_t, Prob, IdentityHash> &place, ui
 template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, const size_t count, const Vocabulary &vocab, Place &place) {
 	boost::progress_display progress(count, std::cerr, std::string("Loading ") + boost::lexical_cast<std::string>(n) + "-grams\n");
 	std::string line;
-	if (!getline(f, line)) throw FormatLoadException("Error reading \\ngram header");
-	std::string expected("\\");
-	expected += boost::lexical_cast<std::string>(n) += "-grams:";
-	if (line != expected) throw FormatLoadException(std::string("Expected header \"") + expected + "\"", line);
+
+  ReadNGramHeader(f, n);
 
 	// vocab ids of words in reverse order
 	uint32_t vocab_ids[n];
@@ -178,12 +152,8 @@ Model::Model(const char *arpa, bool print_status) {
 	if (!f) throw OpenFileLoadException(arpa);
 	f.exceptions(std::fstream::failbit | std::fstream::badbit);
 
-	std::string line;
-	while (getline(f, line) && line != "\\data\\") {}
-	if (!f) throw FormatLoadException("Did not get data line");
-	// counts[n-1] is number of n-grams.
 	std::vector<size_t> counts;
-	detail::ParseDataCounts(f, counts);
+	ReadCounts(f, counts);
 
 	if (counts.size() < 2)
 		throw FormatLoadException("This ngram implementation assumes at least a bigram model.");
