@@ -22,15 +22,17 @@
 
 namespace lm {
 
-// Handling for the counts of n-grams at the beginning of ARPA files.
-void WriteCounts(std::ostream &out, const std::vector<size_t> &number);
-size_t SizeNeededForCounts(const std::vector<size_t> &number);
-void ReadCounts(std::istream &in, std::vector<size_t> &number);
+class ARPAInputException : public std::exception {
+  public:
+    explicit ARPAInputException(const StringPiece &message) throw();
+    explicit ARPAInputException(const StringPiece &message, const StringPiece &line) throw();
+    virtual ~ARPAInputException() throw() {}
 
-// Read and verify the headers like \1-grams: 
-void ReadNGramHeader(std::istream &in_lm, unsigned int length);
-// Read and verify end marker.  
-void ReadEnd(std::istream &in_lm);
+    const char *what() const throw() { return what_.c_str(); }
+
+  private:
+    std::string what_;
+};
 
 class ARPAOutputException : public std::exception {
   public:
@@ -46,13 +48,22 @@ class ARPAOutputException : public std::exception {
     const std::string file_name_;
 };
 
+// Handling for the counts of n-grams at the beginning of ARPA files.
+size_t SizeNeededForCounts(const std::vector<size_t> &number);
+void ReadCounts(std::istream &in, std::vector<size_t> &number) throw (ARPAInputException);
+
+// Read and verify the headers like \1-grams: 
+void ReadNGramHeader(std::istream &in_lm, unsigned int length);
+// Read and verify end marker.  
+void ReadEnd(std::istream &in_lm);
+
 /* Writes an ARPA file.  This has to be seekable so the counts can be written
  * at the end.  Hence, I just have it own a std::fstream instead of accepting
  * a separately held std::ostream.  
  */
 class ARPAOutput : boost::noncopyable {
   public:
-    explicit ARPAOutput(const char *name, size_t buffer_size = 1048576);
+    explicit ARPAOutput(const char *name, size_t buffer_size = 65536);
 
     void ReserveForCounts(std::streampos reserve);
 
@@ -89,16 +100,14 @@ template <class Output> void ReadNGrams(std::istream &in, unsigned int length, s
   out.BeginLength(length);
   boost::progress_display display(number, std::cerr, std::string("Length ") + boost::lexical_cast<std::string>(length) + "/" + boost::lexical_cast<std::string>(max_length) + ": " + boost::lexical_cast<std::string>(number) + " total\n");
   for (unsigned int i = 0; i < number;) {
-    if (!std::getline(in, line))
-      err(2, "Reading ngram failed.  Maybe the counts are wrong?");
+    if (!std::getline(in, line)) throw ARPAInputException("Reading ngram failed.  Maybe the counts are wrong?");
 
     util::PieceIterator<'\t'> tabber(line);
     if (!tabber) {
       std::cerr << "Warning: empty line inside list of " << length << "-grams." << std::endl;
       continue;
     }
-    if (!++tabber)
-      errx(3, "No tab in line \"%s\"", line.c_str());
+    if (!++tabber) throw ARPAInputException("no tab", line);
 
     out.AddNGram(util::PieceIterator<' '>(*tabber), util::PieceIterator<' '>::end(), line);
     ++i;
