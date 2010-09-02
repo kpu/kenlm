@@ -69,7 +69,7 @@ class ARPAOutput : boost::noncopyable {
 
     void BeginLength(unsigned int length);
 
-    void AddNGram(const std::string &line) {
+    void AddNGram(const StringPiece &line) {
       try {
         file_ << line << '\n';
       } catch (const std::ios_base::failure &f) {
@@ -78,7 +78,7 @@ class ARPAOutput : boost::noncopyable {
       ++fast_counter_;
     }
 
-    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
+    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const StringPiece &line) {
       AddNGram(line);
     }
 

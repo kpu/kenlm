@@ -12,13 +12,13 @@ class CountOutput : boost::noncopyable {
   public:
     explicit CountOutput(const char *name) : file_(name, std::ios::out) {}
 
-    void AddNGram(const std::string &line) {
+    void AddNGram(const StringPiece &line) {
       if (!(file_ << line << '\n')) {
         err(3, "Writing counts file failed");
       }
     }
 
-    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const std::string &line) {
+    template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const StringPiece &line) {
       AddNGram(line);
     }
 
