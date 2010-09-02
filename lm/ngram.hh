@@ -154,9 +154,10 @@ class Model : boost::noncopyable {
     State NullContextState() const {
       State ret;
       ret.ngram_length_ = 0;
+      return ret;
     }
 
-		template <class ReverseHistoryIterator> LogDouble IncrementalScore(
+		template <class ReverseHistoryIterator> float IncrementalScore(
 			  const State &in_state,
 			  const ReverseHistoryIterator &hist_begin,
 			  const ReverseHistoryIterator &hist_end,
@@ -178,7 +179,7 @@ class Model : boost::noncopyable {
 				*dest = *src;
 			}
 			// words is in reverse order.
-			return LogDouble(AlreadyLogTag(), InternalIncrementalScore(in_state, words, words_end, out_state));
+			return InternalIncrementalScore(in_state, words, words_end, out_state);
 		}
 
 		size_t Order() const { return order_; }
