@@ -53,31 +53,9 @@ class Vocabulary : public base::Vocabulary {
 			ids_.rehash(to + 1);
 		}
 
-		WordIndex InsertUnique(std::string *word) {
-			std::pair<boost::unordered_map<StringPiece, WordIndex>::const_iterator, bool> res(ids_.insert(std::make_pair(StringPiece(*word), available_)));
-			if (__builtin_expect(!res.second, 0)) {
-				delete word;
-				throw WordDuplicateVocabLoadException(*word, res.first->second, available_);
-			}
-			strings_.push_back(word);
-			return available_++;
-		}
+		WordIndex InsertUnique(std::string *word);
 
-		void FinishedLoading() {
-      if (ids_.find(StringPiece("<s>")) == ids_.end()) throw BeginSentenceMissingException();
-      if (ids_.find(StringPiece("</s>")) == ids_.end()) throw EndSentenceMissingException();
-      // Allow lowercase form of unknown if found, otherwise complain.  It's better to not tolerate an LM without OOV.   
-      if (ids_.find(StringPiece("<unk>")) == ids_.end()) {
-        if (ids_.find(StringPiece("<UNK>")) == ids_.end()) {
-          // TODO: throw up unless there's a command line option saying not to.
-          //throw UnknownMissingException();
-          InsertUnique(new std::string("<unk>"));
-        } else {
-          ids_["<unk>"] = Index(StringPiece("<UNK>"));
-        }
-      }
-			SetSpecial(Index(StringPiece("<s>")), Index(StringPiece("</s>")), Index(StringPiece("<unk>")), available_);
-		}
+		void FinishedLoading();
 
 	private:
 		// TODO: optimize memory use here by using one giant buffer, preferably premade by a binary file format.
@@ -102,7 +80,6 @@ struct ProbBackoff : Prob {
 };
 
 } // namespace detail
-
 // Should return the same results as SRI
 class Model : boost::noncopyable {
 	private:
@@ -173,6 +150,11 @@ class Model : boost::noncopyable {
 			ret.ngram_length_ = 1;
 			return ret;
 		}
+
+    State NullContextState() const {
+      State ret;
+      ret.ngram_length_ = 0;
+    }
 
 		template <class ReverseHistoryIterator> LogDouble IncrementalScore(
 			  const State &in_state,

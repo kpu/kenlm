@@ -16,6 +16,33 @@
 
 namespace lm {
 namespace ngram {
+
+WordIndex Vocabulary::InsertUnique(std::string *word) {
+  std::pair<boost::unordered_map<StringPiece, WordIndex>::const_iterator, bool> res(ids_.insert(std::make_pair(StringPiece(*word), available_)));
+  if (__builtin_expect(!res.second, 0)) {
+    delete word;
+    throw WordDuplicateVocabLoadException(*word, res.first->second, available_);
+  }
+  strings_.push_back(word);
+  return available_++;
+}
+
+void Vocabulary::FinishedLoading() {
+  if (ids_.find(StringPiece("<s>")) == ids_.end()) throw BeginSentenceMissingException();
+  if (ids_.find(StringPiece("</s>")) == ids_.end()) throw EndSentenceMissingException();
+  // Allow lowercase form of unknown if found, otherwise complain.  It's better to not tolerate an   LM without OOV.   
+  if (ids_.find(StringPiece("<unk>")) == ids_.end()) {
+    if (ids_.find(StringPiece("<UNK>")) == ids_.end()) {
+      // TODO: throw up unless there's a command line option saying not to.
+      //throw UnknownMissingException();
+      InsertUnique(new std::string("<unk>"));
+    } else {
+      ids_["<unk>"] = Index(StringPiece("<UNK>"));
+    }
+  }
+  SetSpecial(Index(StringPiece("<s>")), Index(StringPiece("</s>")), Index(StringPiece("<unk>")),     available_);
+}
+
 namespace detail {
 
 // All of the entropy is in low order bits and boost::hash does poorly with these.
