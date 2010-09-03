@@ -2,7 +2,6 @@
 #define LM_NGRAM_H__
 
 #include "lm/base.hh"
-#include "util/numbers.hh"
 #include "util/string_piece.hh"
 
 #include <boost/array.hpp>
@@ -18,6 +17,12 @@
 
 namespace lm {
 namespace ngram {
+
+// If you need higher order, change this and recompile.  
+// Having this limit means that State can be
+// (kMaxOrder - 1) * sizeof(float) bytes instead of
+// sizeof(float*) + (kMaxOrder - 1) * sizeof(float) + malloc overhead
+const std::size_t kMaxOrder = 6;
 
 namespace detail {
 struct VocabularyFriend;
@@ -80,65 +85,69 @@ struct ProbBackoff : Prob {
 };
 
 } // namespace detail
+
+class State {
+  public:
+    State() {}
+
+    // Faster copying using only the valid entries.
+    State(const State &other) : ngram_length_(other.ngram_length_) {
+      CopyValid(other);
+    }
+
+    State &operator=(const State &other) {
+      ngram_length_ = other.ngram_length_;
+      CopyValid(other);
+      return *this;
+    }
+
+    bool operator==(const State &other) const {
+      if (ngram_length_ != other.ngram_length_) return false;
+      for (const float *first = backoff_.data(), *second = other.backoff_.data();
+          first != backoff_.data() + ValidLength(); ++first, ++second) {
+        // No arithmetic was performed on these values, so an exact comparison is justified.
+        if (*first != *second) return false;
+      }
+      return true;
+    }
+
+    unsigned char NGramLength() const { return ngram_length_; }
+
+  private:
+    friend class Model;
+    friend size_t hash_value(const State &state);
+
+    size_t ValidLength() const {
+      return std::min<size_t>(static_cast<size_t>(ngram_length_), kMaxOrder - 1);
+    }
+
+    void CopyValid(const State &other) {
+      std::copy(other.backoff_.data(), other.backoff_.data() + ValidLength(), backoff_.data());
+    }
+
+    unsigned char ngram_length_;
+
+    // The first min(ngram_length_, Model::order_ - 1) entries are valid backoff weights.
+    // backoff_[0] is the backoff for unigrams.
+    // The first min(ngram_length_, kMaxOrder - 1) entries must be copied and
+    // may be used for hashing or equality.   
+    boost::array<float, kMaxOrder - 1> backoff_;
+};
+
+inline size_t hash_value(const State &state) {
+  size_t ret = 0;
+  boost::hash_combine(ret, state.ngram_length_);
+  for (const float *val = state.backoff_.data(); val != state.backoff_.data() + state.ValidLength(); ++val) {
+    boost::hash_combine(ret, *val);
+  }
+  return ret;
+}
+
 // Should return the same results as SRI
 class Model : boost::noncopyable {
-  private:
-    // If you need more than 5 change this and recompile.
-    // Having this limit means that State can be
-    // (kMaxOrder - 1) * sizeof(float) bytes instead of
-    // sizeof(float*) + (kMaxOrder - 1) * sizeof(float) + malloc overhead
-    static const std::size_t kMaxOrder = 6;
-
   public:
     typedef ::lm::ngram::Vocabulary Vocabulary;
-
-    class State {
-      public:
-        State() {}
-
-        // Faster copying using only the valid entries.
-        State(const State &other) : ngram_length_(other.ngram_length_) {
-          CopyValid(other);
-        }
-
-        State &operator=(const State &other) {
-          ngram_length_ = other.ngram_length_;
-          CopyValid(other);
-          return *this;
-        }
-
-        bool operator==(const State &other) const {
-          if (ngram_length_ != other.ngram_length_) return false;
-          for (const float *first = backoff_.data(), *second = other.backoff_.data();
-              first != backoff_.data() + ValidLength(); ++first, ++second) {
-            // No arithmetic was performed on these values, so an exact comparison is justified.
-            if (*first != *second) return false;
-          }
-          return true;
-        }
-
-        unsigned char NGramLength() const { return ngram_length_; }
-
-      private:
-        friend class Model;
-        friend size_t hash_value(const State &state);
-
-        size_t ValidLength() const {
-          return std::min<size_t>(static_cast<size_t>(ngram_length_), kMaxOrder - 1);
-        }
-
-        void CopyValid(const State &other) {
-          std::copy(other.backoff_.data(), other.backoff_.data() + ValidLength(), backoff_.data());
-        }
-
-        unsigned char ngram_length_;
-
-        // The first min(ngram_length_, Model::order_ - 1) entries are valid backoff weights.
-        // backoff_[0] is the backoff for unigrams.
-        // The first min(ngram_length_, kMaxOrder - 1) entries must be copied and
-        // may be used for hashing or equality.   
-        boost::array<float, kMaxOrder - 1> backoff_;
-    };
+    typedef ::lm::ngram::State State;
 
     explicit Model(const char *arpa, bool status = false);
 
@@ -207,15 +216,6 @@ class Model : boost::noncopyable {
     typedef boost::unordered_map<uint64_t, detail::Prob, detail::IdentityHash> Longest;
     Longest longest_;
 };
-
-inline size_t hash_value(const Model::State &state) {
-  size_t ret = 0;
-  boost::hash_combine(ret, state.ngram_length_);
-  for (const float *val = state.backoff_.data(); val != state.backoff_.data() + state.ValidLength(); ++val) {
-    boost::hash_combine(ret, *val);
-  }
-  return ret;
-}
 
 // This just owns Model, which in turn owns Vocabulary.  Only reason this class
 // exists is to provide the same interface as the other models.
