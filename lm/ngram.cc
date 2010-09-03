@@ -1,6 +1,5 @@
 #include "lm/arpa_io.hh"
 #include "lm/ngram.hh"
-#include "util/tokenize_piece.hh"
 
 #include <boost/functional/hash/hash.hpp>
 #include <boost/lexical_cast.hpp>
