@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(starters) {
 				empty.rbegin(),
 				empty.rend(),
 				Lookup("looking"),
-				out).Log10(), 0.00001);
+				out) / M_LN10, 0.00001);
 	BOOST_CHECK_EQUAL((unsigned int)2, out.NGramLength());
 			
 	// , probability plus <s> backoff
@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(starters) {
 				empty.rbegin(),
 				empty.rend(),
 				Lookup(","),
-				out).Log10(), 0.0001);
+				out) / M_LN10, 0.0001);
 	BOOST_CHECK_EQUAL((unsigned int)1, out.NGramLength());
 
 	BOOST_CHECK_CLOSE(-1.995635 + -0.4149733,
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(starters) {
 				empty.rbegin(),
 				empty.rend(),
 				Lookup("this_is_not_found"),
-				out).Log10(), 0.00001);
+				out) / M_LN10, 0.00001);
 	BOOST_CHECK_EQUAL((unsigned int)0, out.NGramLength());
 }
 
@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(starters) {
 				history.rbegin(), \
 				history.rend(), \
 				index, \
-				out).Log10(), 0.001); \
+				out) / M_LN10, 0.001); \
 	BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), out.NGramLength()); \
 	history.push_back(index); \
 	state = out;

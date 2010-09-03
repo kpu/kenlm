@@ -138,37 +138,41 @@ void SetNGramEntry(boost::unordered_map<uint64_t, Prob, IdentityHash> &place, ui
 
 template <class Place> void ReadNGrams(std::fstream &f, const unsigned int n, const size_t count, const Vocabulary &vocab, Place &place) {
 	boost::progress_display progress(count, std::cerr, std::string("Loading ") + boost::lexical_cast<std::string>(n) + "-grams\n");
-	std::string line;
 
   ReadNGramHeader(f, n);
 
 	// vocab ids of words in reverse order
 	uint32_t vocab_ids[n];
+  std::string word;
 	for (size_t i = 0; i < count; ++i) {
-		if (!getline(f, line)) throw FormatLoadException("Reading ngram line");
-		util::PieceIterator<'\t'> tab_it(line);
-		if (!tab_it) throw FormatLoadException("Blank n-gram line", line);
-		float prob = boost::lexical_cast<float>(*tab_it);
-		
-		if (!(++tab_it)) throw FormatLoadException("Missing words", line);
-		uint32_t *vocab_out = &vocab_ids[n-1];
-		for (util::PieceIterator<' '> space_it(*tab_it); space_it; ++space_it, --vocab_out) {
-			if (vocab_out < vocab_ids) throw FormatLoadException("Too many words", line);
-			*vocab_out = vocab.Index(*space_it);
-		}
-		if (vocab_out + 1 != vocab_ids) throw FormatLoadException("Too few words", line);
-		uint64_t key = ChainedWordHash(vocab_ids, vocab_ids + n);
+    try {
+      float prob, backoff;
+      f >> prob;
+      for (uint32_t *vocab_out = &vocab_ids[n-1]; vocab_out >= vocab_ids; --vocab_out) {
+        f >> word;
+        *vocab_out = vocab.Index(word);
+      }
+      uint64_t key = ChainedWordHash(vocab_ids, vocab_ids + n);
 
-		if (++tab_it) {
-			float backoff = boost::lexical_cast<float>(*tab_it);
-		  if (++tab_it) throw FormatLoadException("Too many columns", line);
-			SetNGramEntry(place, key, prob * M_LN10, backoff * M_LN10);
-		} else {
-			SetNGramEntry(place, key, prob * M_LN10);
-		}
-		++progress;
+      switch (f.get()) {
+        case '\t':
+          f >> backoff;
+          SetNGramEntry(place, key, prob * M_LN10, backoff * M_LN10);
+          break;
+        case '\n':
+          SetNGramEntry(place, key, prob * M_LN10);
+          break;
+        default:
+          throw FormatLoadException("Got unexpected delimiter before backoff weight");
+      }
+      ++progress;
+    } catch (const std::ios_base::failure &f) {
+      throw FormatLoadException("Error reading the " + boost::lexical_cast<std::string>(i) + "th " + boost::lexical_cast<std::string>(n) + "-gram.");
+    }
 	}
-	if (getline(f, line)) FormatLoadException("Blank line after ngrams missing");
+
+  std::string line;
+	if (!getline(f, line)) FormatLoadException("Blank line after ngrams missing");
 	if (!line.empty()) throw FormatLoadException("Blank line after ngrams not blank", line);
 }
 
