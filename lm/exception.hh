@@ -79,7 +79,7 @@ class AllocateMemoryLoadException : public LoadException {
 
 class OpenFileLoadException : public LoadException {
   public:
-    OpenFileLoadException(const char *name) throw() : name_(name) {
+    explicit OpenFileLoadException(const char *name) throw() : name_(name) {
       what_ = "Error opening file ";
       what_ += name;
     }
@@ -95,7 +95,7 @@ class OpenFileLoadException : public LoadException {
 
 class ReadFileLoadException : public LoadException {
   public:
-    ReadFileLoadException(const char *name) throw() : name_(name) {
+    explicit ReadFileLoadException(const char *name) throw() : name_(name) {
       what_ = "Error reading file ";
       what_ += name;
     }
@@ -111,7 +111,7 @@ class ReadFileLoadException : public LoadException {
 
 class FormatLoadException : public LoadException {
   public:
-    FormatLoadException(const StringPiece &complaint, const StringPiece &context = StringPiece()) throw();
+    explicit FormatLoadException(const StringPiece &complaint, const StringPiece &context = StringPiece()) throw();
 
     ~FormatLoadException() throw() {}
 
