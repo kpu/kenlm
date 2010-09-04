@@ -6,6 +6,7 @@
 
 #include <boost/array.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/scoped_ptr.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -26,6 +27,7 @@ const std::size_t kMaxOrder = 6;
 
 namespace detail {
 struct VocabularyFriend;
+template <class Search> class GenericModel;
 } // namespace detail
 
 class Vocabulary : public base::Vocabulary {
@@ -68,24 +70,6 @@ class Vocabulary : public base::Vocabulary {
     boost::unordered_map<StringPiece, WordIndex> ids_;
 };
 
-namespace detail {
-
-struct IdentityHash : public std::unary_function<uint64_t, size_t> {
-  size_t operator()(const uint64_t key) const { return key; }
-};
-struct Prob {
-  Prob(float in_prob) : prob(in_prob) {}
-  Prob() {}
-  float prob;
-};
-struct ProbBackoff : Prob {
-  ProbBackoff(float in_prob, float in_backoff) : Prob(in_prob), backoff(in_backoff) {}
-  ProbBackoff() {}
-  float backoff;
-};
-
-} // namespace detail
-
 class State {
   public:
     State() {}
@@ -114,6 +98,7 @@ class State {
     unsigned char NGramLength() const { return ngram_length_; }
 
   private:
+    template <class Search> friend class detail::GenericModel;
     friend class Model;
     friend size_t hash_value(const State &state);
 
@@ -143,85 +128,60 @@ inline size_t hash_value(const State &state) {
   return ret;
 }
 
-// Should return the same results as SRI
+namespace detail {
+class ImplBase : boost::noncopyable {
+  public:
+    virtual ~ImplBase();
+    virtual float IncrementalScore(const State &in_state, const WordIndex *const words, const WordIndex *const words_end, State &out_state) const = 0;
+
+  protected:
+    ImplBase() {}
+};
+} // namespace detail
+
 class Model : boost::noncopyable {
   public:
-    typedef ::lm::ngram::Vocabulary Vocabulary;
     typedef ::lm::ngram::State State;
 
-    explicit Model(const char *arpa, bool status = false);
+    explicit Model(const char *file);
+    ~Model();
 
+    const State &BeginSentenceState() const { return begin_sentence_; }
+    const State &NullContextState() const { return null_context_; }
+    unsigned int Order() const { return order_; }
     const Vocabulary &GetVocabulary() const { return vocab_; }
-
-    State BeginSentenceState() const {
-      State ret;
-      ret.backoff_[0] = begin_sentence_backoff_;
-      ret.ngram_length_ = 1;
-      return ret;
-    }
-
-    State NullContextState() const {
-      State ret;
-      ret.ngram_length_ = 0;
-      return ret;
-    }
 
     template <class ReverseHistoryIterator> float IncrementalScore(
         const State &in_state,
-        const ReverseHistoryIterator &hist_begin,
-        const ReverseHistoryIterator &hist_end,
+        ReverseHistoryIterator hist_iter,
         const WordIndex new_word,
         State &out_state) const {
       const unsigned int words_len = std::min<unsigned int>(in_state.NGramLength() + 1, order_);
-      uint32_t words[words_len];
-      uint32_t *const words_end = words + words_len;
+      WordIndex words[words_len];
+      WordIndex *const words_end = words + words_len;
       words[0] = new_word;
-      uint32_t *dest = words + 1;
-      ReverseHistoryIterator src(hist_begin);
-      for (; dest != words_end; ++dest, ++src) {
-        if (src == hist_end) {
-          for (; dest != words_end; ++dest) {
-            *dest = vocab_.BeginSentence();
-          }
-          break;
-        }
-        *dest = *src;
+      WordIndex *dest = words + 1;
+      for (; dest != words_end; ++dest, ++hist_iter) {
+        *dest = *hist_iter;
       }
       // words is in reverse order.
-      return InternalIncrementalScore(in_state, words, words_end, out_state);
+      return impl_->IncrementalScore(in_state, words, words_end, out_state);
     }
 
-    size_t Order() const { return order_; }
-
-  private: 
-    float InternalIncrementalScore(
-        const State &in_state,
-        const uint32_t *const words,
-        const uint32_t *const words_end,
-        State &out_state) const;
-
-    size_t order_;
+  private:
+    unsigned int order_;
+    State begin_sentence_, null_context_;
 
     Vocabulary vocab_;
 
-    // Cached unigram_[vocab_.BeginSentence()].backoff
-    float begin_sentence_backoff_;
-
-    typedef std::vector<detail::ProbBackoff> Unigram;
-    Unigram unigram_;
-    
-    typedef boost::unordered_map<uint64_t, detail::ProbBackoff, detail::IdentityHash> Middle;
-    std::vector<Middle> middle_vec_; 
-    
-    typedef boost::unordered_map<uint64_t, detail::Prob, detail::IdentityHash> Longest;
-    Longest longest_;
+    boost::scoped_ptr<detail::ImplBase> impl_;
 };
 
 // This just owns Model, which in turn owns Vocabulary.  Only reason this class
 // exists is to provide the same interface as the other models.
 class Owner : boost::noncopyable {
   public:
-    explicit Owner(const char *file_name, bool status = false) : model_(file_name, status) {}
+    explicit Owner(const char *file_name) : model_(file_name) {}
 
     const Vocabulary &GetVocabulary() const { return model_.GetVocabulary(); }
 
