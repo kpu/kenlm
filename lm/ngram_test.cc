@@ -23,13 +23,13 @@ BOOST_FIXTURE_TEST_SUITE(s, Fixture)
 BOOST_AUTO_TEST_CASE(starters) {
 	Model::State state(model.BeginSentenceState());
 	Model::State out;
-	std::vector<WordIndex> empty;
+	std::vector<WordIndex> only_begin;
+  only_begin.push_back(model.GetVocabulary().BeginSentence());
 
 	BOOST_CHECK_CLOSE(-0.4846522,
 			model.IncrementalScore(
 				state,
-				empty.rbegin(),
-				empty.rend(),
+				only_begin.rbegin(),
 				Lookup("looking"),
 				out) / M_LN10, 0.00001);
 	BOOST_CHECK_EQUAL((unsigned int)2, out.NGramLength());
@@ -38,8 +38,7 @@ BOOST_AUTO_TEST_CASE(starters) {
 	BOOST_CHECK_CLOSE(-1.383514 + -0.4149733,
 			model.IncrementalScore(
 				state,
-				empty.rbegin(),
-				empty.rend(),
+				only_begin.rbegin(),
 				Lookup(","),
 				out) / M_LN10, 0.0001);
 	BOOST_CHECK_EQUAL((unsigned int)1, out.NGramLength());
@@ -47,8 +46,7 @@ BOOST_AUTO_TEST_CASE(starters) {
 	BOOST_CHECK_CLOSE(-1.995635 + -0.4149733,
 			model.IncrementalScore(
 				state,
-				empty.rbegin(),
-				empty.rend(),
+				only_begin.rbegin(),
 				Lookup("this_is_not_found"),
 				out) / M_LN10, 0.00001);
 	BOOST_CHECK_EQUAL((unsigned int)0, out.NGramLength());
@@ -60,7 +58,6 @@ BOOST_AUTO_TEST_CASE(starters) {
 			model.IncrementalScore( \
 				state, \
 				history.rbegin(), \
-				history.rend(), \
 				index, \
 				out) / M_LN10, 0.001); \
 	BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), out.NGramLength()); \
@@ -72,6 +69,7 @@ BOOST_AUTO_TEST_CASE(continuation) {
 	Model::State out;
 
 	std::vector<WordIndex> history;
+  history.push_back(model.GetVocabulary().BeginSentence());
 
 	WordIndex index;
 
