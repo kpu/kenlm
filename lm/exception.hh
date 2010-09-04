@@ -65,6 +65,18 @@ class WordDuplicateVocabLoadException : public VocabLoadException {
       std::string what_;
 };
 
+class AllocateMemoryLoadException : public LoadException {
+  public:
+    AllocateMemoryLoadException(size_t requested, int error);
+
+    ~AllocateMemoryLoadException() throw() {}
+
+    const char *what() const throw() { return what_.c_str(); }
+
+  private:
+    std::string what_;
+};
+
 class OpenFileLoadException : public LoadException {
   public:
     OpenFileLoadException(const char *name) throw() : name_(name) {
