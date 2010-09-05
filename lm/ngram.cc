@@ -1,6 +1,7 @@
 #include "lm/arpa_io.hh"
 #include "lm/ngram.hh"
 #include "util/probing_hash_table.hh"
+#include "util/scoped.hh"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/progress.hpp>
@@ -76,65 +77,6 @@ struct ProbBackoff : Prob {
   float backoff;
   void SetBackoff(float to) { backoff = to; }
   void ZeroBackoff() { backoff = 0.0; }
-};
-class scoped_mmap {
-  public:
-    scoped_mmap() : data_(MAP_FAILED) {}
-    scoped_mmap(void *data, size_t size) : data_(data), size_(size) {}
-    ~scoped_mmap() { reset(); }
-
-    void *get() const { return data_; }
-
-    const char *begin() const { return reinterpret_cast<char*>(data_); }
-    const char *end() const { return reinterpret_cast<char*>(data_) + size_; }
-
-    void reset(void *data, size_t size) {
-      if (data_ != MAP_FAILED) {
-        if (munmap(data_, size_))
-          err(1, "Couldn't munmap language model memory");  
-      }
-      data_ = data;
-      size_ = size;
-    }
-
-    void reset() {
-      reset(MAP_FAILED, 0);
-    }
-
-  private:
-    void *data_;
-    size_t size_;
-};
-class scoped_fd {
-  public:
-    scoped_fd() : fd_(-1) {}
-
-    explicit scoped_fd(int fd) : fd_(fd) {}
-
-    ~scoped_fd() {
-      if (fd_ != -1 && !close(fd_)) err(1, "Could not close file %i", fd_);
-    }
-
-    void reset(int to) {
-      scoped_fd other(fd_);
-      fd_ = to;
-    }
-
-    int get() const { return fd_; }
-
-    operator int() const { return fd_; }
-
-  private:
-    int fd_;
-};
-
-class EndOfFileException : public std::exception {
-  public:
-    EndOfFileException() throw() {}
-
-    ~EndOfFileException() throw() {}
-
-    const char *what() const throw() { return "End of file."; }
 };
 
 // All of the entropy is in low order bits and boost::hash does poorly with these.
@@ -252,7 +194,7 @@ template <class Search> class GenericModel : public ImplBase {
     WordIndex not_found_;
 
     // memory_ is the backing store for unigram_, [middle_begin_, middle_end_), and longest_.  All of these are pointers there.   
-    scoped_mmap memory_;
+    util::scoped_mmap memory_;
 
     ProbBackoff *unigram_;
 
