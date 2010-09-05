@@ -2,8 +2,6 @@
 #include "lm/ngram.hh"
 #include "util/probing_hash_table.hh"
 
-#include <boost/iostreams/stream.hpp>
-#include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/progress.hpp>
 
@@ -229,7 +227,7 @@ template <class Search> class GenericModel : public ImplBase {
 };
 
 template <class Search> GenericModel<Search>::GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &search_init, unsigned int &order, float &begin_backoff) {
-  boost::iostreams::stream<boost::iostreams::mapped_file_source> f(file);
+  std::fstream f(file, std::ios::in);
   if (!f) throw OpenFileLoadException(file);
   f.exceptions(std::istream::failbit | std::istream::badbit);
 
