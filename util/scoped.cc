@@ -7,7 +7,7 @@
 namespace util {
 
 scoped_fd::~scoped_fd() {
-  if (fd_ != -1 && !close(fd_)) err(1, "Could not close file %i", fd_);
+  if (fd_ != -1 && close(fd_)) err(1, "Could not close file %i", fd_);
 }
 
 scoped_mmap::~scoped_mmap() {
