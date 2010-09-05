@@ -3,6 +3,7 @@
 
 #include "lm/base.hh"
 #include "util/string_piece.hh"
+#include "util/murmur_hash.hh"
 
 #include <boost/array.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -67,7 +68,15 @@ class Vocabulary : public base::Vocabulary {
   private:
     // TODO: optimize memory use here by using one giant buffer, preferably premade by a binary file format.
     boost::ptr_vector<std::string> strings_;
-    boost::unordered_map<StringPiece, WordIndex> ids_;
+
+    // This proved faster than Boost's hash in speed trials: total load time Murmur 67090000, Boost 72210000
+    struct MurmurHash : public std::unary_function<const StringPiece &, size_t> {
+      size_t operator()(const StringPiece &key) const {
+        return MurmurHash64A(reinterpret_cast<const void*>(key.data()), key.length(), 0);
+      }
+    };
+
+    boost::unordered_map<StringPiece, WordIndex, MurmurHash> ids_;
 };
 
 class State {

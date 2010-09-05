@@ -2,14 +2,13 @@
 #include "lm/ngram.hh"
 #include "util/probing_hash_table.hh"
 
-#include <boost/functional/hash/hash.hpp>
+#include <boost/iostreams/stream.hpp>
+#include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/optional.hpp>
 #include <boost/progress.hpp>
-#include <boost/utility/in_place_factory.hpp> 
 
 #include <algorithm>
-#include <fstream>
+#include <istream>
 #include <numeric>
 #include <string>
 
@@ -108,15 +107,6 @@ class Mapped {
 inline uint64_t CombineWordHash(uint64_t current, const uint32_t next) {
   uint64_t ret = (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(next) * 17894857484156487943ULL);
   return ret;
-}
-
-void ChainedWordHash(const WordIndex *word, const WordIndex *word_end, uint64_t *out) {
-  if (word == word_end) return;
-  uint64_t current = static_cast<uint64_t>(*word);
-  for (++word; word != word_end; ++word, ++out) {
-    current = CombineWordHash(current, *word);
-    *out = current;
-  }
 }
 
 uint64_t ChainedWordHash(const WordIndex *word, const WordIndex *word_end) {
@@ -239,9 +229,9 @@ template <class Search> class GenericModel : public ImplBase {
 };
 
 template <class Search> GenericModel<Search>::GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &search_init, unsigned int &order, float &begin_backoff) {
-  std::fstream f(file, std::ios::in);
+  boost::iostreams::stream<boost::iostreams::mapped_file_source> f(file);
   if (!f) throw OpenFileLoadException(file);
-  f.exceptions(std::fstream::failbit | std::fstream::badbit);
+  f.exceptions(std::istream::failbit | std::istream::badbit);
 
   std::vector<size_t> counts;
   ReadCounts(f, counts);
