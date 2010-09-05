@@ -12,9 +12,13 @@
 
 #include <cmath>
 
-#include <sys/mman.h>
+#include <fcntl.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 namespace lm {
 namespace ngram {
@@ -73,31 +77,64 @@ struct ProbBackoff : Prob {
   void SetBackoff(float to) { backoff = to; }
   void ZeroBackoff() { backoff = 0.0; }
 };
-class Mapped {
+class scoped_mmap {
   public:
-    Mapped() : data_(MAP_FAILED) {}
-    Mapped(void *data, size_t size) : data_(data), size_(size) {}
-    ~Mapped() { reset(); }
+    scoped_mmap() : data_(MAP_FAILED) {}
+    scoped_mmap(void *data, size_t size) : data_(data), size_(size) {}
+    ~scoped_mmap() { reset(); }
 
-    void *get() { return data_; }
+    void *get() const { return data_; }
+
+    const char *begin() const { return reinterpret_cast<char*>(data_); }
+    const char *end() const { return reinterpret_cast<char*>(data_) + size_; }
 
     void reset(void *data, size_t size) {
-      reset();
+      if (data_ != MAP_FAILED) {
+        if (munmap(data_, size_))
+          err(1, "Couldn't munmap language model memory");  
+      }
       data_ = data;
       size_ = size;
     }
 
     void reset() {
-      if (data_ != MAP_FAILED) {
-        if (munmap(data_, size_))
-          err(1, "Couldn't munmap language model memory");
-        data_ = MAP_FAILED;
-      }
+      reset(MAP_FAILED, 0);
     }
 
   private:
     void *data_;
     size_t size_;
+};
+class scoped_fd {
+  public:
+    scoped_fd() : fd_(-1) {}
+
+    explicit scoped_fd(int fd) : fd_(fd) {}
+
+    ~scoped_fd() {
+      if (fd_ != -1 && !close(fd_)) err(1, "Could not close file %i", fd_);
+    }
+
+    void reset(int to) {
+      scoped_fd other(fd_);
+      fd_ = to;
+    }
+
+    int get() const { return fd_; }
+
+    operator int() const { return fd_; }
+
+  private:
+    int fd_;
+};
+
+class EndOfFileException : public std::exception {
+  public:
+    EndOfFileException() throw() {}
+
+    ~EndOfFileException() throw() {}
+
+    const char *what() const throw() { return "End of file."; }
 };
 
 // All of the entropy is in low order bits and boost::hash does poorly with these.
@@ -215,7 +252,7 @@ template <class Search> class GenericModel : public ImplBase {
     WordIndex not_found_;
 
     // memory_ is the backing store for unigram_, [middle_begin_, middle_end_), and longest_.  All of these are pointers there.   
-    Mapped memory_;
+    scoped_mmap memory_;
 
     ProbBackoff *unigram_;
 
@@ -230,6 +267,8 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, Voc
   std::fstream f(file, std::ios::in);
   if (!f) throw OpenFileLoadException(file);
   f.exceptions(std::istream::failbit | std::istream::badbit);
+  boost::scoped_array<char> buffer(new char[20971520]);
+  f.rdbuf()->pubsetbuf(buffer.get(), 20971520);
 
   std::vector<size_t> counts;
   ReadCounts(f, counts);
