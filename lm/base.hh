@@ -94,7 +94,8 @@ class Model : boost::noncopyable {
     const Vocabulary &base_vocab_;
 };
 
-// Common model interface that depends on knowing the specific classes.  
+// Common model interface that depends on knowing the specific classes. 
+// Curiously recurring template pattern.  
 template <class Child, class StateT, class VocabularyT> class MiddleModel : public Model {
   public:
     typedef StateT State;
@@ -119,6 +120,8 @@ template <class Child, class StateT, class VocabularyT> class MiddleModel : publ
 
   protected:
     explicit MiddleModel(const Vocabulary &vocab) : Model(sizeof(State), vocab) {}
+
+    virtual ~MiddleModel() {}
 
     void Init(const State &begin_state, const State &null_state) {
       begin_sentence_ = begin_state;
