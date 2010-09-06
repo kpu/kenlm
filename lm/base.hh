@@ -76,7 +76,7 @@ class Model : boost::noncopyable {
     const void *BeginSentenceMemory() const { return begin_memory_; }
     const void *NullContextMemory() const { return null_memory_; }
 
-    unsigned int Order() { return order_; }
+    unsigned int Order() const { return order_; }
 
     const Vocabulary &BaseVocabulary() const { return base_vocab_; }
 
