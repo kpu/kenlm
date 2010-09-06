@@ -103,11 +103,6 @@ inline size_t hash_value(const State &state) {
   return MurmurHash64A(state.history_, sizeof(WordIndex) * state.valid_length_, 0);
 }
 
-struct Return {
-  float prob;
-  unsigned char ngram_length;
-};
-
 namespace detail {
 class ImplBase : boost::noncopyable {
   public:
