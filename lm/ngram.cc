@@ -67,21 +67,6 @@ struct VocabularyFriend {
   }
 };
 
-ImplBase::~ImplBase() {}
-
-struct Prob {
-  float prob;
-  void SetBackoff(float to) {
-    throw FormatLoadException("Attempt to set backoff " + boost::lexical_cast<std::string>(to) + " for an n-gram with longest order.");
-  }
-  void ZeroBackoff() {}
-};
-struct ProbBackoff : Prob {
-  float backoff;
-  void SetBackoff(float to) { backoff = to; }
-  void ZeroBackoff() { backoff = 0.0; }
-};
-
 // All of the entropy is in low order bits and boost::hash does poorly with these.
 // Odd numbers near 2^64 chosen by mashing on the keyboard.  
 inline uint64_t CombineWordHash(uint64_t current, const uint32_t next) {
@@ -165,36 +150,7 @@ template <class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n,
   if (f.ReadLine().size()) throw FormatLoadException("Blank line after ngrams not blank");
 }
 
-// Should return the same results as SRI except ln instead of log10
-template <class Search> class GenericModel : public ImplBase {
-  public:
-    GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &init, unsigned int &order, State &begin_sentence);
-
-    Return IncrementalScore(
-        const State &in_state,
-        const WordIndex new_word,
-        State &out_state) const;
-
-  private:
-    void LoadFromARPA(util::FilePiece &f, Vocabulary &vocab, const std::vector<size_t> &counts);
-
-    unsigned int order_;
-
-    WordIndex not_found_;
-
-    // memory_ is the backing store for unigram_, [middle_begin_, middle_end_), and longest_.  All of these are pointers there.   
-    util::scoped_mmap memory_;
-
-    ProbBackoff *unigram_;
-
-    typedef typename Search::template Table<ProbBackoff>::T Middle;
-    std::vector<Middle> middle_;
-
-    typedef typename Search::template Table<Prob>::T Longest;
-    Longest longest_;
-};
-
-template <class Search> GenericModel<Search>::GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &search_init, unsigned int &order, State &begin_sentence) {
+template <class Search> GenericModel<Search>::GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &search_init) : base::Model(sizeof(State), vocab), vocab_(vocab) {
   util::FilePiece f(file);
 
   std::vector<size_t> counts;
@@ -221,18 +177,20 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, Voc
     start += Middle::Size(search_init, counts[n - 1]);
   }
   longest_ = Longest(search_init, start, counts[order_ - 1]);
-  assert(start + Longest::Size(search_init, counts[order_ - 1]) - reinterpret_cast<char*>(memory_.get()) == memory_size);
+  assert(static_cast<size_t>(start + Longest::Size(search_init, counts[order_ - 1]) - reinterpret_cast<char*>(memory_.get())) == memory_size);
 
   LoadFromARPA(f, vocab, counts);
 
   if (std::fabs(unigram_[vocab.NotFound()].backoff) > 0.0000001) {
     throw FormatLoadException(std::string("Backoff for unknown word with index ") + boost::lexical_cast<std::string>(vocab.NotFound()) + " is " + boost::lexical_cast<std::string>(unigram_[vocab.NotFound()].backoff) + std::string(" not zero"));
   }
+
   not_found_ = vocab.NotFound();
-  order = order_;
-  begin_sentence.valid_length_ = 1;
-  begin_sentence.history_[0] = vocab.BeginSentence();
-  begin_sentence.backoff_[0] = unigram_[begin_sentence.history_[0]].backoff;
+  begin_sentence_.valid_length_ = 1;
+  begin_sentence_.history_[0] = vocab.BeginSentence();
+  begin_sentence_.backoff_[0] = unigram_[begin_sentence_.history_[0]].backoff;
+  null_context_.valid_length_ = 0;
+  Init(&begin_sentence_, &null_context_);
 }
 
 template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece &f, Vocabulary &vocab, const std::vector<size_t> &counts) {
@@ -253,7 +211,7 @@ template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece 
  *
  * The search goes in increasing order of ngram length.  
  */
-template <class Search> Return GenericModel<Search>::IncrementalScore(
+template <class Search> Return GenericModel<Search>::WithLength(
     const State &in_state,
     const WordIndex new_word,
     State &out_state) const {
@@ -331,28 +289,7 @@ template <class Search> Return GenericModel<Search>::IncrementalScore(
   return ret;
 }
 
-class ProbingSearch {
-  private:
-    // std::identity is an SGI extension :-(
-    struct IdentityHash : public std::unary_function<uint64_t, size_t> {
-      size_t operator()(uint64_t arg) const { return static_cast<size_t>(arg); }
-    };
-
-  public:
-    typedef float Init;
-    template <class Value> struct Table {
-      typedef util::ProbingMap<uint64_t, Value, IdentityHash> T;
-    };
-};
-
+template class GenericModel<ProbingSearch>;
 } // namespace detail
-
-Model::Model(const char *file) {
-  impl_.reset(new detail::GenericModel<detail::ProbingSearch>(file, vocab_, 1.5, order_, begin_sentence_));
-  null_context_.valid_length_ = 0;
-}
-
-Model::~Model() {}
-
 } // namespace ngram
 } // namespace lm

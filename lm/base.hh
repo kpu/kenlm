@@ -10,6 +10,12 @@
 #include <string>
 
 namespace lm {
+
+struct Return {
+  float prob;
+  unsigned char ngram_length;
+};
+
 namespace base {
 
 class Vocabulary : boost::noncopyable {
@@ -45,13 +51,48 @@ class Vocabulary : boost::noncopyable {
 		WordIndex begin_sentence_, end_sentence_, not_found_, available_;
 };
 
-} // mamespace base
+class Model : boost::noncopyable {
+  public:
+    virtual ~Model() {}
 
-struct Return {
-  float prob;
-  unsigned char ngram_length;
+    size_t StateSize() const { return state_size_; }
+
+    virtual Return WithLength(
+        const void *in_state,
+        const WordIndex new_word,
+        void *out_state) const = 0;
+
+    float Score(
+        const void *in_state,
+        const WordIndex new_word,
+        void *out_state) const {
+      return WithLength(in_state, new_word, out_state).prob;
+    }
+
+    const void *BeginSentenceMemory() const { return begin_state_; }
+    const void *NullContextMemory() const { return null_state_; }
+
+    unsigned int Order() { return order_; }
+
+    const Vocabulary &BaseVocabulary() const { return base_vocab_; }
+
+  protected:
+    Model(size_t state_size, const Vocabulary &vocab) : state_size_(state_size), base_vocab_(vocab) {}
+
+    void Init(void *begin_state, void *null_state) {
+      begin_state_ = begin_state;
+      null_state_ = null_state;
+    }
+    unsigned int order_;
+
+  private:
+    const size_t state_size_;
+    const void *begin_state_, *null_state_;
+
+    const Vocabulary &base_vocab_;
 };
 
+} // mamespace base
 } // namespace lm
 
 #endif

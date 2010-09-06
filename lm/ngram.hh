@@ -2,19 +2,21 @@
 #define LM_NGRAM_H__
 
 #include "lm/base.hh"
+#include "util/probing_hash_table.hh"
 #include "util/string_piece.hh"
 #include "util/murmur_hash.hh"
+#include "util/scoped.hh"
 
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/unordered_map.hpp>
+#include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/ptr_container/ptr_vector.hpp>
+#include <boost/unordered_map.hpp>
 
 #include <algorithm>
-#include <vector>
 #include <memory>
+#include <vector>
 
-/* TODO: use vocab.hh and arpa_io.hh */
+namespace util { class FilePiece; }
 
 namespace lm {
 namespace ngram {
@@ -104,55 +106,98 @@ inline size_t hash_value(const State &state) {
 }
 
 namespace detail {
-class ImplBase : boost::noncopyable {
-  public:
-    virtual ~ImplBase();
-    virtual Return IncrementalScore(const State &in_state, const WordIndex new_word, State &out_state) const = 0;
 
-  protected:
-    ImplBase() {}
+struct Prob {
+  float prob;
+  void SetBackoff(float to) {
+    throw FormatLoadException("Attempt to set backoff " + boost::lexical_cast<std::string>(to) + " for   an n-gram with longest order.");
+  }
+  void ZeroBackoff() {}
 };
-} // namespace detail
+struct ProbBackoff : Prob {
+  float backoff;
+  void SetBackoff(float to) { backoff = to; }
+  void ZeroBackoff() { backoff = 0.0; }
+};
 
-class Model : boost::noncopyable {
+// Should return the same results as SRI except ln instead of log10
+template <class Search> class GenericModel : public base::Model {
   public:
     typedef ::lm::ngram::State State;
 
-    explicit Model(const char *file);
-    ~Model();
+    GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &init);
 
-    const State &BeginSentenceState() const { return begin_sentence_; }
-    const State &NullContextState() const { return null_context_; }
-    unsigned int Order() const { return order_; }
-    const Vocabulary &GetVocabulary() const { return vocab_; }
+    Return WithLength(
+        const State &in_state,
+        const WordIndex new_word,
+        State &out_state) const;
 
-    Return IncrementalScore(
+    Return WithLength(
+        const void *in_state,
+        const WordIndex new_word,
+        void *out_state) const {
+      return WithLength(*reinterpret_cast<const State*>(in_state), new_word, *reinterpret_cast<State*>(out_state));
+    }
+
+    float Score(
         const State &in_state,
         const WordIndex new_word,
         State &out_state) const {
-      return impl_->IncrementalScore(in_state, new_word, out_state);
+      return WithLength(in_state, new_word, out_state).prob;
     }
 
+    const State &BeginSentenceState() const { return begin_sentence_; }
+    const State &NullContextState() const { return null_context_; }
+    const Vocabulary &GetVocabulary() const { return vocab_; }
+
   private:
-    unsigned int order_;
+    void LoadFromARPA(util::FilePiece &f, Vocabulary &vocab, const std::vector<size_t> &counts);
+
+    WordIndex not_found_;
     State begin_sentence_, null_context_;
 
-    Vocabulary vocab_;
+    // memory_ is the backing store for unigram_, [middle_begin_, middle_end_), and longest_.  All of    these are pointers there.   
+    util::scoped_mmap memory_;
 
-    boost::scoped_ptr<detail::ImplBase> impl_;
+    ProbBackoff *unigram_;
+
+    typedef typename Search::template Table<ProbBackoff>::T Middle;
+    std::vector<Middle> middle_;
+
+    typedef typename Search::template Table<Prob>::T Longest;
+    Longest longest_;
+
+    const Vocabulary &vocab_;
 };
 
-// This just owns Model, which in turn owns Vocabulary.  Only reason this class
-// exists is to provide the same interface as the other models.
+class ProbingSearch {
+  private:
+    // std::identity is an SGI extension :-(
+    struct IdentityHash : public std::unary_function<uint64_t, size_t> {
+      size_t operator()(uint64_t arg) const { return static_cast<size_t>(arg); }
+    };
+
+  public:
+    typedef float Init;
+    template <class Value> struct Table {
+      typedef util::ProbingMap<uint64_t, Value, IdentityHash> T;
+    };
+};
+
+} // namespace detail
+
+typedef detail::GenericModel<detail::ProbingSearch> Model;
+
 class Owner : boost::noncopyable {
   public:
-    explicit Owner(const char *file_name) : model_(file_name) {}
+    explicit Owner(const char *file_name) : model_(file_name, vocab_, 1.5) {}
 
     const Vocabulary &GetVocabulary() const { return model_.GetVocabulary(); }
 
     const Model &GetModel() const { return model_; }
 
   private:
+    Vocabulary vocab_;
     const Model model_;
 };
 

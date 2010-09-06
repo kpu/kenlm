@@ -9,9 +9,10 @@ namespace ngram {
 namespace {
 
 struct Fixture {
-	Fixture() : model("test.arpa") {}
+	Fixture() : owner("test.arpa"), model(owner.GetModel()) {}
 
-	Model model;
+  Owner owner;
+  const Model &model;
 
 	unsigned int Lookup(const char *value) const {
 		return model.GetVocabulary().Index(StringPiece(value));
@@ -21,7 +22,7 @@ struct Fixture {
 BOOST_FIXTURE_TEST_SUITE(s, Fixture)
 
 #define StartTest(word, ngram, score) \
-  ret = model.IncrementalScore( \
+  ret = model.WithLength( \
 			state, \
 			Lookup(word), \
 			out);\
