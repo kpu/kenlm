@@ -36,10 +36,6 @@ class Vocabulary : public base::Vocabulary {
   public:
     Vocabulary() {}
 
-    WordIndex Index(const std::string &str) const {
-      return Index(StringPiece(str));
-    }
-
     WordIndex Index(const StringPiece &str) const {
       boost::unordered_map<StringPiece, WordIndex>::const_iterator i(ids_.find(str));
       return (__builtin_expect(i == ids_.end(), 0)) ? not_found_ : i->second;

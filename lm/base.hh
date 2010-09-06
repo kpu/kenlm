@@ -28,7 +28,17 @@ class Vocabulary : boost::noncopyable {
 		// Return start index of unused word assignments.
 		WordIndex Available() const { return available_; }
 
-		virtual WordIndex Index(const std::string &str) const = 0;
+    /* Most implementations allow StringPiece lookups and need only override
+     * Index(StringPiece).  SRI requires null termination and overrides all
+     * three methods.  
+     */
+		virtual WordIndex Index(const StringPiece &str) const = 0;
+		virtual WordIndex Index(const std::string &str) const {
+      return Index(StringPiece(str));
+    }
+		virtual WordIndex Index(const char *str) const {
+      return Index(StringPiece(str));
+    }
 
 	protected:
 		// Delayed initialization of constant values.
