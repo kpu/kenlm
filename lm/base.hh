@@ -55,6 +55,8 @@ template <class T, class U, class V> class MiddleModel;
 
 class Model : boost::noncopyable {
   public:
+    typedef ::lm::Return Return;
+
     virtual ~Model() {}
 
     size_t StateSize() const { return state_size_; }
