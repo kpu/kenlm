@@ -49,6 +49,12 @@ class Vocabulary : boost::noncopyable {
 };
 
 } // mamespace base
+
+struct Return {
+  float prob;
+  unsigned char ngram_length;
+};
+
 } // namespace lm
 
 #endif
