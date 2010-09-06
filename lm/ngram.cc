@@ -9,6 +9,7 @@
 #include <boost/progress.hpp>
 
 #include <algorithm>
+#include <functional>
 #include <istream>
 #include <numeric>
 #include <string>
@@ -186,10 +187,10 @@ template <class Search> class GenericModel : public ImplBase {
 
     ProbBackoff *unigram_;
 
-    typedef typename Search::template Table<uint64_t, ProbBackoff> Middle;
+    typedef typename Search::template Table<ProbBackoff>::T Middle;
     std::vector<Middle> middle_;
 
-    typedef typename Search::template Table<uint64_t, Prob> Longest;
+    typedef typename Search::template Table<Prob>::T Longest;
     Longest longest_;
 };
 
@@ -330,60 +331,18 @@ template <class Search> Return GenericModel<Search>::IncrementalScore(
   return ret;
 }
 
-struct ProbingSearch {
-  typedef float Init;
-  template <class KeyT, class ValueT> class Table {
-    public:
-      typedef KeyT Key;
-      typedef ValueT Value;
+class ProbingSearch {
+  private:
+    // std::identity is an SGI extension :-(
+    struct IdentityHash : public std::unary_function<uint64_t, size_t> {
+      size_t operator()(uint64_t arg) const { return static_cast<size_t>(arg); }
+    };
 
-      static size_t Size(float multiplier, size_t entries) {
-        return static_cast<size_t>(multiplier * static_cast<float>(entries)) * sizeof(Entry);
-      }
-
-      Table() {}
-
-      Table(float multiplier, char *start, size_t entries) 
-        : table_(
-            reinterpret_cast<Entry*>(start),
-            static_cast<size_t>(multiplier * static_cast<float>(entries)),
-            Entry(),
-            IdentityKey(),
-            EqualsKeyOnly()) {}
-
-      bool Find(const Key &key, const Value *&value) const {
-        const Entry *e = table_.Find(key);
-        if (!e) return false;
-        value = &e->value;
-        return true;
-      }
-      void Insert(const Key &key, const Value &value) {
-        Entry e;
-        e.key = key;
-        e.value = value;
-        table_.Insert(e);
-      }
-
-    private:
-      struct Entry {
-        Key key;
-        Value value;
-      };
-      struct IdentityKey : public std::unary_function<const Entry &, size_t> {
-        size_t operator()(const Entry &e) const { return e.key; }
-        size_t operator()(const Key value) const { return value; }
-      };
-      struct EqualsKeyOnly : public std::binary_function<const Entry &, const Entry &, bool> {
-        bool operator()(const Entry &a, const Entry &b) const {
-          return a.key == b.key;
-        }
-        bool operator()(const Entry &a, const Key k) const {
-          return a.key == k;
-        }
-      };
-
-      util::ProbingHashTable<Entry, IdentityKey, EqualsKeyOnly> table_;
-  };
+  public:
+    typedef float Init;
+    template <class Value> struct Table {
+      typedef util::ProbingTable<uint64_t, Value, IdentityHash> T;
+    };
 };
 
 } // namespace detail

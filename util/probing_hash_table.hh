@@ -132,22 +132,24 @@ template <class KeyT, class ValueT, class HashT, class EqualsT = std::equal_to<K
     };
     class HashKeyOnly : public std::unary_function<const Entry &, std::size_t> {
       public:
+        HashKeyOnly() {}
         explicit HashKeyOnly(const Hash &hasher) : hasher_(hasher) {}
 
         std::size_t operator()(const Entry &e) const { return hasher_(e.key); }
         std::size_t operator()(const Key value) const { return hasher_(value); }
       private:
-        const Hash hasher_;
+        Hash hasher_;
     };
     struct EqualsKeyOnly : public std::binary_function<const Entry &, const Entry &, bool> {
       public:
+        EqualsKeyOnly() {}
         explicit EqualsKeyOnly(const Equals &equals) : equals_(equals) {}
 
         bool operator()(const Entry &a, const Entry &b) const { return equals_(a.key, b.key); }
         bool operator()(const Entry &a, const Key k) const { return equals_(a.key, k); }
 
       private:
-        const Equals equals_;
+        Equals equals_;
     };
 
     ProbingHashTable<Entry, HashKeyOnly, EqualsKeyOnly> table_;

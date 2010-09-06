@@ -22,10 +22,7 @@ class Vocabulary : boost::noncopyable {
 		// Return start index of unused word assignments.
 		WordIndex Available() const { return available_; }
 
-		// Warning: not threadsafe for SRI.
 		virtual WordIndex Index(const std::string &str) const = 0;
-
-		virtual const char *Word(WordIndex index) const = 0;
 
 	protected:
 		// Delayed initialization of constant values.
