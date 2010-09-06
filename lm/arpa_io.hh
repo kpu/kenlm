@@ -20,6 +20,8 @@
 #include <err.h>
 #include <string.h>
 
+namespace util { class FilePiece; }
+
 namespace lm {
 
 class ARPAInputException : public std::exception {
@@ -50,9 +52,12 @@ class ARPAOutputException : public std::exception {
 
 // Handling for the counts of n-grams at the beginning of ARPA files.
 size_t SizeNeededForCounts(const std::vector<size_t> &number);
+// TODO: transition to FilePiece.
 void ReadCounts(std::istream &in, std::vector<size_t> &number) throw (ARPAInputException);
+void ReadCounts(util::FilePiece &in, std::vector<size_t> &number) throw (ARPAInputException);
 
 // Read and verify the headers like \1-grams: 
+void ReadNGramHeader(util::FilePiece &in_lm, unsigned int length);
 void ReadNGramHeader(std::istream &in_lm, unsigned int length);
 // Read and verify end marker.  
 void ReadEnd(std::istream &in_lm);
@@ -93,6 +98,7 @@ class ARPAOutput : boost::noncopyable {
     size_t fast_counter_;
     std::vector<size_t> counts_;
 };
+
 
 template <class Output> void ReadNGrams(std::istream &in, unsigned int length, size_t max_length, size_t number, Output &out) {
   std::string line;

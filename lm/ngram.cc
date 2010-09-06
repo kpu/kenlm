@@ -1,5 +1,7 @@
-#include "lm/arpa_io.hh"
 #include "lm/ngram.hh"
+
+#include "lm/arpa_io.hh"
+#include "util/file_piece.hh"
 #include "util/probing_hash_table.hh"
 #include "util/scoped.hh"
 
@@ -95,67 +97,56 @@ uint64_t ChainedWordHash(const WordIndex *word, const WordIndex *word_end) {
   return current;
 }
 
-void Read1Grams(std::istream &f, const size_t count, Vocabulary &vocab, ProbBackoff *unigrams) {
+void Read1Grams(util::FilePiece &f, const size_t count, Vocabulary &vocab, ProbBackoff *unigrams) {
   ReadNGramHeader(f, 1);
   boost::progress_display progress(count, std::cerr, "Loading 1-grams\n");
   // +1 in case OOV is not found.
   detail::VocabularyFriend::Reserve(vocab, count + 1);
-  std::string line;
   // Special unigram reader because unigram's data structure is different and because we're inserting vocab words.
   std::auto_ptr<std::string> unigram(new std::string);
-  for (size_t i = 0; i < count; ++i) {
-    float prob;
-    f >> prob;
+  for (size_t i = 0; i < count; ++i, ++progress) {
+    float prob = f.ReadFloat();
     if (f.get() != '\t')
       throw FormatLoadException("Expected tab after probability");
-    f >> *unigram;
-    if (!f) throw FormatLoadException("Actual unigram count less than reported");
+    StringPiece unigram_piece(f.ReadDelimited());
+    unigram->assign(unigram_piece.data(), unigram_piece.size());
     ProbBackoff &ent = unigrams[detail::VocabularyFriend::InsertUnique(vocab, unigram.release())];
     unigram.reset(new std::string);
     ent.prob = prob * M_LN10;
-    int delim = f.get();
-    if (!f) throw FormatLoadException("Missing line termination while reading unigrams");
+    char delim = f.get();
     if (delim == '\t') {
-      if (!(f >> ent.backoff)) throw FormatLoadException("Failed to read backoff");
-      ent.backoff *= M_LN10;
-      if ((f.get() != '\n') || !f) throw FormatLoadException("Expected newline after backoff");
+      ent.backoff = f.ReadFloat() * M_LN10;
+      if ((f.get() != '\n')) throw FormatLoadException("Expected newline after backoff");
     } else if (delim == '\n') {
       ent.backoff = 0.0;
     } else {
       ent.backoff = 0.0;
       throw FormatLoadException("Expected tab or newline after unigram");
     }
-    ++progress;
   }
-  if (getline(f, line)) FormatLoadException("Blank line after ngrams missing");
-  if (!line.empty()) throw FormatLoadException("Blank line after ngrams not blank", line);
+  if (f.ReadLine().size()) throw FormatLoadException("Blank line after ngrams not blank");
   detail::VocabularyFriend::FinishedLoading(vocab);
 }
 
-template <class Store> void ReadNGrams(std::istream &f, const unsigned int n, const size_t count, const Vocabulary &vocab, Store &store) {
+template <class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Vocabulary &vocab, Store &store) {
   boost::progress_display progress(count, std::cerr, std::string("Loading ") + boost::lexical_cast<std::string>(n) + "-grams\n");
 
   ReadNGramHeader(f, n);
 
   // vocab ids of words in reverse order
   WordIndex vocab_ids[n];
-  std::string word;
   typename Store::Value value;
   for (size_t i = 0; i < count; ++i) {
     try {
-      f >> value.prob;
-      value.prob *= M_LN10;
+      value.prob = f.ReadFloat() * M_LN10;
       for (WordIndex *vocab_out = &vocab_ids[n-1]; vocab_out >= vocab_ids; --vocab_out) {
-        f >> word;
-        *vocab_out = vocab.Index(word);
+        *vocab_out = vocab.Index(f.ReadDelimited());
       }
       uint64_t key = ChainedWordHash(vocab_ids, vocab_ids + n);
 
       switch (f.get()) {
         case '\t':
-          float backoff;
-          f >> backoff;
-          value.SetBackoff(backoff * M_LN10);
+          value.SetBackoff(f.ReadFloat() * M_LN10);
           break;
         case '\n':
           value.ZeroBackoff();
@@ -165,14 +156,12 @@ template <class Store> void ReadNGrams(std::istream &f, const unsigned int n, co
       }
       store.Insert(key, value);
       ++progress;
-    } catch (const std::ios_base::failure &f) {
-      throw FormatLoadException("Error reading the " + boost::lexical_cast<std::string>(i) + "th " + boost::lexical_cast<std::string>(n) + "-gram.");
+    } catch (const std::exception &f) {
+      throw FormatLoadException("Error reading the " + boost::lexical_cast<std::string>(i) + "th " + boost::lexical_cast<std::string>(n) + "-gram." + f.what());
     }
   }
 
-  std::string line;
-  if (!getline(f, line)) FormatLoadException("Blank line after ngrams missing");
-  if (!line.empty()) throw FormatLoadException("Blank line after ngrams not blank", line);
+  if (f.ReadLine().size()) throw FormatLoadException("Blank line after ngrams not blank");
 }
 
 // Should return the same results as SRI except ln instead of log10
@@ -187,7 +176,7 @@ template <class Search> class GenericModel : public ImplBase {
         State &out_state) const;
 
   private:
-    void LoadFromARPA(std::istream &f, Vocabulary &vocab, const std::vector<size_t> &counts);
+    void LoadFromARPA(util::FilePiece &f, Vocabulary &vocab, const std::vector<size_t> &counts);
 
     unsigned int order_;
 
@@ -206,11 +195,7 @@ template <class Search> class GenericModel : public ImplBase {
 };
 
 template <class Search> GenericModel<Search>::GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &search_init, unsigned int &order, float &begin_backoff) {
-  std::fstream f(file, std::ios::in);
-  if (!f) throw OpenFileLoadException(file);
-  f.exceptions(std::istream::failbit | std::istream::badbit);
-  boost::scoped_array<char> buffer(new char[20971520]);
-  f.rdbuf()->pubsetbuf(buffer.get(), 20971520);
+  util::FilePiece f(file);
 
   std::vector<size_t> counts;
   ReadCounts(f, counts);
@@ -248,7 +233,7 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, Voc
   begin_backoff = unigram_[vocab.BeginSentence()].backoff;
 }
 
-template <class Search> void GenericModel<Search>::LoadFromARPA(std::istream &f, Vocabulary &vocab, const std::vector<size_t> &counts) {
+template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece &f, Vocabulary &vocab, const std::vector<size_t> &counts) {
   // Read the unigrams.
   Read1Grams(f, counts[0], vocab, unigram_);
   

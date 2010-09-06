@@ -1,7 +1,6 @@
-/*  Input and output for ARPA format files.
- */
-
 #include "lm/arpa_io.hh"
+
+#include "util/file_piece.hh"
 
 #include <boost/lexical_cast.hpp>
 
@@ -61,9 +60,9 @@ size_t SizeNeededForCounts(const std::vector<size_t> &number) {
   return buf.tellp();
 }
 
-bool IsEntirelyWhiteSpace(const std::string &line) {
-  for (size_t i = 0; i < line.size(); ++i) {
-    if (!isspace(line[i])) return false;
+bool IsEntirelyWhiteSpace(const StringPiece &line) {
+  for (size_t i = 0; i < static_cast<size_t>(line.size()); ++i) {
+    if (!isspace(line.data()[i])) return false;
   }
   return true;
 }
@@ -74,7 +73,7 @@ void ReadCounts(std::istream &in, std::vector<size_t> &number) throw (ARPAInputE
   if (!getline(in, line)) throw ARPAInputException("reading input lm");
   if (!IsEntirelyWhiteSpace(line)) throw ARPAInputException("first line was not blank", line);
   if (!getline(in, line)) throw ARPAInputException("reading \\data\\");
-  if (!(line == "\\data\\")) throw ARPAInputException("second line was not blank.", line);
+  if (!(line == "\\data\\")) throw ARPAInputException("second line was not \\data\\.", line);
   while (getline(in, line)) {
     if (IsEntirelyWhiteSpace(line)) {
       return;
@@ -90,11 +89,33 @@ void ReadCounts(std::istream &in, std::vector<size_t> &number) throw (ARPAInputE
   throw ARPAInputException("reading counts from input lm failed");
 }
 
+void ReadCounts(util::FilePiece &in, std::vector<size_t> &number) throw (ARPAInputException) {
+  number.clear();
+  StringPiece line;
+  if (!IsEntirelyWhiteSpace(line = in.ReadLine())) throw ARPAInputException("first line was not blank", line);
+  if ((line = in.ReadLine()) != "\\data\\") throw ARPAInputException("second line was not \\data\\.", line);
+  while (!IsEntirelyWhiteSpace(line = in.ReadLine())) {
+    if (line.size() < 6 || strncmp(line.data(), "ngram ", 6)) throw ARPAInputException("count line doesn't begin with \"ngram \"", line);
+    util::PieceIterator<'='> equals(line);
+    unsigned int length = boost::lexical_cast<unsigned int>(equals->substr(6));
+    if (length - 1 != number.size()) throw ARPAInputException("ngram count lengths should be consecutive starting with 1", line);
+    if (!++equals) throw ARPAInputException("expected = inside a count line", line);
+    unsigned int count = boost::lexical_cast<unsigned int>(*equals);
+    number.push_back(count);
+  }
+}
+
 void ReadNGramHeader(std::istream &in, unsigned int length) {
   std::string line;
   do {
     if (!getline(in, line)) throw ARPAInputException(std::string("Reading header for n-gram length ") + boost::lexical_cast<std::string>(length) + " from input lm failed");
   } while (IsEntirelyWhiteSpace(line));
+  if (line != (std::string("\\") + boost::lexical_cast<std::string>(length) + "-grams:")) throw ARPAInputException("wrong ngram header", line);
+}
+
+void ReadNGramHeader(util::FilePiece &in, unsigned int length) {
+  StringPiece line;
+  while (IsEntirelyWhiteSpace(line = in.ReadLine())) {}
   if (line != (std::string("\\") + boost::lexical_cast<std::string>(length) + "-grams:")) throw ARPAInputException("wrong ngram header", line);
 }
 
