@@ -73,25 +73,25 @@ class Model : boost::noncopyable {
       return WithLength(in_state, new_word, out_state).prob;
     }
 
-    const void *BeginSentenceMemory() const { return begin_memory_; }
-    const void *NullContextMemory() const { return null_memory_; }
+    const void *BeginSentenceMemory() const { return begin_sentence_memory_; }
+    const void *NullContextMemory() const { return null_context_memory_; }
 
-    unsigned int Order() const { return order_; }
+    unsigned char Order() const { return order_; }
 
-    const Vocabulary &BaseVocabulary() const { return base_vocab_; }
+    const Vocabulary &BaseVocabulary() const { return *base_vocab_; }
 
   protected:
-    Model(size_t state_size, const Vocabulary &vocab) : state_size_(state_size), base_vocab_(vocab) {}
-
-    unsigned int order_;
 
   private:
     template <class T, class U, class V> friend class MiddleModel;
+    explicit Model(size_t state_size) : state_size_(state_size) {}
 
     const size_t state_size_;
-    const void *begin_memory_, *null_memory_;
+    const void *begin_sentence_memory_, *null_context_memory_;
 
-    const Vocabulary &base_vocab_;
+    const Vocabulary *base_vocab_;
+
+    unsigned char order_;
 };
 
 // Common model interface that depends on knowing the specific classes. 
@@ -119,15 +119,18 @@ template <class Child, class StateT, class VocabularyT> class MiddleModel : publ
     const Vocabulary &GetVocabulary() const { return *static_cast<const Vocabulary*>(&BaseVocabulary()); }
 
   protected:
-    explicit MiddleModel(const Vocabulary &vocab) : Model(sizeof(State), vocab) {}
+    MiddleModel() : Model(sizeof(State)) {}
 
     virtual ~MiddleModel() {}
 
-    void Init(const State &begin_state, const State &null_state) {
-      begin_sentence_ = begin_state;
-      null_context_ = null_state;
-      begin_memory_ = &begin_sentence_;
-      null_memory_ = &null_context_;
+    // begin_sentence and null_context can disappear after.  vocab should stay.  
+    void Init(const State &begin_sentence, const State &null_context, const Vocabulary &vocab, unsigned char order) {
+      begin_sentence_ = begin_sentence;
+      null_context_ = null_context;
+      begin_sentence_memory_ = &begin_sentence_;
+      null_context_memory_ = &null_context_;
+      base_vocab_ = &vocab;
+      order_ = order;
     }
 
   private:

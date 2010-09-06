@@ -145,6 +145,8 @@ template <class Search> class GenericModel : public base::MiddleModel<GenericMod
 
     typedef typename Search::template Table<Prob>::T Longest;
     Longest longest_;
+
+    Vocabulary vocabulary_;
 };
 
 class ProbingSearch {

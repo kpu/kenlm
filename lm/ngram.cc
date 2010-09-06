@@ -150,7 +150,7 @@ template <class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n,
   if (f.ReadLine().size()) throw FormatLoadException("Blank line after ngrams not blank");
 }
 
-template <class Search> GenericModel<Search>::GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &search_init) : P(vocab) {
+template <class Search> GenericModel<Search>::GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &search_init) {
   util::FilePiece f(file);
 
   std::vector<size_t> counts;
@@ -160,24 +160,24 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, Voc
     throw FormatLoadException("This ngram implementation assumes at least a bigram model.");
   if (counts.size() > kMaxOrder)
     throw FormatLoadException(std::string("Edit ngram.hh and change kMaxOrder to at least ") + boost::lexical_cast<std::string>(counts.size()));
-  P::order_ = counts.size();
+  unsigned char order = counts.size();
 
   size_t memory_size = sizeof(ProbBackoff) * counts[0];
-  for (unsigned int n = 2; n < P::order_; ++n) {
+  for (unsigned char n = 2; n < order; ++n) {
     memory_size += Middle::Size(search_init, counts[n-1]);
   }
-  memory_size += Longest::Size(search_init, counts[P::order_ - 1]);
+  memory_size += Longest::Size(search_init, counts[order - 1]);
   memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0), memory_size);
   if (memory_.get() == MAP_FAILED) throw AllocateMemoryLoadException(memory_size, errno);
 
   unigram_ = reinterpret_cast<ProbBackoff*>(memory_.get());
   char *start = reinterpret_cast<char *>(memory_.get()) + sizeof(ProbBackoff) * counts[0];
-  for (unsigned int n = 2; n < P::order_; ++n) {
+  for (unsigned int n = 2; n < order; ++n) {
     middle_.push_back(Middle(search_init, start, counts[n - 1]));
     start += Middle::Size(search_init, counts[n - 1]);
   }
-  longest_ = Longest(search_init, start, counts[P::order_ - 1]);
-  assert(static_cast<size_t>(start + Longest::Size(search_init, counts[P::order_ - 1]) - reinterpret_cast<char*>(memory_.get())) == memory_size);
+  longest_ = Longest(search_init, start, counts[order - 1]);
+  assert(static_cast<size_t>(start + Longest::Size(search_init, counts[order - 1]) - reinterpret_cast<char*>(memory_.get())) == memory_size);
 
   LoadFromARPA(f, vocab, counts);
 
@@ -194,7 +194,7 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, Voc
   begin_sentence.backoff_[0] = unigram_[begin_sentence.history_[0]].backoff;
   State null_context = State();
   null_context.valid_length_ = 0;
-  P::Init(begin_sentence, null_context);
+  P::Init(begin_sentence, null_context, vocab, order);
 }
 
 template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece &f, Vocabulary &vocab, const std::vector<size_t> &counts) {
@@ -278,17 +278,17 @@ template <class Search> Return GenericModel<Search>::WithLength(
   
   const Prob *found;
   if (!longest_.Find(lookup_hash, found)) {
-    // It's an (P::order_-1)-gram
-    std::copy(in_state.history_, in_state.history_ + P::order_ - 2, out_state.history_ + 1);
-    ret.ngram_length = out_state.valid_length_ = P::order_ - 1;
-    ret.prob += in_state.backoff_[P::order_ - 2];
+    // It's an (P::Order()-1)-gram
+    std::copy(in_state.history_, in_state.history_ + P::Order() - 2, out_state.history_ + 1);
+    ret.ngram_length = out_state.valid_length_ = P::Order() - 1;
+    ret.prob += in_state.backoff_[P::Order() - 2];
     return ret;
   }
-  // It's an P::order_-gram
-  // out_state.valid_length_ is still P::order_ - 1 because the next lookup will only need that much.
-  std::copy(in_state.history_, in_state.history_ + P::order_ - 2, out_state.history_ + 1);
-  out_state.valid_length_ = P::order_ - 1;
-  ret.ngram_length = P::order_;
+  // It's an P::Order()-gram
+  // out_state.valid_length_ is still P::Order() - 1 because the next lookup will only need that much.
+  std::copy(in_state.history_, in_state.history_ + P::Order() - 2, out_state.history_ + 1);
+  out_state.valid_length_ = P::Order() - 1;
+  ret.ngram_length = P::Order();
   ret.prob = found->prob;
   return ret;
 }
