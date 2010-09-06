@@ -91,7 +91,7 @@ template <class ValueT, class HashT, class EqualT = std::equal_to<ValueT> > clas
 };
 
 // Default configuration of the above: table from keys to values.  
-template <class KeyT, class ValueT, class HashT, class EqualsT = std::equal_to<KeyT> > class ProbingTable {
+template <class KeyT, class ValueT, class HashT, class EqualsT = std::equal_to<KeyT> > class ProbingMap {
   public:
     typedef KeyT Key;
     typedef ValueT Value;
@@ -102,9 +102,9 @@ template <class KeyT, class ValueT, class HashT, class EqualsT = std::equal_to<K
       return static_cast<std::size_t>(multiplier * static_cast<float>(entries)) * sizeof(Entry);
     }
 
-    ProbingTable() {}
+    ProbingMap() {}
 
-    ProbingTable(float multiplier, char *start, std::size_t entries, const Hash &hasher = Hash(), const Equals &equals = Equals())
+    ProbingMap(float multiplier, char *start, std::size_t entries, const Hash &hasher = Hash(), const Equals &equals = Equals())
       : table_(
           reinterpret_cast<Entry*>(start),
           static_cast<std::size_t>(multiplier * static_cast<float>(entries)),

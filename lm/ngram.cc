@@ -341,7 +341,7 @@ class ProbingSearch {
   public:
     typedef float Init;
     template <class Value> struct Table {
-      typedef util::ProbingTable<uint64_t, Value, IdentityHash> T;
+      typedef util::ProbingMap<uint64_t, Value, IdentityHash> T;
     };
 };
 
