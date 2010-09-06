@@ -5,7 +5,6 @@
 #include "util/string_piece.hh"
 #include "util/murmur_hash.hh"
 
-#include <boost/array.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/unordered_map.hpp>
@@ -81,23 +80,10 @@ class Vocabulary : public base::Vocabulary {
 
 class State {
   public:
-    State() {}
-
-    // Faster copying using only the valid entries.
-    State(const State &other) : ngram_length_(other.ngram_length_) {
-      CopyValid(other);
-    }
-
-    State &operator=(const State &other) {
-      ngram_length_ = other.ngram_length_;
-      CopyValid(other);
-      return *this;
-    }
-
     bool operator==(const State &other) const {
       if (ngram_length_ != other.ngram_length_) return false;
-      for (const float *first = backoff_.data(), *second = other.backoff_.data();
-          first != backoff_.data() + ValidLength(); ++first, ++second) {
+      for (const float *first = backoff_, *second = other.backoff_;
+          first != backoff_ + ValidLength(); ++first, ++second) {
         // No arithmetic was performed on these values, so an exact comparison is justified.
         if (*first != *second) return false;
       }
@@ -116,7 +102,7 @@ class State {
     }
 
     void CopyValid(const State &other) {
-      std::copy(other.backoff_.data(), other.backoff_.data() + ValidLength(), backoff_.data());
+      std::copy(other.backoff_, other.backoff_ + ValidLength(), backoff_);
     }
 
     unsigned char ngram_length_;
@@ -125,13 +111,13 @@ class State {
     // backoff_[0] is the backoff for unigrams.
     // The first min(ngram_length_, kMaxOrder - 1) entries must be copied and
     // may be used for hashing or equality.   
-    boost::array<float, kMaxOrder - 1> backoff_;
+    float backoff_[kMaxOrder - 1];
 };
 
 inline size_t hash_value(const State &state) {
   size_t ret = 0;
   boost::hash_combine(ret, state.ngram_length_);
-  for (const float *val = state.backoff_.data(); val != state.backoff_.data() + state.ValidLength(); ++val) {
+  for (const float *val = state.backoff_; val != state.backoff_ + state.ValidLength(); ++val) {
     boost::hash_combine(ret, *val);
   }
   return ret;

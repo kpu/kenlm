@@ -264,11 +264,11 @@ template <class Search> float GenericModel<Search>::IncrementalScore(
     out_state.ngram_length_ = 0;
     // all of backoff.
     return std::accumulate(
-        in_state.backoff_.data(),
-        in_state.backoff_.data() + std::min<unsigned int>(in_state.NGramLength(), order_ - 1),
+        in_state.backoff_,
+        in_state.backoff_ + std::min<unsigned int>(in_state.NGramLength(), order_ - 1),
         unigram.prob);
   }
-  boost::array<float, kMaxOrder - 1>::iterator backoff_out(out_state.backoff_.begin());
+  float *backoff_out(out_state.backoff_);
   *backoff_out = unigram.backoff;
   if (in_state.NGramLength() == 0) {
     out_state.ngram_length_ = 1;
@@ -302,8 +302,8 @@ template <class Search> float GenericModel<Search>::IncrementalScore(
       //   &in_state.backoff_[(mid_iter - middle_begin)] to ending_backoff.
       out_state.ngram_length_ = (words_iter - words_begin);
       return std::accumulate(
-          in_state.backoff_.data() + (mid_iter - middle_.begin()), 
-          in_state.backoff_.data() + std::min<unsigned int>(in_state.NGramLength(), order_ - 1),
+          in_state.backoff_ + (mid_iter - middle_.begin()), 
+          in_state.backoff_ + std::min<unsigned int>(in_state.NGramLength(), order_ - 1),
           prob);
     }
     *backoff_out = found->backoff;
