@@ -90,6 +90,11 @@ class State {
       return true;
     }
 
+    // The normal copy constructor isn't here to make this a POD.  You can also use this copy which might be faster.  
+    void AlternateCopy(const State &other) {
+      std::copy(other.backoff_, other.backoff_ + ValidLength(), backoff_);
+    }
+
     unsigned char NGramLength() const { return ngram_length_; }
 
   private:
@@ -99,10 +104,6 @@ class State {
 
     size_t ValidLength() const {
       return std::min<size_t>(static_cast<size_t>(ngram_length_), kMaxOrder - 1);
-    }
-
-    void CopyValid(const State &other) {
-      std::copy(other.backoff_, other.backoff_ + ValidLength(), backoff_);
     }
 
     unsigned char ngram_length_;
