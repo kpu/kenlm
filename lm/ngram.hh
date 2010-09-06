@@ -78,53 +78,41 @@ class Vocabulary : public base::Vocabulary {
     boost::unordered_map<StringPiece, WordIndex, MurmurHash> ids_;
 };
 
+// This is a POD.  
 class State {
   public:
     bool operator==(const State &other) const {
-      if (ngram_length_ != other.ngram_length_) return false;
-      for (const float *first = backoff_, *second = other.backoff_;
-          first != backoff_ + ValidLength(); ++first, ++second) {
-        // No arithmetic was performed on these values, so an exact comparison is justified.
+      if (valid_length_ != other.valid_length_) return false;
+      const WordIndex *end = history_ + valid_length_;
+      for (const WordIndex *first = history_, *second = other.history_;
+          first != end; ++first, ++second) {
         if (*first != *second) return false;
       }
+      // If the histories are equal, so are the backoffs.  
       return true;
     }
 
-    // The normal copy constructor isn't here to make this a POD.  You can also use this copy which might be faster.  
-    void AlternateCopy(const State &other) {
-      std::copy(other.backoff_, other.backoff_ + ValidLength(), backoff_);
-    }
-
-    unsigned char NGramLength() const { return ngram_length_; }
-
-    // You shouldn't need to touch anything below this line, but the members are public so State will qualify as a POD.  
-    size_t ValidLength() const {
-      return std::min<size_t>(static_cast<size_t>(ngram_length_), kMaxOrder - 1);
-    }
-
-    unsigned char ngram_length_;
-
-    // The first min(ngram_length_, Model::order_ - 1) entries are valid backoff weights.
-    // backoff_[0] is the backoff for unigrams.
-    // The first min(ngram_length_, kMaxOrder - 1) entries must be copied and
-    // may be used for hashing or equality.   
+    // You shouldn't need to touch anything below this line, but the members are public so FullState will qualify as a POD.  
+    unsigned char valid_length_;
     float backoff_[kMaxOrder - 1];
+    WordIndex history_[kMaxOrder - 1];
 };
 
 inline size_t hash_value(const State &state) {
-  size_t ret = 0;
-  boost::hash_combine(ret, state.ngram_length_);
-  for (const float *val = state.backoff_; val != state.backoff_ + state.ValidLength(); ++val) {
-    boost::hash_combine(ret, *val);
-  }
-  return ret;
+  // If the histories are equal, so are the backoffs.  
+  return MurmurHash64A(state.history_, sizeof(WordIndex) * state.valid_length_, 0);
 }
+
+struct Return {
+  float prob;
+  unsigned char ngram_length;
+};
 
 namespace detail {
 class ImplBase : boost::noncopyable {
   public:
     virtual ~ImplBase();
-    virtual float IncrementalScore(const State &in_state, const WordIndex *const words, const WordIndex *const words_end, State &out_state) const = 0;
+    virtual Return IncrementalScore(const State &in_state, const WordIndex new_word, State &out_state) const = 0;
 
   protected:
     ImplBase() {}
@@ -134,7 +122,6 @@ class ImplBase : boost::noncopyable {
 class Model : boost::noncopyable {
   public:
     typedef ::lm::ngram::State State;
-    typedef ::lm::ngram::Vocabulary Vocabulary;
 
     explicit Model(const char *file);
     ~Model();
@@ -144,21 +131,11 @@ class Model : boost::noncopyable {
     unsigned int Order() const { return order_; }
     const Vocabulary &GetVocabulary() const { return vocab_; }
 
-    template <class ReverseHistoryIterator> float IncrementalScore(
+    Return IncrementalScore(
         const State &in_state,
-        ReverseHistoryIterator hist_iter,
         const WordIndex new_word,
         State &out_state) const {
-      const unsigned int words_len = std::min<unsigned int>(in_state.NGramLength() + 1, order_);
-      WordIndex words[words_len];
-      WordIndex *const words_end = words + words_len;
-      words[0] = new_word;
-      WordIndex *dest = words + 1;
-      for (; dest != words_end; ++dest, ++hist_iter) {
-        *dest = *hist_iter;
-      }
-      // words is in reverse order.
-      return impl_->IncrementalScore(in_state, words, words_end, out_state);
+      return impl_->IncrementalScore(in_state, new_word, out_state);
     }
 
   private:

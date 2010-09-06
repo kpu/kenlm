@@ -167,12 +167,11 @@ template <class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n,
 // Should return the same results as SRI except ln instead of log10
 template <class Search> class GenericModel : public ImplBase {
   public:
-    GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &init, unsigned int &order, float &begin_backoff);
+    GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &init, unsigned int &order, State &begin_sentence);
 
-    float IncrementalScore(
+    Return IncrementalScore(
         const State &in_state,
-        const WordIndex *const words,
-        const WordIndex *const words_end,
+        const WordIndex new_word,
         State &out_state) const;
 
   private:
@@ -194,7 +193,7 @@ template <class Search> class GenericModel : public ImplBase {
     Longest longest_;
 };
 
-template <class Search> GenericModel<Search>::GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &search_init, unsigned int &order, float &begin_backoff) {
+template <class Search> GenericModel<Search>::GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &search_init, unsigned int &order, State &begin_sentence) {
   util::FilePiece f(file);
 
   std::vector<size_t> counts;
@@ -230,7 +229,9 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, Voc
   }
   not_found_ = vocab.NotFound();
   order = order_;
-  begin_backoff = unigram_[vocab.BeginSentence()].backoff;
+  begin_sentence.valid_length_ = 1;
+  begin_sentence.history_[0] = vocab.BeginSentence();
+  begin_sentence.backoff_[0] = unigram_[begin_sentence.history_[0]].backoff;
 }
 
 template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece &f, Vocabulary &vocab, const std::vector<size_t> &counts) {
@@ -251,81 +252,82 @@ template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece 
  *
  * The search goes in increasing order of ngram length.  
  */
-template <class Search> float GenericModel<Search>::IncrementalScore(
+template <class Search> Return GenericModel<Search>::IncrementalScore(
     const State &in_state,
-    const WordIndex *const words_begin,
-    const WordIndex *const words_end,
+    const WordIndex new_word,
     State &out_state) const {
-  assert(words_end > words_begin);
 
+  Return ret;
   // This is end pointer passed to SumBackoffs.
-  const ProbBackoff &unigram = unigram_[*words_begin];
-  if (*words_begin == not_found_) {
-    out_state.ngram_length_ = 0;
+  const ProbBackoff &unigram = unigram_[new_word];
+  if (new_word == not_found_) {
+    ret.ngram_length = out_state.valid_length_ = 0;
     // all of backoff.
-    return std::accumulate(
+    ret.prob = std::accumulate(
         in_state.backoff_,
-        in_state.backoff_ + std::min<unsigned int>(in_state.NGramLength(), order_ - 1),
+        in_state.backoff_ + in_state.valid_length_,
         unigram.prob);
+    return ret;
   }
   float *backoff_out(out_state.backoff_);
   *backoff_out = unigram.backoff;
-  if (in_state.NGramLength() == 0) {
-    out_state.ngram_length_ = 1;
+  ret.prob = unigram.prob;
+  out_state.history_[0] = new_word;
+  if (in_state.valid_length_ == 0) {
+    ret.ngram_length = out_state.valid_length_ = 1;
     // No backoff because NGramLength() == 0 and unknown can't have backoff.
-    return unigram.prob;
+    return ret;
   }
   ++backoff_out;
 
   // Ok now we now that the bigram contains known words.  Start by looking it up.
-  
-  float prob = unigram.prob;
-  uint64_t lookup_hash = static_cast<uint64_t>(*words_begin);
-  const WordIndex *words_iter = words_begin + 1;
+
+  uint64_t lookup_hash = static_cast<uint64_t>(new_word);
+  const WordIndex *hist_iter = in_state.history_;
+  const WordIndex *const hist_end = hist_iter + in_state.valid_length_;
   typename std::vector<Middle>::const_iterator mid_iter = middle_.begin();
-  for (; ; ++mid_iter, ++words_iter, ++backoff_out) {
-    if (words_iter == words_end) {
-      // ran out of words, so there shouldn't be backoff.
-      out_state.ngram_length_ = (words_iter - words_begin);
-      return prob;
+  for (; ; ++mid_iter, ++hist_iter, ++backoff_out) {
+    if (hist_iter == hist_end) {
+      // Used history [in_state.history_, hist_end) and ran out.  No backoff.  
+      std::copy(in_state.history_, hist_end, out_state.history_ + 1);
+      ret.ngram_length = out_state.valid_length_ = in_state.valid_length_ + 1;
+      // ret.prob was already set.
+      return ret;
     }
-    lookup_hash = CombineWordHash(lookup_hash, *words_iter);
+    lookup_hash = CombineWordHash(lookup_hash, *hist_iter);
     if (mid_iter == middle_.end()) break;
     const ProbBackoff *found;
     if (!mid_iter->Find(lookup_hash, found)) {
-      // Found an ngram of length words_iter - words_begin, but not of length words_iter - words_begin + 1.
-      // Sum up backoffs for histories of length
-      //   [words_iter - words_begin, std::min(in_state.NGramLength(), order_ - 1)).
-      // These correspond to
-      //   &in_state.backoff_[words_iter - words_begin - 1] to ending_backoff
-      // which is the same as
-      //   &in_state.backoff_[(mid_iter - middle_begin)] to ending_backoff.
-      out_state.ngram_length_ = (words_iter - words_begin);
-      return std::accumulate(
-          in_state.backoff_ + (mid_iter - middle_.begin()), 
-          in_state.backoff_ + std::min<unsigned int>(in_state.NGramLength(), order_ - 1),
-          prob);
+      // Didn't find an ngram using hist_iter.  
+      // The history used in the found n-gram is [in_state.history_, hist_iter).  
+      std::copy(in_state.history_, hist_iter, out_state.history_ + 1);
+      // Therefore, we found a (hist_iter - in_state.history_ + 1)-gram including the last word.  
+      ret.ngram_length = out_state.valid_length_ = (hist_iter - in_state.history_) + 1;
+      ret.prob = std::accumulate(
+          in_state.backoff_ + (mid_iter - middle_.begin()),
+          in_state.backoff_ + in_state.valid_length_,
+          ret.prob);
+      return ret;
     }
     *backoff_out = found->backoff;
-    prob = found->prob;
+    ret.prob = found->prob;
   }
   
   const Prob *found;
   if (!longest_.Find(lookup_hash, found)) {
     // It's an (order_-1)-gram
-    out_state.ngram_length_ = order_ - 1;
-    return prob + in_state.backoff_[order_ - 1 - 1];
+    std::copy(in_state.history_, in_state.history_ + order_ - 2, out_state.history_ + 1);
+    ret.ngram_length = out_state.valid_length_ = order_ - 1;
+    ret.prob += in_state.backoff_[order_ - 2];
+    return ret;
   }
   // It's an order_-gram
-  out_state.ngram_length_ = order_;
-  if (order_ < kMaxOrder) {
-    // In this case, State hashing and equality will check ngram_length_ entries.
-    // However, the last entry is not a valid backoff weight, so here it is set
-    // to 0.0.  Specifically
-    // order_ - 1 = min(out_state.ngram_length_, order_ - 1) = min(out_state.ngram_length_, kMaxOrder - 1) - 1 = out_state.ngram_length_ - 1
-    out_state.backoff_[order_ - 1] = 0.0;
-  }
-  return found->prob;  
+  // out_state.valid_length_ is still order_ - 1 because the next lookup will only need that much.
+  std::copy(in_state.history_, in_state.history_ + order_ - 2, out_state.history_ + 1);
+  out_state.valid_length_ = order_ - 1;
+  ret.ngram_length = order_;
+  ret.prob = found->prob;
+  return ret;
 }
 
 struct ProbingSearch {
@@ -387,9 +389,8 @@ struct ProbingSearch {
 } // namespace detail
 
 Model::Model(const char *file) {
-  impl_.reset(new detail::GenericModel<detail::ProbingSearch>(file, vocab_, 1.5, order_, begin_sentence_.backoff_[0]));
-  begin_sentence_.ngram_length_ = 1;
-  null_context_.ngram_length_ = 0;
+  impl_.reset(new detail::GenericModel<detail::ProbingSearch>(file, vocab_, 1.5, order_, begin_sentence_));
+  null_context_.valid_length_ = 0;
 }
 
 Model::~Model() {}
