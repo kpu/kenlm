@@ -114,7 +114,9 @@ struct Prob {
   }
   void ZeroBackoff() {}
 };
-struct ProbBackoff : Prob {
+// No inheritance so this will be a POD.  
+struct ProbBackoff {
+  float prob;
   float backoff;
   void SetBackoff(float to) { backoff = to; }
   void ZeroBackoff() { backoff = 0.0; }
