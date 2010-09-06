@@ -134,6 +134,7 @@ class ImplBase : boost::noncopyable {
 class Model : boost::noncopyable {
   public:
     typedef ::lm::ngram::State State;
+    typedef ::lm::ngram::Vocabulary Vocabulary;
 
     explicit Model(const char *file);
     ~Model();
