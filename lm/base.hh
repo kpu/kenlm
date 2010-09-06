@@ -51,6 +51,8 @@ class Vocabulary : boost::noncopyable {
 		WordIndex begin_sentence_, end_sentence_, not_found_, available_;
 };
 
+template <class T, class U, class V> class MiddleModel;
+
 class Model : boost::noncopyable {
   public:
     virtual ~Model() {}
@@ -69,8 +71,8 @@ class Model : boost::noncopyable {
       return WithLength(in_state, new_word, out_state).prob;
     }
 
-    const void *BeginSentenceMemory() const { return begin_state_; }
-    const void *NullContextMemory() const { return null_state_; }
+    const void *BeginSentenceMemory() const { return begin_memory_; }
+    const void *NullContextMemory() const { return null_memory_; }
 
     unsigned int Order() { return order_; }
 
@@ -79,17 +81,52 @@ class Model : boost::noncopyable {
   protected:
     Model(size_t state_size, const Vocabulary &vocab) : state_size_(state_size), base_vocab_(vocab) {}
 
-    void Init(void *begin_state, void *null_state) {
-      begin_state_ = begin_state;
-      null_state_ = null_state;
-    }
     unsigned int order_;
 
   private:
+    template <class T, class U, class V> friend class MiddleModel;
+
     const size_t state_size_;
-    const void *begin_state_, *null_state_;
+    const void *begin_memory_, *null_memory_;
 
     const Vocabulary &base_vocab_;
+};
+
+// Common model interface that depends on knowing the specific classes.  
+template <class Child, class StateT, class VocabularyT> class MiddleModel : public Model {
+  public:
+    typedef StateT State;
+    typedef VocabularyT Vocabulary;
+    Return WithLength(const void *in_state, const WordIndex new_word, void *out_state) const {
+      return static_cast<const Child*>(this)->WithLength(
+          *reinterpret_cast<const State*>(in_state),
+          new_word,
+          *reinterpret_cast<State*>(out_state));
+    }
+
+    float Score(const State &in_state, const WordIndex new_word, State &out_state) const {
+      return static_cast<const Child*>(this)->WithLength(
+          in_state,
+          new_word,
+          out_state).prob;
+    }
+
+    const State &BeginSentenceState() const { return begin_sentence_; }
+    const State &NullContextState() const { return null_context_; }
+    const Vocabulary &GetVocabulary() const { return *static_cast<const Vocabulary*>(&BaseVocabulary()); }
+
+  protected:
+    explicit MiddleModel(const Vocabulary &vocab) : Model(sizeof(State), vocab) {}
+
+    void Init(const State &begin_state, const State &null_state) {
+      begin_sentence_ = begin_state;
+      null_context_ = null_state;
+      begin_memory_ = &begin_sentence_;
+      null_memory_ = &null_context_;
+    }
+
+  private:
+    State begin_sentence_, null_context_;
 };
 
 } // mamespace base

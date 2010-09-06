@@ -121,41 +121,18 @@ struct ProbBackoff : Prob {
 };
 
 // Should return the same results as SRI except ln instead of log10
-template <class Search> class GenericModel : public base::Model {
+template <class Search> class GenericModel : public base::MiddleModel<GenericModel<Search>, State, Vocabulary> {
+  private:
+    typedef base::MiddleModel<GenericModel<Search>, State, Vocabulary> P;
   public:
-    typedef ::lm::ngram::State State;
-
     GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &init);
 
-    Return WithLength(
-        const State &in_state,
-        const WordIndex new_word,
-        State &out_state) const;
-
-    Return WithLength(
-        const void *in_state,
-        const WordIndex new_word,
-        void *out_state) const {
-      return WithLength(*reinterpret_cast<const State*>(in_state), new_word, *reinterpret_cast<State*>(out_state));
-    }
-
-    float Score(
-        const State &in_state,
-        const WordIndex new_word,
-        State &out_state) const {
-      return WithLength(in_state, new_word, out_state).prob;
-    }
-
-    const State &BeginSentenceState() const { return begin_sentence_; }
-    const State &NullContextState() const { return null_context_; }
-    const Vocabulary &GetVocabulary() const { return vocab_; }
+    Return WithLength(const State &in_state, const WordIndex new_word, State &out_state) const;
 
   private:
     void LoadFromARPA(util::FilePiece &f, Vocabulary &vocab, const std::vector<size_t> &counts);
 
     WordIndex not_found_;
-    State begin_sentence_, null_context_;
-
     // memory_ is the backing store for unigram_, [middle_begin_, middle_end_), and longest_.  All of    these are pointers there.   
     util::scoped_mmap memory_;
 
@@ -166,8 +143,6 @@ template <class Search> class GenericModel : public base::Model {
 
     typedef typename Search::template Table<Prob>::T Longest;
     Longest longest_;
-
-    const Vocabulary &vocab_;
 };
 
 class ProbingSearch {
