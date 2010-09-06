@@ -97,11 +97,7 @@ class State {
 
     unsigned char NGramLength() const { return ngram_length_; }
 
-  private:
-    template <class Search> friend class detail::GenericModel;
-    friend class Model;
-    friend size_t hash_value(const State &state);
-
+    // You shouldn't need to touch anything below this line, but the members are public so State will qualify as a POD.  
     size_t ValidLength() const {
       return std::min<size_t>(static_cast<size_t>(ngram_length_), kMaxOrder - 1);
     }
