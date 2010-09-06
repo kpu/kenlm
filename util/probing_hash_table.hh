@@ -1,9 +1,9 @@
 #ifndef UTIL_PROBING_HASH_TABLE__
 #define UTIL_PROBING_HASH_TABLE__
 
-#include <boost/functional/hash.hpp>
-
+#include <cstddef>
 #include <functional>
+#include <utility>
 
 namespace util {
 
@@ -18,7 +18,7 @@ namespace util {
  *
  */
 
-template <class ValueT, class HashT = boost::hash<ValueT>, class EqualT = std::equal_to<ValueT>, class PointerT = const ValueT *> class ReadProbingHashTable {
+template <class ValueT, class HashT, class EqualT = std::equal_to<ValueT>, class PointerT = const ValueT *> class ReadProbingHashTable {
   public:
     typedef ValueT Value;
     typedef HashT Hash;
@@ -28,7 +28,7 @@ template <class ValueT, class HashT = boost::hash<ValueT>, class EqualT = std::e
 
     ReadProbingHashTable(
         PointerT start,
-        size_t buckets,
+        std::size_t buckets,
         const Value &invalid,
         const Hash &hash_func = Hash(),
         const Equal &equal_func = Equal())
@@ -46,13 +46,13 @@ template <class ValueT, class HashT = boost::hash<ValueT>, class EqualT = std::e
 
   protected:
     PointerT start_, end_;
-    size_t buckets_;
+    std::size_t buckets_;
     Value invalid_;
     Hash hash_;
     Equal equal_;
 };
 
-template <class ValueT, class HashT = boost::hash<ValueT>, class EqualT = std::equal_to<ValueT> > class ProbingHashTable : public ReadProbingHashTable<ValueT, HashT, EqualT, ValueT *> {
+template <class ValueT, class HashT, class EqualT = std::equal_to<ValueT> > class ProbingHashTable : public ReadProbingHashTable<ValueT, HashT, EqualT, ValueT *> {
   private:
     typedef ReadProbingHashTable<ValueT, HashT, EqualT, ValueT *> P;
     
@@ -62,7 +62,7 @@ template <class ValueT, class HashT = boost::hash<ValueT>, class EqualT = std::e
     // Memory should be initialized buckets copies of invalid.
     ProbingHashTable(
         typename P::Value *start,
-        size_t buckets,
+        std::size_t buckets,
         const typename P::Value &invalid,
         const typename P::Hash &hash_func = typename P::Hash(),
         const typename P::Equal &equal_func = typename P::Equal())
@@ -88,6 +88,69 @@ template <class ValueT, class HashT = boost::hash<ValueT>, class EqualT = std::e
       *it = value;
       return it;
     }
+};
+
+// Default configuration of the above: table from keys to values.  
+template <class KeyT, class ValueT, class HashT, class EqualsT = std::equal_to<KeyT> > class ProbingTable {
+  public:
+    typedef KeyT Key;
+    typedef ValueT Value;
+    typedef HashT Hash;
+    typedef EqualsT Equals;
+
+    static std::size_t Size(float multiplier, std::size_t entries) {
+      return static_cast<std::size_t>(multiplier * static_cast<float>(entries)) * sizeof(Entry);
+    }
+
+    ProbingTable() {}
+
+    ProbingTable(float multiplier, char *start, std::size_t entries, const Hash &hasher = Hash(), const Equals &equals = Equals())
+      : table_(
+          reinterpret_cast<Entry*>(start),
+          static_cast<std::size_t>(multiplier * static_cast<float>(entries)),
+          Entry(),
+          HashKeyOnly(hasher),
+          EqualsKeyOnly(equals)) {}
+
+    bool Find(const Key &key, const Value *&value) const {
+      const Entry *e = table_.Find(key);
+      if (!e) return false;
+      value = &e->value;
+      return true;
+    }
+    void Insert(const Key &key, const Value &value) {
+      Entry e;
+      e.key = key;
+      e.value = value;
+      table_.Insert(e);
+    }
+
+  private:
+    struct Entry {
+      Key key;
+      Value value;
+    };
+    class HashKeyOnly : public std::unary_function<const Entry &, std::size_t> {
+      public:
+        explicit HashKeyOnly(const Hash &hasher) : hasher_(hasher) {}
+
+        std::size_t operator()(const Entry &e) const { return hasher_(e.key); }
+        std::size_t operator()(const Key value) const { return hasher_(value); }
+      private:
+        const Hash hasher_;
+    };
+    struct EqualsKeyOnly : public std::binary_function<const Entry &, const Entry &, bool> {
+      public:
+        explicit EqualsKeyOnly(const Equals &equals) : equals_(equals) {}
+
+        bool operator()(const Entry &a, const Entry &b) const { return equals_(a.key, b.key); }
+        bool operator()(const Entry &a, const Key k) const { return equals_(a.key, k); }
+
+      private:
+        const Equals equals_;
+    };
+
+    ProbingHashTable<Entry, HashKeyOnly, EqualsKeyOnly> table_;
 };
 
 } // namespace util
