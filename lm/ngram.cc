@@ -138,6 +138,18 @@ template <class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n,
   if (f.ReadLine().size()) throw FormatLoadException("Blank line after ngrams not blank");
 }
 
+template <class Search> size_t GenericModel<Search>::Size(const typename Search::Init &search_init, const std::vector<size_t> &counts) {
+  if (counts.size() < 2)
+    throw FormatLoadException("This ngram implementation assumes at least a bigram model.");
+  size_t memory_size = GenericVocabulary<Search>::Size(search_init, counts[0]);
+  memory_size += sizeof(ProbBackoff) * counts[0];
+  for (unsigned char n = 2; n < counts.size(); ++n) {
+    memory_size += Middle::Size(search_init, counts[n - 1]);
+  }
+  memory_size += Longest::Size(search_init, counts.back());
+  return memory_size;
+}
+
 template <class Search> GenericModel<Search>::GenericModel(const char *file, const typename Search::Init &search_init) {
   util::FilePiece f(file);
 
@@ -150,12 +162,7 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, con
     throw FormatLoadException(std::string("Edit ngram.hh and change kMaxOrder to at least ") + boost::lexical_cast<std::string>(counts.size()));
   unsigned char order = counts.size();
 
-  size_t memory_size = GenericVocabulary<Search>::Size(search_init, counts[0]);
-  memory_size += sizeof(ProbBackoff) * counts[0];
-  for (unsigned char n = 2; n < order; ++n) {
-    memory_size += Middle::Size(search_init, counts[n-1]);
-  }
-  memory_size += Longest::Size(search_init, counts[order - 1]);
+  const size_t memory_size = Size(search_init, counts);
   memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0), memory_size);
   if (memory_.get() == MAP_FAILED) throw AllocateMemoryLoadException(memory_size, errno);
 

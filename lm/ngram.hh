@@ -65,11 +65,12 @@ template <class Search> class GenericVocabulary : public base::Vocabulary {
       return lookup_.Find(Hash(str), ret) ? *ret : not_found_;
     }
 
-    // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
     static size_t Size(const typename Search::Init &search_init, std::size_t entries) {
       // +1 for possible unk token.
       return Lookup::Size(search_init, entries + 1);
     }
+
+    // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
     void Init(const typename Search::Init &search_init, char *start, std::size_t entries);
 
     WordIndex Insert(const StringPiece &str);
@@ -109,6 +110,11 @@ template <class Search> class GenericModel : public base::MiddleModel<GenericMod
   private:
     typedef base::MiddleModel<GenericModel<Search>, State, GenericVocabulary<Search> > P;
   public:
+    // Get the size of memory that will be mapped given ngram counts.  This
+    // does not include small non-mapped control structures, such as this class
+    // itself.  
+    static size_t Size(const typename Search::Init &search_init, const std::vector<size_t> &counts);
+
     GenericModel(const char *file, const typename Search::Init &init);
 
     Return WithLength(const State &in_state, const WordIndex new_word, State &out_state) const;
