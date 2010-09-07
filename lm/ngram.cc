@@ -1,6 +1,7 @@
 #include "lm/ngram.hh"
 
 #include "lm/arpa_io.hh"
+#include "lm/exception.hh"
 #include "util/file_piece.hh"
 #include "util/probing_hash_table.hh"
 #include "util/scoped.hh"
