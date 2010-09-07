@@ -27,55 +27,6 @@ namespace ngram {
 // sizeof(float*) + (kMaxOrder - 1) * sizeof(float) + malloc overhead
 const std::size_t kMaxOrder = 6;
 
-namespace detail {
-struct VocabularyFriend;
-template <class Search> class GenericModel;
-} // namespace detail
-
-class Vocabulary : public base::Vocabulary {
-  public:
-    Vocabulary() {}
-
-    WordIndex Index(const StringPiece &str) const {
-      boost::unordered_map<StringPiece, WordIndex>::const_iterator i(ids_.find(str));
-      return (__builtin_expect(i == ids_.end(), 0)) ? not_found_ : i->second;
-    }
-
-    bool Known(const StringPiece &str) const {
-      return ids_.find(str) != ids_.end();
-    }
-
-    const char *Word(WordIndex index) const {
-      return strings_[index].c_str();
-    }
-
-  protected:
-    // friend interface for populating.
-    friend struct detail::VocabularyFriend;
-
-    void Reserve(size_t to) {
-      strings_.reserve(to);
-      ids_.rehash(to + 1);
-    }
-
-    WordIndex InsertUnique(std::string *word);
-
-    void FinishedLoading();
-
-  private:
-    // TODO: optimize memory use here by using one giant buffer, preferably premade by a binary file format.
-    boost::ptr_vector<std::string> strings_;
-
-    // This proved faster than Boost's hash in speed trials: total load time Murmur 67090000, Boost 72210000
-    struct MurmurHash : public std::unary_function<const StringPiece &, size_t> {
-      size_t operator()(const StringPiece &key) const {
-        return MurmurHash64A(reinterpret_cast<const void*>(key.data()), key.length(), 0);
-      }
-    };
-
-    boost::unordered_map<StringPiece, WordIndex, MurmurHash> ids_;
-};
-
 // This is a POD.  
 class State {
   public:
@@ -102,6 +53,43 @@ inline size_t hash_value(const State &state) {
 }
 
 namespace detail {
+// std::identity is an SGI extension :-(
+struct IdentityHash : public std::unary_function<uint64_t, size_t> {
+size_t operator()(uint64_t arg) const { return static_cast<size_t>(arg); }
+};
+
+template <class Search> class GenericVocabulary : public base::Vocabulary {
+  public:
+    GenericVocabulary() : next_(0) {}
+
+    WordIndex Index(const StringPiece &str) const {
+      const WordIndex *ret;
+      return lookup_.Find(Hash(str), ret) ? *ret : not_found_;
+    }
+
+    // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
+    static size_t Size(const typename Search::Init &search_init, std::size_t entries) {
+      // +1 for possible unk token.
+      return Lookup::Size(search_init, entries + 1);
+    }
+    void Init(const typename Search::Init &search_init, char *start, std::size_t entries);
+
+    WordIndex Insert(const StringPiece &str);
+
+    void FinishedLoading();
+
+  private:
+    static uint64_t Hash(const StringPiece &str) {
+      // This proved faster than Boost's hash in speed trials: total load time Murmur 67090000, Boost 72210000
+      return MurmurHash64A(reinterpret_cast<const void*>(str.data()), str.length(), 0);
+    }
+    bool Find(const StringPiece &str, WordIndex &found);
+
+    typedef typename Search::template Table<WordIndex>::T Lookup;
+    Lookup lookup_;
+
+    WordIndex next_;
+};
 
 struct Prob {
   float prob;
@@ -119,20 +107,22 @@ struct ProbBackoff {
 };
 
 // Should return the same results as SRI except ln instead of log10
-template <class Search> class GenericModel : public base::MiddleModel<GenericModel<Search>, State, Vocabulary> {
+template <class Search> class GenericModel : public base::MiddleModel<GenericModel<Search>, State, GenericVocabulary<Search> > {
   private:
-    typedef base::MiddleModel<GenericModel<Search>, State, Vocabulary> P;
+    typedef base::MiddleModel<GenericModel<Search>, State, GenericVocabulary<Search> > P;
   public:
-    GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &init);
+    GenericModel(const char *file, const typename Search::Init &init);
 
     Return WithLength(const State &in_state, const WordIndex new_word, State &out_state) const;
 
   private:
-    void LoadFromARPA(util::FilePiece &f, Vocabulary &vocab, const std::vector<size_t> &counts);
+    void LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts);
 
-    WordIndex not_found_;
-    // memory_ is the backing store for unigram_, [middle_begin_, middle_end_), and longest_.  All of    these are pointers there.   
+    // memory_ is the raw block of memory backing vocab_, unigram_, [middle.begin(), middle.end()), and longest_.  
     util::scoped_mmap memory_;
+    
+    GenericVocabulary<Search> vocab_;
+    WordIndex not_found_;
 
     ProbBackoff *unigram_;
 
@@ -141,38 +131,29 @@ template <class Search> class GenericModel : public base::MiddleModel<GenericMod
 
     typedef typename Search::template Table<Prob>::T Longest;
     Longest longest_;
-
-    Vocabulary vocabulary_;
 };
 
-class ProbingSearch {
-  private:
-    // std::identity is an SGI extension :-(
-    struct IdentityHash : public std::unary_function<uint64_t, size_t> {
-      size_t operator()(uint64_t arg) const { return static_cast<size_t>(arg); }
-    };
-
-  public:
-    typedef float Init;
-    template <class Value> struct Table {
-      typedef util::ProbingMap<uint64_t, Value, IdentityHash> T;
-    };
+struct ProbingSearch {
+  typedef float Init;
+  template <class Value> struct Table {
+    typedef util::ProbingMap<uint64_t, Value, IdentityHash> T;
+  };
 };
 
 } // namespace detail
 
+typedef detail::GenericVocabulary<detail::ProbingSearch> Vocabulary;
 typedef detail::GenericModel<detail::ProbingSearch> Model;
 
 class Owner : boost::noncopyable {
   public:
-    explicit Owner(const char *file_name) : model_(file_name, vocab_, 1.5) {}
+    explicit Owner(const char *file_name) : model_(file_name, 1.5) {}
 
     const Vocabulary &GetVocabulary() const { return model_.GetVocabulary(); }
 
     const Model &GetModel() const { return model_; }
 
   private:
-    Vocabulary vocab_;
     const Model model_;
 };
 

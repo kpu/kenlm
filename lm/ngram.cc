@@ -26,46 +26,39 @@
 
 namespace lm {
 namespace ngram {
-
-WordIndex Vocabulary::InsertUnique(std::string *word) {
-  std::pair<boost::unordered_map<StringPiece, WordIndex>::const_iterator, bool> res(ids_.insert(std::make_pair(StringPiece(*word), available_)));
-  if (__builtin_expect(!res.second, 0)) {
-    delete word;
-    throw WordDuplicateVocabLoadException(*word, res.first->second, available_);
-  }
-  strings_.push_back(word);
-  return available_++;
-}
-
-void Vocabulary::FinishedLoading() {
-  if (ids_.find(StringPiece("<s>")) == ids_.end()) throw BeginSentenceMissingException();
-  if (ids_.find(StringPiece("</s>")) == ids_.end()) throw EndSentenceMissingException();
-  // Allow lowercase form of unknown if found, otherwise complain.  It's better to not tolerate an   LM without OOV.   
-  if (ids_.find(StringPiece("<unk>")) == ids_.end()) {
-    if (ids_.find(StringPiece("<UNK>")) == ids_.end()) {
-      // TODO: throw up unless there's a command line option saying not to.
-      //throw UnknownMissingException();
-      InsertUnique(new std::string("<unk>"));
-    } else {
-      ids_["<unk>"] = Index(StringPiece("<UNK>"));
-    }
-  }
-  SetSpecial(Index(StringPiece("<s>")), Index(StringPiece("</s>")), Index(StringPiece("<unk>")), available_);
-}
-
 namespace detail {
 
-struct VocabularyFriend {
-  static void Reserve(Vocabulary &vocab, size_t to) {
-    vocab.Reserve(to);
+template <class Search> void GenericVocabulary<Search>::Init(const typename Search::Init &search_init, char *start, std::size_t entries) {
+  lookup_ = Lookup(search_init, start, entries);
+}
+
+template <class Search> WordIndex GenericVocabulary<Search>::Insert(const StringPiece &str) {
+  lookup_.Insert(Hash(str), next_);
+  return next_++;
+}
+
+template <class Search> void GenericVocabulary<Search>::FinishedLoading() {
+  WordIndex begin, end, unk;
+  if (!Find("<s>", begin)) throw BeginSentenceMissingException();
+  if (!Find("</s>", end)) throw EndSentenceMissingException();
+  if (!Find("<unk>", unk)) {
+    if (Find("<UNK>", unk)) {
+      uint64_t new_key = Hash("<unk>");
+      lookup_.Insert(new_key, unk);
+    } else {
+      // TODO: command line option to not throw up.  
+      throw UnknownMissingException();
+    }
   }
-  static WordIndex InsertUnique(Vocabulary &vocab, std::string *word) {
-    return vocab.InsertUnique(word);
-  }
-  static void FinishedLoading(Vocabulary &vocab) {
-    vocab.FinishedLoading();
-  }
-};
+  SetSpecial(begin, end, unk, next_);
+}
+
+template <class Search> bool GenericVocabulary<Search>::Find(const StringPiece &str, WordIndex &found) {
+  const WordIndex *pointer;
+  bool ret = lookup_.Find(Hash(str), pointer);
+  found = *pointer;
+  return ret;
+}
 
 // All of the entropy is in low order bits and boost::hash does poorly with these.
 // Odd numbers near 2^64 chosen by mashing on the keyboard.  
@@ -83,46 +76,44 @@ uint64_t ChainedWordHash(const WordIndex *word, const WordIndex *word_end) {
   return current;
 }
 
-void Read1Grams(util::FilePiece &f, const size_t count, Vocabulary &vocab, ProbBackoff *unigrams) {
+// Special unigram reader because unigram's data structure is different and because we're inserting vocab words.
+template <class Voc> void Read1Grams(util::FilePiece &f, const size_t count, Voc &vocab, ProbBackoff *unigrams) {
   ReadNGramHeader(f, 1);
   boost::progress_display progress(count, std::cerr, "Loading 1-grams\n");
-  // +1 in case OOV is not found.
-  detail::VocabularyFriend::Reserve(vocab, count + 1);
-  // Special unigram reader because unigram's data structure is different and because we're inserting vocab words.
-  std::auto_ptr<std::string> unigram(new std::string);
   for (size_t i = 0; i < count; ++i, ++progress) {
-    float prob = f.ReadFloat();
-    if (f.get() != '\t')
-      throw FormatLoadException("Expected tab after probability");
-    StringPiece unigram_piece(f.ReadDelimited());
-    unigram->assign(unigram_piece.data(), unigram_piece.size());
-    ProbBackoff &ent = unigrams[detail::VocabularyFriend::InsertUnique(vocab, unigram.release())];
-    unigram.reset(new std::string);
-    ent.prob = prob * M_LN10;
-    char delim = f.get();
-    if (delim == '\t') {
-      ent.backoff = f.ReadFloat() * M_LN10;
-      if ((f.get() != '\n')) throw FormatLoadException("Expected newline after backoff");
-    } else if (delim == '\n') {
-      ent.backoff = 0.0;
-    } else {
-      ent.backoff = 0.0;
-      throw FormatLoadException("Expected tab or newline after unigram");
+    try {
+      float prob = f.ReadFloat();
+      if (f.get() != '\t')
+        throw FormatLoadException("Expected tab after probability");
+      ProbBackoff &value = unigrams[vocab.Insert(f.ReadDelimited())];
+      value.prob = prob * M_LN10;
+      switch (f.get()) {
+        case '\t':
+          value.SetBackoff(f.ReadFloat() * M_LN10);
+          if ((f.get() != '\n')) throw FormatLoadException("Expected newline after backoff");
+          break;
+        case '\n':
+          value.ZeroBackoff();
+          break;
+        default:
+          throw FormatLoadException("Expected tab or newline after unigram");
+      }
+    } catch (const std::exception &f) {
+      throw FormatLoadException("Error reading the " + boost::lexical_cast<std::string>(i) + "th 1-gram.  " + f.what());
     }
   }
   if (f.ReadLine().size()) throw FormatLoadException("Blank line after ngrams not blank");
-  detail::VocabularyFriend::FinishedLoading(vocab);
+  vocab.FinishedLoading();
 }
 
 template <class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Vocabulary &vocab, Store &store) {
-  boost::progress_display progress(count, std::cerr, std::string("Loading ") + boost::lexical_cast<std::string>(n) + "-grams\n");
-
   ReadNGramHeader(f, n);
+  boost::progress_display progress(count, std::cerr, std::string("Loading ") + boost::lexical_cast<std::string>(n) + "-grams\n");
 
   // vocab ids of words in reverse order
   WordIndex vocab_ids[n];
   typename Store::Value value;
-  for (size_t i = 0; i < count; ++i) {
+  for (size_t i = 0; i < count; ++i, ++progress) {
     try {
       value.prob = f.ReadFloat() * M_LN10;
       for (WordIndex *vocab_out = &vocab_ids[n-1]; vocab_out >= vocab_ids; --vocab_out) {
@@ -141,7 +132,6 @@ template <class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n,
           throw FormatLoadException("Got unexpected delimiter before backoff weight");
       }
       store.Insert(key, value);
-      ++progress;
     } catch (const std::exception &f) {
       throw FormatLoadException("Error reading the " + boost::lexical_cast<std::string>(i) + "th " + boost::lexical_cast<std::string>(n) + "-gram." + f.what());
     }
@@ -150,7 +140,7 @@ template <class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n,
   if (f.ReadLine().size()) throw FormatLoadException("Blank line after ngrams not blank");
 }
 
-template <class Search> GenericModel<Search>::GenericModel(const char *file, Vocabulary &vocab, const typename Search::Init &search_init) {
+template <class Search> GenericModel<Search>::GenericModel(const char *file, const typename Search::Init &search_init) {
   util::FilePiece f(file);
 
   std::vector<size_t> counts;
@@ -162,7 +152,8 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, Voc
     throw FormatLoadException(std::string("Edit ngram.hh and change kMaxOrder to at least ") + boost::lexical_cast<std::string>(counts.size()));
   unsigned char order = counts.size();
 
-  size_t memory_size = sizeof(ProbBackoff) * counts[0];
+  size_t memory_size = GenericVocabulary<Search>::Size(search_init, counts[0]);
+  memory_size += sizeof(ProbBackoff) * counts[0];
   for (unsigned char n = 2; n < order; ++n) {
     memory_size += Middle::Size(search_init, counts[n-1]);
   }
@@ -170,8 +161,11 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, Voc
   memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0), memory_size);
   if (memory_.get() == MAP_FAILED) throw AllocateMemoryLoadException(memory_size, errno);
 
-  unigram_ = reinterpret_cast<ProbBackoff*>(memory_.get());
-  char *start = reinterpret_cast<char *>(memory_.get()) + sizeof(ProbBackoff) * counts[0];
+  char *start = static_cast<char*>(memory_.get());
+  vocab_.Init(search_init, start, counts[0]);
+  start += GenericVocabulary<Search>::Size(search_init, counts[0]);
+  unigram_ = reinterpret_cast<ProbBackoff*>(start);
+  start += sizeof(ProbBackoff) * counts[0];
   for (unsigned int n = 2; n < order; ++n) {
     middle_.push_back(Middle(search_init, start, counts[n - 1]));
     start += Middle::Size(search_init, counts[n - 1]);
@@ -179,33 +173,32 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, Voc
   longest_ = Longest(search_init, start, counts[order - 1]);
   assert(static_cast<size_t>(start + Longest::Size(search_init, counts[order - 1]) - reinterpret_cast<char*>(memory_.get())) == memory_size);
 
-  LoadFromARPA(f, vocab, counts);
+  LoadFromARPA(f, counts);
 
-  if (std::fabs(unigram_[vocab.NotFound()].backoff) > 0.0000001) {
-    throw FormatLoadException(std::string("Backoff for unknown word with index ") + boost::lexical_cast<std::string>(vocab.NotFound()) + " is " + boost::lexical_cast<std::string>(unigram_[vocab.NotFound()].backoff) + std::string(" not zero"));
+  not_found_ = vocab_.NotFound();
+  if (std::fabs(unigram_[not_found_].backoff) > 0.0000001) {
+    throw FormatLoadException(std::string("Backoff for unknown word with index ") + boost::lexical_cast<std::string>(not_found_) + " is " + boost::lexical_cast<std::string>(unigram_[not_found_].backoff) + std::string(" not zero"));
   }
-
-  not_found_ = vocab.NotFound();
 
   // g++ prints warnings unless these are fully initialized.  
   State begin_sentence = State();
   begin_sentence.valid_length_ = 1;
-  begin_sentence.history_[0] = vocab.BeginSentence();
+  begin_sentence.history_[0] = vocab_.BeginSentence();
   begin_sentence.backoff_[0] = unigram_[begin_sentence.history_[0]].backoff;
   State null_context = State();
   null_context.valid_length_ = 0;
-  P::Init(begin_sentence, null_context, vocab, order);
+  P::Init(begin_sentence, null_context, vocab_, order);
 }
 
-template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece &f, Vocabulary &vocab, const std::vector<size_t> &counts) {
+template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts) {
   // Read the unigrams.
-  Read1Grams(f, counts[0], vocab, unigram_);
+  Read1Grams(f, counts[0], vocab_, unigram_);
   
   // Read the n-grams.
   for (unsigned int n = 2; n < counts.size(); ++n) {
-    ReadNGrams<Middle>(f, n, counts[n-1], vocab, middle_[n-2]);
+    ReadNGrams<Middle>(f, n, counts[n-1], vocab_, middle_[n-2]);
   }
-  ReadNGrams<Longest>(f, counts.size(), counts[counts.size() - 1], vocab, longest_);
+  ReadNGrams<Longest>(f, counts.size(), counts[counts.size() - 1], vocab_, longest_);
 }
 
 /* Ugly optimized function.
@@ -293,6 +286,7 @@ template <class Search> Return GenericModel<Search>::WithLength(
   return ret;
 }
 
+// This also instantiates GenericVocabulary.
 template class GenericModel<ProbingSearch>;
 } // namespace detail
 } // namespace ngram
