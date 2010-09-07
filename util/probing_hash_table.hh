@@ -1,6 +1,7 @@
 #ifndef UTIL_PROBING_HASH_TABLE__
 #define UTIL_PROBING_HASH_TABLE__
 
+#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <utility>
@@ -99,7 +100,7 @@ template <class KeyT, class ValueT, class HashT, class EqualsT = std::equal_to<K
     typedef EqualsT Equals;
 
     static std::size_t Size(float multiplier, std::size_t entries) {
-      return static_cast<std::size_t>(multiplier * static_cast<float>(entries)) * sizeof(Entry);
+      return std::max(entries + 1, static_cast<std::size_t>(multiplier * static_cast<float>(entries))) * sizeof(Entry);
     }
 
     ProbingMap() {}
@@ -107,7 +108,7 @@ template <class KeyT, class ValueT, class HashT, class EqualsT = std::equal_to<K
     ProbingMap(float multiplier, char *start, std::size_t entries, const Hash &hasher = Hash(), const Equals &equals = Equals())
       : table_(
           reinterpret_cast<Entry*>(start),
-          static_cast<std::size_t>(multiplier * static_cast<float>(entries)),
+          Size(multiplier, entries) / sizeof(Entry),
           Entry(),
           HashKeyOnly(hasher),
           EqualsKeyOnly(equals)) {}
