@@ -140,6 +140,10 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
   store.FinishedInserting();
 }
 
+void Prob::SetBackoff(float to) {
+  throw FormatLoadException("Attempt to set backoff " + boost::lexical_cast<std::string>(to) + " for an n-gram with longest order.");
+}
+
 template <class Search> size_t GenericModel<Search>::Size(const typename Search::Init &search_init, const std::vector<size_t> &counts) {
   if (counts.size() < 2)
     throw FormatLoadException("This ngram implementation assumes at least a bigram model.");

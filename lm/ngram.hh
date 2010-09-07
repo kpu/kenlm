@@ -8,8 +8,6 @@
 #include "util/murmur_hash.hh"
 #include "util/scoped.hh"
 
-#include <boost/lexical_cast.hpp>
-
 #include <algorithm>
 #include <memory>
 #include <vector>
@@ -92,9 +90,7 @@ template <class Search> class GenericVocabulary : public base::Vocabulary {
 
 struct Prob {
   float prob;
-  void SetBackoff(float to) {
-    throw FormatLoadException("Attempt to set backoff " + boost::lexical_cast<std::string>(to) + " for an n-gram with longest order.");
-  }
+  void SetBackoff(float to);
   void ZeroBackoff() {}
 };
 // No inheritance so this will be a POD.  
