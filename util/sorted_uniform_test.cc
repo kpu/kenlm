@@ -3,7 +3,8 @@
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
 #include <boost/random/variate_generator.hpp>
-#include <boost/unordered_set.hpp>
+#include <boost/scoped_array.hpp>
+#include <boost/unordered_map.hpp>
 #define BOOST_TEST_MODULE SortedUniformBoundTest
 #include <boost/test/unit_test.hpp>
 
@@ -14,14 +15,20 @@
 namespace util {
 namespace {
 
-template <class Value> void Check(const Value *begin, const Value *end, Value key) {
-	std::pair<const Value *, const Value *> range(std::equal_range(begin, end, key));
-	const Value *reported = SortedUniformBound<Value>(begin, end, key);
-	if (reported < range.first) BOOST_ERROR("Went too low");
-	if (reported > range.second) BOOST_ERROR("Went too high");
+template <class Key, class Value> void Check(const SortedUniformMap<Key, Value> &map, const boost::unordered_map<Key, Value> &reference, const Key &key) {
+  typename boost::unordered_map<Key, Value>::const_iterator ref = reference.find(key);
+  if (ref == reference.end()) {
+    const Value *val;
+    BOOST_CHECK(!map.Find(key, val));
+  } else {
+    // g++ can't tell that require will crash and burn.
+    const Value *val = NULL;
+    BOOST_REQUIRE(map.Find(key, val));
+    BOOST_CHECK_EQUAL(ref->second, *val);
+  }
 }
 
-BOOST_AUTO_TEST_CASE(empty) {
+/*BOOST_AUTO_TEST_CASE(empty) {
 	uint64_t foo;
 	Check<uint64_t>(&foo, &foo, 1);
 }
@@ -30,39 +37,39 @@ BOOST_AUTO_TEST_CASE(one) {
 	uint64_t array[] = {1};
 	Check<uint64_t>(&array[0], &array[1], 1);
 	Check<uint64_t>(&array[0], &array[1], 0);
-}
+}*/
 
-template <class Value> void RandomTest(Value upper, size_t entries, size_t queries) {
+template <class Key> void RandomTest(Key upper, size_t entries, size_t queries) {
+  typedef unsigned char Value;
+  typedef SortedUniformMap<Key, unsigned char> Map;
+  boost::scoped_array<char> buffer(new char[Map::Size(typename Map::Init(), entries)]);
+  Map map(typename Map::Init(), buffer.get(), entries);
 	boost::mt19937 rng;
-	boost::uniform_int<Value> range(0, upper);
-	boost::variate_generator<boost::mt19937&, boost::uniform_int<Value> > gen(rng, range);
-	std::vector<Value> values;
-	values.reserve(entries);
-	for (size_t i = 0; i < entries; ++i) {
-		values.push_back(gen());
-	}
-	std::sort(values.begin(), values.end());
+	boost::uniform_int<Key> range_key(0, upper);
+	boost::uniform_int<Value> range_value(0, 255);
+	boost::variate_generator<boost::mt19937&, boost::uniform_int<Key> > gen_key(rng, range_key);
+	boost::variate_generator<boost::mt19937&, boost::uniform_int<unsigned char> > gen_value(rng, range_value);
 
-	const Value *begin = &*values.begin();
-	const Value *end = &*values.end();
-/*	for (const Value *i = begin; i != end; ++i) {
-		std::cout << static_cast<unsigned int>(*i) << ' ';
+  boost::unordered_map<Key, unsigned char> reference;
+	for (size_t i = 0; i < entries; ++i) {
+    Key key = gen_key();
+    unsigned char value = gen_value();
+    if (reference.insert(std::make_pair(key, value)).second) {
+      map.Insert(key, value);
+    }
 	}
-	std::cout << std::endl;*/
+  map.FinishedInserting();
 
 	// Random queries.  
 	for (size_t i = 0; i < queries; ++i) {
-		const Value key = gen();
-		Check<Value>(begin, end, key);
+		const Key key = gen_key();
+		Check<Key, Value>(map, reference, key);
 	}
 
-	// Inside queries.
-	boost::uniform_int<size_t> inside_range(0, entries - 1);
-	boost::variate_generator<boost::mt19937&, boost::uniform_int<size_t> > inside_gen(rng, inside_range);
-	for (size_t i = 0; i < queries; ++i) {
-		const size_t off = inside_gen();
-		Check<Value>(begin, end, values[off]);
-	}
+  typename boost::unordered_map<Key, unsigned char>::const_iterator it = reference.begin();
+  for (size_t i = 0; (i < queries) && (it != reference.end()); ++i, ++it) {
+    Check<Key,Value>(map, reference, it->second);
+  }
 }
 
 BOOST_AUTO_TEST_CASE(sparse_random) {
