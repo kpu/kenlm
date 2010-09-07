@@ -143,18 +143,6 @@ struct ProbingSearch {
 typedef detail::GenericVocabulary<detail::ProbingSearch> Vocabulary;
 typedef detail::GenericModel<detail::ProbingSearch> Model;
 
-class Owner : boost::noncopyable {
-  public:
-    explicit Owner(const char *file_name) : model_(file_name, 1.5) {}
-
-    const Vocabulary &GetVocabulary() const { return model_.GetVocabulary(); }
-
-    const Model &GetModel() const { return model_; }
-
-  private:
-    const Model model_;
-};
-
 } // namespace ngram
 } // namespace lm
 

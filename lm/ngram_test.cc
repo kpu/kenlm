@@ -9,10 +9,9 @@ namespace ngram {
 namespace {
 
 struct Fixture {
-	Fixture() : owner("test.arpa"), model(owner.GetModel()) {}
+	Fixture() : model("test.arpa", 1.5) {}
 
-  Owner owner;
-  const Model &model;
+  Model model;
 
 	unsigned int Lookup(const char *value) const {
 		return model.GetVocabulary().Index(StringPiece(value));
