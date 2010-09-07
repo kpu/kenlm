@@ -49,6 +49,7 @@ template <class Search> void GenericVocabulary<Search>::FinishedLoading() {
     }
   }
   SetSpecial(begin, end, unk, next_);
+  lookup_.FinishedInserting();
 }
 
 template <class Search> bool GenericVocabulary<Search>::Find(const StringPiece &str, WordIndex &found) {
@@ -136,6 +137,7 @@ template <class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n,
   }
 
   if (f.ReadLine().size()) throw FormatLoadException("Blank line after ngrams not blank");
+  store.FinishedInserting();
 }
 
 template <class Search> size_t GenericModel<Search>::Size(const typename Search::Init &search_init, const std::vector<size_t> &counts) {

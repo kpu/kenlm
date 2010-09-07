@@ -118,12 +118,15 @@ template <class KeyT, class ValueT, class HashT, class EqualsT = std::equal_to<K
       value = &e->value;
       return true;
     }
+
     void Insert(const Key &key, const Value &value) {
       Entry e;
       e.key = key;
       e.value = value;
       table_.Insert(e);
     }
+
+    void FinishedInserting() {}
 
   private:
     struct Entry {
