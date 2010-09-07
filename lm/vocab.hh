@@ -16,11 +16,11 @@ namespace lm {
  * TODO: make ngram.* and SALM use this.
  */
 class GenericVocabulary {
-	public:
+  public:
     static const WordIndex kNotFoundIndex;
     static const char *const kNotFoundWord;
 
-	  GenericVocabulary() {
+    GenericVocabulary() {
       strings_.push_back(new std::string(kNotFoundWord));
       ids_[strings_[0]] = kNotFoundIndex;
       strings_.push_back(new std::string());
@@ -29,14 +29,14 @@ class GenericVocabulary {
 
     /* Query API */
 
-		WordIndex Index(const StringPiece &str) const {
-			boost::unordered_map<StringPiece, WordIndex>::const_iterator i(ids_.find(str));
-			return (__builtin_expect(i == ids_.end(), 0)) ? kNotFoundIndex : i->second;
-		}
+    WordIndex Index(const StringPiece &str) const {
+      boost::unordered_map<StringPiece, WordIndex>::const_iterator i(ids_.find(str));
+      return (__builtin_expect(i == ids_.end(), 0)) ? kNotFoundIndex : i->second;
+    }
 
     // Note that the literal token <unk> is in the index.  
     WordIndex IndexOrThrow(const StringPiece &str) const {
-			boost::unordered_map<StringPiece, WordIndex>::const_iterator i(ids_.find(str));
+      boost::unordered_map<StringPiece, WordIndex>::const_iterator i(ids_.find(str));
       if (i == ids_.end()) throw NotFoundInVocabException(str);
       return i->second;
     }
@@ -45,16 +45,16 @@ class GenericVocabulary {
       return ids_.find(str) != ids_.end();
     }
 
-		const char *Word(WordIndex index) const {
-			return strings_[index].c_str();
-		}
+    const char *Word(WordIndex index) const {
+      return strings_[index].c_str();
+    }
 
     /* Insertion API */
 
-		void Reserve(size_t to) {
-			strings_.reserve(to);
-			ids_.rehash(to + 1);
-		}
+    void Reserve(size_t to) {
+      strings_.reserve(to);
+      ids_.rehash(to + 1);
+    }
 
     std::string &Temp() {
       return strings_.back();
@@ -62,7 +62,7 @@ class GenericVocabulary {
 
     // Take the string returned by Temp() and insert it.
     WordIndex InsertOrFind() {
-			std::pair<boost::unordered_map<StringPiece, WordIndex>::const_iterator, bool> res(ids_.insert(std::make_pair(StringPiece(strings_.back()), available_)));
+      std::pair<boost::unordered_map<StringPiece, WordIndex>::const_iterator, bool> res(ids_.insert(std::make_pair(StringPiece(strings_.back()), available_)));
       if (res.second) {
         ++available_;
         strings_.push_back(new std::string());
@@ -71,20 +71,20 @@ class GenericVocabulary {
     }
 
     // Insert a word.  Throw up if already found.  Take ownership of the word in either case.  
-		WordIndex InsertOrThrow() throw(WordDuplicateVocabLoadException) {
-			std::pair<boost::unordered_map<StringPiece, WordIndex>::const_iterator, bool> res(ids_.insert(std::make_pair(StringPiece(strings_.back()), available_)));
-			if (!res.second) {
-				throw WordDuplicateVocabLoadException(strings_.back(), res.first->second, available_);
-			}
+    WordIndex InsertOrThrow() throw(WordDuplicateVocabLoadException) {
+      std::pair<boost::unordered_map<StringPiece, WordIndex>::const_iterator, bool> res(ids_.insert(std::make_pair(StringPiece(strings_.back()), available_)));
+      if (!res.second) {
+        throw WordDuplicateVocabLoadException(strings_.back(), res.first->second, available_);
+      }
       ++available_;
-			strings_.push_back(new std::string());
+      strings_.push_back(new std::string());
       return res.first->second;
-		}
+    }
 
-	private:
-		// TODO: optimize memory use here by using one giant buffer, preferably premade by a binary file format.
-		boost::ptr_vector<std::string> strings_;
-		boost::unordered_map<StringPiece, WordIndex> ids_;
+  private:
+    // TODO: optimize memory use here by using one giant buffer, preferably premade by a binary file format.
+    boost::ptr_vector<std::string> strings_;
+    boost::unordered_map<StringPiece, WordIndex> ids_;
 
     WordIndex available_;
 };

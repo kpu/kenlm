@@ -40,10 +40,10 @@ AllocateMemoryLoadException::AllocateMemoryLoadException(size_t requested, int e
 
 FormatLoadException::FormatLoadException(const StringPiece &complaint, const StringPiece &context) throw() {
   what_.assign(complaint.data(), complaint.size());
-	if (!context.empty()) {
-		what_ += " at ";
-		what_.append(context.data(), context.size());
-	}
+  if (!context.empty()) {
+    what_ += " at ";
+    what_.append(context.data(), context.size());
+  }
 }
 
 } // namespace lm

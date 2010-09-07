@@ -18,38 +18,38 @@ struct Return {
 namespace base {
 
 class Vocabulary : boost::noncopyable {
-	public:
-		virtual ~Vocabulary();
+  public:
+    virtual ~Vocabulary();
 
-		WordIndex BeginSentence() const { return begin_sentence_; }
-		WordIndex EndSentence() const { return end_sentence_; }
-		WordIndex NotFound() const { return not_found_; }
-		// Return start index of unused word assignments.
-		WordIndex Available() const { return available_; }
+    WordIndex BeginSentence() const { return begin_sentence_; }
+    WordIndex EndSentence() const { return end_sentence_; }
+    WordIndex NotFound() const { return not_found_; }
+    // Return start index of unused word assignments.
+    WordIndex Available() const { return available_; }
 
     /* Most implementations allow StringPiece lookups and need only override
      * Index(StringPiece).  SRI requires null termination and overrides all
      * three methods.  
      */
-		virtual WordIndex Index(const StringPiece &str) const = 0;
-		virtual WordIndex Index(const std::string &str) const {
+    virtual WordIndex Index(const StringPiece &str) const = 0;
+    virtual WordIndex Index(const std::string &str) const {
       return Index(StringPiece(str));
     }
-		virtual WordIndex Index(const char *str) const {
+    virtual WordIndex Index(const char *str) const {
       return Index(StringPiece(str));
     }
 
-	protected:
-		// Call SetSpecial afterward.  
-		Vocabulary() {}
+  protected:
+    // Call SetSpecial afterward.  
+    Vocabulary() {}
 
     Vocabulary(WordIndex begin_sentence, WordIndex end_sentence, WordIndex not_found, WordIndex available) {
       SetSpecial(begin_sentence, end_sentence, not_found, available);
     }
 
-		void SetSpecial(WordIndex begin_sentence, WordIndex end_sentence, WordIndex not_found, WordIndex available);
+    void SetSpecial(WordIndex begin_sentence, WordIndex end_sentence, WordIndex not_found, WordIndex available);
 
-		WordIndex begin_sentence_, end_sentence_, not_found_, available_;
+    WordIndex begin_sentence_, end_sentence_, not_found_, available_;
 };
 
 template <class T, class U, class V> class MiddleModel;
