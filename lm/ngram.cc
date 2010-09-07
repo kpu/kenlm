@@ -10,12 +10,10 @@
 
 #include <algorithm>
 #include <functional>
-#include <istream>
 #include <numeric>
 #include <string>
 
 #include <cmath>
-
 #include <fcntl.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -86,10 +84,10 @@ template <class Voc> void Read1Grams(util::FilePiece &f, const size_t count, Voc
       if (f.get() != '\t')
         throw FormatLoadException("Expected tab after probability");
       ProbBackoff &value = unigrams[vocab.Insert(f.ReadDelimited())];
-      value.prob = prob * M_LN10;
+      value.prob = prob;
       switch (f.get()) {
         case '\t':
-          value.SetBackoff(f.ReadFloat() * M_LN10);
+          value.SetBackoff(f.ReadFloat());
           if ((f.get() != '\n')) throw FormatLoadException("Expected newline after backoff");
           break;
         case '\n':
@@ -115,7 +113,7 @@ template <class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n,
   typename Store::Value value;
   for (size_t i = 0; i < count; ++i, ++progress) {
     try {
-      value.prob = f.ReadFloat() * M_LN10;
+      value.prob = f.ReadFloat();
       for (WordIndex *vocab_out = &vocab_ids[n-1]; vocab_out >= vocab_ids; --vocab_out) {
         *vocab_out = vocab.Index(f.ReadDelimited());
       }
@@ -123,7 +121,7 @@ template <class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n,
 
       switch (f.get()) {
         case '\t':
-          value.SetBackoff(f.ReadFloat() * M_LN10);
+          value.SetBackoff(f.ReadFloat());
           break;
         case '\n':
           value.ZeroBackoff();

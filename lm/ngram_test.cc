@@ -26,7 +26,7 @@ BOOST_FIXTURE_TEST_SUITE(s, Fixture)
 			state, \
 			Lookup(word), \
 			out);\
-  BOOST_CHECK_CLOSE(score, ret.prob / M_LN10, 0.001); \
+  BOOST_CHECK_CLOSE(score, ret.prob, 0.001); \
 	BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), ret.ngram_length); \
   BOOST_CHECK_EQUAL(std::min<unsigned char>(ngram, 5 - 1), out.valid_length_);
 

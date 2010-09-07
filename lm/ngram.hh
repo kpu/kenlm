@@ -9,8 +9,6 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/ptr_container/ptr_vector.hpp>
-#include <boost/unordered_map.hpp>
 
 #include <algorithm>
 #include <memory>
