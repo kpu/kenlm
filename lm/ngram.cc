@@ -36,6 +36,7 @@ template <class Search> WordIndex GenericVocabulary<Search>::Insert(const String
 }
 
 template <class Search> void GenericVocabulary<Search>::FinishedLoading() {
+  lookup_.FinishedInserting();
   WordIndex begin, end, unk;
   if (!Find("<s>", begin)) throw BeginSentenceMissingException();
   if (!Find("</s>", end)) throw EndSentenceMissingException();
@@ -49,7 +50,6 @@ template <class Search> void GenericVocabulary<Search>::FinishedLoading() {
     }
   }
   SetSpecial(begin, end, unk, next_);
-  lookup_.FinishedInserting();
 }
 
 template <class Search> bool GenericVocabulary<Search>::Find(const StringPiece &str, WordIndex &found) {
@@ -105,7 +105,7 @@ template <class Voc> void Read1Grams(util::FilePiece &f, const size_t count, Voc
   vocab.FinishedLoading();
 }
 
-template <class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Vocabulary &vocab, Store &store) {
+template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, Store &store) {
   ReadNGramHeader(f, n);
   boost::progress_display progress(count, std::cerr, std::string("Loading ") + boost::lexical_cast<std::string>(n) + "-grams\n");
 
@@ -203,9 +203,9 @@ template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece 
   
   // Read the n-grams.
   for (unsigned int n = 2; n < counts.size(); ++n) {
-    ReadNGrams<Middle>(f, n, counts[n-1], vocab_, middle_[n-2]);
+    ReadNGrams(f, n, counts[n-1], vocab_, middle_[n-2]);
   }
-  ReadNGrams<Longest>(f, counts.size(), counts[counts.size() - 1], vocab_, longest_);
+  ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab_, longest_);
 }
 
 /* Ugly optimized function.
@@ -295,6 +295,7 @@ template <class Search> Return GenericModel<Search>::WithLength(
 
 // This also instantiates GenericVocabulary.
 template class GenericModel<ProbingSearch>;
+template class GenericModel<SortedUniformSearch>;
 } // namespace detail
 } // namespace ngram
 } // namespace lm

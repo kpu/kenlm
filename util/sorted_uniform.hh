@@ -24,13 +24,15 @@ inline std::size_t Pivot(uint8_t off, uint8_t range, std::size_t width) {
   return static_cast<std::size_t>(static_cast<std::size_t>(off) * width / static_cast<std::size_t>(range));
 }
 
+// For consistent API with ProbingSearch.
+struct SortedUniformInit {};
+
 // Define a Pivot function to match Key.  
 template <class KeyT, class ValueT> class SortedUniformMap {
   public:
     typedef KeyT Key;
     typedef ValueT Value;
-
-    struct Init {};
+    typedef SortedUniformInit Init;
 
     static std::size_t Size(Init ignore, std::size_t entries) {
       return entries * sizeof(Entry);

@@ -3,12 +3,12 @@
 
 #include "lm/base.hh"
 #include "util/probing_hash_table.hh"
+#include "util/sorted_uniform.hh"
 #include "util/string_piece.hh"
 #include "util/murmur_hash.hh"
 #include "util/scoped.hh"
 
 #include <boost/lexical_cast.hpp>
-#include <boost/noncopyable.hpp>
 
 #include <algorithm>
 #include <memory>
@@ -93,7 +93,7 @@ template <class Search> class GenericVocabulary : public base::Vocabulary {
 struct Prob {
   float prob;
   void SetBackoff(float to) {
-    throw FormatLoadException("Attempt to set backoff " + boost::lexical_cast<std::string>(to) + " for   an n-gram with longest order.");
+    throw FormatLoadException("Attempt to set backoff " + boost::lexical_cast<std::string>(to) + " for an n-gram with longest order.");
   }
   void ZeroBackoff() {}
 };
@@ -144,10 +144,21 @@ struct ProbingSearch {
   };
 };
 
+struct SortedUniformSearch {
+  typedef util::SortedUniformInit Init;
+  template <class Value> struct Table {
+    typedef util::SortedUniformMap<uint64_t, Value> T;
+  };
+};
+
 } // namespace detail
 
+// These must also be instantiated in the cc file.  
 typedef detail::GenericVocabulary<detail::ProbingSearch> Vocabulary;
 typedef detail::GenericModel<detail::ProbingSearch> Model;
+
+typedef detail::GenericVocabulary<detail::SortedUniformSearch> SortedVocabulary;
+typedef detail::GenericModel<detail::SortedUniformSearch> SortedModel;
 
 } // namespace ngram
 } // namespace lm
