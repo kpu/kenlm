@@ -1,5 +1,5 @@
-#ifndef UTIL_SCOPED_H__
-#define UTIL_SCOPED_H__
+#ifndef UTIL_SCOPED__
+#define UTIL_SCOPED__
 
 #include <boost/noncopyable.hpp>
 
@@ -80,4 +80,4 @@ class scoped_mmap : boost::noncopyable {
  
 } // namespace util
 
-#endif // UTIL_SCOPED_H__
+#endif // UTIL_SCOPED__

@@ -1,5 +1,5 @@
-#ifndef UTIL_SORTED_UNIFORM_H__
-#define UTIL_SORTED_UNIFORM_H__
+#ifndef UTIL_SORTED_UNIFORM__
+#define UTIL_SORTED_UNIFORM__
 
 #include <algorithm>
 #include <cstddef>
@@ -100,4 +100,4 @@ template <class KeyT, class ValueT> class SortedUniformMap {
 
 } // namespace util
 
-#endif // UTIL_SORTED_UNIFORM_H__
+#endif // UTIL_SORTED_UNIFORM__
