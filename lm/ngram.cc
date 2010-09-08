@@ -27,37 +27,35 @@ namespace lm {
 namespace ngram {
 namespace detail {
 
+// Sadly some LMs have <UNK>.  
+template <class Search> GenericVocabulary<Search>::GenericVocabulary() : hash_unk_(Hash("<unk>")), hash_unk_cap_(Hash("<UNK>")) {}
+
 template <class Search> void GenericVocabulary<Search>::Init(const typename Search::Init &search_init, char *start, std::size_t entries) {
   lookup_ = Lookup(search_init, start, entries);
+  lookup_.Insert(hash_unk_, kNotFound);
+  lookup_.Insert(hash_unk_cap_, kNotFound);
+  available_ = kNotFound + 1;
+  // Later if available_ != expected_available_ then we can throw UnknownMissingException.
+  expected_available_ = entries;
 }
 
 template <class Search> WordIndex GenericVocabulary<Search>::Insert(const StringPiece &str) {
-  lookup_.Insert(Hash(str), next_);
-  return next_++;
+  uint64_t hashed = Hash(str);
+  if (hashed == hash_unk_ || hashed == hash_unk_cap_) {
+    return kNotFound;
+  } else {
+    lookup_.Insert(hashed, available_);
+    return available_++;
+  }
 }
 
 template <class Search> void GenericVocabulary<Search>::FinishedLoading() {
   lookup_.FinishedInserting();
-  WordIndex begin, end, unk;
-  if (!Find("<s>", begin)) throw BeginSentenceMissingException();
-  if (!Find("</s>", end)) throw EndSentenceMissingException();
-  if (!Find("<unk>", unk)) {
-    if (Find("<UNK>", unk)) {
-      uint64_t new_key = Hash("<unk>");
-      lookup_.Insert(new_key, unk);
-    } else {
-      // TODO: command line option to not throw up.  
-      throw UnknownMissingException();
-    }
-  }
-  SetSpecial(begin, end, unk, next_);
-}
-
-template <class Search> bool GenericVocabulary<Search>::Find(const StringPiece &str, WordIndex &found) {
-  const WordIndex *pointer;
-  bool ret = lookup_.Find(Hash(str), pointer);
-  found = *pointer;
-  return ret;
+  const WordIndex *begin, *end;
+  if (expected_available_ != available_) throw UnknownMissingException();
+  if (!lookup_.Find(Hash("<s>"), begin)) throw BeginSentenceMissingException();
+  if (!lookup_.Find(Hash("</s>"), end)) throw EndSentenceMissingException();
+  SetSpecial(*begin, *end, kNotFound, available_);
 }
 
 // All of the entropy is in low order bits and boost::hash does poorly with these.
@@ -187,9 +185,8 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, con
 
   LoadFromARPA(f, counts);
 
-  not_found_ = vocab_.NotFound();
-  if (std::fabs(unigram_[not_found_].backoff) > 0.0000001) {
-    throw FormatLoadException(std::string("Backoff for unknown word with index ") + boost::lexical_cast<std::string>(not_found_) + " is " + boost::lexical_cast<std::string>(unigram_[not_found_].backoff) + std::string(" not zero"));
+  if (std::fabs(unigram_[GenericVocabulary<Search>::kNotFound].backoff) > 0.0000001) {
+    throw FormatLoadException(std::string("Backoff for unknown word with index is ") + boost::lexical_cast<std::string>(unigram_[GenericVocabulary<Search>::kNotFound].backoff) + std::string(" not zero"));
   }
 
   // g++ prints warnings unless these are fully initialized.  
@@ -228,7 +225,7 @@ template <class Search> Return GenericModel<Search>::WithLength(
   Return ret;
   // This is end pointer passed to SumBackoffs.
   const ProbBackoff &unigram = unigram_[new_word];
-  if (new_word == not_found_) {
+  if (new_word == GenericVocabulary<Search>::kNotFound) {
     ret.ngram_length = out_state.valid_length_ = 0;
     // all of backoff.
     ret.prob = std::accumulate(

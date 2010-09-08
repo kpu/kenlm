@@ -56,17 +56,20 @@ size_t operator()(uint64_t arg) const { return static_cast<size_t>(arg); }
 
 template <class Search> class GenericVocabulary : public base::Vocabulary {
   public:
-    GenericVocabulary() : next_(0) {}
+    GenericVocabulary();
 
     WordIndex Index(const StringPiece &str) const {
       const WordIndex *ret;
-      return lookup_.Find(Hash(str), ret) ? *ret : not_found_;
+      return lookup_.Find(Hash(str), ret) ? *ret : kNotFound;
     }
 
     static size_t Size(const typename Search::Init &search_init, std::size_t entries) {
-      // +1 for possible unk token.
+      // +1 in case <unk> doesn't appear in the ARPA.  
       return Lookup::Size(search_init, entries + 1);
     }
+
+    // This class forces unknown to zero.  If you change this, fix the constructor.  
+    const static WordIndex kNotFound = 0;
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
     void Init(const typename Search::Init &search_init, char *start, std::size_t entries);
@@ -78,14 +81,17 @@ template <class Search> class GenericVocabulary : public base::Vocabulary {
   private:
     static uint64_t Hash(const StringPiece &str) {
       // This proved faster than Boost's hash in speed trials: total load time Murmur 67090000, Boost 72210000
-      return MurmurHash64A(reinterpret_cast<const void*>(str.data()), str.length(), 0);
+      return MurmurHash64A(str.data(), str.length(), 0);
     }
-    bool Find(const StringPiece &str, WordIndex &found);
 
     typedef typename Search::template Table<WordIndex>::T Lookup;
     Lookup lookup_;
 
-    WordIndex next_;
+    // Safety check to ensure we were provided with all the expected entries.  
+    std::size_t expected_available_;
+
+    // These could be static if I trusted the static initialization fiasco.
+    const uint64_t hash_unk_, hash_unk_cap_;
 };
 
 struct Prob {
@@ -122,7 +128,6 @@ template <class Search> class GenericModel : public base::MiddleModel<GenericMod
     util::scoped_mmap memory_;
     
     GenericVocabulary<Search> vocab_;
-    WordIndex not_found_;
 
     ProbBackoff *unigram_;
 
