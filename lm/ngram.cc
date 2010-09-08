@@ -32,8 +32,7 @@ template <class Search> GenericVocabulary<Search>::GenericVocabulary() : hash_un
 
 template <class Search> void GenericVocabulary<Search>::Init(const typename Search::Init &search_init, char *start, std::size_t entries) {
   lookup_ = Lookup(search_init, start, entries);
-  lookup_.Insert(hash_unk_, kNotFound);
-  lookup_.Insert(hash_unk_cap_, kNotFound);
+  assert(kNotFound == 0);
   available_ = kNotFound + 1;
   // Later if available_ != expected_available_ then we can throw UnknownMissingException.
   expected_available_ = entries;
@@ -41,6 +40,7 @@ template <class Search> void GenericVocabulary<Search>::Init(const typename Sear
 
 template <class Search> WordIndex GenericVocabulary<Search>::Insert(const StringPiece &str) {
   uint64_t hashed = Hash(str);
+  // Prevent unknown from going into the table.  
   if (hashed == hash_unk_ || hashed == hash_unk_cap_) {
     return kNotFound;
   } else {
@@ -58,9 +58,11 @@ template <class Search> void GenericVocabulary<Search>::FinishedLoading() {
   SetSpecial(*begin, *end, kNotFound, available_);
 }
 
-// All of the entropy is in low order bits and boost::hash does poorly with these.
-// Odd numbers near 2^64 chosen by mashing on the keyboard.  
-inline uint64_t CombineWordHash(uint64_t current, const uint32_t next) {
+/* All of the entropy is in low order bits and boost::hash does poorly with
+ * these.  Odd numbers near 2^64 chosen by mashing on the keyboard.  There is a
+ * stable point: 0.  But 0 is <unk> which won't be queried here anyway.  
+ */
+inline uint64_t CombineWordHash(uint64_t current, const WordIndex next) {
   uint64_t ret = (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(next) * 17894857484156487943ULL);
   return ret;
 }

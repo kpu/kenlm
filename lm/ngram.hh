@@ -64,11 +64,14 @@ template <class Search> class GenericVocabulary : public base::Vocabulary {
     }
 
     static size_t Size(const typename Search::Init &search_init, std::size_t entries) {
-      // +1 in case <unk> doesn't appear in the ARPA.  
-      return Lookup::Size(search_init, entries + 1);
+      return Lookup::Size(search_init, entries);
     }
 
-    // This class forces unknown to zero.  If you change this, fix the constructor.  
+    /* This class forces unknown to zero.  The constructor starts vocab ids
+     * after this value.  The present hash function maps any string of 0s to 0.
+     * But that's fine because we never lookup a string of <unk>.  In short,
+     * don't change this.  
+     */
     const static WordIndex kNotFound = 0;
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
