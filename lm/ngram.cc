@@ -171,7 +171,7 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, con
 
   const size_t memory_size = Size(search_init, counts);
   memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0), memory_size);
-  if (memory_.get() == MAP_FAILED) throw AllocateMemoryLoadException(memory_size, errno);
+  if (memory_.get() == MAP_FAILED) throw AllocateMemoryLoadException(memory_size);
 
   char *start = static_cast<char*>(memory_.get());
   vocab_.Init(search_init, start, counts[0]);

@@ -8,10 +8,16 @@
 namespace util {
 
 ErrnoException::ErrnoException(const StringPiece &problem) throw() : errno_(errno), what_(problem.data(), problem.size()) {
-  if (errno_ < sys_nerr) {
-    what_ += sys_errlist[errno_];
-   } else {
-    what_ += ": " + boost::lexical_cast<std::string>(errno_);
+  char buf[200];
+  buf[0] = 0;
+#if (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
+  const char *add = buf;
+  if (!strerror_r(errno, buf, 200)) {
+#else
+  const char *add = strerror_r(errno, buf, 200);
+  if (add) {
+#endif
+    what_ += add;
   }
 }
 

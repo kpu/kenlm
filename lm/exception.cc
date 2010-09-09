@@ -27,16 +27,8 @@ WordDuplicateVocabLoadException::WordDuplicateVocabLoadException(const StringPie
   what_ = tmp.str();
 }
 
-AllocateMemoryLoadException::AllocateMemoryLoadException(size_t requested, int error) {
-  what_ = "Failed to language model memory; asked for for ";
-  what_ += boost::lexical_cast<std::string>(requested);
-  what_ += " bytes and got ";
-  if (error < sys_nerr) {
-    what_ += sys_errlist[error];
-  } else {
-    what_ += " a new system error.";
-  }
-}
+AllocateMemoryLoadException::AllocateMemoryLoadException(size_t requested) throw() 
+  : ErrnoException(std::string("Failed to allocate language model memory; asked for ") + boost::lexical_cast<std::string>(requested)) {}
 
 FormatLoadException::FormatLoadException(const StringPiece &complaint, const StringPiece &context) throw() {
   what_.assign(complaint.data(), complaint.size());

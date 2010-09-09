@@ -1,6 +1,7 @@
 #ifndef LM_EXCEPTION_HH__
 #define LM_EXCEPTION_HH__
 
+#include "util/errno_exception.hh"
 #include "util/string_piece.hh"
 
 #include <exception>
@@ -65,16 +66,11 @@ class WordDuplicateVocabLoadException : public VocabLoadException {
       std::string what_;
 };
 
-class AllocateMemoryLoadException : public LoadException {
+class AllocateMemoryLoadException : public util::ErrnoException {
   public:
-    AllocateMemoryLoadException(size_t requested, int error);
+    explicit AllocateMemoryLoadException(size_t requested) throw();
 
     ~AllocateMemoryLoadException() throw() {}
-
-    const char *what() const throw() { return what_.c_str(); }
-
-  private:
-    std::string what_;
 };
 
 class OpenFileLoadException : public LoadException {
