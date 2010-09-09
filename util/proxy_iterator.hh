@@ -69,4 +69,9 @@ template <class Proxy> class ProxyIterator {
 
     Proxy p_;
 };
+
+template <class Proxy> ProxyIterator<Proxy> operator+(std::ptrdiff_t amount, const ProxyIterator<Proxy> &it) {
+  return it + amount;
+}
+
 } // namespace util
