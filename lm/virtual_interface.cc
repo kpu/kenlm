@@ -1,4 +1,4 @@
-#include "lm/base.hh"
+#include "lm/virtual_interface.hh"
 
 #include "lm/exception.hh"
 
@@ -15,6 +15,8 @@ void Vocabulary::SetSpecial(WordIndex begin_sentence, WordIndex end_sentence, Wo
   if (begin_sentence_ == not_found_) throw BeginSentenceMissingException();
   if (end_sentence_ == not_found_) throw EndSentenceMissingException();
 }
+
+Model::~Model() {}
 
 } // namespace base
 } // namespace lm

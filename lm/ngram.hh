@@ -1,7 +1,7 @@
-#ifndef LM_NGRAM_H__
-#define LM_NGRAM_H__
+#ifndef LM_NGRAM__
+#define LM_NGRAM__
 
-#include "lm/base.hh"
+#include "lm/facade.hh"
 #include "util/probing_hash_table.hh"
 #include "util/sorted_uniform.hh"
 #include "util/string_piece.hh"
@@ -111,9 +111,9 @@ struct ProbBackoff {
 };
 
 // Should return the same results as SRI except ln instead of log10
-template <class Search> class GenericModel : public base::MiddleModel<GenericModel<Search>, State, GenericVocabulary<Search> > {
+template <class Search> class GenericModel : public base::ModelFacade<GenericModel<Search>, State, GenericVocabulary<Search> > {
   private:
-    typedef base::MiddleModel<GenericModel<Search>, State, GenericVocabulary<Search> > P;
+    typedef base::ModelFacade<GenericModel<Search>, State, GenericVocabulary<Search> > P;
   public:
     // Get the size of memory that will be mapped given ngram counts.  This
     // does not include small non-mapped control structures, such as this class
@@ -122,7 +122,7 @@ template <class Search> class GenericModel : public base::MiddleModel<GenericMod
 
     GenericModel(const char *file, const typename Search::Init &init);
 
-    Return WithLength(const State &in_state, const WordIndex new_word, State &out_state) const;
+    FullScoreReturn FullScore(const State &in_state, const WordIndex new_word, State &out_state) const;
 
   private:
     void LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts);
@@ -167,4 +167,4 @@ typedef detail::GenericModel<detail::SortedUniformSearch> SortedModel;
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_NGRAM_H__
+#endif // LM_NGRAM__

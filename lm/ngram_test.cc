@@ -9,7 +9,7 @@ namespace ngram {
 namespace {
 
 #define StartTest(word, ngram, score) \
-  ret = model.WithLength( \
+  ret = model.FullScore( \
       state, \
       Lookup(word), \
       out);\
@@ -34,7 +34,7 @@ struct Fixture {
 BOOST_FIXTURE_TEST_SUITE(f, Fixture)
 
 BOOST_AUTO_TEST_CASE(starters_probing) {
-  Return ret;
+  FullScoreReturn ret;
   Model::State state(model.BeginSentenceState());
   Model::State out;
 
@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(starters_probing) {
 }
 
 BOOST_AUTO_TEST_CASE(continuation_probing) {
-  Return ret;
+  FullScoreReturn ret;
   Model::State state(model.BeginSentenceState());
   Model::State out;
 
@@ -83,7 +83,7 @@ struct SortedFixture {
 BOOST_FIXTURE_TEST_SUITE(s, SortedFixture)
 
 BOOST_AUTO_TEST_CASE(starters_sorted) {
-  Return ret;
+  FullScoreReturn ret;
   Model::State state(model.BeginSentenceState());
   Model::State out;
 
@@ -96,7 +96,7 @@ BOOST_AUTO_TEST_CASE(starters_sorted) {
 }
 
 BOOST_AUTO_TEST_CASE(continuation_sorted) {
-  Return ret;
+  FullScoreReturn ret;
   Model::State state(model.BeginSentenceState());
   Model::State out;
 

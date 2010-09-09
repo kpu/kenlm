@@ -219,12 +219,12 @@ template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece 
  *
  * The search goes in increasing order of ngram length.  
  */
-template <class Search> Return GenericModel<Search>::WithLength(
+template <class Search> FullScoreReturn GenericModel<Search>::FullScore(
     const State &in_state,
     const WordIndex new_word,
     State &out_state) const {
 
-  Return ret;
+  FullScoreReturn ret;
   // This is end pointer passed to SumBackoffs.
   const ProbBackoff &unigram = unigram_[new_word];
   if (new_word == GenericVocabulary<Search>::kNotFound) {
