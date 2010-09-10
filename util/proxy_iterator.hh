@@ -38,6 +38,10 @@ template <class Proxy> class ProxyIterator {
     typedef Proxy & reference;
     typedef Proxy * pointer;
 
+    ProxyIterator() {}
+
+    // For cast from non const to const.  
+    template <class AlternateProxy> ProxyIterator(const ProxyIterator<AlternateProxy> &in) : p_(*in) {}
     explicit ProxyIterator(const Proxy &p) : p_(p) {}
 
     bool operator==(const S &other) const { return I() == other.I(); }
