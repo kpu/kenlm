@@ -4,7 +4,8 @@
 #include <algorithm>
 #include <cstddef>
 #include <functional>
-#include <utility>
+
+#include <assert.h>
 
 namespace util {
 
@@ -32,7 +33,11 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
     }
 
     // Must be assigned to later.  
-    ProbingHashTable() {}
+    ProbingHashTable()
+#ifndef NDEBUG
+      : initialized_(false), entries_(0) 
+#endif
+    {}
 
     ProbingHashTable(void *start, std::size_t allocated, const Key &invalid = Key(), const Hash &hash_func = Hash(), const Equal &equal_func = Equal())
       : begin_(Packing::FromVoid(start)),
@@ -40,9 +45,18 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
         buckets_(allocated / Packing::kBytes),
         invalid_(invalid),
         hash_(hash_func),
-        equal_(equal_func) {}
+        equal_(equal_func) 
+#ifndef NDEBUG
+        , initialized_(true),
+        entries_(0) 
+#endif
+    {}
 
     template <class T> void Insert(const T &t) {
+#ifndef NDEBUG
+      assert(initialized_);
+      assert(++entries_ < buckets_);
+#endif
       for (MutableIterator i(begin_ + (hash_(t.GetKey()) % buckets_));;) {
         if (equal_(i->GetKey(), invalid_)) { *i = t; return; }
         ++i;
@@ -53,6 +67,9 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
     void FinishedInserting() {}
 
     template <class Key> bool Find(const Key key, ConstIterator &out) const {
+#ifndef NDEBUG
+      assert(initialized_);
+#endif
       for (ConstIterator i(begin_ + (hash_(key) % buckets_));;) {
         Key got(i->GetKey());
         if (equal_(got, key)) { out = i; return true; }
@@ -67,6 +84,10 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
     Key invalid_;
     Hash hash_;
     Equal equal_;
+#ifndef NDEBUG
+    bool initialized_;
+    std::size_t entries_;
+#endif
 };
 
 } // namespace util
