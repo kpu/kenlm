@@ -59,21 +59,21 @@ template <class Search> class GenericVocabulary : public base::Vocabulary {
   public:
     GenericVocabulary();
 
-    WordIndex Index(const StringPiece &str) const {
-      typename Lookup::ConstIterator i;
-      return lookup_.Find(Hash(str), i) ? i->GetValue() : kNotFound;
-    }
-
-    static size_t Size(const typename Search::Init &search_init, std::size_t entries) {
-      return Lookup::Size(search_init, entries);
-    }
-
     /* This class forces unknown to zero.  The constructor starts vocab ids
      * after this value.  The present hash function maps any string of 0s to 0.
      * But that's fine because we never lookup a string of <unk>.  In short,
      * don't change this.  
      */
     const static WordIndex kNotFound = 0;
+
+    WordIndex Index(const StringPiece &str) const {
+      typename Lookup::ConstIterator i;
+      return lookup_.Find(Hash(str), i) ? i->GetValue() : 0;
+    }
+
+    static size_t Size(const typename Search::Init &search_init, std::size_t entries) {
+      return Lookup::Size(search_init, entries);
+    }
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
     void Init(void *start, std::size_t allocated, std::size_t entries);
