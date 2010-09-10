@@ -8,14 +8,15 @@
 #include <boost/test/unit_test.hpp>
 
 #include <limits>
+#include <stdlib.h>
 
 namespace util {
 namespace {
 
 BOOST_AUTO_TEST_CASE(basic_in_out) {
   typedef ByteAlignedPacking<uint64_t, unsigned char> Packing;
-  char foo[Packing::kBytes * 2];
-  Packing::MutableIterator i(Packing::FromChar(foo));
+  void *backing = malloc(Packing::kBytes * 2);
+  Packing::MutableIterator i(Packing::FromVoid(backing));
   i->SetKey(10);
   BOOST_CHECK_EQUAL(10, i->GetKey());
   i->SetValue(3);
@@ -33,28 +34,13 @@ BOOST_AUTO_TEST_CASE(basic_in_out) {
   BOOST_CHECK_EQUAL(42, i->GetValue());
 
   BOOST_CHECK_EQUAL(5, i->GetKey());
-}
-
-BOOST_AUTO_TEST_CASE(one_swap) {
-  typedef ByteAlignedPacking<uint64_t, unsigned char> Packing;
-  char foo[Packing::kBytes * 2];
-  Packing::MutableIterator begin(Packing::FromChar(foo));
-  Packing::MutableIterator i = begin;
-  i->SetKey(0); ++i;
-  i->SetKey(2); ++i;
-  i->SetKey(3); ++i;
-  i->SetKey(1); ++i;
-  std::sort(begin, i);
-  BOOST_CHECK_EQUAL(0, begin[0].GetKey());
-  BOOST_CHECK_EQUAL(1, begin[1].GetKey());
-  BOOST_CHECK_EQUAL(2, begin[2].GetKey());
-  BOOST_CHECK_EQUAL(3, begin[3].GetKey());
+  free(backing);
 }
 
 BOOST_AUTO_TEST_CASE(simple_sort) {
   typedef ByteAlignedPacking<uint64_t, unsigned char> Packing;
   char foo[Packing::kBytes * 4];
-  Packing::MutableIterator begin(Packing::FromChar(foo));
+  Packing::MutableIterator begin(Packing::FromVoid(foo));
   Packing::MutableIterator i = begin;
   i->SetKey(0); ++i;
   i->SetKey(2); ++i;
@@ -70,7 +56,7 @@ BOOST_AUTO_TEST_CASE(simple_sort) {
 BOOST_AUTO_TEST_CASE(big_sort) {
   typedef ByteAlignedPacking<uint64_t, unsigned char> Packing;
   boost::scoped_array<char> memory(new char[Packing::kBytes * 1000]);
-  Packing::MutableIterator begin(Packing::FromChar(memory.get()));
+  Packing::MutableIterator begin(Packing::FromVoid(memory.get()));
 
   boost::mt19937 rng;
   boost::uniform_int<uint64_t> range(0, std::numeric_limits<uint64_t>::max());

@@ -1,11 +1,13 @@
 #include "util/sorted_uniform.hh"
 
+#include "util/key_value_packing.hh"
+
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_int.hpp>
 #include <boost/random/variate_generator.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/unordered_map.hpp>
-#define BOOST_TEST_MODULE SortedUniformBoundTest
+#define BOOST_TEST_MODULE SortedUniformTest
 #include <boost/test/unit_test.hpp>
 
 #include <algorithm>
@@ -15,33 +17,44 @@
 namespace util {
 namespace {
 
-template <class Key, class Value> void Check(const SortedUniformMap<Key, Value> &map, const boost::unordered_map<Key, Value> &reference, const Key &key) {
+template <class Map, class Key, class Value> void Check(const Map &map, const boost::unordered_map<Key, Value> &reference, const Key key) {
   typename boost::unordered_map<Key, Value>::const_iterator ref = reference.find(key);
+  typename Map::ConstIterator i = typename Map::ConstIterator();
   if (ref == reference.end()) {
-    const Value *val;
-    BOOST_CHECK(!map.Find(key, val));
+    BOOST_CHECK(!map.Find(key, i));
   } else {
     // g++ can't tell that require will crash and burn.
-    const Value *val = NULL;
-    BOOST_REQUIRE(map.Find(key, val));
-    BOOST_CHECK_EQUAL(ref->second, *val);
+    BOOST_REQUIRE(map.Find(key, i));
+    BOOST_CHECK_EQUAL(ref->second, i->GetValue());
   }
 }
 
-/*BOOST_AUTO_TEST_CASE(empty) {
-  uint64_t foo;
-  Check<uint64_t>(&foo, &foo, 1);
+typedef SortedUniformMap<AlignedPacking<uint64_t, uint32_t> > TestMap;
+
+BOOST_AUTO_TEST_CASE(empty) {
+  TestMap map(SortedUniformInit(), NULL, 0);
+  map.FinishedInserting();
+  TestMap::ConstIterator i;
+  BOOST_CHECK(!map.Find(42, i));
 }
 
 BOOST_AUTO_TEST_CASE(one) {
-  uint64_t array[] = {1};
-  Check<uint64_t>(&array[0], &array[1], 1);
-  Check<uint64_t>(&array[0], &array[1], 0);
-}*/
+  char buf[sizeof(uint64_t) + sizeof(uint32_t)];
+  TestMap map(SortedUniformInit(), buf, 1);
+  Entry<uint64_t, uint32_t> e;
+  e.Set(42,2);
+  map.Insert(e);
+  map.FinishedInserting();
+  TestMap::ConstIterator i = TestMap::ConstIterator();
+  BOOST_REQUIRE(map.Find(42, i));
+  BOOST_CHECK(i == map.begin());
+  BOOST_CHECK(!map.Find(43, i));
+  BOOST_CHECK(!map.Find(41, i));
+}
 
 template <class Key> void RandomTest(Key upper, size_t entries, size_t queries) {
   typedef unsigned char Value;
-  typedef SortedUniformMap<Key, unsigned char> Map;
+  typedef SortedUniformMap<AlignedPacking<Key, unsigned char> > Map;
   boost::scoped_array<char> buffer(new char[Map::Size(typename Map::Init(), entries)]);
   Map map(typename Map::Init(), buffer.get(), entries);
   boost::mt19937 rng;
@@ -51,11 +64,13 @@ template <class Key> void RandomTest(Key upper, size_t entries, size_t queries) 
   boost::variate_generator<boost::mt19937&, boost::uniform_int<unsigned char> > gen_value(rng, range_value);
 
   boost::unordered_map<Key, unsigned char> reference;
+  Entry<Key, unsigned char> ent;
   for (size_t i = 0; i < entries; ++i) {
     Key key = gen_key();
     unsigned char value = gen_value();
     if (reference.insert(std::make_pair(key, value)).second) {
-      map.Insert(key, value);
+      ent.Set(key, value);
+      map.Insert(Entry<Key, unsigned char>(ent));
     }
   }
   map.FinishedInserting();
@@ -63,17 +78,17 @@ template <class Key> void RandomTest(Key upper, size_t entries, size_t queries) 
   // Random queries.  
   for (size_t i = 0; i < queries; ++i) {
     const Key key = gen_key();
-    Check<Key, Value>(map, reference, key);
+    Check<Map, Key, unsigned char>(map, reference, key);
   }
 
   typename boost::unordered_map<Key, unsigned char>::const_iterator it = reference.begin();
   for (size_t i = 0; (i < queries) && (it != reference.end()); ++i, ++it) {
-    Check<Key,Value>(map, reference, it->second);
+    Check<Map, Key, unsigned char>(map, reference, it->second);
   }
 }
 
-BOOST_AUTO_TEST_CASE(sparse_random) {
-  RandomTest<uint64_t>(std::numeric_limits<uint64_t>::max(), 100000, 2000);
+BOOST_AUTO_TEST_CASE(basic) {
+  RandomTest<uint8_t>(11, 10, 200);
 }
 
 BOOST_AUTO_TEST_CASE(tiny_dense_random) {
@@ -90,6 +105,10 @@ BOOST_AUTO_TEST_CASE(small_sparse_random) {
 
 BOOST_AUTO_TEST_CASE(medium_sparse_random) {
   RandomTest<uint16_t>(32000, 1000, 2000);
+}
+
+BOOST_AUTO_TEST_CASE(sparse_random) {
+  RandomTest<uint64_t>(std::numeric_limits<uint64_t>::max(), 100000, 2000);
 }
 
 } // namespace
