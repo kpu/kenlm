@@ -41,8 +41,8 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
 
     ProbingHashTable(void *start, std::size_t allocated, const Key &invalid = Key(), const Hash &hash_func = Hash(), const Equal &equal_func = Equal())
       : begin_(Packing::FromVoid(start)),
-        end_(begin_ + allocated / Packing::kBytes),
         buckets_(allocated / Packing::kBytes),
+        end_(begin_ + (allocated / Packing::kBytes)),
         invalid_(invalid),
         hash_(hash_func),
         equal_(equal_func) 
@@ -59,7 +59,6 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
 #endif
       for (MutableIterator i(begin_ + (hash_(t.GetKey()) % buckets_));;) {
         if (equal_(i->GetKey(), invalid_)) { *i = t; return; }
-        ++i;
         if (++i == end_) { i = begin_; }
       }
     }
@@ -79,8 +78,9 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
     }
 
   private:
-    MutableIterator begin_, end_;
+    MutableIterator begin_;
     std::size_t buckets_;
+    MutableIterator end_;
     Key invalid_;
     Hash hash_;
     Equal equal_;
