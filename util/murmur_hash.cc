@@ -14,7 +14,7 @@
 
 uint64_t MurmurHash64A ( const void * key, int len, unsigned int seed )
 {
-  const uint64_t m = 0xc6a4a7935bd1e995;
+  const uint64_t m = 0xc6a4a7935bd1e995ULL;
   const int r = 47;
 
   uint64_t h = seed ^ (len * m);
