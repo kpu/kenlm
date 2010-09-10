@@ -39,8 +39,8 @@ BOOST_AUTO_TEST_CASE(empty) {
 }
 
 BOOST_AUTO_TEST_CASE(one) {
-  char buf[sizeof(uint64_t) + sizeof(uint32_t)];
-  TestMap map(SortedUniformInit(), buf, 1);
+  char buf[sizeof(Entry<uint64_t, uint32_t>)];
+  TestMap map(buf, 1);
   Entry<uint64_t, uint32_t> e;
   e.Set(42,2);
   map.Insert(e);

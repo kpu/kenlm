@@ -65,20 +65,12 @@ struct SortedUniformInit {};
 
 // To use this template, you need to define a Pivot function to match Key.  
 template <class PackingT> class SortedUniformMap {
-  private:
-    typedef PackingT Packing;
-
-    struct CompareGetKey : std::binary_function<const typename Packing::ConstReference, const typename Packing::ConstReference, bool> {
-      bool operator()(const typename Packing::ConstReference left, const typename Packing::ConstReference right) const {
-        return left.GetKey() < right.GetKey();
-      }
-    };
-
   public:
+    typedef PackingT Packing;
+    typedef typename Packing::ConstIterator ConstIterator;
     typedef SortedUniformInit Init;
 
-    typedef typename Packing::ConstIterator ConstIterator;
-
+  public:
     static std::size_t Size(Init ignore, std::size_t entries) {
       return entries * Packing::kBytes;
     }
@@ -89,7 +81,7 @@ template <class PackingT> class SortedUniformMap {
 #endif
     {}
 
-    SortedUniformMap(Init ignore, char *start, std::size_t allocated) : 
+    SortedUniformMap(void *start, std::size_t allocated) : 
       begin_(Packing::FromVoid(start)),
       end_(begin_) 
 #ifndef NDEBUG
@@ -114,7 +106,7 @@ template <class PackingT> class SortedUniformMap {
       loaded_ = true;
 #endif
       // Such a short line.  So much work.  Most of the iterator proxy stuff for this.   
-      std::sort(begin_, end_, CompareGetKey());
+      std::sort(begin_, end_);
     }
 
     // Do not call before FinishedInserting.  

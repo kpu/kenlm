@@ -21,7 +21,6 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
   public:
     typedef PackingT Packing;
     typedef typename Packing::Key Key;
-    typedef typename Packing::Value Value;
     typedef typename Packing::MutableIterator MutableIterator;
     typedef typename Packing::ConstIterator ConstIterator;
 
@@ -32,7 +31,10 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
       return std::max(entries + 1, static_cast<std::size_t>(multiplier * static_cast<float>(entries))) * Packing::kBytes;
     }
 
-    ProbingHashTable(char *start, std::size_t allocated, const Key &invalid = Key(), const Hash &hash_func = Hash(), const Equal &equal_func = Equal())
+    // Must be assigned to later.  
+    ProbingHashTable() {}
+
+    ProbingHashTable(void *start, std::size_t allocated, const Key &invalid = Key(), const Hash &hash_func = Hash(), const Equal &equal_func = Equal())
       : begin_(Packing::FromVoid(start)),
         end_(begin_ + allocated / Packing::kBytes),
         buckets_(allocated / Packing::kBytes),
@@ -47,6 +49,8 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
         if (++i == end_) { i = begin_; }
       }
     }
+
+    void FinishedInserting() {}
 
     template <class Key> bool Find(const Key key, ConstIterator &out) const {
       for (ConstIterator i(begin_ + (hash_(key) % buckets_));;) {

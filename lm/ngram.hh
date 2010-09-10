@@ -2,6 +2,7 @@
 #define LM_NGRAM__
 
 #include "lm/facade.hh"
+#include "util/key_value_packing.hh"
 #include "util/probing_hash_table.hh"
 #include "util/sorted_uniform.hh"
 #include "util/string_piece.hh"
@@ -59,8 +60,8 @@ template <class Search> class GenericVocabulary : public base::Vocabulary {
     GenericVocabulary();
 
     WordIndex Index(const StringPiece &str) const {
-      const WordIndex *ret;
-      return lookup_.Find(Hash(str), ret) ? *ret : kNotFound;
+      typename Lookup::ConstIterator i;
+      return lookup_.Find(Hash(str), i) ? i->GetValue() : kNotFound;
     }
 
     static size_t Size(const typename Search::Init &search_init, std::size_t entries) {
@@ -75,7 +76,7 @@ template <class Search> class GenericVocabulary : public base::Vocabulary {
     const static WordIndex kNotFound = 0;
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
-    void Init(const typename Search::Init &search_init, char *start, std::size_t entries);
+    void Init(void *start, std::size_t allocated, std::size_t entries);
 
     WordIndex Insert(const StringPiece &str);
 
@@ -144,14 +145,16 @@ template <class Search> class GenericModel : public base::ModelFacade<GenericMod
 struct ProbingSearch {
   typedef float Init;
   template <class Value> struct Table {
-    typedef util::ProbingMap<uint64_t, Value, IdentityHash> T;
+    typedef util::ByteAlignedPacking<uint64_t, Value> Packing;
+    typedef util::ProbingHashTable<Packing, IdentityHash> T;
   };
 };
 
 struct SortedUniformSearch {
   typedef util::SortedUniformInit Init;
   template <class Value> struct Table {
-    typedef util::SortedUniformMap<uint64_t, Value> T;
+    typedef util::ByteAlignedPacking<uint64_t, Value> Packing;
+    typedef util::SortedUniformMap<Packing> T;
   };
 };
 

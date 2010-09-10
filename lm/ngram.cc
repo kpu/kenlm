@@ -30,8 +30,8 @@ namespace detail {
 // Sadly some LMs have <UNK>.  
 template <class Search> GenericVocabulary<Search>::GenericVocabulary() : hash_unk_(Hash("<unk>")), hash_unk_cap_(Hash("<UNK>")) {}
 
-template <class Search> void GenericVocabulary<Search>::Init(const typename Search::Init &search_init, char *start, std::size_t entries) {
-  lookup_ = Lookup(search_init, start, entries);
+template <class Search> void GenericVocabulary<Search>::Init(void *start, std::size_t allocated, std::size_t entries) {
+  lookup_ = Lookup(start, allocated);
   assert(kNotFound == 0);
   available_ = kNotFound + 1;
   // Later if available_ != expected_available_ then we can throw UnknownMissingException.
@@ -44,18 +44,18 @@ template <class Search> WordIndex GenericVocabulary<Search>::Insert(const String
   if (hashed == hash_unk_ || hashed == hash_unk_cap_) {
     return kNotFound;
   } else {
-    lookup_.Insert(hashed, available_);
+    lookup_.Insert(Lookup::Packing::Make(hashed, available_));
     return available_++;
   }
 }
 
 template <class Search> void GenericVocabulary<Search>::FinishedLoading() {
   lookup_.FinishedInserting();
-  const WordIndex *begin, *end;
+  typename Lookup::ConstIterator begin, end;
   if (expected_available_ != available_) throw UnknownMissingException();
   if (!lookup_.Find(Hash("<s>"), begin)) throw BeginSentenceMissingException();
   if (!lookup_.Find(Hash("</s>"), end)) throw EndSentenceMissingException();
-  SetSpecial(*begin, *end, kNotFound, available_);
+  SetSpecial(begin->GetValue(), end->GetValue(), kNotFound, available_);
 }
 
 /* All of the entropy is in low order bits and boost::hash does poorly with
@@ -112,7 +112,7 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
 
   // vocab ids of words in reverse order
   WordIndex vocab_ids[n];
-  typename Store::Value value;
+  typename Store::Packing::Value value;
   for (size_t i = 0; i < count; ++i, ++progress) {
     try {
       value.prob = f.ReadFloat();
@@ -131,7 +131,7 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
         default:
           throw FormatLoadException("Got unexpected delimiter before backoff weight");
       }
-      store.Insert(key, value);
+      store.Insert(Store::Packing::Make(key, value));
     } catch (const std::exception &f) {
       throw FormatLoadException("Error reading the " + boost::lexical_cast<std::string>(i) + "th " + boost::lexical_cast<std::string>(n) + "-gram." + f.what());
     }
@@ -173,17 +173,21 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, con
   memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0), memory_size);
   if (memory_.get() == MAP_FAILED) throw AllocateMemoryLoadException(memory_size);
 
+  size_t allocated;
   char *start = static_cast<char*>(memory_.get());
-  vocab_.Init(search_init, start, counts[0]);
-  start += GenericVocabulary<Search>::Size(search_init, counts[0]);
+  allocated = GenericVocabulary<Search>::Size(search_init, counts[0]);
+  vocab_.Init(start, allocated, counts[0]);
+  start += allocated;
   unigram_ = reinterpret_cast<ProbBackoff*>(start);
   start += sizeof(ProbBackoff) * counts[0];
   for (unsigned int n = 2; n < order; ++n) {
-    middle_.push_back(Middle(search_init, start, counts[n - 1]));
-    start += Middle::Size(search_init, counts[n - 1]);
+    allocated = Middle::Size(search_init, counts[n - 1]);
+    middle_.push_back(Middle(start, allocated));
+    start += allocated;
   }
-  longest_ = Longest(search_init, start, counts[order - 1]);
-  assert(static_cast<size_t>(start + Longest::Size(search_init, counts[order - 1]) - reinterpret_cast<char*>(memory_.get())) == memory_size);
+  allocated = Longest::Size(search_init, counts[order - 1]);
+  longest_ = Longest(start, allocated);
+  assert(static_cast<size_t>(start + allocated - reinterpret_cast<char*>(memory_.get())) == memory_size);
 
   LoadFromARPA(f, counts);
 
@@ -263,7 +267,7 @@ template <class Search> FullScoreReturn GenericModel<Search>::FullScore(
     }
     lookup_hash = CombineWordHash(lookup_hash, *hist_iter);
     if (mid_iter == middle_.end()) break;
-    const ProbBackoff *found;
+    typename Middle::ConstIterator found;
     if (!mid_iter->Find(lookup_hash, found)) {
       // Didn't find an ngram using hist_iter.  
       // The history used in the found n-gram is [in_state.history_, hist_iter).  
@@ -276,11 +280,11 @@ template <class Search> FullScoreReturn GenericModel<Search>::FullScore(
           ret.prob);
       return ret;
     }
-    *backoff_out = found->backoff;
-    ret.prob = found->prob;
+    *backoff_out = found->GetValue().backoff;
+    ret.prob = found->GetValue().prob;
   }
   
-  const Prob *found;
+  typename Longest::ConstIterator found;
   if (!longest_.Find(lookup_hash, found)) {
     // It's an (P::Order()-1)-gram
     std::copy(in_state.history_, in_state.history_ + P::Order() - 2, out_state.history_ + 1);
@@ -293,7 +297,7 @@ template <class Search> FullScoreReturn GenericModel<Search>::FullScore(
   std::copy(in_state.history_, in_state.history_ + P::Order() - 2, out_state.history_ + 1);
   out_state.valid_length_ = P::Order() - 1;
   ret.ngram_length = P::Order();
-  ret.prob = found->prob;
+  ret.prob = found->GetValue().prob;
   return ret;
 }
 
