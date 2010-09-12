@@ -5,7 +5,7 @@
 
 namespace util { namespace {
 
-/*BOOST_AUTO_TEST_CASE(just_flip) {
+BOOST_AUTO_TEST_CASE(just_flip) {
   char keys[2];
   int values[2];
   keys[0] = 1; values[0] = 327;
@@ -27,7 +27,7 @@ BOOST_AUTO_TEST_CASE(three) {
   BOOST_CHECK_EQUAL(0, keys[0]);
   BOOST_CHECK_EQUAL(1, keys[1]);
   BOOST_CHECK_EQUAL(2, keys[2]);
-}*/
+}
 
 BOOST_AUTO_TEST_CASE(char_int) {
   char keys[4];
