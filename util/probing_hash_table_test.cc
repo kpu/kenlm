@@ -22,7 +22,7 @@ BOOST_AUTO_TEST_CASE(simple) {
   table.Insert(Packing::Make(3, 328920));
   BOOST_REQUIRE(table.Find(3, i));
   BOOST_CHECK_EQUAL(3, i->GetKey());
-  BOOST_CHECK_EQUAL(328920, i->GetValue());
+  BOOST_CHECK_EQUAL(static_cast<uint64_t>(328920), i->GetValue());
   BOOST_CHECK(!table.Find(2, i));
 }
 
