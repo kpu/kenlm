@@ -4,8 +4,6 @@
 #include "lm/word_index.hh"
 #include "util/string_piece.hh"
 
-#include <boost/noncopyable.hpp>
-
 #include <string>
 
 namespace lm {
@@ -32,7 +30,7 @@ template <class T, class U, class V> class ModelFacade;
  * GetVocabulary() for the actual implementation (in which case you'll need the
  * actual implementation of the Model too).  
  */
-class Vocabulary : boost::noncopyable {
+class Vocabulary {
   public:
     virtual ~Vocabulary();
 
@@ -65,6 +63,12 @@ class Vocabulary : boost::noncopyable {
     void SetSpecial(WordIndex begin_sentence, WordIndex end_sentence, WordIndex not_found, WordIndex available);
 
     WordIndex begin_sentence_, end_sentence_, not_found_, available_;
+
+  private:
+    // Disable copy constructors.  They're private and undefined. 
+    // Ersatz boost::noncopyable.
+    Vocabulary(const Vocabulary &);
+    Vocabulary &operator=(const Vocabulary &);
 };
 
 /* There are two ways to access a Model.  
@@ -113,7 +117,7 @@ class Vocabulary : boost::noncopyable {
  * All the State objects are POD, so it's ok to use raw memory for storing
  * State.
  */
-class Model : boost::noncopyable {
+class Model {
   public:
     virtual ~Model();
 
@@ -139,6 +143,11 @@ class Model : boost::noncopyable {
     const Vocabulary *base_vocab_;
 
     unsigned char order_;
+
+    // Disable copy constructors.  They're private and undefined. 
+    // Ersatz boost::noncopyable.
+    Model(const Model &);
+    Model &operator=(const Model &);
 };
 
 } // mamespace base
