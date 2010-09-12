@@ -37,8 +37,9 @@ off_t SizeOrThrow(int fd, const char *name) {
 }
 } // namespace
 
-FilePiece::FilePiece(const char *name, off_t min_buffer) : 
-  file_(OpenOrThrow(name)), total_size_(SizeOrThrow(file_.get(), name)), page_(sysconf(_SC_PAGE_SIZE)) {
+FilePiece::FilePiece(const char *name, std::ostream *show_progress, off_t min_buffer) : 
+  file_(OpenOrThrow(name)), total_size_(SizeOrThrow(file_.get(), name)), page_(sysconf(_SC_PAGE_SIZE)),
+  progress_(show_progress, std::string("Reading ") + name, total_size_) {
   
   default_map_size_ = page_ * std::max<off_t>((min_buffer / page_ + 1), 2);
   position_ = NULL;
@@ -111,6 +112,7 @@ StringPiece FilePiece::ReadLine(char delim) throw (EndOfFileException) {
 void FilePiece::Shift() throw(EndOfFileException) {
   if (at_end_) throw EndOfFileException();
   off_t desired_begin = position_ - data_.begin() + mapped_offset_;
+  progress_.Set(desired_begin);
   off_t ignore = desired_begin % page_;
   // Duplicate request for Shift means give more data.  
   if (position_ == data_.begin() + ignore) {
@@ -118,8 +120,6 @@ void FilePiece::Shift() throw(EndOfFileException) {
   }
   mapped_offset_ = desired_begin - ignore;
 
-  // The normal operation of this loop is to run once.  However, it may run
-  // multiple times if we can't find an enter character.
   off_t mapped_size;
   if (default_map_size_ >= total_size_ - mapped_offset_) {
     at_end_ = true;

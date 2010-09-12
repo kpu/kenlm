@@ -6,8 +6,6 @@
 #include "util/probing_hash_table.hh"
 #include "util/scoped.hh"
 
-#include <boost/progress.hpp>
-
 #include <algorithm>
 #include <functional>
 #include <numeric>
@@ -78,8 +76,7 @@ uint64_t ChainedWordHash(const WordIndex *word, const WordIndex *word_end) {
 // Special unigram reader because unigram's data structure is different and because we're inserting vocab words.
 template <class Voc> void Read1Grams(util::FilePiece &f, const size_t count, Voc &vocab, ProbBackoff *unigrams) {
   ReadNGramHeader(f, 1);
-  boost::progress_display progress(count, std::cerr, "Loading 1-grams\n");
-  for (size_t i = 0; i < count; ++i, ++progress) {
+  for (size_t i = 0; i < count; ++i) {
     try {
       float prob = f.ReadFloat();
       if (f.get() != '\t') UTIL_THROW(FormatLoadException, "Expected tab after probability");
@@ -107,14 +104,11 @@ template <class Voc> void Read1Grams(util::FilePiece &f, const size_t count, Voc
 
 template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, Store &store) {
   ReadNGramHeader(f, n);
-  std::stringstream loading_message;
-  loading_message << "Loading " << n << "-grams\n";
-  boost::progress_display progress(count, std::cerr, loading_message.str());
 
   // vocab ids of words in reverse order
   WordIndex vocab_ids[n];
   typename Store::Packing::Value value;
-  for (size_t i = 0; i < count; ++i, ++progress) {
+  for (size_t i = 0; i < count; ++i) {
     try {
       value.prob = f.ReadFloat();
       for (WordIndex *vocab_out = &vocab_ids[n-1]; vocab_out >= vocab_ids; --vocab_out) {
@@ -160,7 +154,7 @@ template <class Search> size_t GenericModel<Search>::Size(const typename Search:
 }
 
 template <class Search> GenericModel<Search>::GenericModel(const char *file, const typename Search::Init &search_init) {
-  util::FilePiece f(file);
+  util::FilePiece f(file, &std::cerr);
 
   std::vector<size_t> counts;
   ReadCounts(f, counts);

@@ -1,6 +1,7 @@
 #ifndef UTIL_FILE_PIECE__
 #define UTIL_FILE_PIECE__
 
+#include "util/ersatz_progress.hh"
 #include "util/exception.hh"
 #include "util/scoped.hh"
 #include "util/string_piece.hh"
@@ -10,6 +11,8 @@
 #include <cstddef>
 
 namespace util {
+
+class ErsatzProgress;
 
 class EndOfFileException : public Exception {
   public:
@@ -26,7 +29,7 @@ class ParseNumberException : public Exception {
 class FilePiece {
   public:
     // 32 MB default.
-    explicit FilePiece(const char *file, off_t min_buffer = 33554432);
+    explicit FilePiece(const char *file, std::ostream *show_progress = NULL, off_t min_buffer = 33554432);
      
     char get() throw(EndOfFileException) { 
       if (position_ == position_end_) Shift();
@@ -75,6 +78,8 @@ class FilePiece {
     scoped_mmap data_;
 
     bool at_end_;
+
+    ErsatzProgress progress_;
 };
 
 } // namespace util
