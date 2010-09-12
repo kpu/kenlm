@@ -157,6 +157,9 @@ void FilePiece::MMapShift(off_t desired_begin) throw() {
   data_.reset(mmap(NULL, mapped_size, PROT_READ, MAP_PRIVATE, *file_, mapped_offset), mapped_size, scoped_memory::MMAP_ALLOCATED);
   if (data_.get() == MAP_FAILED) {
     fallback_to_read_ = true;
+    if (desired_begin) {
+      if (((off_t)-1) == lseek(*file_, desired_begin, SEEK_SET)) UTIL_THROW(ErrnoException, "mmap failed even though it worked before.  lseek failed too, so using read isn't an option either.");
+    }
     return;
   }
   mapped_offset_ = mapped_offset;
