@@ -12,8 +12,6 @@
 
 namespace util {
 
-class ErsatzProgress;
-
 class EndOfFileException : public Exception {
   public:
     EndOfFileException() throw();
