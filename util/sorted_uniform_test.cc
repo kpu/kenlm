@@ -32,7 +32,7 @@ template <class Map, class Key, class Value> void Check(const Map &map, const bo
 typedef SortedUniformMap<AlignedPacking<uint64_t, uint32_t> > TestMap;
 
 BOOST_AUTO_TEST_CASE(empty) {
-  TestMap map(SortedUniformInit(), NULL, 0);
+  TestMap map(NULL, 0);
   map.FinishedInserting();
   TestMap::ConstIterator i;
   BOOST_CHECK(!map.Find(42, i));
@@ -56,7 +56,7 @@ template <class Key> void RandomTest(Key upper, size_t entries, size_t queries) 
   typedef unsigned char Value;
   typedef SortedUniformMap<AlignedPacking<Key, unsigned char> > Map;
   boost::scoped_array<char> buffer(new char[Map::Size(typename Map::Init(), entries)]);
-  Map map(typename Map::Init(), buffer.get(), entries);
+  Map map(buffer.get(), entries);
   boost::mt19937 rng;
   boost::uniform_int<Key> range_key(0, upper);
   boost::uniform_int<Value> range_value(0, 255);
