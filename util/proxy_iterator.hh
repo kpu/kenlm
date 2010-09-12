@@ -1,3 +1,6 @@
+#ifndef UTIL_PROXY_ITERATOR__
+#define UTIL_PROXY_ITERATOR__
+
 #include <cstddef>
 #include <iterator>
 
@@ -33,7 +36,7 @@ template <class Proxy> class ProxyIterator {
 
   public:
     typedef std::random_access_iterator_tag iterator_category;
-    typedef Proxy value_type;
+    typedef typename Proxy::value_type value_type;
     typedef std::ptrdiff_t difference_type;
     typedef Proxy reference;
     typedef Proxy * pointer;
@@ -44,6 +47,12 @@ template <class Proxy> class ProxyIterator {
     template <class AlternateProxy> ProxyIterator(const ProxyIterator<AlternateProxy> &in) : p_(*in) {}
     explicit ProxyIterator(const Proxy &p) : p_(p) {}
 
+    // p_'s operator= does value copying, but here we want iterator copying.  
+    S &operator=(const S &other) {
+      I() = other.I();
+      return *this;
+    }
+
     bool operator==(const S &other) const { return I() == other.I(); }
     bool operator!=(const S &other) const { return !(*this == other); }
     bool operator<(const S &other) const { return I() < other.I(); }
@@ -52,12 +61,14 @@ template <class Proxy> class ProxyIterator {
     bool operator>=(const S &other) const { return !(*this < other); }
 
     S &operator++() { return *this += 1; }
+    S operator++(int) { S ret(*this); ++*this; return ret; }
     S &operator+=(std::ptrdiff_t amount) { I() += amount; return *this; }
-    S operator+(std::ptrdiff_t amount) const { return S(*this) += amount;  }
+    S operator+(std::ptrdiff_t amount) const { S ret(*this); ret += amount; return ret; }
 
     S &operator--() { return *this -= 1; }
+    S operator--(int) { S ret(*this); --*this; return ret; }
     S &operator-=(std::ptrdiff_t amount) { I() += (-amount); return *this; }
-    S operator-(std::ptrdiff_t amount) const { return S(*this) -= amount; }
+    S operator-(std::ptrdiff_t amount) const { S ret(*this); ret -= amount; return ret; }
 
     std::ptrdiff_t operator-(const S &other) const { return I() - other.I(); }
 
@@ -79,3 +90,5 @@ template <class Proxy> ProxyIterator<Proxy> operator+(std::ptrdiff_t amount, con
 }
 
 } // namespace util
+
+#endif // UTIL_PROXY_ITERATOR__
