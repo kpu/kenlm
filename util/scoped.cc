@@ -17,4 +17,20 @@ scoped_mmap::~scoped_mmap() {
   }
 }
 
+void scoped_mmap_or_array::internal_reset(void *data, std::size_t size, Alloc source) {
+  switch(source_) {
+    case MMAP_ALLOCATED:
+      scoped_mmap(data_, size_);
+      break;
+    case ARRAY_ALLOCATED:
+      delete [] reinterpret_cast<char*>(data_);
+      break;
+    case NONE:
+      break;
+  }
+  data_ = data;
+  size_ = size;
+  source_ = source;
+}
+
 } // namespace util
