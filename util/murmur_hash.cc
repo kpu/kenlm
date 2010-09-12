@@ -1,8 +1,17 @@
-// Downloaded from http://sites.google.com/site/murmurhash/ which says "All
-// code is released to the public domain. For business purposes, Murmurhash is
-// under the MIT license."
+/* Downloaded from http://sites.google.com/site/murmurhash/ which says "All
+ * code is released to the public domain. For business purposes, Murmurhash is
+ * under the MIT license."
+ * This is modified from the original:
+ * ULL tag on 0xc6a4a7935bd1e995 so this will compile on 32-bit.  
+ * length changed to unsigned int.  
+ * placed in namespace util
+ * add MurmurHashNative
+ * default option = 0 for seed
+ */
 
 #include "util/murmur_hash.hh"
+
+namespace util {
 
 //-----------------------------------------------------------------------------
 // MurmurHash2, 64-bit versions, by Austin Appleby
@@ -12,7 +21,7 @@
 
 // 64-bit hash for 64-bit platforms
 
-uint64_t MurmurHash64A ( const void * key, int len, unsigned int seed )
+uint64_t MurmurHash64A ( const void * key, std::size_t len, unsigned int seed )
 {
   const uint64_t m = 0xc6a4a7935bd1e995ULL;
   const int r = 47;
@@ -58,7 +67,7 @@ uint64_t MurmurHash64A ( const void * key, int len, unsigned int seed )
 
 // 64-bit hash for 32-bit platforms
 
-uint64_t MurmurHash64B ( const void * key, int len, unsigned int seed )
+uint64_t MurmurHash64B ( const void * key, std::size_t len, unsigned int seed )
 {
   const unsigned int m = 0x5bd1e995;
   const int r = 24;
@@ -107,4 +116,14 @@ uint64_t MurmurHash64B ( const void * key, int len, unsigned int seed )
   h = (h << 32) | h2;
 
   return h;
-} 
+}
+
+uint64_t MurmurHashNative(const void * key, unsigned int len, unsigned int seed = 0) {
+  if (sizeof(int) == 4) {
+    return MurmurHash64B(key, len, seed);
+  } else {
+    return MurmurHash64A(key, len, seed);
+  }
+}
+
+} // namespace util

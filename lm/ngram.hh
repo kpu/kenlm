@@ -46,7 +46,7 @@ class State {
 
 inline size_t hash_value(const State &state) {
   // If the histories are equal, so are the backoffs.  
-  return MurmurHash64A(state.history_, sizeof(WordIndex) * state.valid_length_, 0);
+  return util::MurmurHashNative(state.history_, sizeof(WordIndex) * state.valid_length_);
 }
 
 namespace detail {
@@ -85,7 +85,8 @@ template <class Search> class GenericVocabulary : public base::Vocabulary {
   private:
     static uint64_t Hash(const StringPiece &str) {
       // This proved faster than Boost's hash in speed trials: total load time Murmur 67090000, Boost 72210000
-      return MurmurHash64A(str.data(), str.length(), 0);
+      // Chose to use 64A instead of native so binary format will be portable across 64 and 32 bit.  
+      return util::MurmurHash64A(str.data(), str.length(), 0);
     }
 
     typedef typename Search::template Table<WordIndex>::T Lookup;
