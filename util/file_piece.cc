@@ -18,25 +18,25 @@
 namespace util {
 
 EndOfFileException::EndOfFileException() throw() {
-  stream_ << "End of file.";
+  stream_ << "End of file";
 }
 EndOfFileException::~EndOfFileException() throw() {}
 
 ParseNumberException::ParseNumberException(StringPiece value) throw() {
-  stream_ << "Could not parse \"" << value << "\" into a float.";
+  stream_ << "Could not parse \"" << value << "\" into a float";
 }
 
 namespace {
 int OpenOrThrow(const char *name) {
   int ret = open(name, O_RDONLY);
-  if (ret == -1) UTIL_THROW(ErrnoException, "in open (" << name << ") for reading.");
+  if (ret == -1) UTIL_THROW(ErrnoException, "in open (" << name << ") for reading");
   return ret;
 }
 const off_t kBadSize = std::numeric_limits<off_t>::max();
 
 off_t SizeFile(int fd) {
   struct stat sb;
-  if (fstat(fd, &sb) == -1) return kBadSize;
+  if (fstat(fd, &sb) == -1 || (!sb.st_size && !S_ISREG(sb.st_mode))) return kBadSize;
   return sb.st_size;
 }
 } // namespace
@@ -47,7 +47,7 @@ FilePiece::FilePiece(const char *name, std::ostream *show_progress, off_t min_bu
   if (total_size_ == kBadSize) {
     fallback_to_read_ = true;
     if (show_progress) 
-      *show_progress << "Couldn't stat " << name << ".  Using slower read() instead of mmap().  No progress bar." << std::endl;
+      *show_progress << "File " << name << " isn't normal.  Using slower read() instead of mmap().  No progress bar." << std::endl;
   } else {
     fallback_to_read_ = false;
   }
@@ -145,7 +145,7 @@ void FilePiece::MMapShift(off_t desired_begin) throw() {
   off_t mapped_offset = desired_begin - ignore;
 
   off_t mapped_size;
-  if (default_map_size_ >= total_size_ - mapped_offset) {
+  if (default_map_size_ >= static_cast<size_t>(total_size_ - mapped_offset)) {
     at_end_ = true;
     mapped_size = total_size_ - mapped_offset;
   } else {
@@ -173,17 +173,8 @@ void FilePiece::ReadShift(off_t desired_begin) throw() {
     if (!data_.get()) UTIL_THROW(ErrnoException, "malloc failed for " << default_map_size_);
     position_ = data_.begin();
     position_end_ = position_;
-  } else if (position_ && (position_ == data_.begin()) && (position_end_ == data_.end())) {
-    // If we've already fallen back, this is a duplicate call, and the buffer
-    // is full, increase buffer size.  
-    std::size_t valid_length = position_end_ - position_;
-    default_map_size_ *= 2;
-    data_.call_realloc(default_map_size_);
-    if (!data_.get()) UTIL_THROW(ErrnoException, "realloc failed for " << default_map_size_);
-    position_ = data_.begin();
-    position_end_ = position_ + valid_length;
-  }
-
+  } 
+  
   // Bytes [data_.begin(), position_) have been consumed.  
   // Bytes [position_, position_end_) have been read into the buffer.  
 
@@ -195,7 +186,25 @@ void FilePiece::ReadShift(off_t desired_begin) throw() {
   }
 
   std::size_t already_read = position_end_ - data_.begin();
-  assert(already_read < default_map_size_);
+
+  if (already_read == default_map_size_) {
+    if (position_ == data_.begin()) {
+      // Buffer too small.  
+      std::size_t valid_length = position_end_ - position_;
+      default_map_size_ *= 2;
+      data_.call_realloc(default_map_size_);
+      if (!data_.get()) UTIL_THROW(ErrnoException, "realloc failed for " << default_map_size_);
+      position_ = data_.begin();
+      position_end_ = position_ + valid_length;
+    } else {
+      size_t moving = position_end_ - position_;
+      memmove(data_.get(), position_, moving);
+      position_ = data_.begin();
+      position_end_ = position_ + moving;
+      already_read = moving;
+    }
+  }
+
   ssize_t read_return = read(file_.get(), static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
   if (read_return == -1) UTIL_THROW(ErrnoException, "read failed");
   if (read_return == 0) at_end_ = true;

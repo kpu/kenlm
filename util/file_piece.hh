@@ -77,7 +77,7 @@ class FilePiece {
     const off_t total_size_;
     const off_t page_;
 
-    off_t default_map_size_;
+    size_t default_map_size_;
     off_t mapped_offset_;
 
     // Order matters: file_ should always be destroyed after this.
