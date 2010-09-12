@@ -1,35 +1,26 @@
 #ifndef UTIL_FILE_PIECE__
 #define UTIL_FILE_PIECE__
 
+#include "util/exception.hh"
 #include "util/scoped.hh"
 #include "util/string_piece.hh"
 
-#include <exception>
 #include <string>
 
 #include <cstddef>
 
 namespace util {
 
-class EndOfFileException : public std::exception {
+class EndOfFileException : public Exception {
   public:
-    EndOfFileException() throw() {}
-
-    ~EndOfFileException() throw() {}
-
-    const char *what() const throw() { return "End of file."; }
+    EndOfFileException() throw();
+    ~EndOfFileException() throw();
 };
 
-class ParseNumberException : public std::exception {
+class ParseNumberException : public Exception {
   public:
     explicit ParseNumberException(StringPiece value) throw();
-
     ~ParseNumberException() throw() {}
-
-    const char *what() const throw() { return what_.c_str(); }
-
-  private:
-    std::string what_;
 };
 
 class FilePiece {
@@ -55,6 +46,10 @@ class FilePiece {
     float ReadFloat() throw(EndOfFileException, ParseNumberException);
 
     void SkipSpaces() throw (EndOfFileException);
+
+    off_t Offset() const {
+      return position_ - data_.begin() + mapped_offset_;
+    }
     
   private:
     StringPiece Consume(const char *to) {

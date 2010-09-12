@@ -1,6 +1,6 @@
 #include "util/file_piece.hh"
 
-#include "util/errno_exception.hh"
+#include "util/exception.hh"
 
 #include <string>
 
@@ -14,25 +14,28 @@
 
 namespace util {
 
+EndOfFileException::EndOfFileException() throw() {
+  stream_ << "End of file.";
+}
+EndOfFileException::~EndOfFileException() throw() {}
+
+ParseNumberException::ParseNumberException(StringPiece value) throw() {
+  stream_ << "Could not parse \"" << value << "\" into a float.";
+}
+
 namespace {
 int OpenOrThrow(const char *name) {
   int ret = open(name, O_RDONLY);
-  if (ret == -1) throw ErrnoException(std::string("open ") + name);
+  if (ret == -1) UTIL_THROW(ErrnoException, "in open (" << name << ") for reading.");
   return ret;
 }
 
 off_t SizeOrThrow(int fd, const char *name) {
   struct stat sb;
-  if (fstat(fd, &sb) == -1) throw ErrnoException(std::string("stat ") + name);
+  if (fstat(fd, &sb) == -1) UTIL_THROW(ErrnoException, "in stat " << name);
   return sb.st_size;
 }
 } // namespace
-
-ParseNumberException::ParseNumberException(StringPiece value) throw() {
-  what_ = "Could not parse \"";
-  what_.append(value.data(), value.length());
-  what_ += "\" into a float.";
-}
 
 FilePiece::FilePiece(const char *name, off_t min_buffer) : 
   file_(OpenOrThrow(name)), total_size_(SizeOrThrow(file_.get(), name)), page_(sysconf(_SC_PAGE_SIZE)) {
@@ -126,7 +129,7 @@ void FilePiece::Shift() throw(EndOfFileException) {
   }
   data_.reset();
   data_.reset(mmap(NULL, mapped_size, PROT_READ, MAP_PRIVATE, *file_, mapped_offset_), mapped_size);
-  if (data_.get() == MAP_FAILED) throw ErrnoException("mmap language model file for reading");
+  if (data_.get() == MAP_FAILED) UTIL_THROW(ErrnoException, "mmap language model file for reading")
   position_ = data_.begin() + ignore;
   position_end_ = data_.begin() + mapped_size;
   for (last_space_ = position_end_ - 1; last_space_ >= position_; --last_space_) {

@@ -12,8 +12,8 @@ void Vocabulary::SetSpecial(WordIndex begin_sentence, WordIndex end_sentence, Wo
   end_sentence_ = end_sentence;
   not_found_ = not_found;
   available_ = available;
-  if (begin_sentence_ == not_found_) throw BeginSentenceMissingException();
-  if (end_sentence_ == not_found_) throw EndSentenceMissingException();
+  if (begin_sentence_ == not_found_) throw SpecialWordMissingException("<s>");
+  if (end_sentence_ == not_found_) throw SpecialWordMissingException("</s>");
 }
 
 Model::~Model() {}

@@ -1,9 +1,8 @@
 #ifndef LM_ARPA_IO_H__
 #define LM_ARPA_IO_H__
 /* Input and output for ARPA format language model files.
- * TODO: throw exceptions instead of using err.  
  */
-
+#include "util/exception.hh"
 #include "util/string_piece.hh"
 #include "util/tokenize_piece.hh"
 
@@ -24,7 +23,7 @@ namespace util { class FilePiece; }
 
 namespace lm {
 
-class ARPAInputException : public std::exception {
+class ARPAInputException : public util::Exception {
   public:
     explicit ARPAInputException(const StringPiece &message) throw();
     explicit ARPAInputException(const StringPiece &message, const StringPiece &line) throw();

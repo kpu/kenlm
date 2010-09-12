@@ -6,7 +6,6 @@
 #include "util/probing_hash_table.hh"
 #include "util/scoped.hh"
 
-#include <boost/lexical_cast.hpp>
 #include <boost/progress.hpp>
 
 #include <algorithm>
@@ -52,9 +51,9 @@ template <class Search> WordIndex GenericVocabulary<Search>::Insert(const String
 template <class Search> void GenericVocabulary<Search>::FinishedLoading() {
   lookup_.FinishedInserting();
   typename Lookup::ConstIterator begin, end;
-  if (expected_available_ != available_) throw UnknownMissingException();
-  if (!lookup_.Find(Hash("<s>"), begin)) throw BeginSentenceMissingException();
-  if (!lookup_.Find(Hash("</s>"), end)) throw EndSentenceMissingException();
+  if (expected_available_ != available_) throw SpecialWordMissingException("<unk>");
+  if (!lookup_.Find(Hash("<s>"), begin)) throw SpecialWordMissingException("<s>");
+  if (!lookup_.Find(Hash("</s>"), end)) throw SpecialWordMissingException("</s>");
   SetSpecial(begin->GetValue(), end->GetValue(), kNotFound, available_);
 }
 
@@ -83,32 +82,34 @@ template <class Voc> void Read1Grams(util::FilePiece &f, const size_t count, Voc
   for (size_t i = 0; i < count; ++i, ++progress) {
     try {
       float prob = f.ReadFloat();
-      if (f.get() != '\t')
-        throw FormatLoadException("Expected tab after probability");
+      if (f.get() != '\t') UTIL_THROW(FormatLoadException, "Expected tab after probability");
       ProbBackoff &value = unigrams[vocab.Insert(f.ReadDelimited())];
       value.prob = prob;
       switch (f.get()) {
         case '\t':
           value.SetBackoff(f.ReadFloat());
-          if ((f.get() != '\n')) throw FormatLoadException("Expected newline after backoff");
+          if ((f.get() != '\n')) UTIL_THROW(FormatLoadException, "Expected newline after backoff");
           break;
         case '\n':
           value.ZeroBackoff();
           break;
         default:
-          throw FormatLoadException("Expected tab or newline after unigram");
+          UTIL_THROW(FormatLoadException, "Expected tab or newline after unigram");
       }
-    } catch (const std::exception &f) {
-      throw FormatLoadException("Error reading the " + boost::lexical_cast<std::string>(i) + "th 1-gram.  " + f.what());
+     } catch(util::Exception &e) {
+      e << " in the " << i << "th 1-gram at byte " << f.Offset();
+      throw;
     }
   }
-  if (f.ReadLine().size()) throw FormatLoadException("Blank line after ngrams not blank");
+  if (f.ReadLine().size()) UTIL_THROW(FormatLoadException, "Expected blank line after unigrams at byte " << f.Offset());
   vocab.FinishedLoading();
 }
 
 template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, Store &store) {
   ReadNGramHeader(f, n);
-  boost::progress_display progress(count, std::cerr, std::string("Loading ") + boost::lexical_cast<std::string>(n) + "-grams\n");
+  std::stringstream loading_message;
+  loading_message << "Loading " << n << "-grams\n";
+  boost::progress_display progress(count, std::cerr, loading_message.str());
 
   // vocab ids of words in reverse order
   WordIndex vocab_ids[n];
@@ -124,30 +125,31 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
       switch (f.get()) {
         case '\t':
           value.SetBackoff(f.ReadFloat());
+          if ((f.get() != '\n')) UTIL_THROW(FormatLoadException, "Expected newline after backoff");
           break;
         case '\n':
           value.ZeroBackoff();
           break;
         default:
-          throw FormatLoadException("Got unexpected delimiter before backoff weight");
+          UTIL_THROW(FormatLoadException, "Expected tab or newline after unigram");
       }
       store.Insert(Store::Packing::Make(key, value));
-    } catch (const std::exception &f) {
-      throw FormatLoadException("Error reading the " + boost::lexical_cast<std::string>(i) + "th " + boost::lexical_cast<std::string>(n) + "-gram." + f.what());
+    } catch(util::Exception &e) {
+      e << " in the " << i << "th " << n << "-gram at byte " << f.Offset();
+      throw;
     }
   }
 
-  if (f.ReadLine().size()) throw FormatLoadException("Blank line after ngrams not blank");
+  if (f.ReadLine().size()) UTIL_THROW(FormatLoadException, "Expected blank line after " << n << "-grams at byte " << f.Offset());
   store.FinishedInserting();
 }
 
 void Prob::SetBackoff(float to) {
-  throw FormatLoadException("Attempt to set backoff " + boost::lexical_cast<std::string>(to) + " for an n-gram with longest order.");
+  UTIL_THROW(FormatLoadException, "Attempt to set backoff " << to << " for the highest order n-gram");
 }
 
 template <class Search> size_t GenericModel<Search>::Size(const typename Search::Init &search_init, const std::vector<size_t> &counts) {
-  if (counts.size() < 2)
-    throw FormatLoadException("This ngram implementation assumes at least a bigram model.");
+  if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
   size_t memory_size = GenericVocabulary<Search>::Size(search_init, counts[0]);
   memory_size += sizeof(ProbBackoff) * counts[0];
   for (unsigned char n = 2; n < counts.size(); ++n) {
@@ -163,13 +165,10 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, con
   std::vector<size_t> counts;
   ReadCounts(f, counts);
 
-  if (counts.size() < 2)
-    throw FormatLoadException("This ngram implementation assumes at least a bigram model.");
-  if (counts.size() > kMaxOrder)
-    throw FormatLoadException(std::string("Edit ngram.hh and change kMaxOrder to at least ") + boost::lexical_cast<std::string>(counts.size()));
+  if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit ngram.hh's kMaxOrder to at least this value and recompile.");
+  const size_t memory_size = Size(search_init, counts);
   unsigned char order = counts.size();
 
-  const size_t memory_size = Size(search_init, counts);
   memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0), memory_size);
   if (memory_.get() == MAP_FAILED) throw AllocateMemoryLoadException(memory_size);
 
@@ -189,10 +188,11 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, con
   longest_ = Longest(start, allocated);
   assert(static_cast<size_t>(start + allocated - reinterpret_cast<char*>(memory_.get())) == memory_size);
 
-  LoadFromARPA(f, counts);
-
-  if (std::fabs(unigram_[GenericVocabulary<Search>::kNotFound].backoff) > 0.0000001) {
-    throw FormatLoadException(std::string("Backoff for unknown word with index is ") + boost::lexical_cast<std::string>(unigram_[GenericVocabulary<Search>::kNotFound].backoff) + std::string(" not zero"));
+  try {
+    LoadFromARPA(f, counts);
+  } catch (FormatLoadException &e) {
+    e << " in file " << file;
+    throw;
   }
 
   // g++ prints warnings unless these are fully initialized.  
@@ -214,6 +214,7 @@ template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece 
     ReadNGrams(f, n, counts[n-1], vocab_, middle_[n-2]);
   }
   ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab_, longest_);
+  if (std::fabs(unigram_[GenericVocabulary<Search>::kNotFound].backoff) > 0.0000001) UTIL_THROW(FormatLoadException, "Backoff for unknown word should be zero, but was given as " << unigram_[GenericVocabulary<Search>::kNotFound].backoff);
 }
 
 /* Ugly optimized function.
