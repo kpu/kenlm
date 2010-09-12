@@ -1,7 +1,9 @@
 #include "util/scoped.hh"
 
+#include <assert.h>
 #include <err.h>
 #include <sys/mman.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 namespace util {
@@ -17,7 +19,7 @@ scoped_mmap::~scoped_mmap() {
   }
 }
 
-void scoped_mmap_or_array::internal_reset(void *data, std::size_t size, Alloc source) {
+void scoped_memory::reset(void *data, std::size_t size, Alloc source) {
   switch(source_) {
     case MMAP_ALLOCATED:
       scoped_mmap(data_, size_);
@@ -25,12 +27,25 @@ void scoped_mmap_or_array::internal_reset(void *data, std::size_t size, Alloc so
     case ARRAY_ALLOCATED:
       delete [] reinterpret_cast<char*>(data_);
       break;
-    case NONE:
+    case MALLOC_ALLOCATED:
+      free(data_);
+      break;
+    case NONE_ALLOCATED:
       break;
   }
   data_ = data;
   size_ = size;
   source_ = source;
+}
+
+void scoped_memory::call_realloc(std::size_t size) {
+  assert(source_ == MALLOC_ALLOCATED || source_ == NONE_ALLOCATED);
+  void *new_data = realloc(data_, size);
+  if (!new_data) {
+    reset();
+  } else {
+    reset(new_data, size, MALLOC_ALLOCATED);
+  }
 }
 
 } // namespace util

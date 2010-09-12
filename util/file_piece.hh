@@ -53,6 +53,11 @@ class FilePiece {
     off_t Offset() const {
       return position_ - data_.begin() + mapped_offset_;
     }
+
+    // Only for testing.  
+    void ForceFallbackToRead() {
+      fallback_to_read_ = true;
+    }
     
   private:
     StringPiece Consume(const char *to) {
@@ -64,6 +69,9 @@ class FilePiece {
     const char *FindDelimiterOrEOF() throw(EndOfFileException);
 
     void Shift() throw (EndOfFileException);
+    // Backends to Shift().
+    void MMapShift(off_t desired_begin) throw ();
+    void ReadShift(off_t desired_begin) throw ();
 
     const char *position_, *last_space_, *position_end_;
 
@@ -75,9 +83,10 @@ class FilePiece {
     off_t mapped_offset_;
 
     // Order matters: file_ should always be destroyed after this.
-    scoped_mmap data_;
+    scoped_memory data_;
 
     bool at_end_;
+    bool fallback_to_read_;
 
     ErsatzProgress progress_;
 };

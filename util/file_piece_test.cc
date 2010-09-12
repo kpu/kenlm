@@ -8,16 +8,32 @@
 namespace util {
 namespace {
 
-BOOST_AUTO_TEST_CASE(ReadLine) {
-  std::fstream ref("file_piece.hh", std::ios::in);
-  FilePiece test("file_piece.hh", 1);
+/* mmap implementation */
+BOOST_AUTO_TEST_CASE(MMapLine) {
+  std::fstream ref("file_piece.cc", std::ios::in);
+  FilePiece test("file_piece.cc", NULL, 1);
   std::string ref_line;
   while (getline(ref, ref_line)) {
     StringPiece test_line(test.ReadLine());
-    if (test_line != ref_line) {
-      std::cerr << test_line.size() << " " << ref_line.size() << std::endl;
+    // I submitted a bug report to ICU: http://bugs.icu-project.org/trac/ticket/7924
+    if (!test_line.empty() || !ref_line.empty()) {
+      BOOST_CHECK_EQUAL(ref_line, test_line);
     }
-    BOOST_CHECK_EQUAL(ref_line, test_line);
+  }
+}
+
+/* read() implementation */
+BOOST_AUTO_TEST_CASE(ReadLine) {
+  std::fstream ref("file_piece.cc", std::ios::in);
+  FilePiece test("file_piece.cc", NULL, 1);
+  test.ForceFallbackToRead();
+  std::string ref_line;
+  while (getline(ref, ref_line)) {
+    StringPiece test_line(test.ReadLine());
+    // I submitted a bug report to ICU: http://bugs.icu-project.org/trac/ticket/7924
+    if (!test_line.empty() || !ref_line.empty()) {
+      BOOST_CHECK_EQUAL(ref_line, test_line);
+    }
   }
 }
 

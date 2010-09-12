@@ -2,8 +2,11 @@
 
 #include "util/exception.hh"
 
+#include <iostream>
 #include <string>
+#include <limits>
 
+#include <assert.h>
 #include <cstdlib>
 #include <ctype.h>
 #include <fcntl.h>
@@ -29,22 +32,29 @@ int OpenOrThrow(const char *name) {
   if (ret == -1) UTIL_THROW(ErrnoException, "in open (" << name << ") for reading.");
   return ret;
 }
+const off_t kBadSize = std::numeric_limits<off_t>::max();
 
-off_t SizeOrThrow(int fd, const char *name) {
+off_t SizeFile(int fd) {
   struct stat sb;
-  if (fstat(fd, &sb) == -1) UTIL_THROW(ErrnoException, "in stat " << name);
+  if (fstat(fd, &sb) == -1) return kBadSize;
   return sb.st_size;
 }
 } // namespace
 
 FilePiece::FilePiece(const char *name, std::ostream *show_progress, off_t min_buffer) : 
-  file_(OpenOrThrow(name)), total_size_(SizeOrThrow(file_.get(), name)), page_(sysconf(_SC_PAGE_SIZE)),
-  progress_(show_progress, std::string("Reading ") + name, total_size_) {
-  
+  file_(OpenOrThrow(name)), total_size_(SizeFile(file_.get())), page_(sysconf(_SC_PAGE_SIZE)),
+  progress_(total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + name, total_size_) {
+  if (total_size_ == kBadSize) {
+    fallback_to_read_ = true;
+    if (show_progress) 
+      *show_progress << "Couldn't stat " << name << ".  Using slower read() instead of mmap().  No progress bar." << std::endl;
+  } else {
+    fallback_to_read_ = false;
+  }
   default_map_size_ = page_ * std::max<off_t>((min_buffer / page_ + 1), 2);
   position_ = NULL;
   position_end_ = NULL;
-  mapped_offset_ = data_.begin() - position_end_;
+  mapped_offset_ = 0;
   at_end_ = false;
   Shift();
 }
@@ -53,6 +63,7 @@ float FilePiece::ReadFloat() throw(EndOfFileException, ParseNumberException) {
   SkipSpaces();
   while (last_space_ < position_) {
     if (at_end_) {
+      // Hallucinate a null off the end of the file.
       std::string buffer(position_, position_end_);
       char *end;
       float ret = std::strtof(buffer.c_str(), &end);
@@ -113,28 +124,82 @@ void FilePiece::Shift() throw(EndOfFileException) {
   if (at_end_) throw EndOfFileException();
   off_t desired_begin = position_ - data_.begin() + mapped_offset_;
   progress_.Set(desired_begin);
+
+  if (!fallback_to_read_) MMapShift(desired_begin);
+  // Notice an mmap failure might set the fallback.  
+  if (fallback_to_read_) ReadShift(desired_begin);
+
+  for (last_space_ = position_end_ - 1; last_space_ >= position_; --last_space_) {
+    if (isspace(*last_space_))  break;
+  }
+}
+
+void FilePiece::MMapShift(off_t desired_begin) throw() {
+  // Use mmap.  
   off_t ignore = desired_begin % page_;
   // Duplicate request for Shift means give more data.  
   if (position_ == data_.begin() + ignore) {
     default_map_size_ *= 2;
   }
-  mapped_offset_ = desired_begin - ignore;
+  // Local version so that in case of failure it doesn't overwrite the class variable.  
+  off_t mapped_offset = desired_begin - ignore;
 
   off_t mapped_size;
-  if (default_map_size_ >= total_size_ - mapped_offset_) {
+  if (default_map_size_ >= total_size_ - mapped_offset) {
     at_end_ = true;
-    mapped_size = total_size_ - mapped_offset_;
+    mapped_size = total_size_ - mapped_offset;
   } else {
     mapped_size = default_map_size_;
   }
+
+  // Forcibly clear the existing mmap first.  
   data_.reset();
-  data_.reset(mmap(NULL, mapped_size, PROT_READ, MAP_PRIVATE, *file_, mapped_offset_), mapped_size);
-  if (data_.get() == MAP_FAILED) UTIL_THROW(ErrnoException, "mmap language model file for reading")
+  data_.reset(mmap(NULL, mapped_size, PROT_READ, MAP_PRIVATE, *file_, mapped_offset), mapped_size, scoped_memory::MMAP_ALLOCATED);
+  if (data_.get() == MAP_FAILED) {
+    fallback_to_read_ = true;
+    return;
+  }
+  mapped_offset_ = mapped_offset;
   position_ = data_.begin() + ignore;
   position_end_ = data_.begin() + mapped_size;
-  for (last_space_ = position_end_ - 1; last_space_ >= position_; --last_space_) {
-    if (isspace(*last_space_))  break;
+}
+
+void FilePiece::ReadShift(off_t desired_begin) throw() {
+  assert(fallback_to_read_);
+  if (data_.source() != scoped_memory::MALLOC_ALLOCATED) {
+    // First call.
+    data_.reset();
+    data_.reset(malloc(default_map_size_), default_map_size_, scoped_memory::MALLOC_ALLOCATED);
+    if (!data_.get()) UTIL_THROW(ErrnoException, "malloc failed for " << default_map_size_);
+    position_ = data_.begin();
+    position_end_ = position_;
+  } else if (position_ && (position_ == data_.begin()) && (position_end_ == data_.end())) {
+    // If we've already fallen back, this is a duplicate call, and the buffer
+    // is full, increase buffer size.  
+    std::size_t valid_length = position_end_ - position_;
+    default_map_size_ *= 2;
+    data_.call_realloc(default_map_size_);
+    if (!data_.get()) UTIL_THROW(ErrnoException, "realloc failed for " << default_map_size_);
+    position_ = data_.begin();
+    position_end_ = position_ + valid_length;
   }
+
+  // Bytes [data_.begin(), position_) have been consumed.  
+  // Bytes [position_, position_end_) have been read into the buffer.  
+
+  // Start at the beginning of the buffer if there's nothing useful in it.  
+  if (position_ == position_end_) {
+    mapped_offset_ += (position_end_ - data_.begin());
+    position_ = data_.begin();
+    position_end_ = position_;
+  }
+
+  std::size_t already_read = position_end_ - data_.begin();
+  assert(already_read < default_map_size_);
+  ssize_t read_return = read(file_.get(), static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
+  if (read_return == -1) UTIL_THROW(ErrnoException, "read failed");
+  if (read_return == 0) at_end_ = true;
+  position_end_ += read_return;
 }
 
 } // namespace util
