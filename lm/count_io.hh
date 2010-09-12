@@ -1,5 +1,5 @@
-#ifndef LM_COUNT_IO_H__
-#define LM_COUNT_IO_H__
+#ifndef LM_COUNT_IO__
+#define LM_COUNT_IO__
 
 #include <fstream>
 #include <string>
@@ -87,4 +87,4 @@ template <class Output> void ReadCount(std::istream &in_file, Output &out) {
 
 } // namespace lm
 
-#endif // LM_COUNT_IO_H__
+#endif // LM_COUNT_IO__

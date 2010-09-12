@@ -1,5 +1,5 @@
-#ifndef LM_EXCEPTION_HH__
-#define LM_EXCEPTION_HH__
+#ifndef LM_EXCEPTION__
+#define LM_EXCEPTION__
 
 #include "util/exception.hh"
 #include "util/string_piece.hh"

@@ -1,5 +1,5 @@
-#ifndef LM_ARPA_IO_H__
-#define LM_ARPA_IO_H__
+#ifndef LM_ARPA_IO__
+#define LM_ARPA_IO__
 /* Input and output for ARPA format language model files.
  */
 #include "util/exception.hh"
@@ -134,4 +134,4 @@ template <class Output> void ReadARPA(std::istream &in_lm, Output &out) {
 
 } // namespace lm
 
-#endif // LM_ARPA_IO_H__
+#endif // LM_ARPA_IO__
