@@ -197,6 +197,9 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 
 struct ProbingSearch {
   typedef float Init;
+
+  static const unsigned char kBinaryTag = 1;
+
   template <class Value> struct Table {
     typedef util::ByteAlignedPacking<uint64_t, Value> Packing;
     typedef util::ProbingHashTable<Packing, IdentityHash> T;
@@ -206,6 +209,8 @@ struct ProbingSearch {
 struct SortedUniformSearch {
   // This is ignored.
   typedef float Init;
+
+  static const unsigned char kBinaryTag = 2;
 
   template <class Value> struct Table {
     typedef util::ByteAlignedPacking<uint64_t, Value> Packing;

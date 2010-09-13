@@ -45,9 +45,9 @@ struct Config {
 
   // Defaults. 
   Config() :
+    messages(&std::cerr),
     unknown_missing(COMPLAIN),
     unknown_missing_prob(0.0),
-    messages(&std::cerr),
     probing_multiplier(1.5),
     write_mmap(NULL),
     prefault(false) {}
