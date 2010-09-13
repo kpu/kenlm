@@ -169,7 +169,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     // itself.  
     static size_t Size(const std::vector<size_t> &counts, const Config &config = Config());
 
-    GenericModel(const char *file, const Config &config = Config());
+    GenericModel(const char *file, Config config = Config());
 
     FullScoreReturn FullScore(const State &in_state, const WordIndex new_word, State &out_state) const;
 

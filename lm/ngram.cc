@@ -250,10 +250,6 @@ bool IsBinaryFormat(int fd, off_t size) {
   return false;
 }
 
-std::size_t BinaryCountsSize(unsigned char order) {
-  return 1 + sizeof(uint64_t) * order;
-}
-
 std::size_t Align8(std::size_t in) {
   std::size_t off = in % 8;
   if (!off) return in;
@@ -261,23 +257,23 @@ std::size_t Align8(std::size_t in) {
 }
 
 std::size_t TotalHeaderSize(unsigned int order) {
-  return Align8(sizeof(BinaryFileHeader) + BinaryCountsSize(order));;
+  return Align8(sizeof(BinaryFileHeader) + 1 + sizeof(uint64_t) * order + sizeof(float));
 }
 
-const char *ReadBinaryCounts(off_t remaining, const void *from, std::vector<size_t> &out) {
+void ReadBinaryCountsAndProbing(off_t remaining, const void *from, std::vector<size_t> &out, float &probing_multiplier) {
   const char *from_char = reinterpret_cast<const char*>(from);
   if (remaining < 1) UTIL_THROW(FormatLoadException, "File too short to have count information.");
   unsigned char order = *reinterpret_cast<const unsigned char*>(from_char);
-  if (remaining + 1 < static_cast<off_t>(sizeof(uint64_t) * order)) UTIL_THROW(FormatLoadException, "File too short to have count information.");
+  if (remaining + 1 < static_cast<off_t>(sizeof(uint64_t) * order + sizeof(float))) UTIL_THROW(FormatLoadException, "File too short to have full header.");
   out.resize(static_cast<std::size_t>(order));
   const uint64_t *counts = reinterpret_cast<const uint64_t*>(from_char + 1);
   for (std::size_t i = 0; i < out.size(); ++i) {
     out[i] = static_cast<std::size_t>(counts[i]);
   }
-  return from_char + BinaryCountsSize(out.size());
+  probing_multiplier = *(reinterpret_cast<const float*>(counts + out.size()));
 }
 
-void WriteBinaryHeader(void *to, const std::vector<size_t> &from) {
+void WriteBinaryHeader(void *to, const std::vector<size_t> &from, float probing_multiplier) {
   BinaryFileHeader header = BinaryFileHeader();
   header.SetToReference();
   memcpy(to, &header, sizeof(BinaryFileHeader));
@@ -287,9 +283,10 @@ void WriteBinaryHeader(void *to, const std::vector<size_t> &from) {
   for (std::size_t i = 0; i < from.size(); ++i) {
     counts[i] = from[i];
   }
+  *(reinterpret_cast<float*>(counts + from.size())) = probing_multiplier;
 }
 
-template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) : mapped_file_(util::OpenReadOrThrow(file)) {
+template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, Config config) : mapped_file_(util::OpenReadOrThrow(file)) {
   const off_t file_size = util::SizeFile(mapped_file_.get());
 
   std::vector<size_t> counts;
@@ -298,7 +295,8 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
     memory_.reset(mmap(NULL, file_size, PROT_READ, (config.prefault ? MAP_POPULATE : 0) | MAP_FILE | MAP_PRIVATE, mapped_file_.get(), 0), file_size);
     if (MAP_FAILED == memory_.get()) UTIL_THROW(util::ErrnoException, "Couldn't mmap the whole " << file);
 
-    ReadBinaryCounts(file_size - sizeof(BinaryFileHeader), memory_.begin() + sizeof(BinaryFileHeader), counts);
+    ReadBinaryCountsAndProbing(file_size - sizeof(BinaryFileHeader), memory_.begin() + sizeof(BinaryFileHeader), counts, config.probing_multiplier);
+    if (config.probing_multiplier < 1.0) UTIL_THROW(FormatLoadException, "Binary format claims to have a probing multiplier of " << config.probing_multiplier << " which is < 1.0.");
     size_t memory_size = Size(counts, config);
 
     char *start = reinterpret_cast<char*>(memory_.get()) + TotalHeaderSize(counts.size());
@@ -312,6 +310,7 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
     longest_.LoadedBinary();
 
   } else {
+    if (config.probing_multiplier <= 1.0) UTIL_THROW(FormatLoadException, "probing multiplier must be > 1.0");
 
     util::FilePiece f(file, mapped_file_.release(), config.messages);
     ReadCounts(f, counts);
@@ -327,7 +326,7 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
       if (-1 == ftruncate(mapped_file_.get(), total_size)) UTIL_THROW(util::ErrnoException, "ftruncate on " << config.write_mmap << " to " << total_size << " failed.");
       memory_.reset(mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, mapped_file_.get(), 0), total_size);
       if (memory_.get() == MAP_FAILED) UTIL_THROW(util::ErrnoException, "Failed to mmap " << config.write_mmap);
-      WriteBinaryHeader(memory_.get(), counts);
+      WriteBinaryHeader(memory_.get(), counts, config.probing_multiplier);
       start = reinterpret_cast<char*>(memory_.get()) + TotalHeaderSize(counts.size());
     } else {
       memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0), memory_size);
