@@ -48,10 +48,10 @@
 #ifndef BASE_STRING_PIECE_H__
 #define BASE_STRING_PIECE_H__
 
-#define USE_ICU
-
 #include <cstring>
 #include <iosfwd>
+
+#define USE_ICU
 
 #ifdef USE_ICU
 #include <unicode/stringpiece.h>
@@ -193,7 +193,12 @@ class StringPiece {
   }
 };
 
-bool operator==(const StringPiece& x, const StringPiece& y);
+inline bool operator==(const StringPiece& x, const StringPiece& y) {
+  if (x.size() != y.size())
+    return false;
+
+  return std::memcmp(x.data(), y.data(), x.size()) == 0;
+}
 
 inline bool operator!=(const StringPiece& x, const StringPiece& y) {
   return !(x == y);
