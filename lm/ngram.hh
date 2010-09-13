@@ -111,7 +111,8 @@ class SortedVocabulary : public base::Vocabulary {
 
     WordIndex Insert(const StringPiece &str);
 
-    void FinishedLoading(detail::ProbBackoff *reorder_vocab);
+    // Returns true if unknown was seen.  Reorders reorder_vocab so that the IDs are sorted.  
+    bool FinishedLoading(detail::ProbBackoff *reorder_vocab);
 
   private:
     Entry *begin_, *end_;
@@ -140,7 +141,8 @@ template <class Search> class MapVocabulary : public base::Vocabulary {
 
     WordIndex Insert(const StringPiece &str);
 
-    void FinishedLoading(ProbBackoff *reorder_vocab);
+    // Returns true if unknown was seen.  Does nothing with reorder_vocab.  
+    bool FinishedLoading(ProbBackoff *reorder_vocab);
 
   private:
     typedef typename Search::template Table<WordIndex>::T Lookup;
@@ -170,7 +172,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     FullScoreReturn FullScore(const State &in_state, const WordIndex new_word, State &out_state) const;
 
   private:
-    void LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts);
+    void LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts, const Config &config);
 
     // memory_ is the raw block of memory backing vocab_, unigram_, [middle.begin(), middle.end()), and longest_.  
     util::scoped_mmap memory_;

@@ -57,10 +57,10 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
   return end_ - begin_;
 }
 
-void SortedVocabulary::FinishedLoading(detail::ProbBackoff *reorder_vocab) {
+bool SortedVocabulary::FinishedLoading(detail::ProbBackoff *reorder_vocab) {
   util::JointSort(begin_, end_, reorder_vocab + 1);
-  if (!saw_unk_) throw SpecialWordMissingException("<unk>");
   SetSpecial(Index("<s>"), Index("</s>"), 0, end_ - begin_ + 1);
+  return saw_unk_;
 }
 
 namespace detail {
@@ -86,10 +86,10 @@ template <class Search> WordIndex MapVocabulary<Search>::Insert(const StringPiec
   }
 }
 
-template <class Search> void MapVocabulary<Search>::FinishedLoading(ProbBackoff *reorder_vocab) {
+template <class Search> bool MapVocabulary<Search>::FinishedLoading(ProbBackoff *reorder_vocab) {
   lookup_.FinishedInserting();
-  if (!saw_unk_) throw SpecialWordMissingException("<unk>");
   SetSpecial(Index("<s>"), Index("</s>"), 0, available_);
+  return saw_unk_;
 }
 
 /* All of the entropy is in low order bits and boost::hash does poorly with
@@ -177,7 +177,7 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
 template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<size_t> &counts, const Config &config) {
   if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
   size_t memory_size = VocabularyT::Size(counts[0], config.probing_multiplier);
-  memory_size += sizeof(ProbBackoff) * counts[0];
+  memory_size += sizeof(ProbBackoff) * (counts[0] + 1); // +1 for hallucinate <unk>
   for (unsigned char n = 2; n < counts.size(); ++n) {
     memory_size += Middle::Size(counts[n - 1], config.probing_multiplier);
   }
@@ -186,7 +186,7 @@ template <class Search, class VocabularyT> size_t GenericModel<Search, Vocabular
 }
 
 template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) {
-  util::FilePiece f(file, &std::cerr);
+  util::FilePiece f(file, config.messages);
 
   std::vector<size_t> counts;
   ReadCounts(f, counts);
@@ -204,7 +204,7 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   vocab_.Init(start, allocated, counts[0]);
   start += allocated;
   unigram_ = reinterpret_cast<ProbBackoff*>(start);
-  start += sizeof(ProbBackoff) * counts[0];
+  start += sizeof(ProbBackoff) * (counts[0] + 1);
   for (unsigned int n = 2; n < order; ++n) {
     allocated = Middle::Size(counts[n - 1], config.probing_multiplier);
     middle_.push_back(Middle(start, allocated));
@@ -215,7 +215,7 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   assert(static_cast<size_t>(start + allocated - reinterpret_cast<char*>(memory_.get())) == memory_size);
 
   try {
-    LoadFromARPA(f, counts);
+    LoadFromARPA(f, counts, config);
   } catch (FormatLoadException &e) {
     e << " in file " << file;
     throw;
@@ -231,10 +231,28 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   P::Init(begin_sentence, null_context, vocab_, order);
 }
 
-template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts) {
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts, const Config &config) {
   // Read the unigrams.
   Read1Grams(f, counts[0], vocab_, unigram_);
-  vocab_.FinishedLoading(unigram_);
+  bool saw_unk = vocab_.FinishedLoading(unigram_);
+  if (!saw_unk) {
+    switch(config.unknown_missing) {
+      case Config::THROW_UP:
+        {
+          SpecialWordMissingException e("<unk>");
+          e << " and configuration was set to throw if unknown is missing.";
+          throw e;
+        }
+      case Config::COMPLAIN:
+        if (config.messages) *config.messages << "Language model is missing <unk>.  Substituting probability " << config.unknown_missing_prob << "." << std::endl; 
+        // There's no break;.  This is by design.  
+      case Config::SILENT:
+        // Default probabilities for unknown.  
+        unigram_[0].backoff = 0.0;
+        unigram_[0].prob = config.unknown_missing_prob;
+        break;
+    }
+  }
   
   // Read the n-grams.
   for (unsigned int n = 2; n < counts.size(); ++n) {
