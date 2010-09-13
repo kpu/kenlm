@@ -118,7 +118,7 @@ uint64_t MurmurHash64B ( const void * key, std::size_t len, unsigned int seed )
   return h;
 }
 
-uint64_t MurmurHashNative(const void * key, unsigned int len, unsigned int seed = 0) {
+uint64_t MurmurHashNative(const void * key, unsigned int len, unsigned int seed) {
   if (sizeof(int) == 4) {
     return MurmurHash64B(key, len, seed);
   } else {
