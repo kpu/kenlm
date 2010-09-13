@@ -10,7 +10,7 @@ BOOST_AUTO_TEST_CASE(just_flip) {
   int values[2];
   keys[0] = 1; values[0] = 327;
   keys[1] = 0; values[1] = 87897;
-  JointSort<char *, int *, std::less<char> >(keys + 0, keys + 2, values + 0);
+  JointSort<char *, int *>(keys + 0, keys + 2, values + 0);
   BOOST_CHECK_EQUAL(0, keys[0]);
   BOOST_CHECK_EQUAL(87897, values[0]);
   BOOST_CHECK_EQUAL(1, keys[1]);
@@ -23,7 +23,7 @@ BOOST_AUTO_TEST_CASE(three) {
   keys[0] = 1; values[0] = 327;
   keys[1] = 2; values[1] = 87897;
   keys[2] = 0; values[2] = 10;
-  JointSort<char *, int *, std::less<char> >(keys + 0, keys + 3, values + 0);
+  JointSort<char *, int *>(keys + 0, keys + 3, values + 0);
   BOOST_CHECK_EQUAL(0, keys[0]);
   BOOST_CHECK_EQUAL(1, keys[1]);
   BOOST_CHECK_EQUAL(2, keys[2]);
@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(char_int) {
   keys[1] = 1; values[1] = 87897;
   keys[2] = 2; values[2] = 10;
   keys[3] = 0; values[3] = 24347;
-  JointSort<char *, int *, std::less<char> >(keys + 0, keys + 4, values + 0);
+  JointSort<char *, int *>(keys + 0, keys + 4, values + 0);
   BOOST_CHECK_EQUAL(0, keys[0]);
   BOOST_CHECK_EQUAL(24347, values[0]);
   BOOST_CHECK_EQUAL(1, keys[1]);
