@@ -76,6 +76,7 @@ BOOST_AUTO_TEST_CASE(write_and_read_probing) {
 BOOST_AUTO_TEST_CASE(write_and_read_sorted) {
   Config config;
   config.write_mmap = "test.binary";
+  config.prefault = true;
   {
     SortedModel copy_model("test.arpa", config);
   }

@@ -295,7 +295,7 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   std::vector<size_t> counts;
 
   if (IsBinaryFormat(mapped_file_.get(), file_size)) {
-    memory_.reset(mmap(NULL, file_size, PROT_READ, MAP_FILE | MAP_PRIVATE, mapped_file_.get(), 0), file_size);
+    memory_.reset(mmap(NULL, file_size, PROT_READ, (config.prefault ? MAP_POPULATE : 0) | MAP_FILE | MAP_PRIVATE, mapped_file_.get(), 0), file_size);
     if (MAP_FAILED == memory_.get()) UTIL_THROW(util::ErrnoException, "Couldn't mmap the whole " << file);
 
     ReadBinaryCounts(file_size - sizeof(BinaryFileHeader), memory_.begin() + sizeof(BinaryFileHeader), counts);
