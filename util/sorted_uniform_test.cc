@@ -32,15 +32,16 @@ template <class Map, class Key, class Value> void Check(const Map &map, const bo
 typedef SortedUniformMap<AlignedPacking<uint64_t, uint32_t> > TestMap;
 
 BOOST_AUTO_TEST_CASE(empty) {
-  TestMap map(NULL, 0);
+  char buf[TestMap::Size(0)];
+  TestMap map(buf, TestMap::Size(0));
   map.FinishedInserting();
   TestMap::ConstIterator i;
   BOOST_CHECK(!map.Find(42, i));
 }
 
 BOOST_AUTO_TEST_CASE(one) {
-  char buf[sizeof(Entry<uint64_t, uint32_t>)];
-  TestMap map(buf, 1);
+  char buf[TestMap::Size(1)];
+  TestMap map(buf, sizeof(buf));
   Entry<uint64_t, uint32_t> e;
   e.Set(42,2);
   map.Insert(e);
