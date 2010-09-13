@@ -119,10 +119,15 @@ template <class Proxy, class Less> class LessWrapper : public std::binary_functi
 
 } // namespace detail
 
-template <class KeyIter, class ValueIter, class Less> void JointSort(const KeyIter &key_begin, const KeyIter &key_end, const ValueIter &value_begin, const Less &less = Less()) {
+template <class KeyIter, class ValueIter, class Less> void JointSort(const KeyIter &key_begin, const KeyIter &key_end, const ValueIter &value_begin, const Less &less) {
   ProxyIterator<detail::JointProxy<KeyIter, ValueIter> > full_begin(detail::JointProxy<KeyIter, ValueIter>(key_begin, value_begin));
   detail::LessWrapper<detail::JointProxy<KeyIter, ValueIter>, Less> less_wrap(less);
   std::sort(full_begin, full_begin + (key_end - key_begin), less_wrap);
+}
+
+
+template <class KeyIter, class ValueIter> void JointSort(const KeyIter &key_begin, const KeyIter &key_end, const ValueIter &value_begin) {
+  JointSort(key_begin, key_end, value_begin, std::less<typename std::iterator_traits<KeyIter>::value_type>());
 }
 
 } // namespace util

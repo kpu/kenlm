@@ -3,12 +3,9 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <functional>
 
 #include <assert.h>
 #include <inttypes.h>
-
-#include <iostream>
 
 namespace util {
 
@@ -105,7 +102,6 @@ template <class PackingT> class SortedUniformMap {
       assert(!loaded_);
       loaded_ = true;
 #endif
-      // Such a short line.  So much work.  Most of the iterator proxy stuff for this.   
       std::sort(begin_, end_);
     }
 

@@ -3,6 +3,7 @@
 #include "lm/arpa_io.hh"
 #include "lm/exception.hh"
 #include "util/file_piece.hh"
+#include "util/joint_sort.hh"
 #include "util/probing_hash_table.hh"
 #include "util/scoped.hh"
 
@@ -24,35 +25,71 @@ namespace lm {
 namespace ngram {
 namespace detail {
 
-// Sadly some LMs have <UNK>.  
-template <class Search> GenericVocabulary<Search>::GenericVocabulary() : hash_unk_(Hash("<unk>")), hash_unk_cap_(Hash("<UNK>")) {}
-
-template <class Search> void GenericVocabulary<Search>::Init(void *start, std::size_t allocated, std::size_t entries) {
-  lookup_ = Lookup(start, allocated);
-  assert(kNotFound == 0);
-  available_ = kNotFound + 1;
-  // Later if available_ != expected_available_ then we can throw UnknownMissingException.
-  expected_available_ = entries;
+void Prob::SetBackoff(float to) {
+  UTIL_THROW(FormatLoadException, "Attempt to set backoff " << to << " for the highest order n-gram");
 }
 
-template <class Search> WordIndex GenericVocabulary<Search>::Insert(const StringPiece &str) {
-  uint64_t hashed = Hash(str);
+// Normally static initialization is a bad idea but MurmurHash is pure arithmetic, so this is ok.  
+const uint64_t kUnknownHash = HashForVocab("<unk>", 5);
+// Sadly some LMs have <UNK>.  
+const uint64_t kUnknownCapHash = HashForVocab("<UNK>", 5);
+
+} // namespace detail
+
+SortedVocabulary::SortedVocabulary() : begin_(NULL), end_(NULL) {}
+
+void SortedVocabulary::Init(void *start, std::size_t allocated, std::size_t entries) {
+  assert(allocated >= Size(float(), entries));
+  begin_ = reinterpret_cast<Entry*>(start);
+  end_ = begin_;
+  saw_unk_ = false;
+}
+
+WordIndex SortedVocabulary::Insert(const StringPiece &str) {
+  uint64_t hashed = detail::HashForVocab(str);
+  if (hashed == detail::kUnknownHash || hashed == detail::kUnknownCapHash) {
+    saw_unk_ = true;
+    return 0;
+  }
+  end_->key = hashed;
+  ++end_;
+  // This is 1 + the offset where it was inserted to make room for unk.  
+  return end_ - begin_;
+}
+
+void SortedVocabulary::FinishedLoading(detail::ProbBackoff *reorder_vocab) {
+  util::JointSort(begin_, end_, reorder_vocab + 1);
+  if (!saw_unk_) throw SpecialWordMissingException("<unk>");
+  SetSpecial(Index("<s>"), Index("</s>"), 0, end_ - begin_ + 1);
+}
+
+namespace detail {
+
+template <class Search> MapVocabulary<Search>::MapVocabulary() {}
+
+template <class Search> void MapVocabulary<Search>::Init(void *start, std::size_t allocated, std::size_t entries) {
+  lookup_ = Lookup(start, allocated);
+  available_ = 1;
+  // Later if available_ != expected_available_ then we can throw UnknownMissingException.
+  saw_unk_ = false;
+}
+
+template <class Search> WordIndex MapVocabulary<Search>::Insert(const StringPiece &str) {
+  uint64_t hashed = HashForVocab(str);
   // Prevent unknown from going into the table.  
-  if (hashed == hash_unk_ || hashed == hash_unk_cap_) {
-    return kNotFound;
+  if (hashed == kUnknownHash || hashed == kUnknownCapHash) {
+    saw_unk_ = true;
+    return 0;
   } else {
     lookup_.Insert(Lookup::Packing::Make(hashed, available_));
     return available_++;
   }
 }
 
-template <class Search> void GenericVocabulary<Search>::FinishedLoading() {
+template <class Search> void MapVocabulary<Search>::FinishedLoading(ProbBackoff *reorder_vocab) {
   lookup_.FinishedInserting();
-  typename Lookup::ConstIterator begin, end;
-  if (expected_available_ != available_) throw SpecialWordMissingException("<unk>");
-  if (!lookup_.Find(Hash("<s>"), begin)) throw SpecialWordMissingException("<s>");
-  if (!lookup_.Find(Hash("</s>"), end)) throw SpecialWordMissingException("</s>");
-  SetSpecial(begin->GetValue(), end->GetValue(), kNotFound, available_);
+  if (!saw_unk_) throw SpecialWordMissingException("<unk>");
+  SetSpecial(Index("<s>"), Index("</s>"), 0, available_);
 }
 
 /* All of the entropy is in low order bits and boost::hash does poorly with
@@ -99,7 +136,6 @@ template <class Voc> void Read1Grams(util::FilePiece &f, const size_t count, Voc
     }
   }
   if (f.ReadLine().size()) UTIL_THROW(FormatLoadException, "Expected blank line after unigrams at byte " << f.Offset());
-  vocab.FinishedLoading();
 }
 
 template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, Store &store) {
@@ -138,13 +174,9 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
   store.FinishedInserting();
 }
 
-void Prob::SetBackoff(float to) {
-  UTIL_THROW(FormatLoadException, "Attempt to set backoff " << to << " for the highest order n-gram");
-}
-
-template <class Search> size_t GenericModel<Search>::Size(const typename Search::Init &search_init, const std::vector<size_t> &counts) {
+template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const typename Search::Init &search_init, const std::vector<size_t> &counts) {
   if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
-  size_t memory_size = GenericVocabulary<Search>::Size(search_init, counts[0]);
+  size_t memory_size = VocabularyT::Size(search_init, counts[0]);
   memory_size += sizeof(ProbBackoff) * counts[0];
   for (unsigned char n = 2; n < counts.size(); ++n) {
     memory_size += Middle::Size(search_init, counts[n - 1]);
@@ -153,7 +185,7 @@ template <class Search> size_t GenericModel<Search>::Size(const typename Search:
   return memory_size;
 }
 
-template <class Search> GenericModel<Search>::GenericModel(const char *file, const typename Search::Init &search_init) {
+template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const typename Search::Init &search_init) {
   util::FilePiece f(file, &std::cerr);
 
   std::vector<size_t> counts;
@@ -168,7 +200,7 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, con
 
   size_t allocated;
   char *start = static_cast<char*>(memory_.get());
-  allocated = GenericVocabulary<Search>::Size(search_init, counts[0]);
+  allocated = VocabularyT::Size(search_init, counts[0]);
   vocab_.Init(start, allocated, counts[0]);
   start += allocated;
   unigram_ = reinterpret_cast<ProbBackoff*>(start);
@@ -199,16 +231,17 @@ template <class Search> GenericModel<Search>::GenericModel(const char *file, con
   P::Init(begin_sentence, null_context, vocab_, order);
 }
 
-template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts) {
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts) {
   // Read the unigrams.
   Read1Grams(f, counts[0], vocab_, unigram_);
+  vocab_.FinishedLoading(unigram_);
   
   // Read the n-grams.
   for (unsigned int n = 2; n < counts.size(); ++n) {
     ReadNGrams(f, n, counts[n-1], vocab_, middle_[n-2]);
   }
   ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab_, longest_);
-  if (std::fabs(unigram_[GenericVocabulary<Search>::kNotFound].backoff) > 0.0000001) UTIL_THROW(FormatLoadException, "Backoff for unknown word should be zero, but was given as " << unigram_[GenericVocabulary<Search>::kNotFound].backoff);
+  if (std::fabs(unigram_[0].backoff) > 0.0000001) UTIL_THROW(FormatLoadException, "Backoff for unknown word should be zero, but was given as " << unigram_[0].backoff);
 }
 
 /* Ugly optimized function.
@@ -218,7 +251,7 @@ template <class Search> void GenericModel<Search>::LoadFromARPA(util::FilePiece 
  *
  * The search goes in increasing order of ngram length.  
  */
-template <class Search> FullScoreReturn GenericModel<Search>::FullScore(
+template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::FullScore(
     const State &in_state,
     const WordIndex new_word,
     State &out_state) const {
@@ -226,7 +259,7 @@ template <class Search> FullScoreReturn GenericModel<Search>::FullScore(
   FullScoreReturn ret;
   // This is end pointer passed to SumBackoffs.
   const ProbBackoff &unigram = unigram_[new_word];
-  if (new_word == GenericVocabulary<Search>::kNotFound) {
+  if (new_word == 0) {
     ret.ngram_length = out_state.valid_length_ = 0;
     // all of backoff.
     ret.prob = std::accumulate(
@@ -296,9 +329,8 @@ template <class Search> FullScoreReturn GenericModel<Search>::FullScore(
   return ret;
 }
 
-// This also instantiates GenericVocabulary.
-template class GenericModel<ProbingSearch>;
-template class GenericModel<SortedUniformSearch>;
+template class GenericModel<ProbingSearch, MapVocabulary<ProbingSearch> >;
+template class GenericModel<SortedUniformSearch, SortedVocabulary>;
 } // namespace detail
 } // namespace ngram
 } // namespace lm

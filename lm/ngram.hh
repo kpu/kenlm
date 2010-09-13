@@ -39,9 +39,10 @@ class State {
     }
 
     // You shouldn't need to touch anything below this line, but the members are public so FullState will qualify as a POD.  
-    unsigned char valid_length_;
-    float backoff_[kMaxOrder - 1];
+    // This order minimizes total size of the struct if WordIndex is 64 bit, float is 32 bit, and alignment of 64 bit integers is 64 bit.  
     WordIndex history_[kMaxOrder - 1];
+    float backoff_[kMaxOrder - 1];
+    unsigned char valid_length_;
 };
 
 inline size_t hash_value(const State &state) {
@@ -50,54 +51,15 @@ inline size_t hash_value(const State &state) {
 }
 
 namespace detail {
-// std::identity is an SGI extension :-(
-struct IdentityHash : public std::unary_function<uint64_t, size_t> {
-size_t operator()(uint64_t arg) const { return static_cast<size_t>(arg); }
-};
 
-template <class Search> class GenericVocabulary : public base::Vocabulary {
-  public:
-    GenericVocabulary();
-
-    /* This class forces unknown to zero.  The constructor starts vocab ids
-     * after this value.  The present hash function maps any string of 0s to 0.
-     * But that's fine because we never lookup a string of <unk>.  In short,
-     * don't change this.  
-     */
-    const static WordIndex kNotFound = 0;
-
-    WordIndex Index(const StringPiece &str) const {
-      typename Lookup::ConstIterator i;
-      return lookup_.Find(Hash(str), i) ? i->GetValue() : 0;
-    }
-
-    static size_t Size(const typename Search::Init &search_init, std::size_t entries) {
-      return Lookup::Size(search_init, entries);
-    }
-
-    // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
-    void Init(void *start, std::size_t allocated, std::size_t entries);
-
-    WordIndex Insert(const StringPiece &str);
-
-    void FinishedLoading();
-
-  private:
-    static uint64_t Hash(const StringPiece &str) {
-      // This proved faster than Boost's hash in speed trials: total load time Murmur 67090000, Boost 72210000
-      // Chose to use 64A instead of native so binary format will be portable across 64 and 32 bit.  
-      return util::MurmurHash64A(str.data(), str.length(), 0);
-    }
-
-    typedef typename Search::template Table<WordIndex>::T Lookup;
-    Lookup lookup_;
-
-    // Safety check to ensure we were provided with all the expected entries.  
-    std::size_t expected_available_;
-
-    // These could be static if I trusted the static initialization fiasco.
-    const uint64_t hash_unk_, hash_unk_cap_;
-};
+inline uint64_t HashForVocab(const char *str, std::size_t len) {
+  // This proved faster than Boost's hash in speed trials: total load time Murmur 67090000, Boost 72210000
+  // Chose to use 64A instead of native so binary format will be portable across 64 and 32 bit.  
+  return util::MurmurHash64A(str, len, 0);
+}
+inline uint64_t HashForVocab(const StringPiece &str) {
+  return HashForVocab(str.data(), str.length());
+}
 
 struct Prob {
   float prob;
@@ -112,10 +74,90 @@ struct ProbBackoff {
   void ZeroBackoff() { backoff = 0.0; }
 };
 
-// Should return the same results as SRI except ln instead of log10
-template <class Search> class GenericModel : public base::ModelFacade<GenericModel<Search>, State, GenericVocabulary<Search> > {
+} // namespace detail
+
+// Vocabulary based on sorted uniform find storing only uint64_t values and using their offsets as indices.  
+class SortedVocabulary : public base::Vocabulary {
   private:
-    typedef base::ModelFacade<GenericModel<Search>, State, GenericVocabulary<Search> > P;
+    // Sorted uniform requires a GetKey function.  
+    struct Entry {
+      uint64_t GetKey() const { return key; }
+      uint64_t key;
+      bool operator<(const Entry &other) const {
+        return key < other.key;
+      }
+    };
+  public:
+
+    SortedVocabulary();
+
+    WordIndex Index(const StringPiece &str) const {
+      const Entry *found;
+      if (util::SortedUniformFind<const Entry *, uint64_t>(begin_, end_, detail::HashForVocab(str), found)) {
+        return found - begin_ + 1; // +1 because <unk> is 0 and does not appear in the lookup table.
+      } else {
+        return 0;
+      }
+    }
+
+    // Ignores first argument for consistency with probing hash which has a float here.  
+    template <class Ignored> static size_t Size(const Ignored &ignored, std::size_t entries) {
+      return entries * sizeof(Entry);
+    }
+
+    // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
+    void Init(void *start, std::size_t allocated, std::size_t entries);
+
+    WordIndex Insert(const StringPiece &str);
+
+    void FinishedLoading(detail::ProbBackoff *reorder_vocab);
+
+  private:
+    Entry *begin_, *end_;
+
+    bool saw_unk_;
+};
+
+namespace detail {
+
+// Vocabulary storing a map from uint64_t to WordIndex.  
+template <class Search> class MapVocabulary : public base::Vocabulary {
+  public:
+    MapVocabulary();
+
+    WordIndex Index(const StringPiece &str) const {
+      typename Lookup::ConstIterator i;
+      return lookup_.Find(HashForVocab(str), i) ? i->GetValue() : 0;
+    }
+
+    static size_t Size(const typename Search::Init &search_init, std::size_t entries) {
+      return Lookup::Size(search_init, entries);
+    }
+
+    // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
+    void Init(void *start, std::size_t allocated, std::size_t entries);
+
+    WordIndex Insert(const StringPiece &str);
+
+    void FinishedLoading(ProbBackoff *reorder_vocab);
+
+  private:
+    typedef typename Search::template Table<WordIndex>::T Lookup;
+    Lookup lookup_;
+
+    bool saw_unk_;
+};
+
+// std::identity is an SGI extension :-(
+struct IdentityHash : public std::unary_function<uint64_t, size_t> {
+  size_t operator()(uint64_t arg) const { return static_cast<size_t>(arg); }
+};
+
+// Should return the same results as SRI.  
+// Why VocabularyT instead of just Vocabulary?  ModelFacade defines Vocabulary.  
+template <class Search, class VocabularyT> class GenericModel : public base::ModelFacade<GenericModel<Search, VocabularyT>, State, VocabularyT> {
+  private:
+    typedef base::ModelFacade<GenericModel<Search, VocabularyT>, State, VocabularyT> P;
   public:
     // Get the size of memory that will be mapped given ngram counts.  This
     // does not include small non-mapped control structures, such as this class
@@ -132,7 +174,7 @@ template <class Search> class GenericModel : public base::ModelFacade<GenericMod
     // memory_ is the raw block of memory backing vocab_, unigram_, [middle.begin(), middle.end()), and longest_.  
     util::scoped_mmap memory_;
     
-    GenericVocabulary<Search> vocab_;
+    VocabularyT vocab_;
 
     ProbBackoff *unigram_;
 
@@ -162,11 +204,11 @@ struct SortedUniformSearch {
 } // namespace detail
 
 // These must also be instantiated in the cc file.  
-typedef detail::GenericVocabulary<detail::ProbingSearch> Vocabulary;
-typedef detail::GenericModel<detail::ProbingSearch> Model;
+typedef detail::MapVocabulary<detail::ProbingSearch> Vocabulary;
+typedef detail::GenericModel<detail::ProbingSearch, Vocabulary> Model;
 
-typedef detail::GenericVocabulary<detail::SortedUniformSearch> SortedVocabulary;
-typedef detail::GenericModel<detail::SortedUniformSearch> SortedModel;
+// SortedVocabulary was defined above.  
+typedef detail::GenericModel<detail::SortedUniformSearch, SortedVocabulary> SortedModel;
 
 } // namespace ngram
 } // namespace lm
