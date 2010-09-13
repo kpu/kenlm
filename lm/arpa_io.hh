@@ -53,10 +53,8 @@ class ARPAOutputException : public std::exception {
 size_t SizeNeededForCounts(const std::vector<size_t> &number);
 // TODO: transition to FilePiece.
 void ReadCounts(std::istream &in, std::vector<size_t> &number) throw (ARPAInputException);
-void ReadCounts(util::FilePiece &in, std::vector<size_t> &number) throw (ARPAInputException);
 
 // Read and verify the headers like \1-grams: 
-void ReadNGramHeader(util::FilePiece &in_lm, unsigned int length);
 void ReadNGramHeader(std::istream &in_lm, unsigned int length);
 // Read and verify end marker.  
 void ReadEnd(std::istream &in_lm);
