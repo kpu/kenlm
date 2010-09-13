@@ -57,18 +57,15 @@ template <class Iterator, class Key> bool SortedUniformFind(Iterator begin, Iter
   return false;
 }
 
-// For consistent API with ProbingSearch.
-struct SortedUniformInit {};
-
 // To use this template, you need to define a Pivot function to match Key.  
 template <class PackingT> class SortedUniformMap {
   public:
     typedef PackingT Packing;
     typedef typename Packing::ConstIterator ConstIterator;
-    typedef SortedUniformInit Init;
 
   public:
-    static std::size_t Size(Init ignore, std::size_t entries) {
+    // Offer consistent API with probing hash.
+    static std::size_t Size(std::size_t entries, float ignore = 0.0) {
       return entries * Packing::kBytes;
     }
 

@@ -2,6 +2,7 @@
 #define LM_NGRAM__
 
 #include "lm/facade.hh"
+#include "lm/ngram_config.hh"
 #include "util/key_value_packing.hh"
 #include "util/probing_hash_table.hh"
 #include "util/sorted_uniform.hh"
@@ -100,8 +101,8 @@ class SortedVocabulary : public base::Vocabulary {
       }
     }
 
-    // Ignores first argument for consistency with probing hash which has a float here.  
-    template <class Ignored> static size_t Size(const Ignored &ignored, std::size_t entries) {
+    // Ignores second argument for consistency with probing hash which has a float here.  
+    static size_t Size(std::size_t entries, float ignored = 0.0) {
       return entries * sizeof(Entry);
     }
 
@@ -130,8 +131,8 @@ template <class Search> class MapVocabulary : public base::Vocabulary {
       return lookup_.Find(HashForVocab(str), i) ? i->GetValue() : 0;
     }
 
-    static size_t Size(const typename Search::Init &search_init, std::size_t entries) {
-      return Lookup::Size(search_init, entries);
+    static size_t Size(std::size_t entries, float probing_multiplier) {
+      return Lookup::Size(entries, probing_multiplier);
     }
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
@@ -162,9 +163,9 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     // Get the size of memory that will be mapped given ngram counts.  This
     // does not include small non-mapped control structures, such as this class
     // itself.  
-    static size_t Size(const typename Search::Init &search_init, const std::vector<size_t> &counts);
+    static size_t Size(const std::vector<size_t> &counts, const Config &config = Config());
 
-    GenericModel(const char *file, const typename Search::Init &init);
+    GenericModel(const char *file, const Config &config = Config());
 
     FullScoreReturn FullScore(const State &in_state, const WordIndex new_word, State &out_state) const;
 
@@ -194,7 +195,9 @@ struct ProbingSearch {
 };
 
 struct SortedUniformSearch {
-  typedef util::SortedUniformInit Init;
+  // This is ignored.
+  typedef float Init;
+
   template <class Value> struct Table {
     typedef util::ByteAlignedPacking<uint64_t, Value> Packing;
     typedef util::SortedUniformMap<Packing> T;

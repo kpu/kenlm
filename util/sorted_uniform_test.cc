@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(one) {
 template <class Key> void RandomTest(Key upper, size_t entries, size_t queries) {
   typedef unsigned char Value;
   typedef SortedUniformMap<AlignedPacking<Key, unsigned char> > Map;
-  boost::scoped_array<char> buffer(new char[Map::Size(typename Map::Init(), entries)]);
+  boost::scoped_array<char> buffer(new char[Map::Size(entries)]);
   Map map(buffer.get(), entries);
   boost::mt19937 rng;
   boost::uniform_int<Key> range_key(0, upper);

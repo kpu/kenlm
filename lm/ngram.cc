@@ -39,7 +39,7 @@ const uint64_t kUnknownCapHash = HashForVocab("<UNK>", 5);
 SortedVocabulary::SortedVocabulary() : begin_(NULL), end_(NULL) {}
 
 void SortedVocabulary::Init(void *start, std::size_t allocated, std::size_t entries) {
-  assert(allocated >= Size(float(), entries));
+  assert(allocated >= Size(entries));
   begin_ = reinterpret_cast<Entry*>(start);
   end_ = begin_;
   saw_unk_ = false;
@@ -174,25 +174,25 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
   store.FinishedInserting();
 }
 
-template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const typename Search::Init &search_init, const std::vector<size_t> &counts) {
+template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<size_t> &counts, const Config &config) {
   if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
-  size_t memory_size = VocabularyT::Size(search_init, counts[0]);
+  size_t memory_size = VocabularyT::Size(counts[0], config.probing_multiplier);
   memory_size += sizeof(ProbBackoff) * counts[0];
   for (unsigned char n = 2; n < counts.size(); ++n) {
-    memory_size += Middle::Size(search_init, counts[n - 1]);
+    memory_size += Middle::Size(counts[n - 1], config.probing_multiplier);
   }
-  memory_size += Longest::Size(search_init, counts.back());
+  memory_size += Longest::Size(counts.back(), config.probing_multiplier);
   return memory_size;
 }
 
-template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const typename Search::Init &search_init) {
+template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) {
   util::FilePiece f(file, &std::cerr);
 
   std::vector<size_t> counts;
   ReadCounts(f, counts);
 
   if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit ngram.hh's kMaxOrder to at least this value and recompile.");
-  const size_t memory_size = Size(search_init, counts);
+  const size_t memory_size = Size(counts, config);
   unsigned char order = counts.size();
 
   memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0), memory_size);
@@ -200,17 +200,17 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
 
   size_t allocated;
   char *start = static_cast<char*>(memory_.get());
-  allocated = VocabularyT::Size(search_init, counts[0]);
+  allocated = VocabularyT::Size(counts[0], config.probing_multiplier);
   vocab_.Init(start, allocated, counts[0]);
   start += allocated;
   unigram_ = reinterpret_cast<ProbBackoff*>(start);
   start += sizeof(ProbBackoff) * counts[0];
   for (unsigned int n = 2; n < order; ++n) {
-    allocated = Middle::Size(search_init, counts[n - 1]);
+    allocated = Middle::Size(counts[n - 1], config.probing_multiplier);
     middle_.push_back(Middle(start, allocated));
     start += allocated;
   }
-  allocated = Longest::Size(search_init, counts[order - 1]);
+  allocated = Longest::Size(counts[order - 1], config.probing_multiplier);
   longest_ = Longest(start, allocated);
   assert(static_cast<size_t>(start + allocated - reinterpret_cast<char*>(memory_.get())) == memory_size);
 

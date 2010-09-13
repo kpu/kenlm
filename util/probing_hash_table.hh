@@ -28,7 +28,7 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
     typedef HashT Hash;
     typedef EqualT Equal;
 
-    static std::size_t Size(float multiplier, std::size_t entries) {
+    static std::size_t Size(std::size_t entries, float multiplier) {
       return std::max(entries + 1, static_cast<std::size_t>(multiplier * static_cast<float>(entries))) * Packing::kBytes;
     }
 

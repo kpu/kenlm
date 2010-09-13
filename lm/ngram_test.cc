@@ -22,7 +22,7 @@ namespace {
   state = out;
 
 struct Fixture {
-  Fixture() : model("test.arpa", 1.5) {}
+  Fixture() : model("test.arpa") {}
 
   Model model;
 
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(continuation_probing) {
 BOOST_AUTO_TEST_SUITE_END()
 
 struct SortedFixture {
-  SortedFixture() : model("test.arpa", detail::SortedUniformSearch::Init()) {}
+  SortedFixture() : model("test.arpa") {}
 
   SortedModel model;
 

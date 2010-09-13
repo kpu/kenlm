@@ -13,7 +13,7 @@ typedef AlignedPacking<char, uint64_t> Packing;
 typedef ProbingHashTable<Packing, boost::hash<char> > Table;
 
 BOOST_AUTO_TEST_CASE(simple) {
-  char mem[Table::Size(1.2, 10)];
+  char mem[Table::Size(10, 1.2)];
   memset(mem, 0, sizeof(mem));
 
   Table table(mem, sizeof(mem));
