@@ -24,10 +24,18 @@ class ParseNumberException : public Exception {
     ~ParseNumberException() throw() {}
 };
 
+int OpenReadOrThrow(const char *name);
+
+// Return value for SizeFile when it can't size properly.  
+const off_t kBadSize = -1;
+off_t SizeFile(int fd);
+
 class FilePiece {
   public:
     // 32 MB default.
     explicit FilePiece(const char *file, std::ostream *show_progress = NULL, off_t min_buffer = 33554432);
+    // Takes ownership of fd.  name is used for messages.  
+    explicit FilePiece(const char *name, int fd, std::ostream *show_progress = NULL, off_t min_buffer = 33554432);
      
     char get() throw(EndOfFileException) { 
       if (position_ == position_end_) Shift();
@@ -58,6 +66,8 @@ class FilePiece {
     }
     
   private:
+    void Initialize(const char *name, std::ostream *show_progress, off_t min_buffer);
+
     StringPiece Consume(const char *to) {
       StringPiece ret(position_, to - position_);
       position_ = to;

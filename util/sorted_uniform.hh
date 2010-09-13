@@ -66,7 +66,7 @@ template <class PackingT> class SortedUniformMap {
   public:
     // Offer consistent API with probing hash.
     static std::size_t Size(std::size_t entries, float ignore = 0.0) {
-      return entries * Packing::kBytes;
+      return sizeof(uint64_t) + entries * Packing::kBytes;
     }
 
     SortedUniformMap() 
@@ -76,12 +76,17 @@ template <class PackingT> class SortedUniformMap {
     {}
 
     SortedUniformMap(void *start, std::size_t allocated) : 
-      begin_(Packing::FromVoid(start)),
-      end_(begin_) 
+      begin_(Packing::FromVoid(reinterpret_cast<uint64_t*>(start) + 1)),
+      end_(begin_), size_ptr_(reinterpret_cast<uint64_t*>(start)) 
 #ifndef NDEBUG
       , initialized_(true), loaded_(false) 
 #endif
       {}
+
+    void LoadedBinary() {
+      // Restore the size.  
+      end_ = begin_ + *size_ptr_;
+    }
 
     // Caller responsible for not exceeding specified size.  Do not call after FinishedInserting.  
     template <class T> void Insert(const T &t) {
@@ -100,6 +105,7 @@ template <class PackingT> class SortedUniformMap {
       loaded_ = true;
 #endif
       std::sort(begin_, end_);
+      *size_ptr_ = (end_ - begin_);
     }
 
     // Do not call before FinishedInserting.  
@@ -116,6 +122,7 @@ template <class PackingT> class SortedUniformMap {
 
   private:
     typename Packing::MutableIterator begin_, end_;
+    uint64_t *size_ptr_;
 #ifndef NDEBUG
     bool initialized_;
     bool loaded_;

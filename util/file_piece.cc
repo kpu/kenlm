@@ -26,24 +26,31 @@ ParseNumberException::ParseNumberException(StringPiece value) throw() {
   stream_ << "Could not parse \"" << value << "\" into a float";
 }
 
-namespace {
-int OpenOrThrow(const char *name) {
+int OpenReadOrThrow(const char *name) {
   int ret = open(name, O_RDONLY);
   if (ret == -1) UTIL_THROW(ErrnoException, "in open (" << name << ") for reading");
   return ret;
 }
-const off_t kBadSize = std::numeric_limits<off_t>::max();
 
 off_t SizeFile(int fd) {
   struct stat sb;
   if (fstat(fd, &sb) == -1 || (!sb.st_size && !S_ISREG(sb.st_mode))) return kBadSize;
   return sb.st_size;
 }
-} // namespace
 
 FilePiece::FilePiece(const char *name, std::ostream *show_progress, off_t min_buffer) : 
-  file_(OpenOrThrow(name)), total_size_(SizeFile(file_.get())), page_(sysconf(_SC_PAGE_SIZE)),
+  file_(OpenReadOrThrow(name)), total_size_(SizeFile(file_.get())), page_(sysconf(_SC_PAGE_SIZE)),
   progress_(total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + name, total_size_) {
+  Initialize(name, show_progress, min_buffer);
+}
+
+FilePiece::FilePiece(const char *name, int fd, std::ostream *show_progress, off_t min_buffer) : 
+  file_(fd), total_size_(SizeFile(file_.get())), page_(sysconf(_SC_PAGE_SIZE)),
+  progress_(total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + name, total_size_) {
+  Initialize(name, show_progress, min_buffer);
+}
+
+void FilePiece::Initialize(const char *name, std::ostream *show_progress, off_t min_buffer) {
   if (total_size_ == kBadSize) {
     fallback_to_read_ = true;
     if (show_progress) 

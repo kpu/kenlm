@@ -65,6 +65,8 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
 
     void FinishedInserting() {}
 
+    void LoadedBinary() {}
+
     template <class Key> bool Find(const Key key, ConstIterator &out) const {
 #ifndef NDEBUG
       assert(initialized_);

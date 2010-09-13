@@ -48,6 +48,12 @@ class scoped_fd {
 
     int operator*() const { return fd_; }
 
+    int release() {
+      int ret = fd_;
+      fd_ = -1;
+      return ret;
+    }
+
   private:
     int fd_;
 

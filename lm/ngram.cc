@@ -38,9 +38,15 @@ const uint64_t kUnknownCapHash = HashForVocab("<UNK>", 5);
 
 SortedVocabulary::SortedVocabulary() : begin_(NULL), end_(NULL) {}
 
+std::size_t SortedVocabulary::Size(std::size_t entries, float ignored) {
+  // Lead with the number of entries.  
+  return sizeof(uint64_t) + sizeof(Entry) * entries;
+}
+
 void SortedVocabulary::Init(void *start, std::size_t allocated, std::size_t entries) {
   assert(allocated >= Size(entries));
-  begin_ = reinterpret_cast<Entry*>(start);
+  // Leave space for number of entries.  
+  begin_ = reinterpret_cast<Entry*>(reinterpret_cast<uint64_t*>(start) + 1);
   end_ = begin_;
   saw_unk_ = false;
 }
@@ -60,7 +66,14 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
 bool SortedVocabulary::FinishedLoading(detail::ProbBackoff *reorder_vocab) {
   util::JointSort(begin_, end_, reorder_vocab + 1);
   SetSpecial(Index("<s>"), Index("</s>"), 0, end_ - begin_ + 1);
+  // Save size.  
+  *(reinterpret_cast<uint64_t*>(begin_) - 1) = end_ - begin_;
   return saw_unk_;
+}
+
+void SortedVocabulary::LoadedBinary() {
+  end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
+  SetSpecial(Index("<s>"), Index("</s>"), 0, end_ - begin_ + 1);
 }
 
 namespace detail {
@@ -90,6 +103,11 @@ template <class Search> bool MapVocabulary<Search>::FinishedLoading(ProbBackoff 
   lookup_.FinishedInserting();
   SetSpecial(Index("<s>"), Index("</s>"), 0, available_);
   return saw_unk_;
+}
+
+template <class Search> void MapVocabulary<Search>::LoadedBinary() {
+  lookup_.LoadedBinary();
+  SetSpecial(Index("<s>"), Index("</s>"), 0, available_);
 }
 
 /* All of the entropy is in low order bits and boost::hash does poorly with
@@ -175,6 +193,7 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
 }
 
 template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<size_t> &counts, const Config &config) {
+  if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit ngram.hh's kMaxOrder to at least this value and recompile.");
   if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
   size_t memory_size = VocabularyT::Size(counts[0], config.probing_multiplier);
   memory_size += sizeof(ProbBackoff) * (counts[0] + 1); // +1 for hallucinate <unk>
@@ -185,40 +204,143 @@ template <class Search, class VocabularyT> size_t GenericModel<Search, Vocabular
   return memory_size;
 }
 
-template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) {
-  util::FilePiece f(file, config.messages);
-
-  std::vector<size_t> counts;
-  ReadCounts(f, counts);
-
-  if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit ngram.hh's kMaxOrder to at least this value and recompile.");
-  const size_t memory_size = Size(counts, config);
-  unsigned char order = counts.size();
-
-  memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0), memory_size);
-  if (memory_.get() == MAP_FAILED) throw AllocateMemoryLoadException(memory_size);
-
-  size_t allocated;
-  char *start = static_cast<char*>(memory_.get());
-  allocated = VocabularyT::Size(counts[0], config.probing_multiplier);
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(char *base, const std::vector<size_t> &counts, const Config &config) {
+  char *start = base;
+  size_t allocated = VocabularyT::Size(counts[0], config.probing_multiplier);
   vocab_.Init(start, allocated, counts[0]);
   start += allocated;
   unigram_ = reinterpret_cast<ProbBackoff*>(start);
   start += sizeof(ProbBackoff) * (counts[0] + 1);
-  for (unsigned int n = 2; n < order; ++n) {
+  for (unsigned int n = 2; n < counts.size(); ++n) {
     allocated = Middle::Size(counts[n - 1], config.probing_multiplier);
     middle_.push_back(Middle(start, allocated));
     start += allocated;
   }
-  allocated = Longest::Size(counts[order - 1], config.probing_multiplier);
+  allocated = Longest::Size(counts.back(), config.probing_multiplier);
   longest_ = Longest(start, allocated);
-  assert(static_cast<size_t>(start + allocated - reinterpret_cast<char*>(memory_.get())) == memory_size);
+  start += allocated;
+  if (static_cast<std::size_t>(start - base) != Size(counts, config)) UTIL_THROW(FormatLoadException, "The data structures took " << (start - base) << " but Size says they should take " << Size(counts, config));
+}
 
-  try {
-    LoadFromARPA(f, counts, config);
-  } catch (FormatLoadException &e) {
-    e << " in file " << file;
-    throw;
+const char kMagicBytes[] = "mmap lm http://kheafield.com/code format version 0\n\0";
+struct BinaryFileHeader {
+  char magic[sizeof(kMagicBytes)];
+  float zero_f, one_f, minus_half_f;
+  WordIndex one_word_index, max_word_index;
+  uint64_t one_uint64;
+
+  void SetToReference() {
+    std::memcpy(magic, kMagicBytes, sizeof(magic));
+    zero_f = 0.0; one_f = 1.0; minus_half_f = -0.5;
+    one_word_index = 1;
+    max_word_index = std::numeric_limits<WordIndex>::max();
+    one_uint64 = 1;
+  }
+};
+
+bool IsBinaryFormat(int fd, off_t size) {
+  if (size == util::kBadSize || (size <= static_cast<off_t>(sizeof(BinaryFileHeader)))) return false;
+  // Try reading the header.  
+  util::scoped_mmap memory(mmap(NULL, sizeof(BinaryFileHeader), PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0), sizeof(BinaryFileHeader));
+  if (memory.get() == MAP_FAILED) return false;
+  BinaryFileHeader reference_header = BinaryFileHeader();
+  reference_header.SetToReference();
+  if (!memcmp(memory.get(), &reference_header, sizeof(BinaryFileHeader))) return true;
+  if (!memcmp(memory.get(), "mmap lm ", 8)) UTIL_THROW(FormatLoadException, "File looks like it should be loaded with mmap, but the test values don't match.  Was it built on a different machine or with a different compiler?");
+  return false;
+}
+
+std::size_t BinaryCountsSize(unsigned char order) {
+  return 1 + sizeof(uint64_t) * order;
+}
+
+std::size_t Align8(std::size_t in) {
+  std::size_t off = in % 8;
+  if (!off) return in;
+  return in + 8 - off;
+}
+
+std::size_t TotalHeaderSize(unsigned int order) {
+  return Align8(sizeof(BinaryFileHeader) + BinaryCountsSize(order));;
+}
+
+const char *ReadBinaryCounts(off_t remaining, const void *from, std::vector<size_t> &out) {
+  const char *from_char = reinterpret_cast<const char*>(from);
+  if (remaining < 1) UTIL_THROW(FormatLoadException, "File too short to have count information.");
+  unsigned char order = *reinterpret_cast<const unsigned char*>(from_char);
+  if (remaining + 1 < static_cast<off_t>(sizeof(uint64_t) * order)) UTIL_THROW(FormatLoadException, "File too short to have count information.");
+  out.resize(static_cast<std::size_t>(order));
+  const uint64_t *counts = reinterpret_cast<const uint64_t*>(from_char + 1);
+  for (std::size_t i = 0; i < out.size(); ++i) {
+    out[i] = static_cast<std::size_t>(counts[i]);
+  }
+  return from_char + BinaryCountsSize(out.size());
+}
+
+void WriteBinaryHeader(void *to, const std::vector<size_t> &from) {
+  BinaryFileHeader header = BinaryFileHeader();
+  header.SetToReference();
+  memcpy(to, &header, sizeof(BinaryFileHeader));
+  char *out = reinterpret_cast<char*>(to) + sizeof(BinaryFileHeader);
+  *reinterpret_cast<unsigned char*>(out) = static_cast<unsigned char>(from.size());
+  uint64_t *counts = reinterpret_cast<uint64_t*>(out + 1);
+  for (std::size_t i = 0; i < from.size(); ++i) {
+    counts[i] = from[i];
+  }
+}
+
+template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) : mapped_file_(util::OpenReadOrThrow(file)) {
+  const off_t file_size = util::SizeFile(mapped_file_.get());
+
+  std::vector<size_t> counts;
+
+  if (IsBinaryFormat(mapped_file_.get(), file_size)) {
+    memory_.reset(mmap(NULL, file_size, PROT_READ, MAP_FILE | MAP_PRIVATE, mapped_file_.get(), 0), file_size);
+    if (MAP_FAILED == memory_.get()) UTIL_THROW(util::ErrnoException, "Couldn't mmap the whole " << file);
+
+    ReadBinaryCounts(file_size - sizeof(BinaryFileHeader), memory_.begin() + sizeof(BinaryFileHeader), counts);
+    size_t memory_size = Size(counts, config);
+
+    char *start = reinterpret_cast<char*>(memory_.get()) + TotalHeaderSize(counts.size());
+    if (memory_size != static_cast<size_t>(memory_.end() - start)) UTIL_THROW(FormatLoadException, "The mmap file " << file << " has size " << file_size << " but " << (memory_size + TotalHeaderSize(counts.size())) << " was expected based on the number of counts and configuration.");
+
+    SetupMemory(start, counts, config);
+    vocab_.LoadedBinary();
+    for (typename std::vector<Middle>::iterator i = middle_.begin(); i != middle_.end(); ++i) {
+      i->LoadedBinary();
+    }
+    longest_.LoadedBinary();
+
+  } else {
+
+    util::FilePiece f(file, mapped_file_.release(), config.messages);
+    ReadCounts(f, counts);
+    size_t memory_size = Size(counts, config);
+    char *start;
+
+    if (config.write_mmap) {
+      // Write out an mmap file.  
+      // O_TRUNC insures that the later ftruncate call fills with zeros.  The data structures like being initialized with zeros.  
+      mapped_file_.reset(open(config.write_mmap, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
+      if (-1 == mapped_file_.get()) UTIL_THROW(util::ErrnoException, "Couldn't create " << config.write_mmap);
+      size_t total_size = TotalHeaderSize(counts.size()) + memory_size;
+      if (-1 == ftruncate(mapped_file_.get(), total_size)) UTIL_THROW(util::ErrnoException, "ftruncate on " << config.write_mmap << " to " << total_size << " failed.");
+      memory_.reset(mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, mapped_file_.get(), 0), total_size);
+      if (memory_.get() == MAP_FAILED) UTIL_THROW(util::ErrnoException, "Failed to mmap " << config.write_mmap);
+      WriteBinaryHeader(memory_.get(), counts);
+      start = reinterpret_cast<char*>(memory_.get()) + TotalHeaderSize(counts.size());
+    } else {
+      memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0), memory_size);
+      if (memory_.get() == MAP_FAILED) throw AllocateMemoryLoadException(memory_size);
+      start = reinterpret_cast<char*>(memory_.get());
+    }
+    SetupMemory(start, counts, config);
+    try {
+      LoadFromARPA(f, counts, config);
+    } catch (FormatLoadException &e) {
+      e << " in file " << file;
+      throw;
+    }
   }
 
   // g++ prints warnings unless these are fully initialized.  
@@ -228,7 +350,7 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   begin_sentence.backoff_[0] = unigram_[begin_sentence.history_[0]].backoff;
   State null_context = State();
   null_context.valid_length_ = 0;
-  P::Init(begin_sentence, null_context, vocab_, order);
+  P::Init(begin_sentence, null_context, vocab_, counts.size());
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts, const Config &config) {
@@ -240,7 +362,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
       case Config::THROW_UP:
         {
           SpecialWordMissingException e("<unk>");
-          e << " and configuration was set to throw if unknown is missing.";
+          e << " and configuration was set to throw if unknown is missing";
           throw e;
         }
       case Config::COMPLAIN:

@@ -88,8 +88,8 @@ class SortedVocabulary : public base::Vocabulary {
         return key < other.key;
       }
     };
-  public:
 
+  public:
     SortedVocabulary();
 
     WordIndex Index(const StringPiece &str) const {
@@ -102,9 +102,7 @@ class SortedVocabulary : public base::Vocabulary {
     }
 
     // Ignores second argument for consistency with probing hash which has a float here.  
-    static size_t Size(std::size_t entries, float ignored = 0.0) {
-      return entries * sizeof(Entry);
-    }
+    static size_t Size(std::size_t entries, float ignored = 0.0);
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
     void Init(void *start, std::size_t allocated, std::size_t entries);
@@ -113,6 +111,8 @@ class SortedVocabulary : public base::Vocabulary {
 
     // Returns true if unknown was seen.  Reorders reorder_vocab so that the IDs are sorted.  
     bool FinishedLoading(detail::ProbBackoff *reorder_vocab);
+
+    void LoadedBinary();
 
   private:
     Entry *begin_, *end_;
@@ -144,6 +144,8 @@ template <class Search> class MapVocabulary : public base::Vocabulary {
     // Returns true if unknown was seen.  Does nothing with reorder_vocab.  
     bool FinishedLoading(ProbBackoff *reorder_vocab);
 
+    void LoadedBinary();
+
   private:
     typedef typename Search::template Table<WordIndex>::T Lookup;
     Lookup lookup_;
@@ -172,7 +174,12 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     FullScoreReturn FullScore(const State &in_state, const WordIndex new_word, State &out_state) const;
 
   private:
+    // Appears after Size in the cc.  
+    void SetupMemory(char *start, const std::vector<size_t> &counts, const Config &config);
+
     void LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts, const Config &config);
+
+    util::scoped_fd mapped_file_;
 
     // memory_ is the raw block of memory backing vocab_, unigram_, [middle.begin(), middle.end()), and longest_.  
     util::scoped_mmap memory_;
