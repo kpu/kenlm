@@ -70,7 +70,7 @@ template <class PackingT> class SortedUniformMap {
     }
 
     SortedUniformMap() 
-#ifndef NDEBUG
+#ifdef DEBUG
       : initialized_(false), loaded_(false) 
 #endif
     {}
@@ -78,19 +78,24 @@ template <class PackingT> class SortedUniformMap {
     SortedUniformMap(void *start, std::size_t allocated) : 
       begin_(Packing::FromVoid(reinterpret_cast<uint64_t*>(start) + 1)),
       end_(begin_), size_ptr_(reinterpret_cast<uint64_t*>(start)) 
-#ifndef NDEBUG
+#ifdef DEBUG
       , initialized_(true), loaded_(false) 
 #endif
       {}
 
     void LoadedBinary() {
+#ifdef DEBUG
+      assert(initialized_);
+      assert(!loaded_);
+      loaded_ = true;
+#endif
       // Restore the size.  
       end_ = begin_ + *size_ptr_;
     }
 
     // Caller responsible for not exceeding specified size.  Do not call after FinishedInserting.  
     template <class T> void Insert(const T &t) {
-#ifndef NDEBUG
+#ifdef DEBUG
       assert(initialized_);
       assert(!loaded_);
 #endif
@@ -99,7 +104,7 @@ template <class PackingT> class SortedUniformMap {
     }
 
     void FinishedInserting() {
-#ifndef NDEBUG
+#ifdef DEBUG
       assert(initialized_);
       assert(!loaded_);
       loaded_ = true;
@@ -110,7 +115,7 @@ template <class PackingT> class SortedUniformMap {
 
     // Do not call before FinishedInserting.  
     template <class Key> bool Find(const Key key, ConstIterator &out) const {
-#ifndef NDEBUG
+#ifdef DEBUG
       assert(initialized_);
       assert(loaded_);
 #endif
@@ -123,7 +128,7 @@ template <class PackingT> class SortedUniformMap {
   private:
     typename Packing::MutableIterator begin_, end_;
     uint64_t *size_ptr_;
-#ifndef NDEBUG
+#ifdef DEBUG
     bool initialized_;
     bool loaded_;
 #endif

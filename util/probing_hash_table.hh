@@ -34,7 +34,7 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
 
     // Must be assigned to later.  
     ProbingHashTable()
-#ifndef NDEBUG
+#ifdef DEBUG
       : initialized_(false), entries_(0) 
 #endif
     {}
@@ -46,14 +46,14 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
         invalid_(invalid),
         hash_(hash_func),
         equal_(equal_func) 
-#ifndef NDEBUG
+#ifdef DEBUG
         , initialized_(true),
         entries_(0) 
 #endif
     {}
 
     template <class T> void Insert(const T &t) {
-#ifndef NDEBUG
+#ifdef DEBUG
       assert(initialized_);
       assert(++entries_ < buckets_);
 #endif
@@ -68,7 +68,7 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
     void LoadedBinary() {}
 
     template <class Key> bool Find(const Key key, ConstIterator &out) const {
-#ifndef NDEBUG
+#ifdef DEBUG
       assert(initialized_);
 #endif
       for (ConstIterator i(begin_ + (hash_(key) % buckets_));;) {
@@ -86,7 +86,7 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
     Key invalid_;
     Hash hash_;
     Equal equal_;
-#ifndef NDEBUG
+#ifdef DEBUG
     bool initialized_;
     std::size_t entries_;
 #endif
