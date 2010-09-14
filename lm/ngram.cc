@@ -335,7 +335,11 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   std::vector<size_t> counts;
 
   if (IsBinaryFormat(mapped_file_.get(), file_size)) {
-    memory_.reset(mmap(NULL, file_size, PROT_READ, (config.prefault ? MAP_POPULATE : 0) | MAP_FILE | MAP_PRIVATE, mapped_file_.get(), 0), file_size);
+    memory_.reset(mmap(NULL, file_size, PROT_READ, 
+#ifdef MAP_POPULATE // Linux specific
+          (config.prefault ? MAP_POPULATE : 0) | 
+#endif
+          MAP_FILE | MAP_PRIVATE, mapped_file_.get(), 0), file_size);
     if (MAP_FAILED == memory_.get()) UTIL_THROW(util::ErrnoException, "Couldn't mmap the whole " << file);
 
     unsigned char search_tag;
@@ -374,7 +378,13 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
       WriteBinaryHeader(memory_.get(), counts, config.probing_multiplier, Search::kBinaryTag);
       start = reinterpret_cast<char*>(memory_.get()) + TotalHeaderSize(counts.size());
     } else {
-      memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_PRIVATE, -1, 0), memory_size);
+      memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, 
+#ifdef MAP_ANONYMOUS
+            MAP_ANONYMOUS // Linux
+#else
+            MAP_ANON // BSD
+#endif
+            | MAP_PRIVATE, -1, 0), memory_size);
       if (memory_.get() == MAP_FAILED) throw AllocateMemoryLoadException(memory_size);
       start = reinterpret_cast<char*>(memory_.get());
     }
