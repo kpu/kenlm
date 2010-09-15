@@ -45,7 +45,7 @@ class State {
     unsigned char valid_length_;
 };
 
-inline size_t hash_value(const State &state);
+size_t hash_value(const State &state);
 
 namespace detail {
 
