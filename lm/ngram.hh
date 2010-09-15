@@ -7,7 +7,6 @@
 #include "util/probing_hash_table.hh"
 #include "util/sorted_uniform.hh"
 #include "util/string_piece.hh"
-#include "util/murmur_hash.hh"
 #include "util/scoped.hh"
 
 #include <algorithm>
@@ -46,18 +45,11 @@ class State {
     unsigned char valid_length_;
 };
 
-inline size_t hash_value(const State &state) {
-  // If the histories are equal, so are the backoffs.  
-  return util::MurmurHashNative(state.history_, sizeof(WordIndex) * state.valid_length_);
-}
+inline size_t hash_value(const State &state);
 
 namespace detail {
 
-inline uint64_t HashForVocab(const char *str, std::size_t len) {
-  // This proved faster than Boost's hash in speed trials: total load time Murmur 67090000, Boost 72210000
-  // Chose to use 64A instead of native so binary format will be portable across 64 and 32 bit.  
-  return util::MurmurHash64A(str, len, 0);
-}
+uint64_t HashForVocab(const char *str, std::size_t len);
 inline uint64_t HashForVocab(const StringPiece &str) {
   return HashForVocab(str.data(), str.length());
 }

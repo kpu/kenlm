@@ -3,6 +3,7 @@
 #include "lm/exception.hh"
 #include "util/file_piece.hh"
 #include "util/joint_sort.hh"
+#include "util/murmur_hash.hh"
 #include "util/probing_hash_table.hh"
 #include "util/scoped.hh"
 
@@ -23,7 +24,17 @@
 
 namespace lm {
 namespace ngram {
+
+size_t hash_value(const State &state) {
+  return util::MurmurHashNative(state.history_, sizeof(WordIndex) * state.valid_length_);
+}
+
 namespace detail {
+uint64_t HashForVocab(const char *str, std::size_t len) {
+  // This proved faster than Boost's hash in speed trials: total load time Murmur 67090000, Boost 72210000
+  // Chose to use 64A instead of native so binary format will be portable across 64 and 32 bit.  
+  return util::MurmurHash64A(str, len, 0);
+}
 
 void Prob::SetBackoff(float to) {
   UTIL_THROW(FormatLoadException, "Attempt to set backoff " << to << " for the highest order n-gram");
