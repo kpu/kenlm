@@ -4,9 +4,15 @@
 #include "util/file_piece.hh"
 #include "util/scoped.hh"
 
+#include <algorithm>
 #include <limits>
-#include <parallel/algorithm>
+//#include <parallel/algorithm>
 #include <vector>
+
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 namespace lm {
 
@@ -145,7 +151,7 @@ void WriteOrThrow(FILE *to, const void *data, size_t size) {
 
 template <class Entry> void DiskFlush(const Entry *begin, const Entry *end, const std::string &file_prefix, std::size_t batch) {
   std::stringstream assembled;
-  assembled << file_prefix << '_' << static_cast<unsigned int>(Entry::kOrder) << '_' << batch;
+  assembled << file_prefix << static_cast<unsigned int>(Entry::kOrder) << '_' << batch;
   util::scoped_FILE out(fopen(assembled.str().c_str(), "w"));
   for (const Entry *group_begin = begin; group_begin != end;) {
     const Entry *group_end = group_begin;
@@ -174,7 +180,8 @@ template <class Entry> void RecursiveSort(util::FilePiece &f, const lm::ngram::S
     for (; out != out_end; ++out) {
       ReadNGram(f, Entry::kOrder, vocab, *out);
     }
-    __gnu_parallel::sort(begin, out_end);
+    //__gnu_parallel::sort(begin, out_end);
+    std::sort(begin, out_end);
     
     DiskFlush(begin, out_end, file_prefix, batch);
     done += out_end - begin;
@@ -183,15 +190,29 @@ template <class Entry> void RecursiveSort(util::FilePiece &f, const lm::ngram::S
 
 template <> void RecursiveSort<FullEntry<1> >(util::FilePiece &f, const lm::ngram::SortedVocabulary &vocab, const std::vector<size_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {}
 
+void OpenForZeroedMMAP(const char *name, std::size_t size, util::scoped_fd &fd, util::scoped_mmap &mem) {
+  fd.reset(open(name, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
+  if (-1 == fd.get()) UTIL_THROW(util::ErrnoException, "Failed to open " << name << " file for writing.");
+  if (-1 == ftruncate(fd.get(), size)) UTIL_THROW(util::ErrnoException, "ftruncate on " << name << " to " << size << " failed.");
+  mem.reset(mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd.get(), 0), size);
+}
+
 void ARPAToSortedFiles(util::FilePiece &f, std::size_t buffer, const std::string &file_prefix) {
   std::vector<std::size_t> counts;
   ReadARPACounts(f, counts);
+
   ngram::SortedVocabulary vocab;
-  std::vector<char> vocab_data(ngram::SortedVocabulary::Size(counts[0]));
-  vocab.Init(&*vocab_data.begin(), vocab_data.size(), counts[0]);
-  std::vector<ProbBackoff> unigrams(counts[0]);
-  Read1Grams(f, counts[0], vocab, &*unigrams.begin());
-  vocab.FinishedLoading(&*unigrams.begin());
+  util::scoped_fd vocab_file; util::scoped_mmap vocab_mem;
+  OpenForZeroedMMAP((file_prefix + "vocab").c_str(), ngram::SortedVocabulary::Size(counts[0]), vocab_file, vocab_mem);
+  vocab.Init(vocab_mem.get(), ngram::SortedVocabulary::Size(counts[0]), counts[0]);
+
+  {
+    util::scoped_fd unigram_file; util::scoped_mmap unigram_mem;
+    OpenForZeroedMMAP((file_prefix + "unigrams").c_str(), counts[0] * sizeof(ProbBackoff), unigram_file, unigram_mem);
+    Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_mem.get()));
+    vocab.FinishedLoading(reinterpret_cast<ProbBackoff*>(unigram_mem.get()));
+  }
+
   util::scoped_memory mem;
   mem.reset(new char[buffer], buffer, util::scoped_memory::ARRAY_ALLOCATED);
   RecursiveSort<lm::ProbEntry<5> >(f, vocab, counts, mem, file_prefix);
@@ -201,5 +222,6 @@ void ARPAToSortedFiles(util::FilePiece &f, std::size_t buffer, const std::string
 
 int main() {
   util::FilePiece f("stdin", 0);
-  lm::ARPAToSortedFiles(f, 1073741824, "sort/tmp");
+  lm::ARPAToSortedFiles(f, 1073741824ULL, "sort/");
+  // TODO: merge.
 }
