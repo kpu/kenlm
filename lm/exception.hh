@@ -23,13 +23,6 @@ class VocabLoadException : public LoadException {
     VocabLoadException() throw();
 };
 
-class AllocateMemoryLoadException : public util::ErrnoException {
-  public:
-    explicit AllocateMemoryLoadException(size_t requested) throw();
-
-    ~AllocateMemoryLoadException() throw();
-};
-
 class FormatLoadException : public LoadException {
   public:
     FormatLoadException() throw();

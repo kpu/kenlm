@@ -10,12 +10,6 @@ LoadException::~LoadException() throw() {}
 VocabLoadException::VocabLoadException() throw() {}
 VocabLoadException::~VocabLoadException() throw() {}
 
-AllocateMemoryLoadException::AllocateMemoryLoadException(size_t requested) throw() {
-  *this << "Failed to allocate memory for " << requested << "bytes.";
-}
-
-AllocateMemoryLoadException::~AllocateMemoryLoadException() throw() {}
-
 FormatLoadException::FormatLoadException() throw() {}
 FormatLoadException::~FormatLoadException() throw() {}
 
