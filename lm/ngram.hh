@@ -4,10 +4,11 @@
 #include "lm/facade.hh"
 #include "lm/ngram_config.hh"
 #include "util/key_value_packing.hh"
+#include "util/mmap.hh"
 #include "util/probing_hash_table.hh"
+#include "util/scoped.hh"
 #include "util/sorted_uniform.hh"
 #include "util/string_piece.hh"
-#include "util/scoped.hh"
 
 #include <algorithm>
 #include <memory>

@@ -5,7 +5,6 @@
 #include "util/joint_sort.hh"
 #include "util/murmur_hash.hh"
 #include "util/probing_hash_table.hh"
-#include "util/scoped.hh"
 
 #include <algorithm>
 #include <functional>
@@ -35,7 +34,7 @@ uint64_t HashForVocab(const char *str, std::size_t len) {
   // Chose to use 64A instead of native so binary format will be portable across 64 and 32 bit.  
   return util::MurmurHash64A(str, len, 0);
 }
-
+ 
 void Prob::SetBackoff(float to) {
   UTIL_THROW(FormatLoadException, "Attempt to set backoff " << to << " for the highest order n-gram");
 }
@@ -194,7 +193,7 @@ template <class Voc> void Read1Grams(util::FilePiece &f, const size_t count, Voc
           value.ZeroBackoff();
           break;
         default:
-          UTIL_THROW(FormatLoadException, "Expected tab or newline after n-gram");
+          UTIL_THROW(FormatLoadException, "Expected tab or newline after unigram");
       }
      } catch(util::Exception &e) {
       e << " in the " << i << "th 1-gram at byte " << f.Offset();
@@ -227,7 +226,7 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
           value.ZeroBackoff();
           break;
         default:
-          UTIL_THROW(FormatLoadException, "Expected tab or newline after unigram");
+          UTIL_THROW(FormatLoadException, "Expected tab or newline after n-gram");
       }
       store.Insert(Store::Packing::Make(key, value));
     } catch(util::Exception &e) {
@@ -346,12 +345,7 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   std::vector<size_t> counts;
 
   if (IsBinaryFormat(mapped_file_.get(), file_size)) {
-    memory_.reset(mmap(NULL, file_size, PROT_READ, 
-#ifdef MAP_POPULATE // Linux specific
-          (config.prefault ? MAP_POPULATE : 0) | 
-#endif
-          MAP_FILE | MAP_PRIVATE, mapped_file_.get(), 0), file_size);
-    if (MAP_FAILED == memory_.get()) UTIL_THROW(util::ErrnoException, "Couldn't mmap the whole " << file);
+    memory_.reset(util::MapForRead(file_size, config.prefault, mapped_file_.get()), file_size);
 
     unsigned char search_tag;
     ReadBinaryHeader(memory_.begin(), file_size, counts, config.probing_multiplier, search_tag);
@@ -379,24 +373,11 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
 
     if (config.write_mmap) {
       // Write out an mmap file.  
-      // O_TRUNC insures that the later ftruncate call fills with zeros.  The data structures like being initialized with zeros.  
-      mapped_file_.reset(open(config.write_mmap, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
-      if (-1 == mapped_file_.get()) UTIL_THROW(util::ErrnoException, "Couldn't create " << config.write_mmap);
-      size_t total_size = TotalHeaderSize(counts.size()) + memory_size;
-      if (-1 == ftruncate(mapped_file_.get(), total_size)) UTIL_THROW(util::ErrnoException, "ftruncate on " << config.write_mmap << " to " << total_size << " failed.");
-      memory_.reset(mmap(NULL, total_size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, mapped_file_.get(), 0), total_size);
-      if (memory_.get() == MAP_FAILED) UTIL_THROW(util::ErrnoException, "Failed to mmap " << config.write_mmap);
+      util::MapZeroedWrite(config.write_mmap, TotalHeaderSize(counts.size()) + memory_size, mapped_file_, memory_);
       WriteBinaryHeader(memory_.get(), counts, config.probing_multiplier, Search::kBinaryTag);
       start = reinterpret_cast<char*>(memory_.get()) + TotalHeaderSize(counts.size());
     } else {
-      memory_.reset(mmap(NULL, memory_size, PROT_READ | PROT_WRITE, 
-#ifdef MAP_ANONYMOUS
-            MAP_ANONYMOUS // Linux
-#else
-            MAP_ANON // BSD
-#endif
-            | MAP_PRIVATE, -1, 0), memory_size);
-      if (memory_.get() == MAP_FAILED) throw AllocateMemoryLoadException(memory_size);
+      memory_.reset(util::MapAnonymous(memory_size), memory_size);
       start = reinterpret_cast<char*>(memory_.get());
     }
     SetupMemory(start, counts, config);
