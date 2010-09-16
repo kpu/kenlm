@@ -4,6 +4,7 @@
 #include <err.h>
 #include <sys/mman.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
 
 namespace util {
@@ -17,6 +18,10 @@ scoped_mmap::~scoped_mmap() {
     if (munmap(data_, size_))
       err(1, "Couldn't munmap language model memory");
   }
+}
+
+scoped_FILE::~scoped_FILE() {
+  if (fclose(file_)) err(1, "Could not close file");
 }
 
 void scoped_memory::reset(void *data, std::size_t size, Alloc source) {

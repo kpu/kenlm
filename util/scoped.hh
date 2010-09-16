@@ -4,6 +4,7 @@
 /* Other scoped objects in the style of scoped_ptr. */
 
 #include <cstddef>
+#include <cstdio>
 
 namespace util {
 
@@ -59,6 +60,29 @@ class scoped_fd {
 
     scoped_fd(const scoped_fd &);
     scoped_fd &operator=(const scoped_fd &);
+};
+
+class scoped_FILE {
+  public:
+    scoped_FILE() : file_(NULL) {}
+
+    explicit scoped_FILE(FILE *fp) : file_(fp) {}
+
+    ~scoped_FILE();
+
+    void reset(std::FILE *to) {
+      scoped_FILE other(file_);
+      file_ = to;
+    }
+
+    std::FILE *get() { return file_; }
+    const std::FILE *get() const { return file_; }
+
+  private:
+    std::FILE *file_;
+
+    scoped_FILE(const scoped_FILE &);
+    scoped_FILE &operator=(const scoped_FILE &);
 };
 
 // (void*)-1 is MAP_FAILED; this is done to avoid including the mmap header here.  
