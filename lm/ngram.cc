@@ -194,7 +194,7 @@ template <class Voc> void Read1Grams(util::FilePiece &f, const size_t count, Voc
           value.ZeroBackoff();
           break;
         default:
-          UTIL_THROW(FormatLoadException, "Expected tab or newline after unigram");
+          UTIL_THROW(FormatLoadException, "Expected tab or newline after n-gram");
       }
      } catch(util::Exception &e) {
       e << " in the " << i << "th 1-gram at byte " << f.Offset();
