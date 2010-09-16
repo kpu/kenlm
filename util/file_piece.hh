@@ -3,6 +3,7 @@
 
 #include "util/ersatz_progress.hh"
 #include "util/exception.hh"
+#include "util/mmap.hh"
 #include "util/scoped.hh"
 #include "util/string_piece.hh"
 

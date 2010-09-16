@@ -7,9 +7,6 @@ namespace util {
 
 Exception::Exception() throw() {}
 Exception::~Exception() throw() {}
-Exception::Exception(const Exception &other) throw() : stream_(other.stream_.str()) {}
-Exception &Exception::operator=(const Exception &other) throw() { stream_.str(other.stream_.str()); return *this; }
-const char *Exception::what() const throw() { return stream_.str().c_str(); }
 
 namespace {
 // The XOPEN version.

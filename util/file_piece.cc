@@ -18,12 +18,12 @@
 namespace util {
 
 EndOfFileException::EndOfFileException() throw() {
-  stream_ << "End of file";
+  *this << "End of file";
 }
 EndOfFileException::~EndOfFileException() throw() {}
 
 ParseNumberException::ParseNumberException(StringPiece value) throw() {
-  stream_ << "Could not parse \"" << value << "\" into a float";
+  *this << "Could not parse \"" << value << "\" into a float";
 }
 
 int OpenReadOrThrow(const char *name) {
