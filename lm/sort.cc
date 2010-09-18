@@ -202,32 +202,66 @@ template <class Entry> void ConvertToSorted(util::FilePiece &f, const lm::ngram:
 
 template <> void ConvertToSorted<FullEntry<1> >(util::FilePiece &f, const lm::ngram::SortedVocabulary &vocab, const std::vector<size_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {}
 
-void OpenForZeroedMMAP(const char *name, std::size_t size, util::scoped_fd &fd, util::scoped_mmap &mem) {
-  fd.reset(open(name, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
-  if (-1 == fd.get()) UTIL_THROW(util::ErrnoException, "Failed to open " << name << " file for writing.");
-  if (-1 == ftruncate(fd.get(), size)) UTIL_THROW(util::ErrnoException, "ftruncate on " << name << " to " << size << " failed.");
-  mem.reset(mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd.get(), 0), size);
-}
-
 void ARPAToSortedFiles(util::FilePiece &f, std::size_t buffer, const std::string &file_prefix, std::vector<size_t> &counts) {
   ReadARPACounts(f, counts);
 
   ngram::SortedVocabulary vocab;
-  util::scoped_fd vocab_file; util::scoped_mmap vocab_mem;
-  OpenForZeroedMMAP((file_prefix + "vocab").c_str(), ngram::SortedVocabulary::Size(counts[0]), vocab_file, vocab_mem);
-  vocab.Init(vocab_mem.get(), ngram::SortedVocabulary::Size(counts[0]), counts[0]);
+  util::scoped_mapped_file vocab_file;
+  std::string vocab_name = file_prefix + "vocab";
+  util::MapZeroedWrite(vocab_name.c_str(), ngram::SortedVocabulary::Size(counts[0]), vocab_file);
+  vocab.Init(vocab_file.mem.get(), ngram::SortedVocabulary::Size(counts[0]), counts[0]);
 
   {
-    util::scoped_fd unigram_file; util::scoped_mmap unigram_mem;
-    OpenForZeroedMMAP((file_prefix + "unigrams").c_str(), counts[0] * sizeof(ProbBackoff), unigram_file, unigram_mem);
-    Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_mem.get()));
-    vocab.FinishedLoading(reinterpret_cast<ProbBackoff*>(unigram_mem.get()));
+    std::string unigram_name = file_prefix + "unigrams";
+    util::scoped_mapped_file unigram_file;
+    util::MapZeroedWrite(unigram_name.c_str(), counts[0] * sizeof(ProbBackoff), unigram_file);
+    Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_file.mem.get()));
+    vocab.FinishedLoading(reinterpret_cast<ProbBackoff*>(unigram_file.mem.get()));
   }
 
   util::scoped_memory mem;
   mem.reset(new char[buffer], buffer, util::scoped_memory::ARRAY_ALLOCATED);
   ConvertToSorted<lm::ProbEntry<5> >(f, vocab, counts, mem, file_prefix);
 }
+
+class SortedFileReader {
+  public:
+    SortedFileReader() {}
+
+    void Init(const std::string &name, unsigned char order) {
+      file_.reset(fopen(name.c_str(), "r"));
+      if (!file_.get()) UTIL_THROW(util::ErrnoException, "Opening " << name << " for read");
+      header_.resize(order - 1);
+      ReadHeader();
+    }
+
+    // Preceding words.
+    const WordIndex *Header() const {
+      return &*header_.begin();
+    }
+
+    void ReadCount(WordIndex &to) {
+      ReadOrThrow(file_.get(), &to, sizeof(WordIndex));
+    }
+
+    void ReadWord(WordIndex &to) {
+      ReadOrThrow(file_.get(), &to, sizeof(WordIndex));
+    }
+
+    template <class Weights> void ReadWeights(Weights &to) {
+      ReadOrThrow(file_.get(), &to, sizeof(Weights));
+    }
+
+  private:
+    void ReadHeader() {
+      ReadOrThrow(file_.get(), &*header_.begin(), sizeof(WordIndex) * header_.size());
+    }
+
+    util::scoped_FILE file_;
+
+    std::vector<WordIndex> header_;
+};
+
 
 struct MiddleValue {
   ProbBackoff weights;
@@ -291,44 +325,6 @@ template <class Value> class SimpleTrie {
     friend class Inserter;
     const Entry *begin_;
     Entry *end_;
-};
-
-class SortedFileReader {
-  public:
-    SortedFileReader() {}
-
-    void Init(const std::string &name, unsigned char order) {
-      file_.reset(fopen(name.c_str(), "r"));
-      if (!file_.get()) UTIL_THROW(util::ErrnoException, "Opening " << name << " for read");
-      header_.resize(order - 1);
-      ReadHeader();
-    }
-
-    // Preceding words.
-    const WordIndex *Header() const {
-      return &*header_.begin();
-    }
-
-    void ReadCount(WordIndex &to) {
-      ReadOrThrow(file_.get(), &to, sizeof(WordIndex));
-    }
-
-    void ReadWord(WordIndex &to) {
-      ReadOrThrow(file_.get(), &to, sizeof(WordIndex));
-    }
-
-    template <class Weights> void ReadWeights(Weights &to) {
-      ReadOrThrow(file_.get(), &to, sizeof(Weights));
-    }
-
-  private:
-    void ReadHeader() {
-      ReadOrThrow(file_.get(), &*header_.begin(), sizeof(WordIndex) * header_.size());
-    }
-
-    util::scoped_FILE file_;
-
-    std::vector<WordIndex> header_;
 };
 
 struct RecursiveInsertParams {
