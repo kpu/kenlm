@@ -1,6 +1,7 @@
 #include "lm/exception.hh"
 #include "lm/ngram.hh"
 #include "lm/word_index.hh"
+#include "util/ersatz_progress.hh"
 #include "util/file_piece.hh"
 #include "util/scoped.hh"
 
@@ -345,7 +346,8 @@ template <class Entry> void ConvertToSorted(util::FilePiece &f, const lm::ngram:
 
 template <> void ConvertToSorted<FullEntry<1> >(util::FilePiece &f, const lm::ngram::SortedVocabulary &vocab, const std::vector<size_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {}
 
-void ARPAToSortedFiles(util::FilePiece &f, std::size_t buffer, const std::string &file_prefix, std::vector<size_t> &counts) {
+void ARPAToSortedFiles(const char *arpa, std::size_t buffer, const std::string &file_prefix, std::vector<size_t> &counts) {
+  util::FilePiece f(arpa, &std::cerr);
   ReadARPACounts(f, counts);
 
   ngram::SortedVocabulary vocab;
@@ -509,8 +511,8 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
   params.max_order = static_cast<unsigned char>(counts.size());
   params.middle = &*middle.begin();
   params.longest = &longest;
-
-  for (words[0] = 0; words[0] < counts[0]; ++words[0]) {
+  util::ErsatzProgress progress(&std::cerr, "Building trie", counts[0]);
+  for (words[0] = 0; words[0] < counts[0]; ++words[0], ++progress) {
     unigrams[words[0]].next = RecursiveInsert(params, 2);
   }
 }
@@ -518,9 +520,8 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
 } // namespace lm
 
 int main() {
-  util::FilePiece f("stdin", 0, &std::cerr);
   std::vector<std::size_t> counts;
   // 1 GB.  
-  lm::ARPAToSortedFiles(f, 1073741824ULL, "sort/", counts);
+  lm::ARPAToSortedFiles("/dev/stdin", 1073741824ULL, "sort/", counts);
   lm::BuildTrie("sort/", counts);
 }
