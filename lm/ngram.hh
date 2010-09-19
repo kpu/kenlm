@@ -3,6 +3,7 @@
 
 #include "lm/facade.hh"
 #include "lm/ngram_config.hh"
+#include "lm/weights.hh"
 #include "util/key_value_packing.hh"
 #include "util/mmap.hh"
 #include "util/probing_hash_table.hh"
@@ -55,19 +56,6 @@ inline uint64_t HashForVocab(const StringPiece &str) {
   return HashForVocab(str.data(), str.length());
 }
 
-struct Prob {
-  float prob;
-  void SetBackoff(float to);
-  void ZeroBackoff() {}
-};
-// No inheritance so this will be a POD.  
-struct ProbBackoff {
-  float prob;
-  float backoff;
-  void SetBackoff(float to) { backoff = to; }
-  void ZeroBackoff() { backoff = 0.0; }
-};
-
 } // namespace detail
 
 // Vocabulary based on sorted uniform find storing only uint64_t values and using their offsets as indices.  
@@ -103,7 +91,7 @@ class SortedVocabulary : public base::Vocabulary {
     WordIndex Insert(const StringPiece &str);
 
     // Returns true if unknown was seen.  Reorders reorder_vocab so that the IDs are sorted.  
-    bool FinishedLoading(detail::ProbBackoff *reorder_vocab);
+    bool FinishedLoading(ProbBackoff *reorder_vocab);
 
     void LoadedBinary();
 

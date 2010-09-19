@@ -35,10 +35,6 @@ uint64_t HashForVocab(const char *str, std::size_t len) {
   return util::MurmurHash64A(str, len, 0);
 }
  
-void Prob::SetBackoff(float to) {
-  UTIL_THROW(FormatLoadException, "Attempt to set backoff " << to << " for the highest order n-gram");
-}
-
 // Normally static initialization is a bad idea but MurmurHash is pure arithmetic, so this is ok.  
 const uint64_t kUnknownHash = HashForVocab("<unk>", 5);
 // Sadly some LMs have <UNK>.  
@@ -73,7 +69,7 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
   return end_ - begin_;
 }
 
-bool SortedVocabulary::FinishedLoading(detail::ProbBackoff *reorder_vocab) {
+bool SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   util::JointSort(begin_, end_, reorder_vocab + 1);
   SetSpecial(Index("<s>"), Index("</s>"), 0, end_ - begin_ + 1);
   // Save size.  

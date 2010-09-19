@@ -1,5 +1,6 @@
 #include "lm/exception.hh"
 #include "lm/ngram.hh"
+#include "lm/weights.hh"
 #include "lm/word_index.hh"
 #include "util/ersatz_progress.hh"
 #include "util/file_piece.hh"
@@ -19,10 +20,6 @@
 #include <fcntl.h>
 
 namespace lm {
-
-using ngram::detail::Prob;
-using ngram::detail::ProbBackoff;
-
 
 template <unsigned char Order> class FullEntry {
   public:
@@ -397,6 +394,9 @@ template <class Value> class SimpleTrie {
     }
 
     bool Find(uint64_t offset, std::size_t delta, WordIndex key, Value &out, uint64_t &delta_out) const {
+      for (const Entry *i = begin_ + offset; i < begin_ + offset + delta; ++i) {
+        std::cerr << "Option " << i->key << std::endl;
+      }
       const Entry *found;
       if (!util::SortedUniformFind(begin_ + offset, begin_ + offset + delta, key, found)) return false;
       out = found->value;
@@ -511,10 +511,20 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
   params.max_order = static_cast<unsigned char>(counts.size());
   params.middle = &*middle.begin();
   params.longest = &longest;
-  util::ErsatzProgress progress(&std::cerr, "Building trie", counts[0]);
-  for (words[0] = 0; words[0] < counts[0]; ++words[0], ++progress) {
-    unigrams[words[0]].next = RecursiveInsert(params, 2);
+  {
+    util::ErsatzProgress progress(&std::cerr, "Building trie", counts[0]);
+    for (words[0] = 0; words[0] < counts[0]; ++words[0], ++progress) {
+      unigrams[words[0]].next = RecursiveInsert(params, 2);
+    }
   }
+
+
+  WordIndex example[2] = {7, 3};
+  std::cerr << unigrams[example[0]].next << ' ' << unigrams[example[0] + 1].next << std::endl;
+  MiddleValue mid;
+  std::size_t delta;
+  if (middle[0].Find(unigrams[example[0]].next, unigrams[example[0] + 1].next - unigrams[example[0]].next, example[1], mid, delta))
+    std::cerr << mid.weights.prob << std::endl;
 }
 
 } // namespace lm
