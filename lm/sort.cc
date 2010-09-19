@@ -307,9 +307,6 @@ template <class Value> class SimpleTrie {
     }
 
     bool Find(uint64_t offset, std::size_t delta, WordIndex key, Value &out, uint64_t &delta_out) const {
-      for (const Entry *i = begin_ + offset; i < begin_ + offset + delta; ++i) {
-        std::cerr << "Option " << i->key << std::endl;
-      }
       const Entry *found;
       if (!util::SortedUniformFind(begin_ + offset, begin_ + offset + delta, key, found)) return false;
       out = found->value;
