@@ -518,7 +518,8 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
 } // namespace lm
 
 int main() {
-  util::FilePiece f("stdin", 0);
+  util::FilePiece f("stdin", 0, &std::cerr);
   std::vector<std::size_t> counts;
+  // 1 GB.  
   lm::ARPAToSortedFiles(f, 1073741824ULL, "sort/", counts);
 }
