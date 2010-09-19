@@ -1,6 +1,7 @@
 #include "lm/ngram.hh"
 
 #include "lm/exception.hh"
+#include "lm/read_arpa.hh"
 #include "util/file_piece.hh"
 #include "util/joint_sort.hh"
 #include "util/murmur_hash.hh"
@@ -134,71 +135,6 @@ uint64_t ChainedWordHash(const WordIndex *word, const WordIndex *word_end) {
   return current;
 }
 
-bool IsEntirelyWhiteSpace(const StringPiece &line) {
-  for (size_t i = 0; i < static_cast<size_t>(line.size()); ++i) {
-    if (!isspace(line.data()[i])) return false;
-  }
-  return true;
-}
-
-void ReadARPACounts(util::FilePiece &in, std::vector<size_t> &number) {
-  number.clear();
-  StringPiece line;
-  if (!IsEntirelyWhiteSpace(line = in.ReadLine())) UTIL_THROW(FormatLoadException, "First line was \"" << line << "\" not blank");
-  if ((line = in.ReadLine()) != "\\data\\") UTIL_THROW(FormatLoadException, "second line was \"" << line << "\" not \\data\\.");
-  while (!IsEntirelyWhiteSpace(line = in.ReadLine())) {
-    if (line.size() < 6 || strncmp(line.data(), "ngram ", 6)) UTIL_THROW(FormatLoadException, "count line \"" << line << "\"doesn't begin with \"ngram \"");
-    // So strtol doesn't go off the end of line.  
-    std::string remaining(line.data() + 6, line.size() - 6);
-    char *end_ptr;
-    unsigned long int length = std::strtol(remaining.c_str(), &end_ptr, 10);
-    if ((end_ptr == remaining.c_str()) || (length - 1 != number.size())) UTIL_THROW(FormatLoadException, "ngram count lengths should be consecutive starting with 1: " << line);
-    if (*end_ptr != '=') UTIL_THROW(FormatLoadException, "Expected = immediately following the first number in the count line " << line);
-    ++end_ptr;
-    const char *start = end_ptr;
-    long int count = std::strtol(start, &end_ptr, 10);
-    if (count < 0) UTIL_THROW(FormatLoadException, "Negative n-gram count " << count);
-    if (start == end_ptr) UTIL_THROW(FormatLoadException, "Couldn't parse n-gram count from " << line);
-    number.push_back(count);
-  }
-}
-
-void ReadNGramHeader(util::FilePiece &in, unsigned int length) {
-  StringPiece line;
-  while (IsEntirelyWhiteSpace(line = in.ReadLine())) {}
-  std::stringstream expected;
-  expected << '\\' << length << "-grams:";
-  if (line != expected.str()) UTIL_THROW(FormatLoadException, "Was expecting n-gram header " << expected.str() << " but got " << line << " instead.");
-}
-
-// Special unigram reader because unigram's data structure is different and because we're inserting vocab words.
-template <class Voc> void Read1Grams(util::FilePiece &f, const size_t count, Voc &vocab, ProbBackoff *unigrams) {
-  ReadNGramHeader(f, 1);
-  for (size_t i = 0; i < count; ++i) {
-    try {
-      float prob = f.ReadFloat();
-      if (f.get() != '\t') UTIL_THROW(FormatLoadException, "Expected tab after probability");
-      ProbBackoff &value = unigrams[vocab.Insert(f.ReadDelimited())];
-      value.prob = prob;
-      switch (f.get()) {
-        case '\t':
-          value.SetBackoff(f.ReadFloat());
-          if ((f.get() != '\n')) UTIL_THROW(FormatLoadException, "Expected newline after backoff");
-          break;
-        case '\n':
-          value.ZeroBackoff();
-          break;
-        default:
-          UTIL_THROW(FormatLoadException, "Expected tab or newline after unigram");
-      }
-     } catch(util::Exception &e) {
-      e << " in the " << i << "th 1-gram at byte " << f.Offset();
-      throw;
-    }
-  }
-  if (f.ReadLine().size()) UTIL_THROW(FormatLoadException, "Expected blank line after unigrams at byte " << f.Offset());
-}
-
 template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, Store &store) {
   ReadNGramHeader(f, n);
 
@@ -206,29 +142,9 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
   WordIndex vocab_ids[n];
   typename Store::Packing::Value value;
   for (size_t i = 0; i < count; ++i) {
-    try {
-      value.prob = f.ReadFloat();
-      for (WordIndex *vocab_out = &vocab_ids[n-1]; vocab_out >= vocab_ids; --vocab_out) {
-        *vocab_out = vocab.Index(f.ReadDelimited());
-      }
-      uint64_t key = ChainedWordHash(vocab_ids, vocab_ids + n);
-
-      switch (f.get()) {
-        case '\t':
-          value.SetBackoff(f.ReadFloat());
-          if ((f.get() != '\n')) UTIL_THROW(FormatLoadException, "Expected newline after backoff");
-          break;
-        case '\n':
-          value.ZeroBackoff();
-          break;
-        default:
-          UTIL_THROW(FormatLoadException, "Expected tab or newline after n-gram");
-      }
-      store.Insert(Store::Packing::Make(key, value));
-    } catch(util::Exception &e) {
-      e << " in the " << i << "th " << n << "-gram at byte " << f.Offset();
-      throw;
-    }
+    ReadNGram(f, n, vocab, vocab_ids, value);
+    uint64_t key = ChainedWordHash(vocab_ids, vocab_ids + n);
+    store.Insert(Store::Packing::Make(key, value));
   }
 
   if (f.ReadLine().size()) UTIL_THROW(FormatLoadException, "Expected blank line after " << n << "-grams at byte " << f.Offset());
