@@ -97,7 +97,7 @@ class Vocabulary {
  * missing these methods, see facade.hh.  
  *
  * This is the fastest way to use a model and presents a normal State class to
- * be included in hypothesis state structure.  
+ * be included in a hypothesis state structure.  
  *
  *
  * OPTION 2: Use the virtual interface below.  
