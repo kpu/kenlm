@@ -20,6 +20,7 @@ void ReadBackoff(util::FilePiece &f, ProbBackoff &weights);
 template <class Voc> void Read1Gram(util::FilePiece &f, Voc &vocab, ProbBackoff *unigrams) {
   try {
     float prob = f.ReadFloat();
+    if (prob > 0) UTIL_THROW(FormatLoadException, "Positive probability " << prob);
     if (f.get() != '\t') UTIL_THROW(FormatLoadException, "Expected tab after probability");
     ProbBackoff &value = unigrams[vocab.Insert(f.ReadDelimited())];
     value.prob = prob;
@@ -42,6 +43,7 @@ template <class Voc> void Read1Grams(util::FilePiece &f, std::size_t count, Voc 
 template <class Voc, class Weights> void ReadNGram(util::FilePiece &f, const unsigned char n, const Voc &vocab, WordIndex *const reverse_indices, Weights &weights) {
   try {
     weights.prob = f.ReadFloat();
+    if (weights.prob > 0) UTIL_THROW(FormatLoadException, "Positive probability " << weights.prob);
     for (WordIndex *vocab_out = reverse_indices + n - 1; vocab_out >= reverse_indices; --vocab_out) {
       *vocab_out = vocab.Index(f.ReadDelimited());
     }
