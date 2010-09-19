@@ -29,91 +29,7 @@ size_t hash_value(const State &state) {
   return util::MurmurHashNative(state.history_, sizeof(WordIndex) * state.valid_length_);
 }
 
-namespace detail {
-uint64_t HashForVocab(const char *str, std::size_t len) {
-  // This proved faster than Boost's hash in speed trials: total load time Murmur 67090000, Boost 72210000
-  // Chose to use 64A instead of native so binary format will be portable across 64 and 32 bit.  
-  return util::MurmurHash64A(str, len, 0);
-}
- 
-// Normally static initialization is a bad idea but MurmurHash is pure arithmetic, so this is ok.  
-const uint64_t kUnknownHash = HashForVocab("<unk>", 5);
-// Sadly some LMs have <UNK>.  
-const uint64_t kUnknownCapHash = HashForVocab("<UNK>", 5);
-
-} // namespace detail
-
-SortedVocabulary::SortedVocabulary() : begin_(NULL), end_(NULL) {}
-
-std::size_t SortedVocabulary::Size(std::size_t entries, float ignored) {
-  // Lead with the number of entries.  
-  return sizeof(uint64_t) + sizeof(Entry) * entries;
-}
-
-void SortedVocabulary::Init(void *start, std::size_t allocated, std::size_t entries) {
-  assert(allocated >= Size(entries));
-  // Leave space for number of entries.  
-  begin_ = reinterpret_cast<Entry*>(reinterpret_cast<uint64_t*>(start) + 1);
-  end_ = begin_;
-  saw_unk_ = false;
-}
-
-WordIndex SortedVocabulary::Insert(const StringPiece &str) {
-  uint64_t hashed = detail::HashForVocab(str);
-  if (hashed == detail::kUnknownHash || hashed == detail::kUnknownCapHash) {
-    saw_unk_ = true;
-    return 0;
-  }
-  end_->key = hashed;
-  ++end_;
-  // This is 1 + the offset where it was inserted to make room for unk.  
-  return end_ - begin_;
-}
-
-void  SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
-  util::JointSort(begin_, end_, reorder_vocab + 1);
-  SetSpecial(Index("<s>"), Index("</s>"), 0, end_ - begin_ + 1);
-  // Save size.  
-  *(reinterpret_cast<uint64_t*>(begin_) - 1) = end_ - begin_;
-}
-
-void SortedVocabulary::LoadedBinary() {
-  end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
-  SetSpecial(Index("<s>"), Index("</s>"), 0, end_ - begin_ + 1);
-}
-
-namespace detail {
-
-template <class Search> MapVocabulary<Search>::MapVocabulary() {}
-
-template <class Search> void MapVocabulary<Search>::Init(void *start, std::size_t allocated, std::size_t entries) {
-  lookup_ = Lookup(start, allocated);
-  available_ = 1;
-  // Later if available_ != expected_available_ then we can throw UnknownMissingException.
-  saw_unk_ = false;
-}
-
-template <class Search> WordIndex MapVocabulary<Search>::Insert(const StringPiece &str) {
-  uint64_t hashed = HashForVocab(str);
-  // Prevent unknown from going into the table.  
-  if (hashed == kUnknownHash || hashed == kUnknownCapHash) {
-    saw_unk_ = true;
-    return 0;
-  } else {
-    lookup_.Insert(Lookup::Packing::Make(hashed, available_));
-    return available_++;
-  }
-}
-
-template <class Search> void MapVocabulary<Search>::FinishedLoading(ProbBackoff *reorder_vocab) {
-  lookup_.FinishedInserting();
-  SetSpecial(Index("<s>"), Index("</s>"), 0, available_);
-}
-
-template <class Search> void MapVocabulary<Search>::LoadedBinary() {
-  lookup_.LoadedBinary();
-  SetSpecial(Index("<s>"), Index("</s>"), 0, available_);
-}
+namespace {
 
 /* All of the entropy is in low order bits and boost::hash does poorly with
  * these.  Odd numbers near 2^64 chosen by mashing on the keyboard.  There is a
@@ -148,6 +64,9 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
   if (f.ReadLine().size()) UTIL_THROW(FormatLoadException, "Expected blank line after " << n << "-grams at byte " << f.Offset());
   store.FinishedInserting();
 }
+
+} // namespace
+namespace detail {
 
 template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<size_t> &counts, const Config &config) {
   if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit ngram.hh's kMaxOrder to at least this value and recompile.");
@@ -425,7 +344,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   return ret;
 }
 
-template class GenericModel<ProbingSearch, MapVocabulary<ProbingSearch> >;
+template class GenericModel<ProbingSearch, ProbingVocabulary>;
 template class GenericModel<SortedUniformSearch, SortedVocabulary>;
 } // namespace detail
 } // namespace ngram

@@ -1,6 +1,6 @@
 #include "lm/exception.hh"
-#include "lm/ngram.hh"
 #include "lm/read_arpa.hh"
+#include "lm/vocab.hh"
 #include "lm/weights.hh"
 #include "lm/word_index.hh"
 #include "util/ersatz_progress.hh"
@@ -11,6 +11,7 @@
 #include <cstring>
 #include <cstdio>
 #include <deque>
+#include <iostream>
 #include <limits>
 //#include <parallel/algorithm>
 #include <vector>
@@ -59,11 +60,11 @@ template <unsigned char Order> class ProbEntry {
 };
 
 void WriteOrThrow(FILE *to, const void *data, size_t size) {
-  if (size != std::fwrite(data, 1, size, to)) UTIL_THROW(util::ErrnoException, "Short write");
+  if (1 != std::fwrite(data, size, 1, to)) UTIL_THROW(util::ErrnoException, "Short write; requested size " << size);
 }
 
 void ReadOrThrow(FILE *from, void *data, size_t size) {
-  if (size != std::fread(data, 1, size, from)) UTIL_THROW(util::ErrnoException, "Short read");
+  if (1 != std::fread(data, size, 1, from)) UTIL_THROW(util::ErrnoException, "Short read; requested size " << size);
 }
 
 void CopyOrThrow(FILE *from, FILE *to, size_t size) {
@@ -211,7 +212,7 @@ void MergeSortedFiles(const char *first_name, const char *second_name, const cha
   }
 }
 
-template <class Entry> void ConvertToSorted(util::FilePiece &f, const lm::ngram::SortedVocabulary &vocab, const std::vector<size_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {
+template <class Entry> void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<size_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {
   ConvertToSorted<FullEntry<Entry::kOrder - 1> >(f, vocab, counts, mem, file_prefix);
 
   ReadNGramHeader(f, Entry::kOrder);
@@ -253,17 +254,17 @@ template <class Entry> void ConvertToSorted(util::FilePiece &f, const lm::ngram:
   }
 }
 
-template <> void ConvertToSorted<FullEntry<1> >(util::FilePiece &f, const lm::ngram::SortedVocabulary &vocab, const std::vector<size_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {}
+template <> void ConvertToSorted<FullEntry<1> >(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<size_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {}
 
 void ARPAToSortedFiles(const char *arpa, std::size_t buffer, const std::string &file_prefix, std::vector<size_t> &counts) {
   util::FilePiece f(arpa, &std::cerr);
   ReadARPACounts(f, counts);
 
-  ngram::SortedVocabulary vocab;
+  SortedVocabulary vocab;
   util::scoped_mapped_file vocab_file;
   std::string vocab_name = file_prefix + "vocab";
-  util::MapZeroedWrite(vocab_name.c_str(), ngram::SortedVocabulary::Size(counts[0]), vocab_file);
-  vocab.Init(vocab_file.mem.get(), ngram::SortedVocabulary::Size(counts[0]), counts[0]);
+  util::MapZeroedWrite(vocab_name.c_str(), SortedVocabulary::Size(counts[0]), vocab_file);
+  vocab.Init(vocab_file.mem.get(), SortedVocabulary::Size(counts[0]), counts[0]);
 
   {
     std::string unigram_name = file_prefix + "unigrams";
