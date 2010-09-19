@@ -70,12 +70,11 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
   return end_ - begin_;
 }
 
-bool SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
+void  SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   util::JointSort(begin_, end_, reorder_vocab + 1);
   SetSpecial(Index("<s>"), Index("</s>"), 0, end_ - begin_ + 1);
   // Save size.  
   *(reinterpret_cast<uint64_t*>(begin_) - 1) = end_ - begin_;
-  return saw_unk_;
 }
 
 void SortedVocabulary::LoadedBinary() {
@@ -106,10 +105,9 @@ template <class Search> WordIndex MapVocabulary<Search>::Insert(const StringPiec
   }
 }
 
-template <class Search> bool MapVocabulary<Search>::FinishedLoading(ProbBackoff *reorder_vocab) {
+template <class Search> void MapVocabulary<Search>::FinishedLoading(ProbBackoff *reorder_vocab) {
   lookup_.FinishedInserting();
   SetSpecial(Index("<s>"), Index("</s>"), 0, available_);
-  return saw_unk_;
 }
 
 template <class Search> void MapVocabulary<Search>::LoadedBinary() {
@@ -314,7 +312,7 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts, const Config &config) {
   // Read the unigrams.
   Read1Grams(f, counts[0], vocab_, unigram_);
-  bool saw_unk = vocab_.FinishedLoading(unigram_);
+  bool saw_unk = vocab_.SawUnk();
   if (!saw_unk) {
     switch(config.unknown_missing) {
       case Config::THROW_UP:

@@ -90,8 +90,10 @@ class SortedVocabulary : public base::Vocabulary {
 
     WordIndex Insert(const StringPiece &str);
 
-    // Returns true if unknown was seen.  Reorders reorder_vocab so that the IDs are sorted.  
-    bool FinishedLoading(ProbBackoff *reorder_vocab);
+    // Reorders reorder_vocab so that the IDs are sorted.  
+    void FinishedLoading(ProbBackoff *reorder_vocab);
+
+    bool SawUnk() const { return saw_unk_; }
 
     void LoadedBinary();
 
@@ -122,8 +124,9 @@ template <class Search> class MapVocabulary : public base::Vocabulary {
 
     WordIndex Insert(const StringPiece &str);
 
-    // Returns true if unknown was seen.  Does nothing with reorder_vocab.  
-    bool FinishedLoading(ProbBackoff *reorder_vocab);
+    void FinishedLoading(ProbBackoff *reorder_vocab);
+
+    bool SawUnk() const { return saw_unk_; }
 
     void LoadedBinary();
 
