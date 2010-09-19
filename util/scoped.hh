@@ -4,6 +4,7 @@
 /* Other scoped objects in the style of scoped_ptr. */
 
 #include <cstddef>
+#include <cstdio>
 
 namespace util {
 
@@ -59,6 +60,24 @@ class scoped_fd {
 
     scoped_fd(const scoped_fd &);
     scoped_fd &operator=(const scoped_fd &);
+};
+
+class scoped_FILE {
+  public:
+    explicit scoped_FILE(std::FILE *file = NULL) : file_(file) {}
+
+    ~scoped_FILE();
+
+    std::FILE *get() { return file_; }
+    const std::FILE *get() const { return file_; }
+
+    void reset(std::FILE *to = NULL) {
+      scoped_FILE other(file_);
+      file_ = to;
+    }
+
+  private:
+    std::FILE *file_;
 };
 
 } // namespace util
