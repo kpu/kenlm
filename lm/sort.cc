@@ -441,7 +441,7 @@ struct RecursiveInsertParams {
 
 uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
   SortedFileReader &file = params.files[order - 2];
-  const uint64_t ret = (order == params.max_order) ? params.longest->NextOffset() : (params.middle + order - 2)->NextOffset();
+  const uint64_t ret = (order == params.max_order) ? params.longest->NextOffset() : params.middle[order - 2].NextOffset();
   if (std::memcmp(params.words, file.Header(), sizeof(WordIndex) * (order - 1)))
     return ret;
   WordIndex count;
@@ -474,10 +474,10 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
   std::vector<MiddleValue> unigrams(counts[0]);
 
   std::vector<std::vector<char> > middle_mem(counts.size() - 2);
-  std::vector<SimpleTrie<MiddleValue> > middle;
+  std::vector<SimpleTrie<MiddleValue> > middle(counts.size() - 2);
   for (size_t i = 0; i < middle.size(); ++i) {
     middle_mem[i].resize(SimpleTrie<MiddleValue>::Size(counts[i + 1]));
-    middle[i].Init(&*middle_mem.begin(), counts[i+1]);
+    middle[i].Init(&*middle_mem[i].begin(), counts[i+1]);
   }
   std::vector<char> longest_mem(SimpleTrie<Prob>::Size(counts.back()));
   SimpleTrie<EndValue> longest;
@@ -497,7 +497,7 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
   SortedFileReader inputs[counts.size() - 1];
   for (unsigned char i = 2; i <= counts.size(); ++i) {
     std::stringstream assembled;
-    assembled << file_prefix << i << "_merged";
+    assembled << file_prefix << static_cast<unsigned int>(i) << "_merged";
     inputs[i-2].Init(assembled.str(), i);
   }
 
@@ -522,4 +522,5 @@ int main() {
   std::vector<std::size_t> counts;
   // 1 GB.  
   lm::ARPAToSortedFiles(f, 1073741824ULL, "sort/", counts);
+  lm::BuildTrie("sort/", counts);
 }
