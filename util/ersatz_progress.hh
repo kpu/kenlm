@@ -19,7 +19,7 @@ class ErsatzProgress {
     ~ErsatzProgress();
 
     ErsatzProgress &operator++() {
-      if (++current_ == next_) Milestone();
+      if (++current_ >= next_) Milestone();
       return *this;
     }
 
