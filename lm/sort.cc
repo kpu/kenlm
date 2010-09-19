@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cstdio>
+#include <deque>
 #include <limits>
 //#include <parallel/algorithm>
 #include <vector>
@@ -155,15 +156,21 @@ void ReadOrThrow(FILE *from, void *data, size_t size) {
   if (size != std::fread(data, 1, size, from)) UTIL_THROW(util::ErrnoException, "Short read");
 }
 
-template <class Entry> void DiskFlush(const Entry *begin, const Entry *end, const std::string &file_prefix, std::size_t batch, bool merged) {
-  std::stringstream assembled;
-  assembled << file_prefix << static_cast<unsigned int>(Entry::kOrder) << '_';
-  if (merged) {
-    assembled << "merged";
-  } else {
-    assembled << batch;
+void CopyOrThrow(FILE *from, FILE *to, size_t size) {
+  const size_t kBufSize = 512;
+  char buf[kBufSize];
+  for (size_t i = 0; i < size; i += kBufSize) {
+    std::size_t amount = std::min(size - i, kBufSize);
+    ReadOrThrow(from, buf, amount);
+    WriteOrThrow(to, buf, amount);
   }
-  util::scoped_FILE out(fopen(assembled.str().c_str(), "w"));
+}
+
+template <class Entry> std::string DiskFlush(const Entry *begin, const Entry *end, const std::string &file_prefix, std::size_t batch) {
+  std::stringstream assembled;
+  assembled << file_prefix << static_cast<unsigned int>(Entry::kOrder) << '_' << batch;
+  std::string ret(assembled.str());
+  util::scoped_FILE out(fopen(ret.c_str(), "w"));
   if (!out.get()) UTIL_THROW(util::ErrnoException, "Couldn't open " << assembled.str().c_str() << " for writing");
   for (const Entry *group_begin = begin; group_begin != end;) {
     const Entry *group_end = group_begin;
@@ -177,6 +184,121 @@ template <class Entry> void DiskFlush(const Entry *begin, const Entry *end, cons
     }
     group_begin = group_end;
   }
+  return ret;
+}
+
+class SortedFileReader {
+  public:
+    SortedFileReader() {}
+
+    void Init(const std::string &name, unsigned char order) {
+      file_.reset(fopen(name.c_str(), "r"));
+      if (!file_.get()) UTIL_THROW(util::ErrnoException, "Opening " << name << " for read");
+      header_.resize(order - 1);
+      NextHeader();
+    }
+
+    // Preceding words.
+    const WordIndex *Header() const {
+      return &*header_.begin();
+    }
+    const std::vector<WordIndex> &HeaderVector() const { return header_;} 
+
+    std::size_t HeaderBytes() const { return header_.size() * sizeof(WordIndex); }
+
+    void NextHeader() {
+      if (1 != fread(&*header_.begin(), HeaderBytes(), 1, file_.get()) && !Ended()) {
+        UTIL_THROW(util::ErrnoException, "Short read of counts");
+      }
+    }
+
+    void ReadCount(WordIndex &to) {
+      ReadOrThrow(file_.get(), &to, sizeof(WordIndex));
+    }
+
+    void ReadWord(WordIndex &to) {
+      ReadOrThrow(file_.get(), &to, sizeof(WordIndex));
+    }
+
+    template <class Weights> void ReadWeights(Weights &to) {
+      ReadOrThrow(file_.get(), &to, sizeof(Weights));
+    }
+
+    bool Ended() {
+      return feof(file_.get());
+    }
+
+    FILE *File() { return file_.get(); }
+
+  private:
+    util::scoped_FILE file_;
+
+    std::vector<WordIndex> header_;
+};
+
+void CopyFullRecord(SortedFileReader &from, FILE *to, std::size_t weights_size) {
+  WriteOrThrow(to, from.Header(), from.HeaderBytes());
+  WordIndex count;
+  from.ReadCount(count);
+  WriteOrThrow(to, &count, sizeof(WordIndex));
+
+  CopyOrThrow(from.File(), to, (weights_size + sizeof(WordIndex)) * count);
+}
+
+void MergeSortedFiles(const char *first_name, const char *second_name, const char *out, std::size_t weights_size, unsigned char order) {
+  SortedFileReader first, second;
+  first.Init(first_name, order);
+  second.Init(second_name, order);
+  util::scoped_FILE out_file(fopen(out, "w"));
+  if (!out_file.get()) UTIL_THROW(util::ErrnoException, "Could not open " << out << " for write");
+  while (!first.Ended() && !second.Ended()) {
+    if (first.HeaderVector() < second.HeaderVector()) {
+      CopyFullRecord(first, out_file.get(), weights_size);
+      first.NextHeader();
+      continue;
+    } 
+    if (first.HeaderVector() > second.HeaderVector()) {
+      CopyFullRecord(second, out_file.get(), weights_size);
+      second.NextHeader();
+      continue;
+    }
+    // Merge at the entry level.
+    WriteOrThrow(out_file.get(), first.Header(), first.HeaderBytes());
+    WordIndex first_count, second_count;
+    first.ReadCount(first_count); second.ReadCount(second_count);
+    WordIndex total_count = first_count + second_count;
+    WriteOrThrow(out_file.get(), &total_count, sizeof(WordIndex));
+
+    WordIndex first_word, second_word;
+    first.ReadWord(first_word); second.ReadWord(second_word);
+    WordIndex first_index = 0, second_index = 0;
+    while (true) {
+      if (first_word < second_word) {
+        WriteOrThrow(out_file.get(), &first_word, sizeof(WordIndex));
+        CopyOrThrow(first.File(), out_file.get(), weights_size);
+        if (++first_index == first_count) break;
+        first.ReadWord(first_word);
+      } else {
+        WriteOrThrow(out_file.get(), &second_word, sizeof(WordIndex));
+        CopyOrThrow(second.File(), out_file.get(), weights_size);
+        if (++second_index == second_count) break;
+        second.ReadWord(second_word);
+      }
+    }
+    if (first_index == first_count) {
+      WriteOrThrow(out_file.get(), &second_word, sizeof(WordIndex));
+      CopyOrThrow(second.File(), out_file.get(), (second_count - second_index) * (weights_size + sizeof(WordIndex)) - sizeof(WordIndex));
+    } else {
+      WriteOrThrow(out_file.get(), &first_word, sizeof(WordIndex));
+      CopyOrThrow(first.File(), out_file.get(), (first_count - first_index) * (weights_size + sizeof(WordIndex)) - sizeof(WordIndex));
+    }
+    first.NextHeader();
+    second.NextHeader();
+  }
+
+  for (SortedFileReader &remaining = first.Ended() ? second : first; !remaining.Ended(); remaining.NextHeader()) {
+    CopyFullRecord(remaining, out_file.get(), weights_size);
+  }
 }
 
 template <class Entry> void ConvertToSorted(util::FilePiece &f, const lm::ngram::SortedVocabulary &vocab, const std::vector<size_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {
@@ -186,6 +308,7 @@ template <class Entry> void ConvertToSorted(util::FilePiece &f, const lm::ngram:
   const size_t count = counts[Entry::kOrder - 1];
   const size_t batch_size = std::min(count, mem.size() / sizeof(Entry));
   Entry *const begin = reinterpret_cast<Entry*>(mem.get());
+  std::deque<std::string> files;
   for (std::size_t batch = 0, done = 0; done < count; ++batch) {
     Entry *out = begin;
     Entry *out_end = out + std::min(count - done, batch_size);
@@ -195,8 +318,28 @@ template <class Entry> void ConvertToSorted(util::FilePiece &f, const lm::ngram:
     //__gnu_parallel::sort(begin, out_end);
     std::sort(begin, out_end);
     
-    DiskFlush(begin, out_end, file_prefix, batch, count == batch_size);
+    files.push_back(DiskFlush(begin, out_end, file_prefix, batch));
     done += out_end - begin;
+  }
+
+  // All individual files created.  Merge them.  
+
+  std::size_t merge_count = 0;
+  while (files.size() > 1) {
+    std::stringstream assembled;
+    assembled << file_prefix << static_cast<unsigned int>(Entry::kOrder) << "_merge_" << (merge_count++);
+    files.push_back(assembled.str());
+    MergeSortedFiles(files[0].c_str(), files[1].c_str(), files.back().c_str(), sizeof(typename Entry::Weights), Entry::kOrder);
+    if (std::remove(files[0].c_str())) UTIL_THROW(util::ErrnoException, "Could not remove " << files[0]);
+    files.pop_front();
+    if (std::remove(files[0].c_str())) UTIL_THROW(util::ErrnoException, "Could not remove " << files[0]);
+    files.pop_front();
+  }
+  if (!files.empty()) {
+    std::stringstream assembled;
+    assembled << file_prefix << static_cast<unsigned int>(Entry::kOrder) << "_merged";
+    std::string merged_name(assembled.str());
+    if (std::rename(files[0].c_str(), merged_name.c_str())) UTIL_THROW(util::ErrnoException, "Could not rename " << files[0].c_str() << " to " << merged_name.c_str());
   }
 }
 
@@ -223,45 +366,6 @@ void ARPAToSortedFiles(util::FilePiece &f, std::size_t buffer, const std::string
   mem.reset(new char[buffer], buffer, util::scoped_memory::ARRAY_ALLOCATED);
   ConvertToSorted<lm::ProbEntry<5> >(f, vocab, counts, mem, file_prefix);
 }
-
-class SortedFileReader {
-  public:
-    SortedFileReader() {}
-
-    void Init(const std::string &name, unsigned char order) {
-      file_.reset(fopen(name.c_str(), "r"));
-      if (!file_.get()) UTIL_THROW(util::ErrnoException, "Opening " << name << " for read");
-      header_.resize(order - 1);
-      ReadHeader();
-    }
-
-    // Preceding words.
-    const WordIndex *Header() const {
-      return &*header_.begin();
-    }
-
-    void ReadCount(WordIndex &to) {
-      ReadOrThrow(file_.get(), &to, sizeof(WordIndex));
-    }
-
-    void ReadWord(WordIndex &to) {
-      ReadOrThrow(file_.get(), &to, sizeof(WordIndex));
-    }
-
-    template <class Weights> void ReadWeights(Weights &to) {
-      ReadOrThrow(file_.get(), &to, sizeof(Weights));
-    }
-
-  private:
-    void ReadHeader() {
-      ReadOrThrow(file_.get(), &*header_.begin(), sizeof(WordIndex) * header_.size());
-    }
-
-    util::scoped_FILE file_;
-
-    std::vector<WordIndex> header_;
-};
-
 
 struct MiddleValue {
   ProbBackoff weights;
@@ -337,14 +441,13 @@ struct RecursiveInsertParams {
 
 uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
   SortedFileReader &file = params.files[order - 2];
+  const uint64_t ret = (order == params.max_order) ? params.longest->NextOffset() : (params.middle + order - 2)->NextOffset();
   if (std::memcmp(params.words, file.Header(), sizeof(WordIndex) * (order - 1)))
-    return std::numeric_limits<uint64_t>::max();
+    return ret;
   WordIndex count;
   file.ReadCount(count);
   WordIndex key;
-  uint64_t ret;
   if (order == params.max_order) {
-    ret = params.longest->NextOffset();
     SimpleTrie<EndValue>::Inserter inserter(*params.longest, count);
     EndValue value;
     for (WordIndex i = 0; i < count; ++i) {
@@ -352,18 +455,18 @@ uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
       file.ReadWeights(value.weights);
       inserter.Add(key, value);
     }
+    file.NextHeader();
     return ret;
-  } else {
-    ret = params.middle[order - 2].NextOffset();
-    SimpleTrie<MiddleValue>::Inserter inserter(params.middle[order - 2], count);
-    MiddleValue value;
-    for (WordIndex i = 0; i < count; ++i) {
-      file.ReadWord(params.words[order - 1]);
-      value.next = RecursiveInsert(params, order + 1);
-      file.ReadWeights(value.weights);
-      inserter.Add(params.words[order - 1], value);
-    }
   }
+  SimpleTrie<MiddleValue>::Inserter inserter(params.middle[order - 2], count);
+  MiddleValue value;
+  for (WordIndex i = 0; i < count; ++i) {
+    file.ReadWord(params.words[order - 1]);
+    value.next = RecursiveInsert(params, order + 1);
+    file.ReadWeights(value.weights);
+    inserter.Add(params.words[order - 1], value);
+  }
+  file.NextHeader();
   return ret;
 }
 
@@ -418,6 +521,4 @@ int main() {
   util::FilePiece f("stdin", 0);
   std::vector<std::size_t> counts;
   lm::ARPAToSortedFiles(f, 1073741824ULL, "sort/", counts);
-  // TODO: merge.
-
 }
