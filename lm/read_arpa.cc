@@ -58,11 +58,10 @@ void ReadBackoff(util::FilePiece &f, ProbBackoff &weights) {
   switch (f.get()) {
     case '\t':
       weights.backoff = f.ReadFloat();
-      if (weights.backoff > 0) UTIL_THROW(FormatLoadException, "Backoff " << weights.backoff << " > 0");
       if ((f.get() != '\n')) UTIL_THROW(FormatLoadException, "Expected newline after backoff");
       break;
     case '\n':
-      weights.backoff = -0.0;
+      weights.backoff = 0.0;
       break;
     default:
       UTIL_THROW(FormatLoadException, "Expected tab or newline after unigram");
