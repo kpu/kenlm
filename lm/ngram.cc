@@ -272,7 +272,6 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     State &out_state) const {
 
   FullScoreReturn ret;
-  // This is end pointer passed to SumBackoffs.
   const ProbBackoff &unigram = unigram_[new_word];
   if (new_word == 0) {
     ret.ngram_length = out_state.valid_length_ = 0;
@@ -341,6 +340,88 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   out_state.valid_length_ = P::Order() - 1;
   ret.ngram_length = P::Order();
   ret.prob = found->GetValue().prob;
+  return ret;
+}
+
+/* Until somebody implements stateful language models in Moses, here's a slower stateless version */
+template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::SlowStatelessScore(
+    const WordIndex *begin, const WordIndex *end) const {
+  begin = std::max(begin, end - P::Order());
+
+  FullScoreReturn ret;
+  // This is end pointer passed to SumBackoffs.
+  const ProbBackoff &unigram = unigram_[*(end - 1)];
+  if (!*(end - 1)) {
+    ret.ngram_length = 0;
+    // all of backoff.
+    ret.prob = unigram.prob + SlowBackoffLookup(begin, end - 1, 1);
+    return ret;
+  }
+  ret.prob = unigram.prob;
+  if (begin == end - 1) {
+    ret.ngram_length = 1;
+    // No backoff because the context is empty.  
+    return ret;
+  }
+
+  // Ok now we now that the bigram contains known words.  Start by looking it up.
+
+  uint64_t lookup_hash = static_cast<uint64_t>(*(end - 1));
+  const WordIndex *hist_iter = end - 2;
+  const WordIndex *const hist_none = begin - 1;
+  typename std::vector<Middle>::const_iterator mid_iter = middle_.begin();
+  for (; ; ++mid_iter, --hist_iter) {
+    if (hist_iter == hist_none) {
+      // Ran out.  No backoff.  
+      ret.ngram_length = end - begin;
+      // ret.prob was already set.
+      return ret;
+    }
+    lookup_hash = CombineWordHash(lookup_hash, *hist_iter);
+    if (mid_iter == middle_.end()) break;
+    typename Middle::ConstIterator found;
+    if (!mid_iter->Find(lookup_hash, found)) {
+      // Didn't find an ngram using hist_iter.  
+      ret.ngram_length = end - 1 - hist_iter;
+      ret.prob += SlowBackoffLookup(begin, end - 1, mid_iter - middle_.begin() + 1);
+      return ret;
+    }
+    ret.prob = found->GetValue().prob;
+  }
+  
+  typename Longest::ConstIterator found;
+  if (!longest_.Find(lookup_hash, found)) {
+    // It's an (P::Order()-1)-gram
+    ret.ngram_length = P::Order() - 1;
+    ret.prob += SlowBackoffLookup(begin, end - 1, P::Order() - 1);
+    return ret;
+  }
+  // It's an P::Order()-gram
+  ret.ngram_length = P::Order();
+  ret.prob = found->GetValue().prob;
+  return ret;
+}
+
+template <class Search, class VocabularyT> float GenericModel<Search, VocabularyT>::SlowBackoffLookup(
+    const WordIndex *const begin, const WordIndex *const end, unsigned char start) const {
+  // Add the backoff weights for n-grams of order start to (end - begin).  
+  if (end - begin < static_cast<std::ptrdiff_t>(start)) return 0.0;
+  float ret = 0.0;
+  if (start == 1) {
+    ret += unigram_[*(end - 1)].backoff;
+    start = 2;
+  }
+  uint64_t lookup_hash = static_cast<uint64_t>(*(end - 1));
+  for (unsigned char i = 2; i < start; ++i) {
+    lookup_hash = CombineWordHash(lookup_hash, *(end - i));
+  }
+  typename Middle::ConstIterator found;
+  // i is the order of the backoff we're looking for.
+  for (unsigned char i = start; i <= static_cast<unsigned char>(end - begin); ++i) {
+    lookup_hash = CombineWordHash(lookup_hash, *(end - i));
+    if (!middle_[i - 2].Find(lookup_hash, found)) break;
+    ret += found->GetValue().backoff;
+  }
   return ret;
 }
 

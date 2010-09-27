@@ -71,8 +71,18 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 
     FullScoreReturn FullScore(const State &in_state, const WordIndex new_word, State &out_state) const;
 
+    /* Slower but stateless call.  Don't use this if you can avoid it.  This
+     * is mostly a hack for Hieu to integrate it into Moses which is currently
+     * unable to handle arbitrary LM state.  Sigh. 
+     * The word indices should be in an array.  *begin is the earliest word of context.
+     * *(end-1) is the word being appended.  
+     */
+    FullScoreReturn SlowStatelessScore(const WordIndex *begin, const WordIndex *end) const;
+
   private:
-    // Appears after Size in the cc.  
+    float SlowBackoffLookup(const WordIndex *const begin, const WordIndex *const end, unsigned char start) const;
+
+    // Appears after Size in the cc file.
     void SetupMemory(char *start, const std::vector<size_t> &counts, const Config &config);
 
     void LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts, const Config &config);

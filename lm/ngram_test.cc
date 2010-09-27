@@ -22,7 +22,7 @@ namespace {
   StartTest(word, ngram, score) \
   state = out;
 
-template <class M> void Starters(M &model) {
+template <class M> void Starters(const M &model) {
   FullScoreReturn ret;
   Model::State state(model.BeginSentenceState());
   Model::State out;
@@ -35,7 +35,7 @@ template <class M> void Starters(M &model) {
   StartTest("this_is_not_found", 0, -1.995635 + -0.4149733);
 }
 
-template <class M> void Continuation(M &model) {
+template <class M> void Continuation(const M &model) {
   FullScoreReturn ret;
   Model::State state(model.BeginSentenceState());
   Model::State out;
@@ -57,10 +57,43 @@ template <class M> void Continuation(M &model) {
   AppendTest("loin", 5, -0.0432557);
 }
 
-BOOST_AUTO_TEST_CASE(starters_probing) { Model m("test.arpa"); Starters(m); }
-BOOST_AUTO_TEST_CASE(continuation_probing) { Model m("test.arpa"); Continuation(m); }
-BOOST_AUTO_TEST_CASE(starters_sorted) { SortedModel m("test.arpa"); Starters(m); }
-BOOST_AUTO_TEST_CASE(continuation_sorted) { SortedModel m("test.arpa"); Continuation(m); }
+#define StatelessTest(begin, end, ngram, score) \
+  ret = model.SlowStatelessScore(begin, end); \
+  BOOST_CHECK_CLOSE(score, ret.prob, 0.001); \
+  BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), ret.ngram_length);
+
+template <class M> void Stateless(const M &model) {
+  const char *words[] = {"<s>", "looking", "on", "a", "little", "the", "biarritz", "not_found", "more", ".", "</s>"};
+  WordIndex indices[sizeof(words) / sizeof(const char*)];
+  for (unsigned int i = 0; i < sizeof(words) / sizeof(const char*); ++i) {
+    indices[i] = model.GetVocabulary().Index(words[i]);
+  }
+  FullScoreReturn ret;
+  StatelessTest(indices, indices + 2, 2, -0.484652);
+  StatelessTest(indices, indices + 3, 3, -0.348837);
+  StatelessTest(indices, indices + 4, 4, -0.0155266);
+  StatelessTest(indices, indices + 5, 5, -0.00306122);
+  // the
+  StatelessTest(indices, indices + 6, 1, -4.04005);
+  StatelessTest(indices + 1, indices + 6, 1, -4.04005);
+  // biarritz
+  StatelessTest(indices, indices + 7, 1, -1.9889);
+  // not found
+  StatelessTest(indices, indices + 8, 0, -2.29666);
+}
+
+BOOST_AUTO_TEST_CASE(probing) {
+  Model m("test.arpa");
+  Starters(m);
+  Continuation(m);
+  Stateless(m);
+}
+BOOST_AUTO_TEST_CASE(sorted) {
+  SortedModel m("test.arpa");
+  Starters(m);
+  Continuation(m);
+  Stateless(m);
+}
 
 BOOST_AUTO_TEST_CASE(write_and_read_probing) {
   Config config;
@@ -71,6 +104,7 @@ BOOST_AUTO_TEST_CASE(write_and_read_probing) {
   Model binary("test.binary");
   Starters(binary);
   Continuation(binary);
+  Stateless(binary);
 }
 
 BOOST_AUTO_TEST_CASE(write_and_read_sorted) {
@@ -83,6 +117,7 @@ BOOST_AUTO_TEST_CASE(write_and_read_sorted) {
   SortedModel binary("test.binary");
   Starters(binary);
   Continuation(binary);
+  Stateless(binary);
 }
 
 
