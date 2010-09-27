@@ -94,7 +94,11 @@ void ReadNGramHeader(std::istream &in, unsigned int length) {
 void ReadBackoff(util::FilePiece &in, Prob &weights) {
   switch (in.get()) {
     case '\t':
-      UTIL_THROW(FormatLoadException, "Backoff " << in.ReadDelimited() << " provided for an n-gram that should have no backoff.");
+      {
+        float got = in.ReadFloat();
+        if (got != 0.0)
+          UTIL_THROW(FormatLoadException, "Non-zero backoff " << got << " provided for an n-gram that should have no backoff.");
+      }
       break;
     case '\n':
       break;
