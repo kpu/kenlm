@@ -134,7 +134,7 @@ void FilePiece::Shift() throw(EndOfFileException) {
 
   if (!fallback_to_read_) MMapShift(desired_begin);
   // Notice an mmap failure might set the fallback.  
-  if (fallback_to_read_) ReadShift(desired_begin);
+  if (fallback_to_read_) ReadShift();
 
   for (last_space_ = position_end_ - 1; last_space_ >= position_; --last_space_) {
     if (isspace(*last_space_))  break;
@@ -174,7 +174,7 @@ void FilePiece::MMapShift(off_t desired_begin) throw() {
   position_end_ = data_.begin() + mapped_size;
 }
 
-void FilePiece::ReadShift(off_t desired_begin) throw() {
+void FilePiece::ReadShift() throw() {
   assert(fallback_to_read_);
   if (data_.source() != scoped_memory::MALLOC_ALLOCATED) {
     // First call.

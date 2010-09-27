@@ -80,7 +80,7 @@ class FilePiece {
     void Shift() throw (EndOfFileException);
     // Backends to Shift().
     void MMapShift(off_t desired_begin) throw ();
-    void ReadShift(off_t desired_begin) throw ();
+    void ReadShift() throw ();
 
     const char *position_, *last_space_, *position_end_;
 
