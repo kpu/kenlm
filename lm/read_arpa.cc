@@ -91,7 +91,7 @@ void ReadNGramHeader(std::istream &in, unsigned int length) {
   GenericReadNGramHeader(fake, length);
 }
 
-void ReadBackoff(util::FilePiece &in, Prob &weights) {
+void ReadBackoff(util::FilePiece &in, Prob &/*weights*/) {
   switch (in.get()) {
     case '\t':
       {
