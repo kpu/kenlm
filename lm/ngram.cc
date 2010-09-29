@@ -276,6 +276,50 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   return ret;
 }
 
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::GetState(const WordIndex *context_rbegin, const WordIndex *context_rend, State &out_state) const {
+  context_rend = std::min(context_rend, context_rbegin + P::Order() - 1);
+  out_state.valid_length_ = static_cast<unsigned char>(context_rend - context_rbegin);
+  if (!out_state.valid_length_) return;
+  std::copy(context_rbegin, context_rend, out_state.history_);
+  out_state.backoff_[0] = unigram_[*context_rbegin].backoff;
+  float *backoff_out = out_state.backoff_ + 1;
+  uint64_t lookup_hash = static_cast<uint64_t>(*context_rbegin);
+  const WordIndex *i = context_rbegin + 1;
+  typename Middle::ConstIterator found;
+  for (; i < context_rend; ++i, ++backoff_out) {
+    lookup_hash = CombineWordHash(lookup_hash, *i);
+    if (!middle_[i - context_rbegin - 1].Find(lookup_hash, found)) {
+      std::fill(backoff_out, out_state.backoff_ + out_state.valid_length_, 0.0);
+      return;
+    }
+    *backoff_out = found->GetValue().backoff;
+  }
+}
+
+template <class Search, class VocabularyT> float GenericModel<Search, VocabularyT>::SlowBackoffLookup(
+    const WordIndex *const context_rbegin, const WordIndex *const context_rend, unsigned char start) const {
+  // Add the backoff weights for n-grams of order start to (context_rend - context_rbegin).
+  if (context_rend - context_rbegin < static_cast<std::ptrdiff_t>(start)) return 0.0;
+  float ret = 0.0;
+  if (start == 1) {
+    ret += unigram_[*context_rbegin].backoff;
+    start = 2;
+  }
+  uint64_t lookup_hash = static_cast<uint64_t>(*context_rbegin);
+  const WordIndex *i;
+  for (i = context_rbegin + 1; i < context_rbegin + start - 1; ++i) {
+    lookup_hash = CombineWordHash(lookup_hash, *i);
+  }
+  typename Middle::ConstIterator found;
+  // i is the order of the backoff we're looking for.
+  for (; i < context_rend; ++i) {
+    lookup_hash = CombineWordHash(lookup_hash, *i);
+    if (!middle_[i - context_rbegin - 1].Find(lookup_hash, found)) break;
+    ret += found->GetValue().backoff;
+  }
+  return ret;
+}
+
 /* Ugly optimized function.  Produce a score excluding backoff.  
  * The search goes in increasing order of ngram length.  
  * Context goes backward, so context_begin is the word immediately preceeding
@@ -358,30 +402,6 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   ret.ngram_length = P::Order();
   ret.prob = found->GetValue().prob;
   backoff_start = P::Order();
-  return ret;
-}
-
-template <class Search, class VocabularyT> float GenericModel<Search, VocabularyT>::SlowBackoffLookup(
-    const WordIndex *const context_rbegin, const WordIndex *const context_rend, unsigned char start) const {
-  // Add the backoff weights for n-grams of order start to (context_rend - context_rbegin).
-  if (context_rend - context_rbegin < static_cast<std::ptrdiff_t>(start)) return 0.0;
-  float ret = 0.0;
-  if (start == 1) {
-    ret += unigram_[*context_rbegin].backoff;
-    start = 2;
-  }
-  uint64_t lookup_hash = static_cast<uint64_t>(*context_rbegin);
-  const WordIndex *i;
-  for (i = context_rbegin + 1; i < context_rbegin + start - 1; ++i) {
-    lookup_hash = CombineWordHash(lookup_hash, *i);
-  }
-  typename Middle::ConstIterator found;
-  // i is the order of the backoff we're looking for.
-  for (; i < context_rend; ++i) {
-    lookup_hash = CombineWordHash(lookup_hash, *i);
-    if (!middle_[i - context_rbegin - 1].Find(lookup_hash, found)) break;
-    ret += found->GetValue().backoff;
-  }
   return ret;
 }
 

@@ -80,10 +80,16 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
      */
     FullScoreReturn FullScoreForgotState(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, State &out_state) const;
 
-  private:
-    FullScoreReturn ScoreExceptBackoff(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, unsigned char &backoff_start, State &out_state) const;
+    /* Get the state for a context.  Don't use this if you can avoid it.  Use
+     * BeginSentenceState or EmptyContextState and extend from those.  If
+     * you're only going to use this state to call FullScore once, use
+     * FullScoreForgotState. */
+    void GetState(const WordIndex *context_rbegin, const WordIndex *context_rend, State &out_state) const;
 
+  private:
     float SlowBackoffLookup(const WordIndex *const context_rbegin, const WordIndex *const context_rend, unsigned char start) const;
+
+    FullScoreReturn ScoreExceptBackoff(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, unsigned char &backoff_start, State &out_state) const;
 
     // Appears after Size in the cc file.
     void SetupMemory(char *start, const std::vector<size_t> &counts, const Config &config);

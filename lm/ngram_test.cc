@@ -60,17 +60,23 @@ template <class M> void Continuation(const M &model) {
 #define StatelessTest(word, provide, ngram, score) \
   ret = model.FullScoreForgotState(indices + num_words - word, indices + num_words - word + provide, indices[num_words - word - 1], state); \
   BOOST_CHECK_CLOSE(score, ret.prob, 0.001); \
+  BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), ret.ngram_length); \
+  model.GetState(indices + num_words - word, indices + num_words - word + provide, before); \
+  ret = model.FullScore(before, indices[num_words - word - 1], out); \
+  BOOST_CHECK(state == out); \
+  BOOST_CHECK_CLOSE(score, ret.prob, 0.001); \
   BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), ret.ngram_length);
 
 template <class M> void Stateless(const M &model) {
   const char *words[] = {"<s>", "looking", "on", "a", "little", "the", "biarritz", "not_found", "more", ".", "</s>"};
   const size_t num_words = sizeof(words) / sizeof(const char*);
-  WordIndex indices[num_words];
+  // Silience "array subscript is above array bounds" when extracting end pointer.
+  WordIndex indices[num_words + 1];
   for (unsigned int i = 0; i < num_words; ++i) {
     indices[num_words - 1 - i] = model.GetVocabulary().Index(words[i]);
   }
   FullScoreReturn ret;
-  State state, out;
+  State state, out, before;
 
   ret = model.FullScoreForgotState(indices + num_words - 1, indices + num_words, indices[num_words - 2], state);
   BOOST_CHECK_CLOSE(-0.484652, ret.prob, 0.001);
