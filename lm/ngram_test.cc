@@ -57,29 +57,47 @@ template <class M> void Continuation(const M &model) {
   AppendTest("loin", 5, -0.0432557);
 }
 
-#define StatelessTest(begin, end, ngram, score) \
-  ret = model.SlowStatelessScore(begin, end); \
+#define StatelessTest(word, provide, ngram, score) \
+  ret = model.FullScoreForgotState(indices + num_words - word, indices + num_words - word + provide, indices[num_words - word - 1], state); \
   BOOST_CHECK_CLOSE(score, ret.prob, 0.001); \
   BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), ret.ngram_length);
 
 template <class M> void Stateless(const M &model) {
   const char *words[] = {"<s>", "looking", "on", "a", "little", "the", "biarritz", "not_found", "more", ".", "</s>"};
-  WordIndex indices[sizeof(words) / sizeof(const char*)];
-  for (unsigned int i = 0; i < sizeof(words) / sizeof(const char*); ++i) {
-    indices[i] = model.GetVocabulary().Index(words[i]);
+  const size_t num_words = sizeof(words) / sizeof(const char*);
+  WordIndex indices[num_words];
+  for (unsigned int i = 0; i < num_words; ++i) {
+    indices[num_words - 1 - i] = model.GetVocabulary().Index(words[i]);
   }
   FullScoreReturn ret;
-  StatelessTest(indices, indices + 2, 2, -0.484652);
-  StatelessTest(indices, indices + 3, 3, -0.348837);
-  StatelessTest(indices, indices + 4, 4, -0.0155266);
-  StatelessTest(indices, indices + 5, 5, -0.00306122);
+  State state, out;
+
+  ret = model.FullScoreForgotState(indices + num_words - 1, indices + num_words, indices[num_words - 2], state);
+  BOOST_CHECK_CLOSE(-0.484652, ret.prob, 0.001);
+  StatelessTest(1, 1, 2, -0.484652);
+
+  // looking
+  StatelessTest(1, 2, 2, -0.484652);
+  // on
+  AppendTest("on", 3, -0.348837);
+  StatelessTest(2, 3, 3, -0.348837);
+  StatelessTest(2, 2, 3, -0.348837);
+  StatelessTest(2, 1, 2, -0.4638903);
+  // a
+  StatelessTest(3, 4, 4, -0.0155266);
+  // little
+  AppendTest("little", 5, -0.00306122);
+  StatelessTest(4, 5, 5, -0.00306122);
   // the
-  StatelessTest(indices, indices + 6, 1, -4.04005);
-  StatelessTest(indices + 1, indices + 6, 1, -4.04005);
+  AppendTest("the", 1, -4.04005);
+  StatelessTest(5, 5, 1, -4.04005);
+  // No context of the.  
+  StatelessTest(5, 0, 1, -1.687872);
   // biarritz
-  StatelessTest(indices, indices + 7, 1, -1.9889);
+  StatelessTest(6, 1, 1, -1.9889);
   // not found
-  StatelessTest(indices, indices + 8, 0, -2.29666);
+  StatelessTest(7, 1, 0, -2.29666);
+  StatelessTest(7, 0, 0, -1.995635);
 }
 
 BOOST_AUTO_TEST_CASE(probing) {
