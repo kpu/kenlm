@@ -104,6 +104,11 @@ template <class M> void Stateless(const M &model) {
   // not found
   StatelessTest(7, 1, 0, -2.29666);
   StatelessTest(7, 0, 0, -1.995635);
+
+  WordIndex unk[1];
+  unk[0] = 0;
+  model.GetState(unk, unk + 1, state);
+  BOOST_CHECK_EQUAL(0, state.valid_length_);
 }
 
 BOOST_AUTO_TEST_CASE(probing) {
