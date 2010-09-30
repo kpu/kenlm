@@ -278,7 +278,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::GetState(const WordIndex *context_rbegin, const WordIndex *context_rend, State &out_state) const {
   context_rend = std::min(context_rend, context_rbegin + P::Order() - 1);
-  if (context_rend == context_rbegin) {
+  if (context_rend == context_rbegin || *context_rbegin == 0) {
     out_state.valid_length_ = 0;
     return;
   }
