@@ -278,9 +278,10 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::GetState(const WordIndex *context_rbegin, const WordIndex *context_rend, State &out_state) const {
   context_rend = std::min(context_rend, context_rbegin + P::Order() - 1);
-  out_state.valid_length_ = static_cast<unsigned char>(context_rend - context_rbegin);
-  if (!out_state.valid_length_) return;
-  std::copy(context_rbegin, context_rend, out_state.history_);
+  if (context_rend == context_rbegin) {
+    out_state.valid_length_ = 0;
+    return;
+  }
   out_state.backoff_[0] = unigram_[*context_rbegin].backoff;
   float *backoff_out = out_state.backoff_ + 1;
   uint64_t lookup_hash = static_cast<uint64_t>(*context_rbegin);
@@ -289,11 +290,14 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   for (; i < context_rend; ++i, ++backoff_out) {
     lookup_hash = CombineWordHash(lookup_hash, *i);
     if (!middle_[i - context_rbegin - 1].Find(lookup_hash, found)) {
-      std::fill(backoff_out, out_state.backoff_ + out_state.valid_length_, 0.0);
+      out_state.valid_length_ = i - context_rbegin;
+      std::copy(context_rbegin, i, out_state.history_);
       return;
     }
     *backoff_out = found->GetValue().backoff;
   }
+  std::copy(context_rbegin, context_rend, out_state.history_);
+  out_state.valid_length_ = static_cast<unsigned char>(context_rend - context_rbegin);
 }
 
 template <class Search, class VocabularyT> float GenericModel<Search, VocabularyT>::SlowBackoffLookup(
