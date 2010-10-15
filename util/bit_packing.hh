@@ -65,6 +65,24 @@ inline void WriteNonPositiveFloat31(void *base, uint8_t bit, float value) {
 
 void BitPackingSanity();
 
+// Return bits required to store integers upto max_value.  Not the most
+// efficient implementation, but this is only called a few times to size tries. 
+uint8_t RequiredBits(uint64_t max_value) {
+  if (!max_value) return 0;
+  uint8_t ret = 1;
+  while (max_value >>= 1) ++ret;
+  return ret;
+}
+
+struct BitsMask {
+  void FromMax(uint64_t max_value) {
+    bits = RequiredBits(max_value);
+    mask = (1 << bits) - 1;
+  }
+  uint8_t bits;
+  uint64_t mask;
+};
+
 } // namespace util
 
 #endif // UTIL_BIT_PACKING__
