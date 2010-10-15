@@ -1,5 +1,6 @@
 #include "lm/exception.hh"
 #include "lm/read_arpa.hh"
+#include "lm/trie_node.hh"
 #include "lm/vocab.hh"
 #include "lm/weights.hh"
 #include "lm/word_index.hh"
@@ -22,6 +23,7 @@
 #include <fcntl.h>
 
 namespace lm {
+namespace trie {
 
 template <unsigned char Order> class FullEntry {
   public:
@@ -276,7 +278,7 @@ void ARPAToSortedFiles(const char *arpa, std::size_t buffer, const std::string &
 
   util::scoped_memory mem;
   mem.reset(new char[buffer], buffer, util::scoped_memory::ARRAY_ALLOCATED);
-  ConvertToSorted<lm::ProbEntry<5> >(f, vocab, counts, mem, file_prefix);
+  ConvertToSorted<ProbEntry<5> >(f, vocab, counts, mem, file_prefix);
 }
 
 struct MiddleValue {
@@ -290,93 +292,43 @@ struct EndValue {
   uint64_t Next() const { return 0; }
 };
 
-template <class Value> class SimpleTrie {
-  private:
-    struct Entry {
-      WordIndex key;
-      WordIndex GetKey() const { return key; }
-      Value value;
-    };
-
-  public:
-    SimpleTrie() {}
-
-    void Init(void *mem, std::size_t entries) {
-      begin_ = reinterpret_cast<const Entry*>(mem);
-      end_ = reinterpret_cast<Entry*>(mem);
-    }
-
-    bool Find(uint64_t offset, std::size_t delta, WordIndex key, Value &out, uint64_t &delta_out) const {
-      const Entry *found;
-      if (!util::SortedUniformFind(begin_ + offset, begin_ + offset + delta, key, found)) return false;
-      out = found->value;
-      delta_out = (found+1)->value.Next() - found->value.Next();
-      return true;
-    }
-
-    static std::size_t Size(std::size_t entries) {
-      return entries * sizeof(Entry);
-    }
-
-    std::size_t NextOffset() const {
-      return end_ - begin_;
-    }
-
-    class Inserter {
-      public:
-        Inserter(SimpleTrie<Value> &in, std::size_t size) : begin_(in.begin_), end_(in.end_) {}
-
-        void Add(WordIndex key, const Value &value) {
-          end_->key = key;
-          end_->value = value;
-          ++end_;
-        }
-
-      private:
-        const Entry *begin_;
-        Entry *&end_;
-    };
-
-  private:
-    friend class Inserter;
-    const Entry *begin_;
-    Entry *end_;
-};
-
 struct RecursiveInsertParams {
   WordIndex *words;
   SortedFileReader *files;
   unsigned char max_order;
-  SimpleTrie<MiddleValue> *middle;
-  SimpleTrie<EndValue> *longest;
+  // This is an array of size order - 2.
+  BitPackedTable *middle;
+  // This has exactly one entry.
+  BitPackedTable *longest;
 };
 
 uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
   SortedFileReader &file = params.files[order - 2];
-  const uint64_t ret = (order == params.max_order) ? params.longest->NextOffset() : params.middle[order - 2].NextOffset();
+  const uint64_t ret = (order == params.max_order) ? params.longest->InsertPointer() : params.middle[order - 2].InsertPointer();
   if (std::memcmp(params.words, file.Header(), sizeof(WordIndex) * (order - 1)))
     return ret;
   WordIndex count;
   file.ReadCount(count);
   WordIndex key;
   if (order == params.max_order) {
-    SimpleTrie<EndValue>::Inserter inserter(*params.longest, count);
-    EndValue value;
+    Prob value;
     for (WordIndex i = 0; i < count; ++i) {
       file.ReadWord(key);
-      file.ReadWeights(value.weights);
-      inserter.Add(key, value);
+      file.ReadWeights(value);
+      params.longest->Insert(key, value.prob, 0.0, 0);
     }
     file.NextHeader();
     return ret;
   }
-  SimpleTrie<MiddleValue>::Inserter inserter(params.middle[order - 2], count);
-  MiddleValue value;
+  ProbBackoff value;
   for (WordIndex i = 0; i < count; ++i) {
     file.ReadWord(params.words[order - 1]);
-    value.next = RecursiveInsert(params, order + 1);
-    file.ReadWeights(value.weights);
-    inserter.Add(params.words[order - 1], value);
+    file.ReadWeights(value);
+    params.middle[order - 2].Insert(
+        params.words[order - 1],
+        value.prob,
+        value.backoff,
+        RecursiveInsert(params, order + 1));
   }
   file.NextHeader();
   return ret;
@@ -386,14 +338,14 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
   std::vector<MiddleValue> unigrams(counts[0]);
 
   std::vector<std::vector<char> > middle_mem(counts.size() - 2);
-  std::vector<SimpleTrie<MiddleValue> > middle(counts.size() - 2);
+  std::vector<BitPackedTable> middle(counts.size() - 2);
   for (size_t i = 0; i < middle.size(); ++i) {
-    middle_mem[i].resize(SimpleTrie<MiddleValue>::Size(counts[i + 1]));
-    middle[i].Init(&*middle_mem[i].begin(), counts[i+1]);
+    middle_mem[i].resize(BitPackedTable::Size(counts[i + 1], false, counts[i+1], counts[i+2]));
+    middle[i].Init(&*middle_mem[i].begin(), false, counts[i+1], counts[i+2]);
   }
-  std::vector<char> longest_mem(SimpleTrie<Prob>::Size(counts.back()));
-  SimpleTrie<EndValue> longest;
-  longest.Init(&*longest_mem.begin(), counts.back());
+  std::vector<char> longest_mem(BitPackedTable::Size(counts.back(), true, counts[0], 0));
+  BitPackedTable longest;
+  longest.Init(&*longest_mem.begin(), true, counts.back(), 0);
 
   // Load unigrams.  Leave the next pointers uninitialized.   
   {
@@ -437,11 +389,12 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
     std::cerr << mid.weights.prob << std::endl;
 }
 
+} // namespace trie
 } // namespace lm
 
 int main() {
   std::vector<std::size_t> counts;
   // 1 GB.  
-  lm::ARPAToSortedFiles("/dev/stdin", 1073741824ULL, "sort/", counts);
-  lm::BuildTrie("sort/", counts);
+  lm::trie::ARPAToSortedFiles("/dev/stdin", 1073741824ULL, "sort/", counts);
+  lm::trie::BuildTrie("sort/", counts);
 }

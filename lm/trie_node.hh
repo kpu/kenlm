@@ -14,9 +14,9 @@ struct NodeRange {
   uint64_t begin, end;
 };
 
-class BitPackedTrie {
+class BitPackedTable {
   public:
-    BitPackedTrie() {}
+    BitPackedTable() {}
 
     static std::size_t Size(std::size_t entries, bool is_max_order, uint64_t max_vocab, uint64_t max_ptr);
 

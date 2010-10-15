@@ -1,7 +1,7 @@
 #include "lm/trie_node.hh"
 
-#include "util/exception.hh"
 #include "util/bit_packing.hh"
+#include "util/exception.hh"
 #include "util/proxy_iterator.hh"
 #include "util/sorted_uniform.hh"
 
@@ -56,7 +56,7 @@ bool FindBitPacked(const void *base, uint64_t key_mask, uint8_t total_bits, uint
 }
 } // namespace
 
-std::size_t BitPackedTrie::Size(std::size_t entries, bool is_max_order, uint64_t max_vocab, uint64_t max_ptr) {
+std::size_t BitPackedTable::Size(std::size_t entries, bool is_max_order, uint64_t max_vocab, uint64_t max_ptr) {
   uint8_t total_bits = util::RequiredBits(max_vocab) + 31 + (is_max_order ? 0 : 32) + util::RequiredBits(max_ptr);
   // Extra entry for next pointer at the end.  
   // +7 then / 8 to round up bits and convert to bytes
@@ -65,7 +65,8 @@ std::size_t BitPackedTrie::Size(std::size_t entries, bool is_max_order, uint64_t
   return ((1 + entries) * total_bits + 7) / 8 + sizeof(uint64_t);
 }
 
-void BitPackedTrie::Init(void *base, bool is_max_order, uint64_t max_vocab, uint64_t max_ptr) {
+void BitPackedTable::Init(void *base, bool is_max_order, uint64_t max_vocab, uint64_t max_ptr) {
+  if (is_max_order) assert(!max_ptr);
   util::BitPackingSanity();
   index_bits_ = util::RequiredBits(max_vocab);
   index_mask_ = (1ULL << index_bits_) - 1ULL;
@@ -83,7 +84,7 @@ void BitPackedTrie::Init(void *base, bool is_max_order, uint64_t max_vocab, uint
   insert_pointer_ = 0;
 }
 
-bool BitPackedTrie::FindWithNext(const NodeRange &pointer, WordIndex index, float &prob, float &backoff, NodeRange &next_pointer) const {
+bool BitPackedTable::FindWithNext(const NodeRange &pointer, WordIndex index, float &prob, float &backoff, NodeRange &next_pointer) const {
   uint64_t at_pointer;
   if (!FindBitPacked(base_, index_mask_, total_bits_, pointer.begin, pointer.end, index, at_pointer)) return false;
   at_pointer *= total_bits_;
@@ -99,7 +100,7 @@ bool BitPackedTrie::FindWithNext(const NodeRange &pointer, WordIndex index, floa
   return true;
 }
 
-void BitPackedTrie::Insert(WordIndex index, float prob, float backoff, uint64_t pointer) {
+void BitPackedTable::Insert(WordIndex index, float prob, float backoff, uint64_t pointer) {
   assert(index <= index_mask_);
   assert(pointer <= ptr_mask_);
   util::WriteInt57(base_ + (insert_pointer_ >> 3), insert_pointer_ & 7, index);
@@ -112,7 +113,7 @@ void BitPackedTrie::Insert(WordIndex index, float prob, float backoff, uint64_t 
   insert_pointer_ += ptr_bits_;
 }
 
-void BitPackedTrie::Finish(uint64_t end_pointer) {
+void BitPackedTable::Finish(uint64_t end_pointer) {
   assert(end_pointer <= ptr_mask_);
   uint64_t last_ptr_write = insert_pointer_ + total_bits_ - ptr_bits_;
   util::WriteInt57(base_ + (last_ptr_write >> 3), last_ptr_write & 7, end_pointer);
