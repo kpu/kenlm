@@ -56,8 +56,8 @@ bool FindBitPacked(const void *base, uint64_t key_mask, uint8_t total_bits, uint
 }
 } // namespace
 
-std::size_t BitPackedTable::Size(std::size_t entries, bool is_max_order, uint64_t max_vocab, uint64_t max_ptr) {
-  uint8_t total_bits = util::RequiredBits(max_vocab) + 31 + (is_max_order ? 0 : 32) + util::RequiredBits(max_ptr);
+std::size_t BitPacked::BaseSize(std::size_t entries, uint64_t max_vocab, uint8_t remaining_bits) {
+  uint8_t total_bits = util::RequiredBits(max_vocab) + 31 + remaining_bits;
   // Extra entry for next pointer at the end.  
   // +7 then / 8 to round up bits and convert to bytes
   // +sizeof(uint64_t) so that ReadInt57 etc don't go segfault.  
@@ -65,58 +65,84 @@ std::size_t BitPackedTable::Size(std::size_t entries, bool is_max_order, uint64_
   return ((1 + entries) * total_bits + 7) / 8 + sizeof(uint64_t);
 }
 
-void BitPackedTable::Init(void *base, bool is_max_order, uint64_t max_vocab, uint64_t max_ptr) {
-  if (is_max_order) assert(!max_ptr);
+void BitPacked::BaseInit(void *base, uint64_t max_vocab, uint8_t remaining_bits) {
   util::BitPackingSanity();
-  index_bits_ = util::RequiredBits(max_vocab);
-  index_mask_ = (1ULL << index_bits_) - 1ULL;
+  word_bits_ = util::RequiredBits(max_vocab);
+  word_mask_ = (1ULL << word_bits_) - 1ULL;
+  if (word_bits_ > 57) UTIL_THROW(util::Exception, "Sorry, word indices more than " << (1ULL << 57) << " are not implemented.  Edit util/bit_packing.hh and fix the bit packing functions.");
   prob_bits_ = 31;
-  backoff_bits_ = is_max_order ? 0 : 32;
-  ptr_bits_ = util::RequiredBits(max_ptr);
-  ptr_mask_ = (1ULL << ptr_bits_) - 1ULL;
-  // 2^57 is really big.  More than my target users have RAM for.   
-  if (index_bits_ > 57) UTIL_THROW(util::Exception, "Sorry, word indices more than " << (1ULL << 57) << " are not implemented.  Edit util/bit_packing.hh and fix the bit packing functions.");
-  if (ptr_bits_ > 57) UTIL_THROW(util::Exception, "Sorry, this does not support more than " << (1ULL << 57) << " n-grams of a particular order.  Edit util/bit_packing.hh and fix the bit packing functions.");
-
-  total_bits_ = index_bits_ + prob_bits_ + backoff_bits_ + ptr_bits_;
+  total_bits_ = word_bits_ + prob_bits_ + remaining_bits;
 
   base_ = static_cast<uint8_t*>(base);
-  insert_pointer_ = 0;
+  insert_index_ = 0;
 }
 
-bool BitPackedTable::FindWithNext(const NodeRange &pointer, WordIndex index, float &prob, float &backoff, NodeRange &next_pointer) const {
+void BitPackedLongest::Insert(WordIndex index, float prob) {
+  assert(index <= word_mask_);
+  uint64_t at_pointer = insert_index_ * total_bits_;
+  util::WriteInt57(base_ + (at_pointer >> 3), at_pointer & 7, index);
+  at_pointer += word_bits_;
+  util::WriteNonPositiveFloat31(base_ + (at_pointer >> 3), at_pointer & 7, prob);
+  ++insert_index_;
+}
+
+bool BitPackedLongest::Find(const NodeRange &range, WordIndex word, float &prob) const {
   uint64_t at_pointer;
-  if (!FindBitPacked(base_, index_mask_, total_bits_, pointer.begin, pointer.end, index, at_pointer)) return false;
-  at_pointer *= total_bits_;
-  at_pointer += index_bits_;
+  if (!FindBitPacked(base_, word_mask_, total_bits_, range.begin, range.end, word, at_pointer)) return false;
+  at_pointer = at_pointer * total_bits_ + word_bits_;
   prob = util::ReadNonPositiveFloat31(base_ + (at_pointer >> 3), at_pointer & 7);
-  at_pointer += prob_bits_;
-  prob = util::ReadFloat32(base_ + (at_pointer >> 3), at_pointer & 7);
-  at_pointer += backoff_bits_;
-  next_pointer.begin = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, ptr_mask_);
-  // Read the next entry's pointer.  
-  at_pointer += total_bits_;
-  next_pointer.end = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, ptr_mask_);
   return true;
 }
 
-void BitPackedTable::Insert(WordIndex index, float prob, float backoff, uint64_t pointer) {
-  assert(index <= index_mask_);
-  assert(pointer <= ptr_mask_);
-  util::WriteInt57(base_ + (insert_pointer_ >> 3), insert_pointer_ & 7, index);
-  insert_pointer_ += index_bits_;
-  util::WriteNonPositiveFloat31(base_ + (insert_pointer_ >> 3), insert_pointer_ & 7, prob);
-  insert_pointer_ += prob_bits_;
-  util::WriteFloat32(base_ + (insert_pointer_ >> 3), insert_pointer_ & 7, backoff);
-  insert_pointer_ += backoff_bits_;
-  util::WriteInt57(base_ + (insert_pointer_ >> 3), insert_pointer_ & 7, pointer);
-  insert_pointer_ += ptr_bits_;
+std::size_t BitPackedMiddle::Size(std::size_t entries, uint64_t max_vocab, uint64_t max_ptr) {
+  return BaseSize(entries, max_vocab, 32 + util::RequiredBits(max_ptr));
 }
 
-void BitPackedTable::Finish(uint64_t end_pointer) {
-  assert(end_pointer <= ptr_mask_);
-  uint64_t last_ptr_write = insert_pointer_ + total_bits_ - ptr_bits_;
-  util::WriteInt57(base_ + (last_ptr_write >> 3), last_ptr_write & 7, end_pointer);
+void BitPackedMiddle::Init(void *base, uint64_t max_vocab, uint64_t max_next) {
+  backoff_bits_ = 32;
+  next_bits_ = util::RequiredBits(max_next);
+  if (next_bits_ > 57) UTIL_THROW(util::Exception, "Sorry, this does not support more than " << (1ULL << 57) << " n-grams of a particular order.  Edit util/bit_packing.hh and fix the bit packing functions.");
+  next_mask_ = (1ULL << next_bits_)  - 1;
+
+  BaseInit(base, max_vocab, backoff_bits_ + next_bits_);
+}
+
+void BitPackedMiddle::Insert(WordIndex word, float prob, float backoff, uint64_t next) {
+  assert(word <= word_mask_);
+  assert(pointer <= next_mask_);
+  uint64_t at_pointer = insert_index_ * total_bits_;
+
+  util::WriteInt57(base_ + (at_pointer >> 3), at_pointer & 7, word);
+  at_pointer += word_bits_;
+  util::WriteNonPositiveFloat31(base_ + (at_pointer >> 3), at_pointer & 7, prob);
+  at_pointer += prob_bits_;
+  util::WriteFloat32(base_ + (at_pointer >> 3), at_pointer & 7, backoff);
+  at_pointer += backoff_bits_;
+  util::WriteInt57(base_ + (at_pointer >> 3), at_pointer & 7, next);
+
+  ++insert_index_;
+}
+
+bool BitPackedMiddle::Find(const NodeRange &range, WordIndex word, float &prob, float &backoff, NodeRange &next_range) const {
+  uint64_t at_pointer;
+  if (!FindBitPacked(base_, word_mask_, total_bits_, range.begin, range.end, word, at_pointer)) return false;
+  at_pointer *= total_bits_;
+  at_pointer += word_bits_;
+  prob = util::ReadNonPositiveFloat31(base_ + (at_pointer >> 3), at_pointer & 7);
+  at_pointer += prob_bits_;
+  backoff = util::ReadFloat32(base_ + (at_pointer >> 3), at_pointer & 7);
+  at_pointer += backoff_bits_;
+  next_range.begin = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_mask_);
+  // Read the next entry's pointer.  
+  at_pointer += total_bits_;
+  next_range.end = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_mask_);
+  return true;
+}
+
+void BitPackedMiddle::Finish(uint64_t next_end) {
+  assert(next_end <= next_mask_);
+  uint64_t last_next_write = (insert_index_ + 1) * total_bits_ - next_bits_;
+  util::WriteInt57(base_ + (last_next_write >> 3), last_next_write & 7, next_end);
 }
 
 } // namespace trie

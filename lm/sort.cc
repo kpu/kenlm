@@ -297,14 +297,14 @@ struct RecursiveInsertParams {
   SortedFileReader *files;
   unsigned char max_order;
   // This is an array of size order - 2.
-  BitPackedTable *middle;
+  BitPackedMiddle *middle;
   // This has exactly one entry.
-  BitPackedTable *longest;
+  BitPackedLongest *longest;
 };
 
 uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
   SortedFileReader &file = params.files[order - 2];
-  const uint64_t ret = (order == params.max_order) ? params.longest->InsertPointer() : params.middle[order - 2].InsertPointer();
+  const uint64_t ret = (order == params.max_order) ? params.longest->InsertIndex() : params.middle[order - 2].InsertIndex();
   if (std::memcmp(params.words, file.Header(), sizeof(WordIndex) * (order - 1)))
     return ret;
   WordIndex count;
@@ -315,7 +315,7 @@ uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
     for (WordIndex i = 0; i < count; ++i) {
       file.ReadWord(key);
       file.ReadWeights(value);
-      params.longest->Insert(key, value.prob, 0.0, 0);
+      params.longest->Insert(key, value.prob);
     }
     file.NextHeader();
     return ret;
@@ -338,14 +338,14 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
   std::vector<MiddleValue> unigrams(counts[0]);
 
   std::vector<std::vector<char> > middle_mem(counts.size() - 2);
-  std::vector<BitPackedTable> middle(counts.size() - 2);
+  std::vector<BitPackedMiddle> middle(counts.size() - 2);
   for (size_t i = 0; i < middle.size(); ++i) {
-    middle_mem[i].resize(BitPackedTable::Size(counts[i + 1], false, counts[i+1], counts[i+2]));
-    middle[i].Init(&*middle_mem[i].begin(), false, counts[i+1], counts[i+2]);
+    middle_mem[i].resize(BitPackedMiddle::Size(counts[i + 1], counts[i+1], counts[i+2]));
+    middle[i].Init(&*middle_mem[i].begin(), counts[i+1], counts[i+2]);
   }
-  std::vector<char> longest_mem(BitPackedTable::Size(counts.back(), true, counts[0], 0));
-  BitPackedTable longest;
-  longest.Init(&*longest_mem.begin(), true, counts.back(), 0);
+  std::vector<char> longest_mem(BitPackedLongest::Size(counts.back(), counts[0]));
+  BitPackedLongest longest;
+  longest.Init(&*longest_mem.begin(), true);
 
   // Load unigrams.  Leave the next pointers uninitialized.   
   {
@@ -380,13 +380,20 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
     }
   }
 
+  /* Set ending offsets so the last entry will be sized properly */
+  if (!middle.empty()) {
+    for (size_t i = 0; i < middle.size() - 1; ++i) {
+      middle[i].Finish(middle[i+1].InsertIndex());
+    }
+    middle.back().Finish(longest.InsertIndex());
+  }
 
-  WordIndex example[2] = {7, 3};
+/*  WordIndex example[2] = {7, 3};
   std::cerr << unigrams[example[0]].next << ' ' << unigrams[example[0] + 1].next << std::endl;
   MiddleValue mid;
   std::size_t delta;
   if (middle[0].Find(unigrams[example[0]].next, unigrams[example[0] + 1].next - unigrams[example[0]].next, example[1], mid, delta))
-    std::cerr << mid.weights.prob << std::endl;
+    std::cerr << mid.weights.prob << std::endl;*/
 }
 
 } // namespace trie
