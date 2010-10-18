@@ -53,8 +53,8 @@ void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int
   if (prefault) {
     flags |= MAP_POPULATE;
   }
-  int protect = for_write ? (PROT_READ | PROT_WRITE) : PROT_READ;
 #endif
+  int protect = for_write ? (PROT_READ | PROT_WRITE) : PROT_READ;
   void *ret = mmap(NULL, size, protect, flags, fd, offset);
   if (ret == MAP_FAILED) {
     UTIL_THROW(ErrnoException, "mmap failed for size " << size << " at offset " << offset);
