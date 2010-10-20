@@ -3,25 +3,12 @@
 #include "lm/exception.hh"
 #include "lm/ngram_hashed.hh"
 #include "lm/read_arpa.hh"
-#include "util/file_piece.hh"
-#include "util/joint_sort.hh"
 #include "util/murmur_hash.hh"
-#include "util/probing_hash_table.hh"
 
 #include <algorithm>
 #include <functional>
 #include <numeric>
-#include <limits>
-#include <string>
-
 #include <cmath>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 namespace lm {
 namespace ngram {
@@ -134,19 +121,17 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     out_state.valid_length_ = 0;
     return;
   }
-  out_state.backoff_[0] = search_.unigram.Lookup(*context_rbegin).backoff;
+  float ignored_prob;
+  typename Search::Node node;
+  search_.LookupUnigram(*context_rbegin, ignored_prob, out_state.backoff_[0], node);
   float *backoff_out = out_state.backoff_ + 1;
-  uint64_t lookup_hash = static_cast<uint64_t>(*context_rbegin);
   const WordIndex *i = context_rbegin + 1;
-  typename Middle::ConstIterator found;
   for (; i < context_rend; ++i, ++backoff_out) {
-    lookup_hash = CombineWordHash(lookup_hash, *i);
-    if (!search_.middle[i - context_rbegin - 1].Find(lookup_hash, found)) {
+    if (!search_.LookupMiddle(search_.middle[i - context_rbegin - 1], *i, ignored_prob, *backoff_out, node)) {
       out_state.valid_length_ = i - context_rbegin;
       std::copy(context_rbegin, i, out_state.history_);
       return;
     }
-    *backoff_out = found->GetValue().backoff;
   }
   std::copy(context_rbegin, context_rend, out_state.history_);
   out_state.valid_length_ = static_cast<unsigned char>(context_rend - context_rbegin);
@@ -161,17 +146,15 @@ template <class Search, class VocabularyT> float GenericModel<Search, Vocabulary
     ret += search_.unigram.Lookup(*context_rbegin).backoff;
     start = 2;
   }
-  uint64_t lookup_hash = static_cast<uint64_t>(*context_rbegin);
-  const WordIndex *i;
-  for (i = context_rbegin + 1; i < context_rbegin + start - 1; ++i) {
-    lookup_hash = CombineWordHash(lookup_hash, *i);
+  typename Search::Node node;
+  if (!search_.FastMakeNode(context_rbegin, context_rbegin + start - 1, node)) {
+    return 0.0;
   }
-  typename Middle::ConstIterator found;
+  float ignored_prob, backoff;
   // i is the order of the backoff we're looking for.
-  for (; i < context_rend; ++i) {
-    lookup_hash = CombineWordHash(lookup_hash, *i);
-    if (!search_.middle[i - context_rbegin - 1].Find(lookup_hash, found)) break;
-    ret += found->GetValue().backoff;
+  for (const WordIndex *i = context_rbegin + start - 1; i < context_rend; ++i) {
+    if (!search_.LookupMiddle(search_.middle[i - context_rbegin - 1], *i, ignored_prob, backoff, node)) break;
+    ret += backoff;
   }
   return ret;
 }
