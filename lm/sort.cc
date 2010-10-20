@@ -281,15 +281,10 @@ void ARPAToSortedFiles(const char *arpa, std::size_t buffer, const std::string &
   ConvertToSorted<ProbEntry<5> >(f, vocab, counts, mem, file_prefix);
 }
 
-struct MiddleValue {
+struct UnigramValue {
   ProbBackoff weights;
   uint64_t next;
   uint64_t Next() const { return next; }
-};
-
-struct EndValue {
-  Prob weights;
-  uint64_t Next() const { return 0; }
 };
 
 struct RecursiveInsertParams {
@@ -335,7 +330,7 @@ uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
 }
 
 void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &counts) {
-  std::vector<MiddleValue> unigrams(counts[0]);
+  std::vector<UnigramValue> unigrams(counts[0]);
 
   std::vector<std::vector<char> > middle_mem(counts.size() - 2);
   std::vector<BitPackedMiddle> middle(counts.size() - 2);
@@ -387,13 +382,6 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
     }
     middle.back().Finish(longest.InsertIndex());
   }
-
-/*  WordIndex example[2] = {7, 3};
-  std::cerr << unigrams[example[0]].next << ' ' << unigrams[example[0] + 1].next << std::endl;
-  MiddleValue mid;
-  std::size_t delta;
-  if (middle[0].Find(unigrams[example[0]].next, unigrams[example[0] + 1].next - unigrams[example[0]].next, example[1], mid, delta))
-    std::cerr << mid.weights.prob << std::endl;*/
 }
 
 } // namespace trie
