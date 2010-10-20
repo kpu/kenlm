@@ -78,6 +78,8 @@ template <class Proxy> class ProxyIterator {
     const Proxy *operator->() const { return &p_; }
     Proxy operator[](std::ptrdiff_t amount) const { return *(*this + amount); }
 
+    const InnerIterator &Inner() { return p_.Inner(); }
+
   private:
     InnerIterator &I() { return p_.Inner(); }
     const InnerIterator &I() const { return p_.Inner(); }

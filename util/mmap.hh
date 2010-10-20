@@ -6,6 +6,7 @@
 
 #include <cstddef>
 
+#include <inttypes.h>
 #include <sys/types.h>
 
 namespace util {
@@ -19,8 +20,8 @@ class scoped_mmap {
 
     void *get() const { return data_; }
 
-    const char *begin() const { return reinterpret_cast<char*>(data_); }
-    const char *end() const { return reinterpret_cast<char*>(data_) + size_; }
+    const uint8_t *begin() const { return reinterpret_cast<uint8_t*>(data_); }
+    const uint8_t *end() const { return reinterpret_cast<uint8_t*>(data_) + size_; }
     std::size_t size() const { return size_; }
 
     void reset(void *data, std::size_t size) {
@@ -92,7 +93,7 @@ void *MapAnonymous(std::size_t size);
 
 // Open file name with mmap of size bytes, all of which are initially zero.  
 void MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file, scoped_mmap &mem);
-inline void MapZeroedWrite(const char *name, std::size_t size, scoped_mapped_file &out) {
+void MapZeroedWrite(const char *name, std::size_t size, scoped_mapped_file &out) {
   MapZeroedWrite(name, size, out.fd, out.mem);
 }
  
