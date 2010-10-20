@@ -106,13 +106,10 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     VocabularyT vocab_;
 
     typedef typename Search::Unigram Unigram;
-    Unigram unigram_;
-
     typedef typename Search::Middle Middle;
-    std::vector<Middle> middle_;
-
     typedef typename Search::Longest Longest;
-    Longest longest_;
+
+    Search search_;
 };
 
 } // namespace detail

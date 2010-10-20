@@ -84,15 +84,15 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   vocab_.Init(start, allocated, counts[0]);
   start += allocated;
   allocated = Unigram::Size(counts[0]);
-  unigram_ = Unigram(start, allocated);
+  search_.unigram = Unigram(start, allocated);
   start += allocated;
   for (unsigned int n = 2; n < counts.size(); ++n) {
     allocated = Middle::Size(counts[n - 1], config.probing_multiplier);
-    middle_.push_back(Middle(start, allocated));
+    search_.middle.push_back(Middle(start, allocated));
     start += allocated;
   }
   allocated = Longest::Size(counts.back(), config.probing_multiplier);
-  longest_ = Longest(start, allocated);
+  search_.longest = Longest(start, allocated);
   start += allocated;
   if (static_cast<std::size_t>(start - static_cast<uint8_t*>(base)) != Size(counts, config)) UTIL_THROW(FormatLoadException, "The data structures took " << (start - static_cast<uint8_t*>(base)) << " but Size says they should take " << Size(counts, config));
 }
@@ -104,26 +104,26 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   State begin_sentence = State();
   begin_sentence.valid_length_ = 1;
   begin_sentence.history_[0] = vocab_.BeginSentence();
-  begin_sentence.backoff_[0] = unigram_.Lookup(begin_sentence.history_[0]).backoff;
+  begin_sentence.backoff_[0] = search_.unigram.Lookup(begin_sentence.history_[0]).backoff;
   State null_context = State();
   null_context.valid_length_ = 0;
-  P::Init(begin_sentence, null_context, vocab_, middle_.size() + 2);
+  P::Init(begin_sentence, null_context, vocab_, search_.middle.size() + 2);
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(void *start, const Parameters &params, const Config &config) {
   SetupMemory(start, params.counts, config);
   vocab_.LoadedBinary();
-  for (typename std::vector<Middle>::iterator i = middle_.begin(); i != middle_.end(); ++i) {
+  for (typename std::vector<Middle>::iterator i = search_.middle.begin(); i != search_.middle.end(); ++i) {
     i->LoadedBinary();
   }
-  longest_.LoadedBinary();
+  search_.longest.LoadedBinary();
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromARPA(void *start, const Parameters &params, const Config &config, util::FilePiece &f) {
   SetupMemory(start, params.counts, config);
   // Read the unigrams.
   // TODO: unkludge this
-  Read1Grams(f, params.counts[0], vocab_, &unigram_.Lookup(0));
+  Read1Grams(f, params.counts[0], vocab_, &search_.unigram.Lookup(0));
   if (!vocab_.SawUnk()) {
     switch(config.unknown_missing) {
       case Config::THROW_UP:
@@ -137,18 +137,18 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
         // There's no break;.  This is by design.  
       case Config::SILENT:
         // Default probabilities for unknown.  
-        unigram_.Lookup(0).backoff = 0.0;
-        unigram_.Lookup(0).prob = config.unknown_missing_prob;
+        search_.unigram.Lookup(0).backoff = 0.0;
+        search_.unigram.Lookup(0).prob = config.unknown_missing_prob;
         break;
     }
   }
   
   // Read the n-grams.
   for (unsigned int n = 2; n < params.counts.size(); ++n) {
-    ReadNGrams(f, n, params.counts[n-1], vocab_, middle_[n-2]);
+    ReadNGrams(f, n, params.counts[n-1], vocab_, search_.middle[n-2]);
   }
-  ReadNGrams(f, params.counts.size(), params.counts[params.counts.size() - 1], vocab_, longest_);
-  if (std::fabs(unigram_.Lookup(0).backoff) > 0.0000001) UTIL_THROW(FormatLoadException, "Backoff for unknown word should be zero, but was given as " << unigram_.Lookup(0).backoff);
+  ReadNGrams(f, params.counts.size(), params.counts[params.counts.size() - 1], vocab_, search_.longest);
+  if (std::fabs(search_.unigram.Lookup(0).backoff) > 0.0000001) UTIL_THROW(FormatLoadException, "Backoff for unknown word should be zero, but was given as " << search_.unigram.Lookup(0).backoff);
 }
 
 template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::FullScore(const State &in_state, const WordIndex new_word, State &out_state) const {
@@ -174,14 +174,14 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     out_state.valid_length_ = 0;
     return;
   }
-  out_state.backoff_[0] = unigram_.Lookup(*context_rbegin).backoff;
+  out_state.backoff_[0] = search_.unigram.Lookup(*context_rbegin).backoff;
   float *backoff_out = out_state.backoff_ + 1;
   uint64_t lookup_hash = static_cast<uint64_t>(*context_rbegin);
   const WordIndex *i = context_rbegin + 1;
   typename Middle::ConstIterator found;
   for (; i < context_rend; ++i, ++backoff_out) {
     lookup_hash = CombineWordHash(lookup_hash, *i);
-    if (!middle_[i - context_rbegin - 1].Find(lookup_hash, found)) {
+    if (!search_.middle[i - context_rbegin - 1].Find(lookup_hash, found)) {
       out_state.valid_length_ = i - context_rbegin;
       std::copy(context_rbegin, i, out_state.history_);
       return;
@@ -198,7 +198,7 @@ template <class Search, class VocabularyT> float GenericModel<Search, Vocabulary
   if (context_rend - context_rbegin < static_cast<std::ptrdiff_t>(start)) return 0.0;
   float ret = 0.0;
   if (start == 1) {
-    ret += unigram_.Lookup(*context_rbegin).backoff;
+    ret += search_.unigram.Lookup(*context_rbegin).backoff;
     start = 2;
   }
   uint64_t lookup_hash = static_cast<uint64_t>(*context_rbegin);
@@ -210,7 +210,7 @@ template <class Search, class VocabularyT> float GenericModel<Search, Vocabulary
   // i is the order of the backoff we're looking for.
   for (; i < context_rend; ++i) {
     lookup_hash = CombineWordHash(lookup_hash, *i);
-    if (!middle_[i - context_rbegin - 1].Find(lookup_hash, found)) break;
+    if (!search_.middle[i - context_rbegin - 1].Find(lookup_hash, found)) break;
     ret += found->GetValue().backoff;
   }
   return ret;
@@ -228,7 +228,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     unsigned char &backoff_start,
     State &out_state) const {
   FullScoreReturn ret;
-  const ProbBackoff &unigram = unigram_.Lookup(new_word);
+  const ProbBackoff &unigram = search_.unigram.Lookup(new_word);
   if (new_word == 0) {
     ret.ngram_length = out_state.valid_length_ = 0;
     // All of backoff.  
@@ -252,7 +252,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
   uint64_t lookup_hash = static_cast<uint64_t>(new_word);
   const WordIndex *hist_iter = context_rbegin;
-  typename std::vector<Middle>::const_iterator mid_iter = middle_.begin();
+  typename std::vector<Middle>::const_iterator mid_iter = search_.middle.begin();
   for (; ; ++mid_iter, ++hist_iter, ++backoff_out) {
     if (hist_iter == context_rend) {
       // Ran out of history.  No backoff.  
@@ -263,7 +263,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
       return ret;
     }
     lookup_hash = CombineWordHash(lookup_hash, *hist_iter);
-    if (mid_iter == middle_.end()) break;
+    if (mid_iter == search_.middle.end()) break;
     typename Middle::ConstIterator found;
     if (!mid_iter->Find(lookup_hash, found)) {
       // Didn't find an ngram using hist_iter.  
@@ -271,7 +271,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
       std::copy(context_rbegin, hist_iter, out_state.history_ + 1);
       // Therefore, we found a (hist_iter - context_rbegin + 1)-gram including the last word.  
       ret.ngram_length = out_state.valid_length_ = (hist_iter - context_rbegin) + 1;
-      backoff_start = mid_iter - middle_.begin() + 1;
+      backoff_start = mid_iter - search_.middle.begin() + 1;
       // ret.prob was already set.  
       return ret;
     }
@@ -279,11 +279,11 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     ret.prob = found->GetValue().prob;
   }
 
-  // It passed every lookup in middle_.  That means it's at least a (P::Order() - 1)-gram. 
-  // All that's left is to check longest_.  
+  // It passed every lookup in search_.middle.  That means it's at least a (P::Order() - 1)-gram. 
+  // All that's left is to check search_.longest.  
   
   typename Longest::ConstIterator found;
-  if (!longest_.Find(lookup_hash, found)) {
+  if (!search_.longest.Find(lookup_hash, found)) {
     // It's an (P::Order()-1)-gram
     std::copy(context_rbegin, context_rbegin + P::Order() - 2, out_state.history_ + 1);
     ret.ngram_length = out_state.valid_length_ = P::Order() - 1;
