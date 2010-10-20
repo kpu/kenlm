@@ -93,7 +93,7 @@ void *MapAnonymous(std::size_t size);
 
 // Open file name with mmap of size bytes, all of which are initially zero.  
 void MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file, scoped_mmap &mem);
-void MapZeroedWrite(const char *name, std::size_t size, scoped_mapped_file &out) {
+inline void MapZeroedWrite(const char *name, std::size_t size, scoped_mapped_file &out) {
   MapZeroedWrite(name, size, out.fd, out.mem);
 }
  
