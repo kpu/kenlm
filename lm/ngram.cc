@@ -124,8 +124,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   SetupMemory(start, params.counts, config);
   // Read the unigrams.
   Read1Grams(f, params.counts[0], vocab_, unigram_);
-  bool saw_unk = vocab_.SawUnk();
-  if (!saw_unk) {
+  if (!vocab_.SawUnk()) {
     switch(config.unknown_missing) {
       case Config::THROW_UP:
         {
