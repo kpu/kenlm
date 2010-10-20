@@ -1,7 +1,6 @@
 #include "lm/ngram.hh"
 
 #include "lm/exception.hh"
-#include "lm/ngram_hashed.hh"
 #include "lm/read_arpa.hh"
 #include "util/file_piece.hh"
 #include "util/joint_sort.hh"
@@ -26,14 +25,14 @@
 namespace lm {
 namespace ngram {
 
-size_t hash_value(const State &state) {
-  return util::MurmurHashNative(state.history_, sizeof(WordIndex) * state.valid_length_);
-}
-
 namespace {
 
+/* All of the entropy is in low order bits and boost::hash does poorly with
+ * these.  Odd numbers near 2^64 chosen by mashing on the keyboard.  There is a
+ * stable point: 0.  But 0 is <unk> which won't be queried here anyway.  
+ */
 inline uint64_t CombineWordHash(uint64_t current, const WordIndex next) {
-  uint64_t ret = (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(next) *                     17894857484156487943ULL);
+  uint64_t ret = (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(next) * 17894857484156487943ULL);
   return ret;
 }
 
@@ -58,71 +57,17 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
     store.Insert(Store::Packing::Make(key, value));
   }
 
-  if (f.ReadLine().size()) UTIL_THROW(FormatLoadException, "Expected blank line after " << n << "-grams  at byte " << f.Offset());
+  if (f.ReadLine().size()) UTIL_THROW(FormatLoadException, "Expected blank line after " << n << "-grams at byte " << f.Offset());
   store.FinishedInserting();
 }
 
 } // namespace
-
 namespace detail {
-
-template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<uint64_t> &counts, const Config &config) {
-  if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit ngram.hh's kMaxOrder to at least this value and recompile.");
-  if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
-  std::size_t memory_size = VocabularyT::Size(counts[0], config.probing_multiplier);
-  memory_size += Unigram::Size(counts[0]);
-  for (unsigned char n = 2; n < counts.size(); ++n) {
-    memory_size += Middle::Size(counts[n - 1], config.probing_multiplier);
-  }
-  memory_size += Longest::Size(counts.back(), config.probing_multiplier);
-  return memory_size;
-}
-
-template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(void *base, const std::vector<uint64_t> &counts, const Config &config) {
-  uint8_t *start = static_cast<uint8_t*>(base);
-  size_t allocated = VocabularyT::Size(counts[0], config.probing_multiplier);
-  vocab_.Init(start, allocated, counts[0]);
-  start += allocated;
-  allocated = Unigram::Size(counts[0]);
-  unigram_ = Unigram(start, allocated);
-  start += allocated;
-  for (unsigned int n = 2; n < counts.size(); ++n) {
-    allocated = Middle::Size(counts[n - 1], config.probing_multiplier);
-    middle_.push_back(Middle(start, allocated));
-    start += allocated;
-  }
-  allocated = Longest::Size(counts.back(), config.probing_multiplier);
-  longest_ = Longest(start, allocated);
-  start += allocated;
-  if (static_cast<std::size_t>(start - static_cast<uint8_t*>(base)) != Size(counts, config)) UTIL_THROW(FormatLoadException, "The data structures took " << (start - static_cast<uint8_t*>(base)) << " but Size says they should take " << Size(counts, config));
-}
-
-template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) {
-  LoadLM(file, config, *this);
-
-  // g++ prints warnings unless these are fully initialized.  
-  State begin_sentence = State();
-  begin_sentence.valid_length_ = 1;
-  begin_sentence.history_[0] = vocab_.BeginSentence();
-  begin_sentence.backoff_[0] = unigram_.Lookup(begin_sentence.history_[0]).backoff;
-  State null_context = State();
-  null_context.valid_length_ = 0;
-  P::Init(begin_sentence, null_context, vocab_, middle_.size() + 2);
-}
-
-template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(void *start, const Parameters &params, const Config &config) {
-  SetupMemory(start, params.counts, config);
-  vocab_.LoadedBinary();
-  for (typename std::vector<Middle>::iterator i = middle_.begin(); i != middle_.end(); ++i) {
-    i->LoadedBinary();
-  }
-  longest_.LoadedBinary();
-}
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromARPA(void *start, const Parameters &params, const Config &config, util::FilePiece &f) {
   SetupMemory(start, params.counts, config);
   // Read the unigrams.
-  // TODO: unkludge this
+  // TODO: unkludge &unigram_.Lookup(0).
   Read1Grams(f, params.counts[0], vocab_, &unigram_.Lookup(0));
   if (!vocab_.SawUnk()) {
     switch(config.unknown_missing) {
@@ -300,9 +245,6 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   backoff_start = P::Order();
   return ret;
 }
-
-template class GenericModel<ProbingHashedSearch, ProbingVocabulary>;
-template class GenericModel<SortedHashedSearch, SortedVocabulary>;
 
 } // namespace detail
 } // namespace ngram

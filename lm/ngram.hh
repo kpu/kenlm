@@ -4,6 +4,7 @@
 #include "lm/binary_format.hh"
 #include "lm/facade.hh"
 #include "lm/ngram_config.hh"
+#include "lm/ngram_hashed.hh"
 #include "lm/vocab.hh"
 #include "lm/weights.hh"
 #include "util/key_value_packing.hh"
@@ -51,11 +52,6 @@ class State {
 size_t hash_value(const State &state);
 
 namespace detail {
-
-// std::identity is an SGI extension :-(
-struct IdentityHash : public std::unary_function<uint64_t, size_t> {
-  size_t operator()(uint64_t arg) const { return static_cast<size_t>(arg); }
-};
 
 // Should return the same results as SRI.  
 // Why VocabularyT instead of just Vocabulary?  ModelFacade defines Vocabulary.  
@@ -109,46 +105,24 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     
     VocabularyT vocab_;
 
-    ProbBackoff *unigram_;
+    typedef typename Search::Unigram Unigram;
+    Unigram unigram_;
 
-    typedef typename Search::template Table<ProbBackoff>::T Middle;
+    typedef typename Search::Middle Middle;
     std::vector<Middle> middle_;
 
-    typedef typename Search::template Table<Prob>::T Longest;
+    typedef typename Search::Longest Longest;
     Longest longest_;
-};
-
-struct ProbingSearch {
-  typedef float Init;
-
-  static const ModelType kModelType = HASH_PROBING;
-
-  template <class Value> struct Table {
-    typedef util::ByteAlignedPacking<uint64_t, Value> Packing;
-    typedef util::ProbingHashTable<Packing, IdentityHash> T;
-  };
-};
-
-struct SortedUniformSearch {
-  // This is ignored.
-  typedef float Init;
-
-  static const ModelType kModelType = HASH_SORTED;
-
-  template <class Value> struct Table {
-    typedef util::ByteAlignedPacking<uint64_t, Value> Packing;
-    typedef util::SortedUniformMap<Packing> T;
-  };
 };
 
 } // namespace detail
 
 // These must also be instantiated in the cc file.  
 typedef ::lm::ProbingVocabulary Vocabulary;
-typedef detail::GenericModel<detail::ProbingSearch, Vocabulary> Model;
+typedef detail::GenericModel<ProbingHashedSearch, Vocabulary> Model;
 
 typedef ::lm::SortedVocabulary SortedVocabulary;
-typedef detail::GenericModel<detail::SortedUniformSearch, SortedVocabulary> SortedModel;
+typedef detail::GenericModel<SortedHashedSearch, SortedVocabulary> SortedModel;
 
 } // namespace ngram
 } // namespace lm
