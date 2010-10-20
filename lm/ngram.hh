@@ -1,6 +1,7 @@
 #ifndef LM_NGRAM__
 #define LM_NGRAM__
 
+#include "lm/binary_format.hh"
 #include "lm/facade.hh"
 #include "lm/ngram_config.hh"
 #include "lm/vocab.hh"
@@ -67,7 +68,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     // itself.  
     static size_t Size(const std::vector<size_t> &counts, const Config &config = Config());
 
-    GenericModel(const char *file, Config config = Config());
+    GenericModel(const char *file, const Config &config = Config());
 
     FullScoreReturn FullScore(const State &in_state, const WordIndex new_word, State &out_state) const;
 
@@ -87,19 +88,24 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     void GetState(const WordIndex *context_rbegin, const WordIndex *context_rend, State &out_state) const;
 
   private:
+    friend void LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);
+
     float SlowBackoffLookup(const WordIndex *const context_rbegin, const WordIndex *const context_rend, unsigned char start) const;
 
     FullScoreReturn ScoreExceptBackoff(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, unsigned char &backoff_start, State &out_state) const;
 
     // Appears after Size in the cc file.
-    void SetupMemory(char *start, const std::vector<size_t> &counts, const Config &config);
+    void SetupMemory(void *start, const std::vector<uint64_t> &counts, const Config &config);
 
-    void LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts, const Config &config);
+    void InitializeFromBinary(void *start, const Parameters &params, const Config &config);
 
-    util::scoped_fd mapped_file_;
+    void InitializeFromARPA(void *start, const Parameters &params, const Config &config, util::FilePiece &f);
 
-    // memory_ is the raw block of memory backing vocab_, unigram_, [middle.begin(), middle.end()), and longest_.  
-    util::scoped_mmap memory_;
+    Backing &MutableBacking() { return backing_; }
+
+    static const ModelType kModelType = Search::kModelType;
+
+    Backing backing_;
     
     VocabularyT vocab_;
 
@@ -115,7 +121,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 struct ProbingSearch {
   typedef float Init;
 
-  static const unsigned char kBinaryTag = 1;
+  static const ModelType kModelType = HASH_PROBING;
 
   template <class Value> struct Table {
     typedef util::ByteAlignedPacking<uint64_t, Value> Packing;
@@ -127,7 +133,7 @@ struct SortedUniformSearch {
   // This is ignored.
   typedef float Init;
 
-  static const unsigned char kBinaryTag = 2;
+  static const ModelType kModelType = HASH_SORTED;
 
   template <class Value> struct Table {
     typedef util::ByteAlignedPacking<uint64_t, Value> Packing;

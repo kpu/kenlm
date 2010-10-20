@@ -68,7 +68,7 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
 } // namespace
 namespace detail {
 
-template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<size_t> &counts, const Config &config) {
+template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<uint64_t> &counts, const Config &config) {
   if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit ngram.hh's kMaxOrder to at least this value and recompile.");
   if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
   size_t memory_size = VocabularyT::Size(counts[0], config.probing_multiplier);
@@ -80,8 +80,8 @@ template <class Search, class VocabularyT> size_t GenericModel<Search, Vocabular
   return memory_size;
 }
 
-template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(char *base, const std::vector<size_t> &counts, const Config &config) {
-  char *start = base;
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(void *base, const std::vector<uint64_t> &counts, const Config &config) {
+  uint8_t *start = static_cast<uint8_t*>(base);
   size_t allocated = VocabularyT::Size(counts[0], config.probing_multiplier);
   vocab_.Init(start, allocated, counts[0]);
   start += allocated;
@@ -95,128 +95,11 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   allocated = Longest::Size(counts.back(), config.probing_multiplier);
   longest_ = Longest(start, allocated);
   start += allocated;
-  if (static_cast<std::size_t>(start - base) != Size(counts, config)) UTIL_THROW(FormatLoadException, "The data structures took " << (start - base) << " but Size says they should take " << Size(counts, config));
+  if (static_cast<std::size_t>(start - static_cast<uint8_t*>(base)) != Size(counts, config)) UTIL_THROW(FormatLoadException, "The data structures took " << (start - static_cast<uint8_t*>(base)) << " but Size says they should take " << Size(counts, config));
 }
 
-const char kMagicBytes[] = "mmap lm http://kheafield.com/code format version 0\n\0";
-struct BinaryFileHeader {
-  char magic[sizeof(kMagicBytes)];
-  float zero_f, one_f, minus_half_f;
-  WordIndex one_word_index, max_word_index;
-  uint64_t one_uint64;
-
-  void SetToReference() {
-    std::memcpy(magic, kMagicBytes, sizeof(magic));
-    zero_f = 0.0; one_f = 1.0; minus_half_f = -0.5;
-    one_word_index = 1;
-    max_word_index = std::numeric_limits<WordIndex>::max();
-    one_uint64 = 1;
-  }
-};
-
-bool IsBinaryFormat(int fd, off_t size) {
-  if (size == util::kBadSize || (size <= static_cast<off_t>(sizeof(BinaryFileHeader)))) return false;
-  // Try reading the header.  
-  util::scoped_mmap memory(mmap(NULL, sizeof(BinaryFileHeader), PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0), sizeof(BinaryFileHeader));
-  if (memory.get() == MAP_FAILED) return false;
-  BinaryFileHeader reference_header = BinaryFileHeader();
-  reference_header.SetToReference();
-  if (!memcmp(memory.get(), &reference_header, sizeof(BinaryFileHeader))) return true;
-  if (!memcmp(memory.get(), "mmap lm ", 8)) UTIL_THROW(FormatLoadException, "File looks like it should be loaded with mmap, but the test values don't match.  Was it built on a different machine or with a different compiler?");
-  return false;
-}
-
-std::size_t Align8(std::size_t in) {
-  std::size_t off = in % 8;
-  if (!off) return in;
-  return in + 8 - off;
-}
-
-std::size_t TotalHeaderSize(unsigned int order) {
-  return Align8(sizeof(BinaryFileHeader) + 1 /* order */ + sizeof(uint64_t) * order /* counts */ + sizeof(float) /* probing multiplier */ + 1 /* search_tag */);
-}
-
-void ReadBinaryHeader(const void *from, off_t size, std::vector<size_t> &out, float &probing_multiplier, unsigned char &search_tag) {
-  const char *from_char = reinterpret_cast<const char*>(from);
-  if (size < static_cast<off_t>(1 + sizeof(BinaryFileHeader))) UTIL_THROW(FormatLoadException, "File too short to have count information.");
-  // Skip over the BinaryFileHeader which was read by IsBinaryFormat.  
-  from_char += sizeof(BinaryFileHeader);
-  unsigned char order = *reinterpret_cast<const unsigned char*>(from_char);
-  if (size < static_cast<off_t>(TotalHeaderSize(order))) UTIL_THROW(FormatLoadException, "File too short to have full header.");
-  out.resize(static_cast<std::size_t>(order));
-  const uint64_t *counts = reinterpret_cast<const uint64_t*>(from_char + 1);
-  for (std::size_t i = 0; i < out.size(); ++i) {
-    out[i] = static_cast<std::size_t>(counts[i]);
-  }
-  const float *probing_ptr = reinterpret_cast<const float*>(counts + out.size());
-  probing_multiplier = *probing_ptr;
-  search_tag = *reinterpret_cast<const char*>(probing_ptr + 1);
-}
-
-void WriteBinaryHeader(void *to, const std::vector<size_t> &from, float probing_multiplier, char search_tag) {
-  BinaryFileHeader header = BinaryFileHeader();
-  header.SetToReference();
-  memcpy(to, &header, sizeof(BinaryFileHeader));
-  char *out = reinterpret_cast<char*>(to) + sizeof(BinaryFileHeader);
-  *reinterpret_cast<unsigned char*>(out) = static_cast<unsigned char>(from.size());
-  uint64_t *counts = reinterpret_cast<uint64_t*>(out + 1);
-  for (std::size_t i = 0; i < from.size(); ++i) {
-    counts[i] = from[i];
-  }
-  float *probing_ptr = reinterpret_cast<float*>(counts + from.size());
-  *probing_ptr = probing_multiplier;
-  *reinterpret_cast<char*>(probing_ptr + 1) = search_tag;
-}
-
-template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, Config config) : mapped_file_(util::OpenReadOrThrow(file)) {
-  const off_t file_size = util::SizeFile(mapped_file_.get());
-
-  std::vector<size_t> counts;
-
-  if (IsBinaryFormat(mapped_file_.get(), file_size)) {
-    memory_.reset(util::MapForRead(file_size, config.prefault, mapped_file_.get()), file_size);
-
-    unsigned char search_tag;
-    ReadBinaryHeader(memory_.begin(), file_size, counts, config.probing_multiplier, search_tag);
-    if (config.probing_multiplier < 1.0) UTIL_THROW(FormatLoadException, "Binary format claims to have a probing multiplier of " << config.probing_multiplier << " which is < 1.0.");
-    if (search_tag != Search::kBinaryTag) UTIL_THROW(FormatLoadException, "The binary file has a different search strategy than the one requested.");
-    size_t memory_size = Size(counts, config);
-
-    char *start = reinterpret_cast<char*>(memory_.get()) + TotalHeaderSize(counts.size());
-    if (memory_size != static_cast<size_t>(memory_.end() - start)) UTIL_THROW(FormatLoadException, "The mmap file " << file << " has size " << file_size << " but " << (memory_size + TotalHeaderSize(counts.size())) << " was expected based on the number of counts and configuration.");
-
-    SetupMemory(start, counts, config);
-    vocab_.LoadedBinary();
-    for (typename std::vector<Middle>::iterator i = middle_.begin(); i != middle_.end(); ++i) {
-      i->LoadedBinary();
-    }
-    longest_.LoadedBinary();
-
-  } else {
-    if (config.probing_multiplier <= 1.0) UTIL_THROW(FormatLoadException, "probing multiplier must be > 1.0");
-
-    util::FilePiece f(file, mapped_file_.release(), config.messages);
-    ReadARPACounts(f, counts);
-    size_t memory_size = Size(counts, config);
-    char *start;
-
-    if (config.write_mmap) {
-      // Write out an mmap file.  
-      util::MapZeroedWrite(config.write_mmap, TotalHeaderSize(counts.size()) + memory_size, mapped_file_, memory_);
-      WriteBinaryHeader(memory_.get(), counts, config.probing_multiplier, Search::kBinaryTag);
-      start = reinterpret_cast<char*>(memory_.get()) + TotalHeaderSize(counts.size());
-    } else {
-      memory_.reset(util::MapAnonymous(memory_size), memory_size);
-      start = reinterpret_cast<char*>(memory_.get());
-    }
-    SetupMemory(start, counts, config);
-    try {
-      LoadFromARPA(f, counts, config);
-    } catch (FormatLoadException &e) {
-      e << " in file " << file;
-      throw;
-    }
-  }
+template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) {
+  LoadLM(file, config, *this);
 
   // g++ prints warnings unless these are fully initialized.  
   State begin_sentence = State();
@@ -225,12 +108,22 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   begin_sentence.backoff_[0] = unigram_[begin_sentence.history_[0]].backoff;
   State null_context = State();
   null_context.valid_length_ = 0;
-  P::Init(begin_sentence, null_context, vocab_, counts.size());
+  P::Init(begin_sentence, null_context, vocab_, middle_.size() + 2);
 }
 
-template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::LoadFromARPA(util::FilePiece &f, const std::vector<size_t> &counts, const Config &config) {
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(void *start, const Parameters &params, const Config &config) {
+  SetupMemory(start, params.counts, config);
+  vocab_.LoadedBinary();
+  for (typename std::vector<Middle>::iterator i = middle_.begin(); i != middle_.end(); ++i) {
+    i->LoadedBinary();
+  }
+  longest_.LoadedBinary();
+}
+
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromARPA(void *start, const Parameters &params, const Config &config, util::FilePiece &f) {
+  SetupMemory(start, params.counts, config);
   // Read the unigrams.
-  Read1Grams(f, counts[0], vocab_, unigram_);
+  Read1Grams(f, params.counts[0], vocab_, unigram_);
   bool saw_unk = vocab_.SawUnk();
   if (!saw_unk) {
     switch(config.unknown_missing) {
@@ -252,10 +145,10 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   }
   
   // Read the n-grams.
-  for (unsigned int n = 2; n < counts.size(); ++n) {
-    ReadNGrams(f, n, counts[n-1], vocab_, middle_[n-2]);
+  for (unsigned int n = 2; n < params.counts.size(); ++n) {
+    ReadNGrams(f, n, params.counts[n-1], vocab_, middle_[n-2]);
   }
-  ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab_, longest_);
+  ReadNGrams(f, params.counts.size(), params.counts[params.counts.size() - 1], vocab_, longest_);
   if (std::fabs(unigram_[0].backoff) > 0.0000001) UTIL_THROW(FormatLoadException, "Backoff for unknown word should be zero, but was given as " << unigram_[0].backoff);
 }
 
