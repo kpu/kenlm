@@ -37,31 +37,6 @@ inline uint64_t CombineWordHash(uint64_t current, const WordIndex next) {
   return ret;
 }
 
-uint64_t ChainedWordHash(const WordIndex *word, const WordIndex *word_end) {
-  if (word == word_end) return 0;
-  uint64_t current = static_cast<uint64_t>(*word);
-  for (++word; word != word_end; ++word) {
-    current = CombineWordHash(current, *word);
-  }
-  return current;
-}
-
-template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, Store &store) {
-  ReadNGramHeader(f, n);
-
-  // vocab ids of words in reverse order
-  WordIndex vocab_ids[n];
-  typename Store::Packing::Value value;
-  for (size_t i = 0; i < count; ++i) {
-    ReadNGram(f, n, vocab, vocab_ids, value);
-    uint64_t key = ChainedWordHash(vocab_ids, vocab_ids + n);
-    store.Insert(Store::Packing::Make(key, value));
-  }
-
-  if (f.ReadLine().size()) UTIL_THROW(FormatLoadException, "Expected blank line after " << n << "-grams  at byte " << f.Offset());
-  store.FinishedInserting();
-}
-
 } // namespace
 
 namespace detail {
@@ -122,9 +97,8 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromARPA(void *start, const Parameters &params, const Config &config, util::FilePiece &f) {
   SetupMemory(start, params.counts, config);
-  // Read the unigrams.
-  // TODO: unkludge this
-  Read1Grams(f, params.counts[0], vocab_, &search_.unigram.Lookup(0));
+  search_.InitializeFromARPA(f, params.counts, vocab_);
+  // TODO: fail faster?  
   if (!vocab_.SawUnk()) {
     switch(config.unknown_missing) {
       case Config::THROW_UP:
@@ -143,13 +117,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
         break;
     }
   }
-  
-  // Read the n-grams.
-  for (unsigned int n = 2; n < params.counts.size(); ++n) {
-    ReadNGrams(f, n, params.counts[n-1], vocab_, search_.middle[n-2]);
-  }
-  ReadNGrams(f, params.counts.size(), params.counts[params.counts.size() - 1], vocab_, search_.longest);
-  if (std::fabs(search_.unigram.Lookup(0).backoff) > 0.0000001) UTIL_THROW(FormatLoadException, "Backoff for unknown word should be zero, but was given as " << search_.unigram.Lookup(0).backoff);
+  if (std::fabs(search_.unigram.Lookup(0).backoff) > 0.0000001) UTIL_THROW(FormatLoadException, "Backoff for unknown word should be zero, but was given as " << search_.unigram.Lookup(0).backoff);  
 }
 
 template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::FullScore(const State &in_state, const WordIndex new_word, State &out_state) const {

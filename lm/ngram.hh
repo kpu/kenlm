@@ -116,10 +116,10 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 
 // These must also be instantiated in the cc file.  
 typedef ::lm::ProbingVocabulary Vocabulary;
-typedef detail::GenericModel<ProbingHashedSearch, Vocabulary> Model;
+typedef detail::GenericModel<detail::ProbingHashedSearch, Vocabulary> Model;
 
 typedef ::lm::SortedVocabulary SortedVocabulary;
-typedef detail::GenericModel<SortedHashedSearch, SortedVocabulary> SortedModel;
+typedef detail::GenericModel<detail::SortedHashedSearch, SortedVocabulary> SortedModel;
 
 } // namespace ngram
 } // namespace lm
