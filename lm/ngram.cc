@@ -30,15 +30,6 @@ size_t hash_value(const State &state) {
   return util::MurmurHashNative(state.history_, sizeof(WordIndex) * state.valid_length_);
 }
 
-namespace {
-
-inline uint64_t CombineWordHash(uint64_t current, const WordIndex next) {
-  uint64_t ret = (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(next) *                     17894857484156487943ULL);
-  return ret;
-}
-
-} // namespace
-
 namespace detail {
 
 template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<uint64_t> &counts, const Config &config) {
@@ -197,17 +188,15 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     unsigned char &backoff_start,
     State &out_state) const {
   FullScoreReturn ret;
-  const ProbBackoff &unigram = search_.unigram.Lookup(new_word);
+  typename Search::Node node;
+  float *backoff_out(out_state.backoff_);
+  search_.LookupUnigram(new_word, ret.prob, *backoff_out, node);
   if (new_word == 0) {
     ret.ngram_length = out_state.valid_length_ = 0;
     // All of backoff.  
     backoff_start = 1;
-    ret.prob = unigram.prob;
     return ret;
   }
-  float *backoff_out(out_state.backoff_);
-  *backoff_out = unigram.backoff;
-  ret.prob = unigram.prob;
   out_state.history_[0] = new_word;
   if (context_rbegin == context_rend) {
     ret.ngram_length = out_state.valid_length_ = 1;
@@ -219,7 +208,6 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
   // Ok now we now that the bigram contains known words.  Start by looking it up.
 
-  uint64_t lookup_hash = static_cast<uint64_t>(new_word);
   const WordIndex *hist_iter = context_rbegin;
   typename std::vector<Middle>::const_iterator mid_iter = search_.middle.begin();
   for (; ; ++mid_iter, ++hist_iter, ++backoff_out) {
@@ -231,10 +219,10 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
       // ret.prob was already set.
       return ret;
     }
-    lookup_hash = CombineWordHash(lookup_hash, *hist_iter);
+
     if (mid_iter == search_.middle.end()) break;
-    typename Middle::ConstIterator found;
-    if (!mid_iter->Find(lookup_hash, found)) {
+
+    if (!search_.LookupMiddle(*mid_iter, *hist_iter, ret.prob, *backoff_out, node)) {
       // Didn't find an ngram using hist_iter.  
       // The history used in the found n-gram is [context_rbegin, hist_iter).  
       std::copy(context_rbegin, hist_iter, out_state.history_ + 1);
@@ -244,15 +232,12 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
       // ret.prob was already set.  
       return ret;
     }
-    *backoff_out = found->GetValue().backoff;
-    ret.prob = found->GetValue().prob;
   }
 
   // It passed every lookup in search_.middle.  That means it's at least a (P::Order() - 1)-gram. 
   // All that's left is to check search_.longest.  
   
-  typename Longest::ConstIterator found;
-  if (!search_.longest.Find(lookup_hash, found)) {
+  if (!search_.LookupLongest(*hist_iter, ret.prob, node)) {
     // It's an (P::Order()-1)-gram
     std::copy(context_rbegin, context_rbegin + P::Order() - 2, out_state.history_ + 1);
     ret.ngram_length = out_state.valid_length_ = P::Order() - 1;
@@ -265,7 +250,6 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   std::copy(context_rbegin, context_rbegin + P::Order() - 2, out_state.history_ + 1);
   out_state.valid_length_ = P::Order() - 1;
   ret.ngram_length = P::Order();
-  ret.prob = found->GetValue().prob;
   backoff_start = P::Order();
   return ret;
 }
