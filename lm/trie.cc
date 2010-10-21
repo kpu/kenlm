@@ -93,7 +93,7 @@ void BitPackedMiddle::Init(void *base, uint64_t max_vocab, uint64_t max_next) {
 
 void BitPackedMiddle::Insert(WordIndex word, float prob, float backoff, uint64_t next) {
   assert(word <= word_mask_);
-  assert(pointer <= next_mask_);
+  assert(next <= next_mask_);
   uint64_t at_pointer = insert_index_ * total_bits_;
 
   util::WriteInt57(base_ + (at_pointer >> 3), at_pointer & 7, word);
