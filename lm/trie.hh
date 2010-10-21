@@ -38,7 +38,7 @@ class Unigram {
     
     const ProbBackoff &Lookup(WordIndex index) const { return unigram_[index].weights; }
     
-    ProbBackoff &Unknown(WordIndex index) { return unigram_[0].weights; }
+    ProbBackoff &Unknown() { return unigram_[0].weights; }
 
     UnigramValue *Raw() {
       return unigram_;
@@ -66,6 +66,8 @@ class BitPacked {
     uint64_t InsertIndex() const {
       return insert_index_;
     }
+
+    void LoadedBinary() {}
 
   protected:
     static std::size_t BaseSize(uint64_t entries, uint64_t max_vocab, uint8_t remaining_bits);

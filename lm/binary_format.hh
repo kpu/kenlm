@@ -67,7 +67,7 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
     uint8_t *start = detail::SetupZeroed(config, To::kModelType, params.counts, To::Size(params.counts, config), backing);
 
     try {
-      to.InitializeFromARPA(start, params, config, f);
+      to.InitializeFromARPA(file, f, start, params, config);
     } catch (FormatLoadException &e) {
       e << " in file " << file;
       throw;
