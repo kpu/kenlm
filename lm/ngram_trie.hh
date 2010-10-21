@@ -37,6 +37,7 @@ struct TrieSearch {
   uint8_t *SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
     unigram.Init(start);
     start += Unigram::Size(counts[0]);
+    middle.resize(counts.size() - 2);
     for (unsigned char i = 1; i < counts.size() - 1; ++i) {
       middle[i-1].Init(start, counts[0], counts[i+1]);
       start += Middle::Size(counts[i], counts[0], counts[i+1]);
