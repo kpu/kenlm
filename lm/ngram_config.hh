@@ -44,6 +44,10 @@ struct Config {
   // defaults to input file name.  
   const char *temporary_directory_prefix;
 
+  // Level of complaining to do when an ARPA instead of a binary format.
+  typedef enum {ALL, EXPENSIVE, NONE} ARPALoadComplain;
+  ARPALoadComplain complain;
+
   // While loading an ARPA file, also write out this binary format file.  Set
   // to NULL to disable.  
   const char *write_mmap;
@@ -63,6 +67,7 @@ struct Config {
     probing_multiplier(1.5),
     building_memory(1073741824ULL), // 1 GB
     temporary_directory_prefix(NULL),
+    complain(ALL),
     write_mmap(NULL),
     prefault(false) {}
 };
