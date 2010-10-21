@@ -57,9 +57,9 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   search_.longest.LoadedBinary();
 }
 
-template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromARPA(void *start, const Parameters &params, const Config &config, util::FilePiece &f) {
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromARPA(const char *file, util::FilePiece &f, void *start, const Parameters &params, const Config &config) {
   SetupMemory(start, params.counts, config);
-  search_.InitializeFromARPA(f, params.counts, vocab_);
+  search_.InitializeFromARPA(file, f, params.counts, config, vocab_);
   // TODO: fail faster?  
   if (!vocab_.SawUnk()) {
     switch(config.unknown_missing) {

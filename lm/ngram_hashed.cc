@@ -50,7 +50,7 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
 } // namespace
 namespace detail {
 
-template <class MiddleT, class LongestT> template <class Voc> void TemplateHashedSearch<MiddleT, LongestT>::InitializeFromARPA(util::FilePiece &f, const std::vector<uint64_t> &counts, Voc &vocab) {
+template <class MiddleT, class LongestT> template <class Voc> void TemplateHashedSearch<MiddleT, LongestT>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &/*config*/, Voc &vocab) {
   Read1Grams(f, counts[0], vocab, unigram.Raw());  
   // Read the n-grams.
   for (unsigned int n = 2; n < counts.size(); ++n) {
@@ -59,8 +59,8 @@ template <class MiddleT, class LongestT> template <class Voc> void TemplateHashe
   ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, longest);
 }
 
-template void TemplateHashedSearch<ProbingHashedSearch::Middle, ProbingHashedSearch::Longest>::InitializeFromARPA(util::FilePiece &f, const std::vector<uint64_t> &counts, ProbingVocabulary &vocab);
-template void TemplateHashedSearch<SortedHashedSearch::Middle, SortedHashedSearch::Longest>::InitializeFromARPA(util::FilePiece &f, const std::vector<uint64_t> &counts, SortedVocabulary &vocab);
+template void TemplateHashedSearch<ProbingHashedSearch::Middle, ProbingHashedSearch::Longest>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab);
+template void TemplateHashedSearch<SortedHashedSearch::Middle, SortedHashedSearch::Longest>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, SortedVocabulary &vocab);
 
 } // namespace detail
 } // namespace ngram

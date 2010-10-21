@@ -38,10 +38,11 @@ struct Config {
   // models.
   std::size_t building_memory;
 
-  // Directory in which to place temporary files.  File naming is
-  // deterministic.  Disk usage will be on the order to the ARPA size.  
-  // Only used by trie models.  
-
+  // Template for temporary directory appropriate for passing to mkdtemp.  
+  // The characters XXXXXX are appended before passing to mkdtemp.  Only
+  // applies to trie.  If NULL, defaults to write_mmap.  If that's NULL,
+  // defaults to input file name.  
+  const char *temporary_directory_prefix;
 
   // While loading an ARPA file, also write out this binary format file.  Set
   // to NULL to disable.  
@@ -60,6 +61,8 @@ struct Config {
     unknown_missing(COMPLAIN),
     unknown_missing_prob(0.0),
     probing_multiplier(1.5),
+    building_memory(1073741824ULL), // 1 GB
+    temporary_directory_prefix(NULL),
     write_mmap(NULL),
     prefault(false) {}
 };
