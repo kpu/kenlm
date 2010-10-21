@@ -5,6 +5,7 @@
 #include "lm/facade.hh"
 #include "lm/ngram_config.hh"
 #include "lm/ngram_hashed.hh"
+#include "lm/ngram_trie.hh"
 #include "lm/vocab.hh"
 #include "lm/weights.hh"
 
@@ -114,6 +115,8 @@ typedef detail::GenericModel<detail::ProbingHashedSearch, Vocabulary> Model;
 
 typedef ::lm::SortedVocabulary SortedVocabulary;
 typedef detail::GenericModel<detail::SortedHashedSearch, SortedVocabulary> SortedModel;
+
+typedef detail::GenericModel<trie::TrieSearch, SortedVocabulary> TrieModel;
 
 } // namespace ngram
 } // namespace lm

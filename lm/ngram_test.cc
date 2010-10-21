@@ -123,6 +123,12 @@ BOOST_AUTO_TEST_CASE(sorted) {
   Continuation(m);
   Stateless(m);
 }
+BOOST_AUTO_TEST_CASE(trie) {
+  TrieModel m("test.arpa");
+  Starters(m);
+  Continuation(m);
+  Stateless(m);
+}
 
 BOOST_AUTO_TEST_CASE(write_and_read_probing) {
   Config config;
