@@ -6,6 +6,7 @@
 #include <cstddef>
 
 #include "lm/word_index.hh"
+#include "lm/weights.hh"
 
 namespace lm {
 namespace trie {
@@ -26,12 +27,12 @@ class Unigram {
     Unigram() {}
     
     void Init(void *start) {
-      unigram_ = static_cast<Entry*>(start);
+      unigram_ = static_cast<UnigramValue*>(start);
     }
     
     static std::size_t Size(uint64_t count) {
       // +1 in case unknown doesn't appear.  +1 for the final next.  
-      return (count + 2) * sizeof(Entry);
+      return (count + 2) * sizeof(UnigramValue);
     }
     
     const ProbBackoff &Lookup(WordIndex index) const { return unigram_[index].weights; }
@@ -40,7 +41,7 @@ class Unigram {
     
     void LoadedBinary() {}
 
-    bool Find(WordIndex word, float &prob, float &backoff, Node &next) {
+    bool Find(WordIndex word, float &prob, float &backoff, NodeRange &next) {
       UnigramValue *val = unigram_ + word;
       prob = val->weights.prob;
       backoff = val->weights.backoff;
@@ -109,7 +110,7 @@ class BitPackedLongest : public BitPacked {
 
     void Insert(WordIndex word, float prob);
 
-    bool Find(WordIndex word, float &prob, const NodeRage &node) const;
+    bool Find(WordIndex word, float &prob, const NodeRange &node) const;
 };
 
 } // namespace trie

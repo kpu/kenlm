@@ -140,7 +140,7 @@ void BitPackedLongest::Insert(WordIndex index, float prob) {
 
 bool BitPackedLongest::Find(WordIndex word, float &prob, const NodeRange &node) const {
   uint64_t at_pointer;
-  if (!FindBitPacked(base_, word_mask_, total_bits_, range.begin, range.end, word, at_pointer)) return false;
+  if (!FindBitPacked(base_, word_mask_, total_bits_, node.begin, node.end, word, at_pointer)) return false;
   at_pointer = at_pointer * total_bits_ + word_bits_;
   prob = util::ReadNonPositiveFloat31(base_ + (at_pointer >> 3), at_pointer & 7);
   return true;

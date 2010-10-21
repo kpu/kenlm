@@ -1,6 +1,6 @@
 #include "lm/exception.hh"
 #include "lm/read_arpa.hh"
-#include "lm/trie_node.hh"
+#include "lm/trie.hh"
 #include "lm/vocab.hh"
 #include "lm/weights.hh"
 #include "lm/word_index.hh"
@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cstdio>
+#include <cstdlib>
 #include <deque>
 #include <iostream>
 #include <limits>
@@ -371,9 +372,9 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
   if (!middle.empty()) {
     unigrams[counts[0]].next = middle.front().InsertIndex();
     for (size_t i = 0; i < middle.size() - 1; ++i) {
-      middle[i].Finish(middle[i+1].InsertIndex());
+      middle[i].FinishedLoading(middle[i+1].InsertIndex());
     }
-    middle.back().Finish(longest.InsertIndex());
+    middle.back().FinishedLoading(longest.InsertIndex());
   } else {
     unigrams[counts[0]].next = longest.InsertIndex();
   }
@@ -381,16 +382,16 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
 
 } // namespace
 
-void TrieSearch::InitializeFromARPA(util::FilePiece &f, const std::vector<uint64_t> &counts, SortedVocabulary &vocab) {
+/*void TrieSearch::InitializeFromARPA(util::FilePiece &f, const std::vector<uint64_t> &counts, SortedVocabulary &vocab) {
   ARPAToSortedFiles(f, config.sort_buffer, 
-}
+}*/
 
 } // namespace trie
 } // namespace lm
 
-int main() {
+/*int main() {
   std::vector<std::size_t> counts;
   // 1 GB.  
   lm::trie::ARPAToSortedFiles("/dev/stdin", 1073741824ULL, "sort/", counts);
   lm::trie::BuildTrie("sort/", counts);
-}
+}*/
