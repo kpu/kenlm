@@ -263,13 +263,7 @@ template <class Entry> void ConvertToSorted(util::FilePiece &f, const SortedVoca
 
 template <> void ConvertToSorted<FullEntry<1> >(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {}
 
-void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, std::size_t buffer, const std::string &file_prefix) {
-  SortedVocabulary vocab;
-  util::scoped_mapped_file vocab_file;
-  std::string vocab_name = file_prefix + "vocab";
-  util::MapZeroedWrite(vocab_name.c_str(), SortedVocabulary::Size(counts[0]), vocab_file);
-  vocab.Init(vocab_file.mem.get(), SortedVocabulary::Size(counts[0]), counts[0]);
-
+void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, std::size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab) {
   {
     std::string unigram_name = file_prefix + "unigrams";
     util::scoped_mapped_file unigram_file;
@@ -393,7 +387,7 @@ void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const 
   temporary_directory.resize(strlen(temporary_directory.c_str()));
   // Add directory delimiter.  Assumes a real operating system.  
   temporary_directory += '/';
-  ARPAToSortedFiles(f, counts, config.building_memory, temporary_directory.c_str());
+  ARPAToSortedFiles(f, counts, config.building_memory, temporary_directory.c_str(), vocab);
   BuildTrie(temporary_directory.c_str(), counts, *this);
 }
 

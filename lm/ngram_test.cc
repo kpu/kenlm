@@ -154,7 +154,17 @@ BOOST_AUTO_TEST_CASE(write_and_read_sorted) {
   Continuation(binary);
   Stateless(binary);
 }
-
+BOOST_AUTO_TEST_CASE(write_and_read_trie) {
+  Config config;
+  config.write_mmap = "test.binary";
+  {
+    TrieModel copy_model("test.arpa", config);
+  }
+  TrieModel binary("test.binary");
+  Starters(binary);
+  Continuation(binary);
+  Stateless(binary);
+}
 
 } // namespace
 } // namespace ngram
