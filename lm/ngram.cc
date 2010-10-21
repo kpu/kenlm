@@ -22,13 +22,7 @@ namespace detail {
 template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<uint64_t> &counts, const Config &config) {
   if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit ngram.hh's kMaxOrder to at least this value and recompile.");
   if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
-  std::size_t memory_size = VocabularyT::Size(counts[0], config.probing_multiplier);
-  memory_size += Unigram::Size(counts[0]);
-  for (unsigned char n = 2; n < counts.size(); ++n) {
-    memory_size += Middle::Size(counts[n - 1], config.probing_multiplier);
-  }
-  memory_size += Longest::Size(counts.back(), config.probing_multiplier);
-  return memory_size;
+  return VocabularyT::Size(counts[0], config.probing_multiplier) + Search::Size(counts, config);
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(void *base, const std::vector<uint64_t> &counts, const Config &config) {
@@ -36,17 +30,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   size_t allocated = VocabularyT::Size(counts[0], config.probing_multiplier);
   vocab_.Init(start, allocated, counts[0]);
   start += allocated;
-  allocated = Unigram::Size(counts[0]);
-  search_.unigram = Unigram(start, allocated);
-  start += allocated;
-  for (unsigned int n = 2; n < counts.size(); ++n) {
-    allocated = Middle::Size(counts[n - 1], config.probing_multiplier);
-    search_.middle.push_back(Middle(start, allocated));
-    start += allocated;
-  }
-  allocated = Longest::Size(counts.back(), config.probing_multiplier);
-  search_.longest = Longest(start, allocated);
-  start += allocated;
+  start = search_.SetupMemory(start, counts, config);
   if (static_cast<std::size_t>(start - static_cast<uint8_t*>(base)) != Size(counts, config)) UTIL_THROW(FormatLoadException, "The data structures took " << (start - static_cast<uint8_t*>(base)) << " but Size says they should take " << Size(counts, config));
 }
 
@@ -90,12 +74,12 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
         // There's no break;.  This is by design.  
       case Config::SILENT:
         // Default probabilities for unknown.  
-        search_.unigram.Lookup(0).backoff = 0.0;
-        search_.unigram.Lookup(0).prob = config.unknown_missing_prob;
+        search_.unigram.Unknown().backoff = 0.0;
+        search_.unigram.Unknown().prob = config.unknown_missing_prob;
         break;
     }
   }
-  if (std::fabs(search_.unigram.Lookup(0).backoff) > 0.0000001) UTIL_THROW(FormatLoadException, "Backoff for unknown word should be zero, but was given as " << search_.unigram.Lookup(0).backoff);  
+  if (std::fabs(search_.unigram.Unknown().backoff) > 0.0000001) UTIL_THROW(FormatLoadException, "Backoff for unknown word should be zero, but was given as " << search_.unigram.Unknown().backoff);  
 }
 
 template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::FullScore(const State &in_state, const WordIndex new_word, State &out_state) const {

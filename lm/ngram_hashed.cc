@@ -51,7 +51,7 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
 namespace detail {
 
 template <class MiddleT, class LongestT> template <class Voc> void TemplateHashedSearch<MiddleT, LongestT>::InitializeFromARPA(util::FilePiece &f, const std::vector<uint64_t> &counts, Voc &vocab) {
-  Read1Grams(f, counts[0], vocab, &unigram.Lookup(0));  
+  Read1Grams(f, counts[0], vocab, unigram.Raw());  
   // Read the n-grams.
   for (unsigned int n = 2; n < counts.size(); ++n) {
     ReadNGrams(f, n, counts[n-1], vocab, middle[n-2]);
