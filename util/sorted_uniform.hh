@@ -65,7 +65,7 @@ template <class PackingT> class SortedUniformMap {
 
   public:
     // Offer consistent API with probing hash.
-    static std::size_t Size(std::size_t entries, float ignore = 0.0) {
+    static std::size_t Size(std::size_t entries, float /*ignore*/ = 0.0) {
       return sizeof(uint64_t) + entries * Packing::kBytes;
     }
 
@@ -75,7 +75,7 @@ template <class PackingT> class SortedUniformMap {
 #endif
     {}
 
-    SortedUniformMap(void *start, std::size_t allocated) : 
+    SortedUniformMap(void *start, std::size_t /*allocated*/) : 
       begin_(Packing::FromVoid(reinterpret_cast<uint64_t*>(start) + 1)),
       end_(begin_), size_ptr_(reinterpret_cast<uint64_t*>(start)) 
 #ifdef DEBUG
