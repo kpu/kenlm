@@ -8,14 +8,15 @@
 namespace lm { namespace ngram {
 
 struct Config {
-  /* EFFECTIVE FOR BOTH ARPA AND BINARY READS */
+  // EFFECTIVE FOR BOTH ARPA AND BINARY READS 
+
   // Where to log messages including the progress bar.  Set to NULL for
   // silence.
   std::ostream *messages;
 
 
 
-  /* ONLY EFFECTIVE WHEN READING ARPA */
+  // ONLY EFFECTIVE WHEN READING ARPA
 
   // What to do when <unk> isn't in the provided model. 
   typedef enum {THROW_UP, COMPLAIN, SILENT} UnknownMissing;
@@ -32,13 +33,23 @@ struct Config {
   // Sorted version instead which has lower memory consumption.  
   float probing_multiplier;
 
+  // Amount of memory to use for building.  The actual memory usage will be
+  // higher since this just sets sort buffer size.  Only applies to trie
+  // models.
+  std::size_t building_memory;
+
+  // Directory in which to place temporary files.  File naming is
+  // deterministic.  Disk usage will be on the order to the ARPA size.  
+  // Only used by trie models.  
+
+
   // While loading an ARPA file, also write out this binary format file.  Set
   // to NULL to disable.  
   const char *write_mmap;
 
   
 
-  /* ONLY EFFECTIVE WHEN READING BINARY */
+  // ONLY EFFECTIVE WHEN READING BINARY
   bool prefault;
 
 

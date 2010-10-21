@@ -1,4 +1,4 @@
-#include "lm/trie_node.hh"
+#include "lm/trie.hh"
 
 #include "util/bit_packing.hh"
 #include "util/exception.hh"
@@ -56,7 +56,7 @@ bool FindBitPacked(const void *base, uint64_t key_mask, uint8_t total_bits, uint
 }
 } // namespace
 
-std::size_t BitPacked::BaseSize(std::size_t entries, uint64_t max_vocab, uint8_t remaining_bits) {
+std::size_t BitPacked::BaseSize(uint64_t entries, uint64_t max_vocab, uint8_t remaining_bits) {
   uint8_t total_bits = util::RequiredBits(max_vocab) + 31 + remaining_bits;
   // Extra entry for next pointer at the end.  
   // +7 then / 8 to round up bits and convert to bytes
@@ -77,24 +77,7 @@ void BitPacked::BaseInit(void *base, uint64_t max_vocab, uint8_t remaining_bits)
   insert_index_ = 0;
 }
 
-void BitPackedLongest::Insert(WordIndex index, float prob) {
-  assert(index <= word_mask_);
-  uint64_t at_pointer = insert_index_ * total_bits_;
-  util::WriteInt57(base_ + (at_pointer >> 3), at_pointer & 7, index);
-  at_pointer += word_bits_;
-  util::WriteNonPositiveFloat31(base_ + (at_pointer >> 3), at_pointer & 7, prob);
-  ++insert_index_;
-}
-
-bool BitPackedLongest::Find(const NodeRange &range, WordIndex word, float &prob) const {
-  uint64_t at_pointer;
-  if (!FindBitPacked(base_, word_mask_, total_bits_, range.begin, range.end, word, at_pointer)) return false;
-  at_pointer = at_pointer * total_bits_ + word_bits_;
-  prob = util::ReadNonPositiveFloat31(base_ + (at_pointer >> 3), at_pointer & 7);
-  return true;
-}
-
-std::size_t BitPackedMiddle::Size(std::size_t entries, uint64_t max_vocab, uint64_t max_ptr) {
+std::size_t BitPackedMiddle::Size(uint64_t entries, uint64_t max_vocab, uint64_t max_ptr) {
   return BaseSize(entries, max_vocab, 32 + util::RequiredBits(max_ptr));
 }
 
@@ -123,7 +106,7 @@ void BitPackedMiddle::Insert(WordIndex word, float prob, float backoff, uint64_t
   ++insert_index_;
 }
 
-bool BitPackedMiddle::Find(const NodeRange &range, WordIndex word, float &prob, float &backoff, NodeRange &next_range) const {
+bool BitPackedMiddle::Find(WordIndex word, float &prob, float &backoff, NodeRange &range) const {
   uint64_t at_pointer;
   if (!FindBitPacked(base_, word_mask_, total_bits_, range.begin, range.end, word, at_pointer)) return false;
   at_pointer *= total_bits_;
@@ -132,17 +115,35 @@ bool BitPackedMiddle::Find(const NodeRange &range, WordIndex word, float &prob, 
   at_pointer += prob_bits_;
   backoff = util::ReadFloat32(base_ + (at_pointer >> 3), at_pointer & 7);
   at_pointer += backoff_bits_;
-  next_range.begin = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_mask_);
+  range.begin = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_mask_);
   // Read the next entry's pointer.  
   at_pointer += total_bits_;
-  next_range.end = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_mask_);
+  range.end = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_mask_);
   return true;
 }
 
-void BitPackedMiddle::Finish(uint64_t next_end) {
+void BitPackedMiddle::FinishedLoading(uint64_t next_end) {
   assert(next_end <= next_mask_);
   uint64_t last_next_write = (insert_index_ + 1) * total_bits_ - next_bits_;
   util::WriteInt57(base_ + (last_next_write >> 3), last_next_write & 7, next_end);
+}
+
+
+void BitPackedLongest::Insert(WordIndex index, float prob) {
+  assert(index <= word_mask_);
+  uint64_t at_pointer = insert_index_ * total_bits_;
+  util::WriteInt57(base_ + (at_pointer >> 3), at_pointer & 7, index);
+  at_pointer += word_bits_;
+  util::WriteNonPositiveFloat31(base_ + (at_pointer >> 3), at_pointer & 7, prob);
+  ++insert_index_;
+}
+
+bool BitPackedLongest::Find(WordIndex word, float &prob, const NodeRange &node) const {
+  uint64_t at_pointer;
+  if (!FindBitPacked(base_, word_mask_, total_bits_, range.begin, range.end, word, at_pointer)) return false;
+  at_pointer = at_pointer * total_bits_ + word_bits_;
+  prob = util::ReadNonPositiveFloat31(base_ + (at_pointer >> 3), at_pointer & 7);
+  return true;
 }
 
 } // namespace trie

@@ -24,6 +24,7 @@
 
 namespace lm {
 namespace trie {
+namespace {
 
 template <unsigned char Order> class FullEntry {
   public:
@@ -214,7 +215,7 @@ void MergeSortedFiles(const char *first_name, const char *second_name, const cha
   }
 }
 
-template <class Entry> void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<size_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {
+template <class Entry> void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {
   ConvertToSorted<FullEntry<Entry::kOrder - 1> >(f, vocab, counts, mem, file_prefix);
 
   ReadNGramHeader(f, Entry::kOrder);
@@ -256,12 +257,9 @@ template <class Entry> void ConvertToSorted(util::FilePiece &f, const SortedVoca
   }
 }
 
-template <> void ConvertToSorted<FullEntry<1> >(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<size_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {}
+template <> void ConvertToSorted<FullEntry<1> >(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, util::scoped_memory &mem, const std::string &file_prefix) {}
 
-void ARPAToSortedFiles(const char *arpa, std::size_t buffer, const std::string &file_prefix, std::vector<size_t> &counts) {
-  util::FilePiece f(arpa, &std::cerr);
-  ReadARPACounts(f, counts);
-
+void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, std::size_t buffer, const std::string &file_prefix) {
   SortedVocabulary vocab;
   util::scoped_mapped_file vocab_file;
   std::string vocab_name = file_prefix + "vocab";
@@ -280,12 +278,6 @@ void ARPAToSortedFiles(const char *arpa, std::size_t buffer, const std::string &
   mem.reset(new char[buffer], buffer, util::scoped_memory::ARRAY_ALLOCATED);
   ConvertToSorted<ProbEntry<5> >(f, vocab, counts, mem, file_prefix);
 }
-
-struct UnigramValue {
-  ProbBackoff weights;
-  uint64_t next;
-  uint64_t Next() const { return next; }
-};
 
 struct RecursiveInsertParams {
   WordIndex *words;
@@ -377,11 +369,20 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
 
   /* Set ending offsets so the last entry will be sized properly */
   if (!middle.empty()) {
+    unigrams[counts[0]].next = middle.front().InsertIndex();
     for (size_t i = 0; i < middle.size() - 1; ++i) {
       middle[i].Finish(middle[i+1].InsertIndex());
     }
     middle.back().Finish(longest.InsertIndex());
+  } else {
+    unigrams[counts[0]].next = longest.InsertIndex();
   }
+}
+
+} // namespace
+
+void TrieSearch::InitializeFromARPA(util::FilePiece &f, const std::vector<uint64_t> &counts, SortedVocabulary &vocab) {
+  ARPAToSortedFiles(f, config.sort_buffer, 
 }
 
 } // namespace trie
