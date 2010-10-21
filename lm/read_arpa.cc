@@ -1,7 +1,10 @@
 #include "lm/read_arpa.hh"
 
 #include <cstdlib>
+#include <vector>
+
 #include <ctype.h>
+#include <inttypes.h>
 
 namespace lm {
 
@@ -14,7 +17,7 @@ bool IsEntirelyWhiteSpace(const StringPiece &line) {
   return true;
 }
 
-template <class F> void GenericReadARPACounts(F &in, std::vector<size_t> &number) {
+template <class F> void GenericReadARPACounts(F &in, std::vector<uint64_t> &number) {
   number.clear();
   StringPiece line;
   if (!IsEntirelyWhiteSpace(line = in.ReadLine())) UTIL_THROW(FormatLoadException, "First line was \"" << line << "\" not blank");
@@ -76,10 +79,10 @@ class FakeFilePiece {
 
 } // namespace
 
-void ReadARPACounts(util::FilePiece &in, std::vector<std::size_t> &number) {
+void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number) {
   GenericReadARPACounts(in, number);
 }
-void ReadARPACounts(std::istream &in, std::vector<std::size_t> &number) {
+void ReadARPACounts(std::istream &in, std::vector<uint64_t> &number) {
   FakeFilePiece fake(in);
   GenericReadARPACounts(fake, number);
 }

@@ -1,3 +1,5 @@
+#include "lm/ngram_trie.hh"
+
 #include "lm/exception.hh"
 #include "lm/read_arpa.hh"
 #include "lm/trie.hh"
@@ -11,7 +13,6 @@
 #include <algorithm>
 #include <cstring>
 #include <cstdio>
-#include <cstdlib>
 #include <deque>
 #include <iostream>
 #include <limits>
@@ -22,8 +23,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <stdlib.h>
 
 namespace lm {
+namespace ngram {
 namespace trie {
 namespace {
 
@@ -322,19 +325,8 @@ uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
   return ret;
 }
 
-void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &counts) {
-  std::vector<UnigramValue> unigrams(counts[0]);
-
-  std::vector<std::vector<char> > middle_mem(counts.size() - 2);
-  std::vector<BitPackedMiddle> middle(counts.size() - 2);
-  for (size_t i = 0; i < middle.size(); ++i) {
-    middle_mem[i].resize(BitPackedMiddle::Size(counts[i + 1], counts[i+1], counts[i+2]));
-    middle[i].Init(&*middle_mem[i].begin(), counts[i+1], counts[i+2]);
-  }
-  std::vector<char> longest_mem(BitPackedLongest::Size(counts.back(), counts[0]));
-  BitPackedLongest longest;
-  longest.Init(&*longest_mem.begin(), true);
-
+void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &counts, TrieSearch &out) {
+  UnigramValue *unigrams = out.unigram.Raw();
   // Load unigrams.  Leave the next pointers uninitialized.   
   {
     std::string name(file_prefix + "unigrams");
@@ -359,8 +351,8 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
   params.words = words;
   params.files = inputs;
   params.max_order = static_cast<unsigned char>(counts.size());
-  params.middle = &*middle.begin();
-  params.longest = &longest;
+  params.middle = &*out.middle.begin();
+  params.longest = &out.longest;
   {
     util::ErsatzProgress progress(&std::cerr, "Building trie", counts[0]);
     for (words[0] = 0; words[0] < counts[0]; ++words[0], ++progress) {
@@ -369,29 +361,42 @@ void BuildTrie(const std::string &file_prefix, const std::vector<std::size_t> &c
   }
 
   /* Set ending offsets so the last entry will be sized properly */
-  if (!middle.empty()) {
-    unigrams[counts[0]].next = middle.front().InsertIndex();
-    for (size_t i = 0; i < middle.size() - 1; ++i) {
-      middle[i].FinishedLoading(middle[i+1].InsertIndex());
+  if (!out.middle.empty()) {
+    unigrams[counts[0]].next = out.middle.front().InsertIndex();
+    for (size_t i = 0; i < out.middle.size() - 1; ++i) {
+      out.middle[i].FinishedLoading(out.middle[i+1].InsertIndex());
     }
-    middle.back().FinishedLoading(longest.InsertIndex());
+    out.middle.back().FinishedLoading(out.longest.InsertIndex());
   } else {
-    unigrams[counts[0]].next = longest.InsertIndex();
+    unigrams[counts[0]].next = out.longest.InsertIndex();
   }
 }
 
 } // namespace
 
-/*void TrieSearch::InitializeFromARPA(util::FilePiece &f, const std::vector<uint64_t> &counts, SortedVocabulary &vocab) {
-  ARPAToSortedFiles(f, config.sort_buffer, 
-}*/
+void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab) {
+  std::string temporary_directory;
+  if (config.temporary_directory_prefix) {
+    temporary_directory = config.temporary_directory_prefix;
+  } else if (config.write_mmap) {
+    temporary_directory = config.write_mmap;
+  } else {
+    std::cerr << "Building a trie based language model from ARPA takes a while so you should really build a binary file once then reuse it." << std::endl;
+    temporary_directory = file;
+  }
+  // Hack to ensure null termination.
+  temporary_directory += "XXXXXX\0";
+  if (!mkdtemp(&temporary_directory[0])) {
+    UTIL_THROW(util::ErrnoException, "Failed to make a temporary directory based on the name " << temporary_directory.c_str());
+  }
+  // Chop off null kludge.  
+  temporary_directory.resize(strlen(temporary_directory.c_str()));
+  // Add directory delimiter.  Assumes a real operating system.  
+  temporary_directory += '/';
+  ARPAToSortedFiles(f, counts, config.building_memory, temporary_directory.c_str());
+  BuildTrie(temporary_directory.c_str(), counts, *this);
+}
 
 } // namespace trie
+} // namespace ngram
 } // namespace lm
-
-/*int main() {
-  std::vector<std::size_t> counts;
-  // 1 GB.  
-  lm::trie::ARPAToSortedFiles("/dev/stdin", 1073741824ULL, "sort/", counts);
-  lm::trie::BuildTrie("sort/", counts);
-}*/

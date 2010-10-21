@@ -12,8 +12,8 @@
 
 namespace lm {
 
-void ReadARPACounts(util::FilePiece &in, std::vector<std::size_t> &number);
-void ReadARPACounts(std::istream &in, std::vector<std::size_t> &number);
+void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number);
+void ReadARPACounts(std::istream &in, std::vector<uint64_t> &number);
 void ReadNGramHeader(util::FilePiece &in, unsigned int length);
 void ReadNGramHeader(std::istream &in, unsigned int length);
 

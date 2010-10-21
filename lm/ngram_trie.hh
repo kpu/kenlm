@@ -2,21 +2,24 @@
 #define LM_NGRAM_TRIE__
 
 #include "lm/binary_format.hh"
-#include "lm/trie_node.hh"
+#include "lm/trie.hh"
 #include "lm/weights.hh"
+
+#include <assert.h>
 
 namespace lm {
 class SortedVocabulary;
+namespace ngram {
 namespace trie {
 
 struct TrieSearch {
   typedef NodeRange Node;
 
-  typedef trie::Unigram Unigram;
+  typedef ::lm::ngram::trie::Unigram Unigram;
   Unigram unigram;
 
   typedef trie::BitPackedMiddle Middle;
-  Middle middle;
+  std::vector<Middle> middle;
 
   typedef trie::BitPackedLongest Longest;
   Longest longest;
@@ -42,7 +45,7 @@ struct TrieSearch {
     return start + Longest::Size(counts.back(), counts[0]);
   }
 
-  void InitializeFromARPA(util::FilePiece &f, const std::vector<uint64_t> &counts, SortedVocabulary &vocab);
+  void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab);
 
   bool LookupUnigram(WordIndex word, float &prob, float &backoff, Node &node) const {
     return unigram.Find(word, prob, backoff, node);
@@ -58,7 +61,7 @@ struct TrieSearch {
 
   bool FastMakeNode(const WordIndex *begin, const WordIndex *end, Node &node) const {
     // TODO: don't decode prob.  
-    assert(being != end);
+    assert(begin != end);
     float ignored_prob, ignored_backoff;
     LookupUnigram(*begin, ignored_prob, ignored_backoff, node);
     for (const WordIndex *i = begin + 1; i < end; ++i) {
@@ -66,9 +69,10 @@ struct TrieSearch {
     }
     return true;
   }
-}
+};
 
 } // namespace trie
+} // namespace ngram
 } // namespace lm
 
 #endif // LM_NGRAM_TRIE__

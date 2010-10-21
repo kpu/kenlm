@@ -9,6 +9,7 @@
 #include "lm/weights.hh"
 
 namespace lm {
+namespace ngram {
 namespace trie {
 
 struct NodeRange {
@@ -38,10 +39,14 @@ class Unigram {
     const ProbBackoff &Lookup(WordIndex index) const { return unigram_[index].weights; }
     
     ProbBackoff &Unknown(WordIndex index) { return unigram_[0].weights; }
+
+    UnigramValue *Raw() {
+      return unigram_;
+    }
     
     void LoadedBinary() {}
 
-    bool Find(WordIndex word, float &prob, float &backoff, NodeRange &next) {
+    bool Find(WordIndex word, float &prob, float &backoff, NodeRange &next) const {
       UnigramValue *val = unigram_ + word;
       prob = val->weights.prob;
       backoff = val->weights.backoff;
@@ -51,7 +56,7 @@ class Unigram {
     }
 
   private:
-    UnigramValue *unigram_, *end_;
+    UnigramValue *unigram_;
 };  
 
 class BitPacked {
@@ -114,6 +119,7 @@ class BitPackedLongest : public BitPacked {
 };
 
 } // namespace trie
+} // namespace ngram
 } // namespace lm
 
 #endif // LM_TRIE__

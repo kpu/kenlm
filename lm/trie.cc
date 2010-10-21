@@ -8,6 +8,7 @@
 #include <assert.h>
 
 namespace lm {
+namespace ngram {
 namespace trie {
 namespace {
 
@@ -147,4 +148,5 @@ bool BitPackedLongest::Find(WordIndex word, float &prob, const NodeRange &node) 
 }
 
 } // namespace trie
+} // namespace ngram
 } // namespace lm
