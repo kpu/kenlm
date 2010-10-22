@@ -38,6 +38,34 @@ off_t SizeFile(int fd) {
   return sb.st_size;
 }
 
+namespace detail {
+class IODriver {
+  public:
+    virtual ~IODriver() {}
+    virtual std::size_t Read(void *to, std::size_t limit) = 0;
+
+  protected:
+    IODriver() {}
+};
+} // namespace detail
+
+namespace {
+class ReadIODriver : public detail::IODriver {
+  public:
+    explicit ReadIODriver(int fd) : fd_(fd) {}
+
+    std::size_t Read(void *to, std::size_t limit) {
+      ssize_t read_return = read(fd_, to, limit);
+      if (read_return == -1) UTIL_THROW(ErrnoException, "read failed");
+      return read_return;
+    }
+
+  private:
+    const int fd_;
+};
+
+} // namespace
+
 FilePiece::FilePiece(const char *name, std::ostream *show_progress, off_t min_buffer) : 
   file_(OpenReadOrThrow(name)), total_size_(SizeFile(file_.get())), page_(sysconf(_SC_PAGE_SIZE)),
   progress_(total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + name, total_size_) {
@@ -53,11 +81,9 @@ FilePiece::FilePiece(const char *name, int fd, std::ostream *show_progress, off_
 void FilePiece::Initialize(const char *name, std::ostream *show_progress, off_t min_buffer) {
   file_name_ = name;
   if (total_size_ == kBadSize) {
-    fallback_to_read_ = true;
+    fallback_to_read_.reset(new ReadIODriver(file_.get()));
     if (show_progress) 
       *show_progress << "File " << name << " isn't normal.  Using slower read() instead of mmap().  No progress bar." << std::endl;
-  } else {
-    fallback_to_read_ = false;
   }
   default_map_size_ = page_ * std::max<off_t>((min_buffer / page_ + 1), 2);
   position_ = NULL;
@@ -93,6 +119,10 @@ void FilePiece::SkipSpaces() throw (EndOfFileException) {
     if (position_ == position_end_) Shift();
     if (!isspace(*position_)) return;
   }
+}
+
+void FilePiece::ForceFallbackToRead() {
+  fallback_to_read_.reset(new ReadIODriver(file_.get()));
 }
 
 const char *FilePiece::FindDelimiterOrEOF() throw (EndOfFileException) {
@@ -136,9 +166,9 @@ void FilePiece::Shift() throw(EndOfFileException) {
   off_t desired_begin = position_ - data_.begin() + mapped_offset_;
   progress_.Set(desired_begin);
 
-  if (!fallback_to_read_) MMapShift(desired_begin);
+  if (!fallback_to_read_.get()) MMapShift(desired_begin);
   // Notice an mmap failure might set the fallback.  
-  if (fallback_to_read_) ReadShift();
+  if (fallback_to_read_.get()) ReadShift();
 
   for (last_space_ = position_end_ - 1; last_space_ >= position_; --last_space_) {
     if (isspace(*last_space_))  break;
@@ -167,7 +197,7 @@ void FilePiece::MMapShift(off_t desired_begin) throw() {
   data_.reset();
   data_.reset(mmap(NULL, mapped_size, PROT_READ, MAP_PRIVATE, *file_, mapped_offset), mapped_size, scoped_memory::MMAP_ALLOCATED);
   if (data_.get() == MAP_FAILED) {
-    fallback_to_read_ = true;
+    fallback_to_read_.reset(new ReadIODriver(file_.get()));
     if (desired_begin) {
       if (((off_t)-1) == lseek(*file_, desired_begin, SEEK_SET)) UTIL_THROW(ErrnoException, "mmap failed even though it worked before.  lseek failed too, so using read isn't an option either.");
     }
@@ -179,7 +209,7 @@ void FilePiece::MMapShift(off_t desired_begin) throw() {
 }
 
 void FilePiece::ReadShift() throw() {
-  assert(fallback_to_read_);
+  assert(fallback_to_read_.get());
   if (data_.source() != scoped_memory::MALLOC_ALLOCATED) {
     // First call.
     data_.reset();
@@ -219,8 +249,7 @@ void FilePiece::ReadShift() throw() {
     }
   }
 
-  ssize_t read_return = read(file_.get(), static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
-  if (read_return == -1) UTIL_THROW(ErrnoException, "read failed");
+  ssize_t read_return = fallback_to_read_->Read(static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
   if (read_return == 0) at_end_ = true;
   position_end_ += read_return;
 }

@@ -7,6 +7,7 @@
 #include "util/scoped.hh"
 #include "util/string_piece.hh"
 
+#include <memory>
 #include <string>
 
 #include <cstddef>
@@ -30,6 +31,8 @@ int OpenReadOrThrow(const char *name);
 // Return value for SizeFile when it can't size properly.  
 const off_t kBadSize = -1;
 off_t SizeFile(int fd);
+
+namespace detail { class IODriver; }
 
 class FilePiece {
   public:
@@ -62,9 +65,7 @@ class FilePiece {
     }
 
     // Only for testing.  
-    void ForceFallbackToRead() {
-      fallback_to_read_ = true;
-    }
+    void ForceFallbackToRead();
 
     const std::string &FileName() const { return file_name_; }
     
@@ -97,7 +98,9 @@ class FilePiece {
     scoped_memory data_;
 
     bool at_end_;
-    bool fallback_to_read_;
+
+    // This would be a boost::scoped_ptr if I could depend on Boost.  
+    std::auto_ptr<detail::IODriver> fallback_to_read_;
 
     ErsatzProgress progress_;
 
