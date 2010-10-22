@@ -10,7 +10,7 @@ scoped_fd::~scoped_fd() {
 }
 
 scoped_FILE::~scoped_FILE() {
-  if (file_ && fclose(file_)) err(1, "Could not close file.");
+  if (file_ && fclose(file_)) err(1, "Could not close file");
 }
 
 } // namespace util
