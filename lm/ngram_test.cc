@@ -112,19 +112,28 @@ template <class M> void Stateless(const M &model) {
 }
 
 BOOST_AUTO_TEST_CASE(probing) {
-  Model m("test.arpa");
+  Config config;
+  config.arpa_complain = Config::NONE;
+  config.messages = NULL;
+  Model m("test.arpa", config);
   Starters(m);
   Continuation(m);
   Stateless(m);
 }
 BOOST_AUTO_TEST_CASE(sorted) {
-  SortedModel m("test.arpa");
+  Config config;
+  config.arpa_complain = Config::NONE;
+  config.messages = NULL;
+  SortedModel m("test.arpa", config);
   Starters(m);
   Continuation(m);
   Stateless(m);
 }
 BOOST_AUTO_TEST_CASE(trie) {
-  TrieModel m("test.arpa");
+  Config config;
+  config.arpa_complain = Config::NONE;
+  config.messages = NULL;
+  TrieModel m("test.arpa", config);
   Starters(m);
   Continuation(m);
   Stateless(m);
@@ -133,6 +142,7 @@ BOOST_AUTO_TEST_CASE(trie) {
 BOOST_AUTO_TEST_CASE(write_and_read_probing) {
   Config config;
   config.write_mmap = "test.binary";
+  config.messages = NULL;
   {
     Model copy_model("test.arpa", config);
   }
@@ -145,7 +155,7 @@ BOOST_AUTO_TEST_CASE(write_and_read_probing) {
 BOOST_AUTO_TEST_CASE(write_and_read_sorted) {
   Config config;
   config.write_mmap = "test.binary";
-  config.prefault = true;
+  config.messages = NULL;
   {
     SortedModel copy_model("test.arpa", config);
   }
@@ -157,6 +167,7 @@ BOOST_AUTO_TEST_CASE(write_and_read_sorted) {
 BOOST_AUTO_TEST_CASE(write_and_read_trie) {
   Config config;
   config.write_mmap = "test.binary";
+  config.messages = NULL;
   {
     TrieModel copy_model("test.arpa", config);
   }
