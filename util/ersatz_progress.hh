@@ -33,6 +33,10 @@ class ErsatzProgress {
       Milestone();
     }
 
+    void Finished() {
+      Set(complete_);
+    }
+
   private:
     void Milestone();
 

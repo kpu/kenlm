@@ -126,6 +126,15 @@ void ReadBackoff(util::FilePiece &in, ProbBackoff &weights) {
 
 void ReadEnd(util::FilePiece &in) {
   GenericReadEnd(in);
+  StringPiece line;
+  try {
+    while (true) {
+      line = in.ReadLine();
+      if (!IsEntirelyWhiteSpace(line)) UTIL_THROW(FormatLoadException, "Trailing line " << line);
+    }
+  } catch (const util::EndOfFileException &e) {
+    return;
+  }
 }
 void ReadEnd(std::istream &in) {
   FakeFilePiece fake(in);

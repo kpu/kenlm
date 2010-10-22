@@ -275,6 +275,7 @@ void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, 
   util::scoped_memory mem;
   mem.reset(new char[buffer], buffer, util::scoped_memory::ARRAY_ALLOCATED);
   ConvertToSorted<ProbEntry<5> >(f, vocab, counts, mem, file_prefix);
+  ReadEnd(f);
 }
 
 struct RecursiveInsertParams {

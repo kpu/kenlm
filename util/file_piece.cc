@@ -128,7 +128,10 @@ StringPiece FilePiece::ReadLine(char delim) throw (EndOfFileException) {
 }
 
 void FilePiece::Shift() throw(EndOfFileException) {
-  if (at_end_) throw EndOfFileException();
+  if (at_end_) {
+    progress_.Finished();
+    throw EndOfFileException();
+  }
   off_t desired_begin = position_ - data_.begin() + mapped_offset_;
   progress_.Set(desired_begin);
 

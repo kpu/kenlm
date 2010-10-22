@@ -13,10 +13,7 @@ ErsatzProgress::ErsatzProgress() : current_(0), next_(std::numeric_limits<std::s
 
 ErsatzProgress::~ErsatzProgress() {
   if (!out_) return;
-  for (; stones_written_ < kWidth; ++stones_written_) {
-    (*out_) << '*';
-  }
-  *out_ << '\n';
+  Finished();
 }
 
 ErsatzProgress::ErsatzProgress(std::ostream *to, const std::string &message, std::size_t complete) 
@@ -35,6 +32,9 @@ void ErsatzProgress::Milestone() {
 
   for (; stones_written_ < stone; ++stones_written_) {
     (*out_) << '*';
+  }
+  if (stone == kWidth) {
+    (*out_) << std::endl;
   }
 
   if (current_ >= complete_) {
