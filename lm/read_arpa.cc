@@ -20,7 +20,12 @@ bool IsEntirelyWhiteSpace(const StringPiece &line) {
 template <class F> void GenericReadARPACounts(F &in, std::vector<uint64_t> &number) {
   number.clear();
   StringPiece line;
-  if (!IsEntirelyWhiteSpace(line = in.ReadLine())) UTIL_THROW(FormatLoadException, "First line was \"" << line << "\" not blank");
+  if (!IsEntirelyWhiteSpace(line = in.ReadLine())) {
+    if ((line.size() >= 2) && (line.data()[0] == 0x1f) && (static_cast<unsigned char>(line.data()[1]) == 0x8b)) {
+      UTIL_THROW(FormatLoadException, "Looks like a gzip file.  If this is an ARPA file, run\nzcat " << in.FileName() << " |kenlm/build_binary /dev/stdin " << in.FileName() << ".binary\nIf this already in binary format, you need to decompress it because mmap doesn't work on top of gzip.");
+    }
+    UTIL_THROW(FormatLoadException, "First line was \"" << static_cast<int>(line.data()[1]) << "\" not blank");
+  }
   if ((line = in.ReadLine()) != "\\data\\") UTIL_THROW(FormatLoadException, "second line was \"" << line << "\" not \\data\\.");
   while (!IsEntirelyWhiteSpace(line = in.ReadLine())) {
     if (line.size() < 6 || strncmp(line.data(), "ngram ", 6)) UTIL_THROW(FormatLoadException, "count line \"" << line << "\"doesn't begin with \"ngram \"");
@@ -70,6 +75,11 @@ class FakeFilePiece {
       float ret;
       in_ >> ret;
       return ret;
+    }
+
+    const char *FileName() const {
+      // This only used for error messages and we don't know the file name. . . 
+      return "$file";
     }
 
   private:

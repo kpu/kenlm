@@ -51,6 +51,7 @@ FilePiece::FilePiece(const char *name, int fd, std::ostream *show_progress, off_
 }
 
 void FilePiece::Initialize(const char *name, std::ostream *show_progress, off_t min_buffer) {
+  file_name_ = name;
   if (total_size_ == kBadSize) {
     fallback_to_read_ = true;
     if (show_progress) 

@@ -65,6 +65,8 @@ class FilePiece {
     void ForceFallbackToRead() {
       fallback_to_read_ = true;
     }
+
+    const std::string &FileName() const { return file_name_; }
     
   private:
     void Initialize(const char *name, std::ostream *show_progress, off_t min_buffer);
@@ -98,6 +100,8 @@ class FilePiece {
     bool fallback_to_read_;
 
     ErsatzProgress progress_;
+
+    std::string file_name_;
 };
 
 } // namespace util
