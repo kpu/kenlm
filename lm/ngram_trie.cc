@@ -319,7 +319,7 @@ uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
   return ret;
 }
 
-void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &counts, TrieSearch &out) {
+void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &counts, std::ostream *messages, TrieSearch &out) {
   UnigramValue *unigrams = out.unigram.Raw();
   // Load unigrams.  Leave the next pointers uninitialized.   
   {
@@ -348,7 +348,7 @@ void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &coun
   params.middle = &*out.middle.begin();
   params.longest = &out.longest;
   {
-    util::ErsatzProgress progress(&std::cerr, "Building trie", counts[0]);
+    util::ErsatzProgress progress(messages, "Building trie", counts[0]);
     for (words[0] = 0; words[0] < counts[0]; ++words[0], ++progress) {
       unigrams[words[0]].next = RecursiveInsert(params, 2);
     }
@@ -377,7 +377,7 @@ void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const 
   } else {
     temporary_directory = file;
   }
-  // Hack to ensure null termination.
+  // Null on end is kludge to ensure null termination.
   temporary_directory += "XXXXXX\0";
   if (!mkdtemp(&temporary_directory[0])) {
     UTIL_THROW(util::ErrnoException, "Failed to make a temporary directory based on the name " << temporary_directory.c_str());
@@ -387,7 +387,7 @@ void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const 
   // Add directory delimiter.  Assumes a real operating system.  
   temporary_directory += '/';
   ARPAToSortedFiles(f, counts, config.building_memory, temporary_directory.c_str(), vocab);
-  BuildTrie(temporary_directory.c_str(), counts, *this);
+  BuildTrie(temporary_directory.c_str(), counts, config.messages, *this);
 }
 
 } // namespace trie
