@@ -46,7 +46,7 @@ struct Config {
 
   // Level of complaining to do when an ARPA instead of a binary format.
   typedef enum {ALL, EXPENSIVE, NONE} ARPALoadComplain;
-  ARPALoadComplain complain;
+  ARPALoadComplain arpa_complain;
 
   // While loading an ARPA file, also write out this binary format file.  Set
   // to NULL to disable.  
@@ -67,7 +67,7 @@ struct Config {
     probing_multiplier(1.5),
     building_memory(1073741824ULL), // 1 GB
     temporary_directory_prefix(NULL),
-    complain(ALL),
+    arpa_complain(ALL),
     write_mmap(NULL),
     prefault(false) {}
 };

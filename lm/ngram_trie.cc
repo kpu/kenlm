@@ -375,7 +375,6 @@ void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const 
   } else if (config.write_mmap) {
     temporary_directory = config.write_mmap;
   } else {
-    std::cerr << "Building a trie based language model from ARPA takes a while so you should really build a binary file once then reuse it." << std::endl;
     temporary_directory = file;
   }
   // Hack to ensure null termination.
