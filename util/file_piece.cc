@@ -282,7 +282,7 @@ void FilePiece::ReadShift() throw(GZException, EndOfFileException) {
 #endif
   if (read_return == 0) {
     at_end_ = true;
-    if (position_end_ == position_) throw EndOfFileException();
+//    if (position_end_ == position_) throw EndOfFileException();
   }
   position_end_ += read_return;
 }
