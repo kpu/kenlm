@@ -26,7 +26,7 @@ const uint64_t kUnknownCapHash = detail::HashForVocab("<UNK>", 5);
 
 SortedVocabulary::SortedVocabulary() : begin_(NULL), end_(NULL) {}
 
-std::size_t SortedVocabulary::Size(std::size_t entries, float ignored) {
+std::size_t SortedVocabulary::Size(std::size_t entries, float /*ignored*/) {
   // Lead with the number of entries.  
   return sizeof(uint64_t) + sizeof(Entry) * entries;
 }
@@ -65,7 +65,7 @@ void SortedVocabulary::LoadedBinary() {
 
 ProbingVocabulary::ProbingVocabulary() {}
 
-void ProbingVocabulary::Init(void *start, std::size_t allocated, std::size_t entries) {
+void ProbingVocabulary::Init(void *start, std::size_t allocated, std::size_t /*entries*/) {
   lookup_ = Lookup(start, allocated);
   available_ = 1;
   // Later if available_ != expected_available_ then we can throw UnknownMissingException.
@@ -84,7 +84,7 @@ WordIndex ProbingVocabulary::Insert(const StringPiece &str) {
   }
 }
 
-void ProbingVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
+void ProbingVocabulary::FinishedLoading(ProbBackoff * /*reorder_vocab*/) {
   lookup_.FinishedInserting();
   SetSpecial(Index("<s>"), Index("</s>"), 0, available_);
 }
