@@ -24,6 +24,7 @@ BOOST_AUTO_TEST_CASE(MMapReadLine) {
       BOOST_CHECK_EQUAL(ref_line, test_line);
     }
   }
+  BOOST_CHECK_THROW(test.get(), EndOfFileException);
 }
 
 /* read() implementation */
@@ -42,6 +43,7 @@ BOOST_AUTO_TEST_CASE(StreamReadLine) {
       BOOST_CHECK_EQUAL(ref_line, test_line);
     }
   }
+  BOOST_CHECK_THROW(test.get(), EndOfFileException);
 }
 
 #ifdef USE_ZLIB
@@ -60,6 +62,7 @@ BOOST_AUTO_TEST_CASE(PlainZipReadLine) {
       BOOST_CHECK_EQUAL(ref_line, test_line);
     }
   }
+  BOOST_CHECK_THROW(test.get(), EndOfFileException);
 }
 // gzip stream
 BOOST_AUTO_TEST_CASE(StreamZipReadLine) {
@@ -77,6 +80,7 @@ BOOST_AUTO_TEST_CASE(StreamZipReadLine) {
       BOOST_CHECK_EQUAL(ref_line, test_line);
     }
   }
+  BOOST_CHECK_THROW(test.get(), EndOfFileException);
 }
 
 #endif
