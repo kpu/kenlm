@@ -381,7 +381,7 @@ void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const 
     temporary_directory = file;
   }
   // Null on end is kludge to ensure null termination.
-  temporary_directory += "XXXXXX\0";
+  temporary_directory += "-tmp-XXXXXX\0";
   if (!mkdtemp(&temporary_directory[0])) {
     UTIL_THROW(util::ErrnoException, "Failed to make a temporary directory based on the name " << temporary_directory.c_str());
   }
