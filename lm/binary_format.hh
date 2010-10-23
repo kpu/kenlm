@@ -62,7 +62,7 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
       UTIL_THROW(FormatLoadException, "The mmap file " << file << " has size " << backing.memory.size() << " but " << (memory_size + start - backing.memory.begin()) << " was expected based on the counts and configuration.");
     to.InitializeFromBinary(start, params, config);
   } else {
-    util::FilePiece f(file, backing.file.release(), config.messages);
+    util::FilePiece f(backing.file.release(), file, config.messages);
     ReadARPACounts(f, params.counts);
     uint8_t *start = detail::SetupZeroed(config, To::kModelType, params.counts, To::Size(params.counts, config), backing);
 
