@@ -64,6 +64,8 @@ FilePiece::FilePiece(int fd, const char *name, std::ostream *show_progress, off_
 FilePiece::~FilePiece() {
 #ifdef USE_ZLIB
   if (gz_file_) {
+    // zlib took ownership
+    file_.release();
     int ret;
     if (Z_OK != (ret = gzclose(gz_file_))) {
       errx(1, "could not close file %s using zlib", file_name_.c_str());
@@ -236,8 +238,6 @@ void FilePiece::TransitionToRead() throw (GZException) {
   if (!gz_file_) {
     UTIL_THROW(GZException, "zlib failed to open " << file_name_);
   }
-  // gz_file_ took ownership.  Also the fd shouldn't be used for anything else.  
-  file_.release();
 #endif
 }
 
@@ -278,12 +278,9 @@ void FilePiece::ReadShift() throw(GZException, EndOfFileException) {
   read_return = gzread(gz_file_, static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
   if (read_return == -1) throw GZException(gz_file_);
   if (total_size_ != kBadSize) {
-    z_off_t got_off = gztell(gz_file_);
-    if (got_off == -1) {
-      gzclearerr(gz_file_);
-    } else {
-      progress_.Set(got_off);
-    }
+    // Just get the position, don't actually seek.  Apparently this is how you do it. . . 
+    off_t ret = lseek(file_.get(), 0, SEEK_CUR);
+    if (ret != -1) progress_.Set(ret);
   }
 #else
   read_return = read(file_.get(), static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
