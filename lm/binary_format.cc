@@ -138,14 +138,18 @@ uint8_t *SetupZeroed(const Config &config, ModelType model_type, const std::vect
     WriteHeader(backing.memory.get(), params);
     return reinterpret_cast<uint8_t*>(backing.memory.get()) + TotalHeaderSize(counts.size());
   } else {
-    if (config.arpa_complain == Config::ALL) {
-      std::cerr << "Loading the LM will be faster if you build a binary file." << std::endl;
-    } else if (config.arpa_complain == Config::EXPENSIVE && model_type == TRIE_SORTED) {
-      std::cerr << "Building " << kModelNames[model_type] << " from ARPA is expensive.  Save time by building a binary format." << std::endl;
-    }
     backing.memory.reset(util::MapAnonymous(memory_size), memory_size);
     return reinterpret_cast<uint8_t*>(backing.memory.get());
   } 
+}
+
+void ComplainAboutARPA(const Config &config, ModelType model_type) {
+  if (config.write_mmap) return;
+  if (config.arpa_complain == Config::ALL) {
+    std::cerr << "Loading the LM will be faster if you build a binary file." << std::endl;
+  } else if (config.arpa_complain == Config::EXPENSIVE && model_type == TRIE_SORTED) {
+    std::cerr << "Building " << kModelNames[model_type] << " from ARPA is expensive.  Save time by building a binary format." << std::endl;
+  }
 }
 
 } // namespace detail
