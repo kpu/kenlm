@@ -150,6 +150,7 @@ BOOST_AUTO_TEST_CASE(write_and_read_probing) {
   Starters(binary);
   Continuation(binary);
   Stateless(binary);
+  unlink("test.binary");
 }
 
 BOOST_AUTO_TEST_CASE(write_and_read_sorted) {
@@ -163,6 +164,7 @@ BOOST_AUTO_TEST_CASE(write_and_read_sorted) {
   Starters(binary);
   Continuation(binary);
   Stateless(binary);
+  unlink("test.binary");
 }
 BOOST_AUTO_TEST_CASE(write_and_read_trie) {
   Config config;
@@ -175,6 +177,7 @@ BOOST_AUTO_TEST_CASE(write_and_read_trie) {
   Starters(binary);
   Continuation(binary);
   Stateless(binary);
+  unlink("test.binary");
 }
 
 } // namespace

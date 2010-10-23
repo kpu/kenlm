@@ -330,6 +330,7 @@ void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &coun
     for (WordIndex i = 0; i < counts[0]; ++i) {
       ReadOrThrow(file.get(), &unigrams[i].weights, sizeof(ProbBackoff));
     }
+    unlink(name.c_str());
   }
 
   // inputs[0] is bigrams.
@@ -338,6 +339,7 @@ void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &coun
     std::stringstream assembled;
     assembled << file_prefix << static_cast<unsigned int>(i) << "_merged";
     inputs[i-2].Init(assembled.str(), i);
+    unlink(assembled.str().c_str());
   }
 
   // words[0] is unigrams.  
@@ -389,6 +391,9 @@ void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const 
   temporary_directory += '/';
   ARPAToSortedFiles(f, counts, config.building_memory, temporary_directory.c_str(), vocab);
   BuildTrie(temporary_directory.c_str(), counts, config.messages, *this);
+  if (rmdir(temporary_directory.c_str())) {
+    std::cerr << "Failed to delete " << temporary_directory << std::endl;
+  }
 }
 
 } // namespace trie
