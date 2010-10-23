@@ -67,12 +67,7 @@ void BitPackingSanity();
 
 // Return bits required to store integers upto max_value.  Not the most
 // efficient implementation, but this is only called a few times to size tries. 
-uint8_t RequiredBits(uint64_t max_value) {
-  if (!max_value) return 0;
-  uint8_t ret = 1;
-  while (max_value >>= 1) ++ret;
-  return ret;
-}
+uint8_t RequiredBits(uint64_t max_value);
 
 struct BitsMask {
   void FromMax(uint64_t max_value) {
