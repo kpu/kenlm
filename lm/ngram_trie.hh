@@ -26,7 +26,7 @@ struct TrieSearch {
 
   static const ModelType kModelType = TRIE_SORTED;
 
-  static std::size_t Size(const std::vector<uint64_t> &counts, const Config &config) {
+  static std::size_t Size(const std::vector<uint64_t> &counts, const Config &/*config*/) {
     std::size_t ret = Unigram::Size(counts[0]);
     for (unsigned char i = 1; i < counts.size() - 1; ++i) {
       ret += Middle::Size(counts[i], counts[0], counts[i+1]);
@@ -34,7 +34,7 @@ struct TrieSearch {
     return ret + Longest::Size(counts.back(), counts[0]);
   }
 
-  uint8_t *SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
+  uint8_t *SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &/*config*/) {
     unigram.Init(start);
     start += Unigram::Size(counts[0]);
     middle.resize(counts.size() - 2);
