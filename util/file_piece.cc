@@ -2,7 +2,6 @@
 
 #include "util/exception.hh"
 
-#include <iostream>
 #include <string>
 #include <limits>
 
@@ -101,7 +100,10 @@ void FilePiece::Initialize(const char *name, std::ostream *show_progress, off_t 
 #ifndef USE_ZLIB
     UTIL_THROW(GZException, "Looks like a gzip file but support was not compiled in.");
 #endif
-    if (!fallback_to_read_) TransitionToRead();
+    if (!fallback_to_read_) {
+      at_end_ = false;
+      TransitionToRead();
+    }
   }
 }
 
@@ -208,6 +210,8 @@ void FilePiece::MMapShift(off_t desired_begin) throw() {
     if (desired_begin) {
       if (((off_t)-1) == lseek(*file_, desired_begin, SEEK_SET)) UTIL_THROW(ErrnoException, "mmap failed even though it worked before.  lseek failed too, so using read isn't an option either.");
     }
+    // The mmap was scheduled to end the file, but now we're going to read it.  
+    at_end_ = false;
     TransitionToRead();
     return;
   }
@@ -236,7 +240,7 @@ void FilePiece::TransitionToRead() throw (GZException) {
 #endif
 }
 
-void FilePiece::ReadShift() throw(GZException) {
+void FilePiece::ReadShift() throw(GZException, EndOfFileException) {
   assert(fallback_to_read_);
   // Bytes [data_.begin(), position_) have been consumed.  
   // Bytes [position_, position_end_) have been read into the buffer.  
@@ -276,7 +280,10 @@ void FilePiece::ReadShift() throw(GZException) {
   read_return = read(file_.get(), static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
   if (read_return == -1) UTIL_THROW(ErrnoException, "read failed");
 #endif
-  if (read_return == 0) at_end_ = true;
+  if (read_return == 0) {
+    at_end_ = true;
+    if (position_end_ == position_) throw EndOfFileException();
+  }
   position_end_ += read_return;
 }
 

@@ -90,7 +90,7 @@ class FilePiece {
     void MMapShift(off_t desired_begin) throw ();
 
     void TransitionToRead() throw (GZException);
-    void ReadShift() throw (GZException);
+    void ReadShift() throw (GZException, EndOfFileException);
 
     const char *position_, *last_space_, *position_end_;
 
