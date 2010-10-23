@@ -174,7 +174,6 @@ void FilePiece::Shift() throw(GZException, EndOfFileException) {
     throw EndOfFileException();
   }
   off_t desired_begin = position_ - data_.begin() + mapped_offset_;
-  progress_.Set(desired_begin);
 
   if (!fallback_to_read_) MMapShift(desired_begin);
   // Notice an mmap failure might set the fallback.  
@@ -218,6 +217,8 @@ void FilePiece::MMapShift(off_t desired_begin) throw() {
   mapped_offset_ = mapped_offset;
   position_ = data_.begin() + ignore;
   position_end_ = data_.begin() + mapped_size;
+
+  progress_.Set(desired_begin);
 }
 
 void FilePiece::TransitionToRead() throw (GZException) {
@@ -276,13 +277,21 @@ void FilePiece::ReadShift() throw(GZException, EndOfFileException) {
 #ifdef USE_ZLIB
   read_return = gzread(gz_file_, static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
   if (read_return == -1) throw GZException(gz_file_);
+  if (total_size_ != kBadSize) {
+    z_off_t got_off = gztell(gz_file_);
+    if (got_off == -1) {
+      gzclearerr(gz_file_);
+    } else {
+      progress_.Set(got_off);
+    }
+  }
 #else
   read_return = read(file_.get(), static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
   if (read_return == -1) UTIL_THROW(ErrnoException, "read failed");
+  progress_.Set(mapped_offset_);
 #endif
   if (read_return == 0) {
     at_end_ = true;
-//    if (position_end_ == position_) throw EndOfFileException();
   }
   position_end_ += read_return;
 }
