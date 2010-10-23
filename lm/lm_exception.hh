@@ -1,5 +1,7 @@
-#ifndef LM_EXCEPTION__
-#define LM_EXCEPTION__
+#ifndef LM_LM_EXCEPTION__
+#define LM_LM_EXCEPTION__
+
+// Named to avoid conflict with util/exception.hh.  
 
 #include "util/exception.hh"
 #include "util/string_piece.hh"
@@ -37,4 +39,4 @@ class SpecialWordMissingException : public VocabLoadException {
 
 } // namespace lm
 
-#endif
+#endif // LM_LM_EXCEPTION

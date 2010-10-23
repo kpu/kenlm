@@ -1,6 +1,6 @@
 #include "lm/binary_format.hh"
 
-#include "lm/exception.hh"
+#include "lm/lm_exception.hh"
 #include "util/file_piece.hh"
 
 #include <limits>

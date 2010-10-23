@@ -1,6 +1,6 @@
 #include "lm/ngram_trie.hh"
 
-#include "lm/exception.hh"
+#include "lm/lm_exception.hh"
 #include "lm/read_arpa.hh"
 #include "lm/trie.hh"
 #include "lm/vocab.hh"

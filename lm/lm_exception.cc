@@ -1,4 +1,4 @@
-#include "lm/exception.hh"
+#include "lm/lm_exception.hh"
 
 #include<errno.h>
 #include<stdio.h>

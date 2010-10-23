@@ -1,6 +1,6 @@
 #include "lm/ngram_hashed.hh"
 
-#include "lm/exception.hh"
+#include "lm/lm_exception.hh"
 #include "lm/read_arpa.hh"
 #include "lm/vocab.hh"
 

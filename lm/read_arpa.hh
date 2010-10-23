@@ -1,7 +1,7 @@
 #ifndef LM_READ_ARPA__
 #define LM_READ_ARPA__
 
-#include "lm/exception.hh"
+#include "lm/lm_exception.hh"
 #include "lm/word_index.hh"
 #include "lm/weights.hh"
 #include "util/file_piece.hh"
