@@ -7,10 +7,11 @@
 #include "util/scoped.hh"
 #include "util/string_piece.hh"
 
-#include <memory>
 #include <string>
 
 #include <cstddef>
+
+#define USE_ZLIB
 
 namespace util {
 
@@ -26,51 +27,55 @@ class ParseNumberException : public Exception {
     ~ParseNumberException() throw() {}
 };
 
+class GZException : public Exception {
+  public:
+    explicit GZException(void *file);
+    GZException() throw() {}
+    ~GZException() throw() {}
+};
+
 int OpenReadOrThrow(const char *name);
 
 // Return value for SizeFile when it can't size properly.  
 const off_t kBadSize = -1;
 off_t SizeFile(int fd);
 
-namespace detail { class IODriver; }
-
 class FilePiece {
   public:
     // 32 MB default.
-    explicit FilePiece(const char *file, std::ostream *show_progress = NULL, off_t min_buffer = 33554432);
+    explicit FilePiece(const char *file, std::ostream *show_progress = NULL, off_t min_buffer = 33554432) throw(GZException);
     // Takes ownership of fd.  name is used for messages.  
-    explicit FilePiece(const char *name, int fd, std::ostream *show_progress = NULL, off_t min_buffer = 33554432);
+    explicit FilePiece(int fd, const char *name, std::ostream *show_progress = NULL, off_t min_buffer = 33554432) throw(GZException);
+
+    ~FilePiece();
      
-    char get() throw(EndOfFileException) { 
+    char get() throw(GZException, EndOfFileException) { 
       if (position_ == position_end_) Shift();
       return *(position_++);
     }
 
     // Memory backing the returned StringPiece may vanish on the next call.  
     // Leaves the delimiter, if any, to be returned by get().
-    StringPiece ReadDelimited() throw(EndOfFileException) {
+    StringPiece ReadDelimited() throw(GZException, EndOfFileException) {
       SkipSpaces();
       return Consume(FindDelimiterOrEOF());
     }
     // Unlike ReadDelimited, this includes leading spaces and consumes the delimiter.
     // It is similar to getline in that way.  
-    StringPiece ReadLine(char delim = '\n') throw(EndOfFileException);
+    StringPiece ReadLine(char delim = '\n') throw(GZException, EndOfFileException);
 
-    float ReadFloat() throw(EndOfFileException, ParseNumberException);
+    float ReadFloat() throw(GZException, EndOfFileException, ParseNumberException);
 
-    void SkipSpaces() throw (EndOfFileException);
+    void SkipSpaces() throw (GZException, EndOfFileException);
 
     off_t Offset() const {
       return position_ - data_.begin() + mapped_offset_;
     }
 
-    // Only for testing.  
-    void ForceFallbackToRead();
-
     const std::string &FileName() const { return file_name_; }
     
   private:
-    void Initialize(const char *name, std::ostream *show_progress, off_t min_buffer);
+    void Initialize(const char *name, std::ostream *show_progress, off_t min_buffer) throw(GZException);
 
     StringPiece Consume(const char *to) {
       StringPiece ret(position_, to - position_);
@@ -78,12 +83,14 @@ class FilePiece {
       return ret;
     }
 
-    const char *FindDelimiterOrEOF() throw(EndOfFileException);
+    const char *FindDelimiterOrEOF() throw(EndOfFileException, GZException);
 
-    void Shift() throw (EndOfFileException);
+    void Shift() throw (EndOfFileException, GZException);
     // Backends to Shift().
     void MMapShift(off_t desired_begin) throw ();
-    void ReadShift() throw ();
+
+    void TransitionToRead() throw (GZException);
+    void ReadShift() throw (GZException);
 
     const char *position_, *last_space_, *position_end_;
 
@@ -98,13 +105,15 @@ class FilePiece {
     scoped_memory data_;
 
     bool at_end_;
-
-    // This would be a boost::scoped_ptr if I could depend on Boost.  
-    std::auto_ptr<detail::IODriver> fallback_to_read_;
+    bool fallback_to_read_;
 
     ErsatzProgress progress_;
 
     std::string file_name_;
+
+#ifdef USE_ZLIB
+    void *gz_file_;
+#endif // USE_ZLIB
 };
 
 } // namespace util
