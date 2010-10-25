@@ -8,8 +8,8 @@
 #include <assert.h>
 
 namespace lm {
-class SortedVocabulary;
 namespace ngram {
+class SortedVocabulary;
 namespace trie {
 
 struct TrieSearch {

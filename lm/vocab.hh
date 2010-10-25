@@ -11,6 +11,8 @@ namespace lm {
 
 class ProbBackoff;
 
+namespace ngram {
+
 namespace detail {
 uint64_t HashForVocab(const char *str, std::size_t len);
 inline uint64_t HashForVocab(const StringPiece &str) {
@@ -101,6 +103,7 @@ class ProbingVocabulary : public base::Vocabulary {
     bool saw_unk_;
 };
 
+} // namespace ngram
 } // namespace lm
 
 #endif // LM_VOCAB__

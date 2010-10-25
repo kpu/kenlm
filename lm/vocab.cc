@@ -8,6 +8,7 @@
 #include <string>
 
 namespace lm {
+namespace ngram {
 
 namespace detail {
 uint64_t HashForVocab(const char *str, std::size_t len) {
@@ -94,4 +95,5 @@ void ProbingVocabulary::LoadedBinary() {
   SetSpecial(Index("<s>"), Index("</s>"), 0, available_);
 }
 
+} // namespace ngram
 } // namespace lm

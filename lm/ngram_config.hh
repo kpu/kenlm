@@ -7,12 +7,19 @@
 
 namespace lm { namespace ngram {
 
+class EnumerateVocab;
+
 struct Config {
   // EFFECTIVE FOR BOTH ARPA AND BINARY READS 
 
   // Where to log messages including the progress bar.  Set to NULL for
   // silence.
   std::ostream *messages;
+
+  // This will be called with every string in the vocabulary.  See
+  // enumerate_vocab.hh for more detail.  Config does not take ownership; you
+  // are still responsible for deleting it (or stack allocating).  
+  EnumerateVocab *enumerate_vocab;
 
 
 
@@ -62,6 +69,7 @@ struct Config {
   // Defaults. 
   Config() :
     messages(&std::cerr),
+    enumerate_vocab(NULL),
     unknown_missing(COMPLAIN),
     unknown_missing_prob(0.0),
     probing_multiplier(1.5),
