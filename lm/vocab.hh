@@ -8,10 +8,11 @@
 #include "util/string_piece.hh"
 
 namespace lm {
-
 class ProbBackoff;
 
 namespace ngram {
+class Config;
+class EnumerateVocab;
 
 namespace detail {
 uint64_t HashForVocab(const char *str, std::size_t len);
@@ -33,7 +34,7 @@ class SortedVocabulary : public base::Vocabulary {
     };
 
   public:
-    SortedVocabulary();
+    explicit SortedVocabulary(EnumerateVocab *enumerate = NULL);
 
     WordIndex Index(const StringPiece &str) const {
       const Entry *found;
@@ -45,10 +46,10 @@ class SortedVocabulary : public base::Vocabulary {
     }
 
     // Ignores second argument for consistency with probing hash which has a float here.  
-    static size_t Size(std::size_t entries, float ignored = 0.0);
+    static size_t Size(std::size_t entries, const Config &config);
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
-    void Init(void *start, std::size_t allocated, std::size_t entries);
+    void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
 
     WordIndex Insert(const StringPiece &str);
 
@@ -63,24 +64,24 @@ class SortedVocabulary : public base::Vocabulary {
     Entry *begin_, *end_;
 
     bool saw_unk_;
+
+    EnumerateVocab *enumerate_;
 };
 
 // Vocabulary storing a map from uint64_t to WordIndex. 
 class ProbingVocabulary : public base::Vocabulary {
   public:
-    ProbingVocabulary();
+    ProbingVocabulary(EnumerateVocab *enumerate = NULL);
 
     WordIndex Index(const StringPiece &str) const {
       Lookup::ConstIterator i;
       return lookup_.Find(detail::HashForVocab(str), i) ? i->GetValue() : 0;
     }
 
-    static size_t Size(std::size_t entries, float probing_multiplier) {
-      return Lookup::Size(entries, probing_multiplier);
-    }
+    static size_t Size(std::size_t entries, const Config &config);
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
-    void Init(void *start, std::size_t allocated, std::size_t entries);
+    void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
 
     WordIndex Insert(const StringPiece &str);
 
@@ -101,6 +102,8 @@ class ProbingVocabulary : public base::Vocabulary {
     Lookup lookup_;
 
     bool saw_unk_;
+
+    EnumerateVocab *enumerate_;
 };
 
 } // namespace ngram

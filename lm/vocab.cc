@@ -1,5 +1,7 @@
 #include "lm/vocab.hh"
 
+#include "lm/enumerate_vocab.hh"
+#include "lm/ngram_config.hh"
 #include "lm/weights.hh"
 #include "util/joint_sort.hh"
 #include "util/murmur_hash.hh"
@@ -25,14 +27,14 @@ const uint64_t kUnknownHash = detail::HashForVocab("<unk>", 5);
 const uint64_t kUnknownCapHash = detail::HashForVocab("<UNK>", 5);
 } // namespace
 
-SortedVocabulary::SortedVocabulary() : begin_(NULL), end_(NULL) {}
+SortedVocabulary::SortedVocabulary(EnumerateVocab *enumerate) : begin_(NULL), end_(NULL), enumerate_(enumerate) {}
 
-std::size_t SortedVocabulary::Size(std::size_t entries, float /*ignored*/) {
+std::size_t SortedVocabulary::Size(std::size_t entries, const Config &/*config*/) {
   // Lead with the number of entries.  
   return sizeof(uint64_t) + sizeof(Entry) * entries;
 }
 
-void SortedVocabulary::Init(void *start, std::size_t allocated, std::size_t entries) {
+void SortedVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config) {
   assert(allocated >= Size(entries));
   // Leave space for number of entries.  
   begin_ = reinterpret_cast<Entry*>(reinterpret_cast<uint64_t*>(start) + 1);
@@ -64,9 +66,15 @@ void SortedVocabulary::LoadedBinary() {
   SetSpecial(Index("<s>"), Index("</s>"), 0, end_ - begin_ + 1);
 }
 
-ProbingVocabulary::ProbingVocabulary() {}
+ProbingVocabulary::ProbingVocabulary(EnumerateVocab *enumerate) : enumerate_(enumerate) {
+  if (enumerate_) enumerate_->Add(0, "<unk>");
+}
 
-void ProbingVocabulary::Init(void *start, std::size_t allocated, std::size_t /*entries*/) {
+std::size_t ProbingVocabulary::Size(std::size_t entries, const Config &config) {
+  return Lookup::Size(entries, config.probing_multiplier);
+}
+
+void ProbingVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t /*entries*/, const Config &config) {
   lookup_ = Lookup(start, allocated);
   available_ = 1;
   // Later if available_ != expected_available_ then we can throw UnknownMissingException.
@@ -80,6 +88,7 @@ WordIndex ProbingVocabulary::Insert(const StringPiece &str) {
     saw_unk_ = true;
     return 0;
   } else {
+    if (enumerate_) enumerate_->Add(available_, str);
     lookup_.Insert(Lookup::Packing::Make(hashed, available_));
     return available_++;
   }

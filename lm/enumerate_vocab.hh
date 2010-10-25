@@ -12,9 +12,13 @@ namespace ngram {
  * time.  
  */
 class EnumerateVocab {
-  virtual ~EnumerateVocab() {}
+  public:
+    virtual ~EnumerateVocab() {}
 
-  virtual Add(WordIndex index, const StringPiece &str) = 0;
+    virtual void Add(WordIndex index, const StringPiece &str) = 0;
+
+  protected:
+    EnumerateVocab() {}
 };
 
 } // namespace ngram

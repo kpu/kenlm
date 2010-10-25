@@ -23,19 +23,19 @@ namespace detail {
 template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<uint64_t> &counts, const Config &config) {
   if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit ngram.hh's kMaxOrder to at least this value and recompile.");
   if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
-  return VocabularyT::Size(counts[0], config.probing_multiplier) + Search::Size(counts, config);
+  return VocabularyT::Size(counts[0], config) + Search::Size(counts, config);
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(void *base, const std::vector<uint64_t> &counts, const Config &config) {
   uint8_t *start = static_cast<uint8_t*>(base);
-  size_t allocated = VocabularyT::Size(counts[0], config.probing_multiplier);
-  vocab_.Init(start, allocated, counts[0]);
+  size_t allocated = VocabularyT::Size(counts[0], config);
+  vocab_.SetupMemory(start, allocated, counts[0], config);
   start += allocated;
   start = search_.SetupMemory(start, counts, config);
   if (static_cast<std::size_t>(start - static_cast<uint8_t*>(base)) != Size(counts, config)) UTIL_THROW(FormatLoadException, "The data structures took " << (start - static_cast<uint8_t*>(base)) << " but Size says they should take " << Size(counts, config));
 }
 
-template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) {
+template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) : vocab_(config.enumerate_vocab) {
   LoadLM(file, config, *this);
 
   // g++ prints warnings unless these are fully initialized.  
