@@ -39,7 +39,7 @@ inline void WriteInt57(void *base, uint8_t bit, uint64_t value) {
 namespace detail { typedef union { float f; uint32_t i; } FloatEnc; }
 inline float ReadFloat32(const void *base, uint8_t bit) {
   detail::FloatEnc encoded;
-  encoded.i = ReadInt57(base, bit, (1ULL << 32) - 1ULL);
+  encoded.i = *reinterpret_cast<const uint64_t*>(base) >> bit;
   return encoded.f;
 }
 inline void WriteFloat32(void *base, uint8_t bit, float value) {
@@ -50,7 +50,7 @@ inline void WriteFloat32(void *base, uint8_t bit, float value) {
 
 inline float ReadNonPositiveFloat31(const void *base, uint8_t bit) {
   detail::FloatEnc encoded;
-  encoded.i = ReadInt57(base, bit, (1ULL << 31) - 1ULL);
+  encoded.i = *reinterpret_cast<const uint64_t*>(base) >> bit;
   // Sign bit set means negative.  
   encoded.i |= 0x80000000;
   return encoded.f;
