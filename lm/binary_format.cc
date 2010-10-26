@@ -49,23 +49,25 @@ std::size_t TotalHeaderSize(unsigned char order) {
   return Align8(sizeof(Sanity) + sizeof(FixedWidthParameters) + sizeof(uint64_t) * order);
 }
 
-void ReadHeader(const void *from, off_t size, Parameters &out) {
-  const char *from_char = reinterpret_cast<const char*>(from);
-  // Skip over Sanity which was read by IsBinaryFormat.  
-  from_char += sizeof(Sanity);
-
-  if (size < static_cast<off_t>(sizeof(Sanity) + sizeof(FixedWidthParameters))) 
-    UTIL_THROW(FormatLoadException, "File too short to have count information.");
-  out.fixed = *reinterpret_cast<const FixedWidthParameters*>(from_char);
-  from_char += sizeof(FixedWidthParameters);
-
-  if (size < static_cast<off_t>(TotalHeaderSize(out.fixed.order)))
-    UTIL_THROW(FormatLoadException, "File too short to have full header.");
-  out.counts.resize(static_cast<std::size_t>(out.fixed.order));
-  const uint64_t *counts = reinterpret_cast<const uint64_t*>(from_char);
-  for (std::size_t i = 0; i < out.counts.size(); ++i) {
-    out.counts[i] = counts[i];
+void ReadLoop(int fd, void *to_void, std::size_t size) {
+  uint8_t *to = static_cast<uint8_t*>(to_void);
+  while (size) {
+    ssize_t ret = read(fd, to, size);
+    if (ret == -1) UTIL_THROW(util::ErrnoException, "Failed to read from binary file");
+    if (ret == 0) UTIL_THROW(util::ErrnoException, "Binary file too short");
+    to += ret;
+    size -= ret;
   }
+}
+
+void ReadHeader(int fd, Parameters &out) {
+  if ((off_t)-1 == lseek(fd, sizeof(Sanity), SEEK_SET)) UTIL_THROW(util::ErrnoException, "Seek failed in binary file");
+  ReadLoop(fd, &out.fixed, sizeof(out.fixed));
+  if (out.fixed.probing_multiplier < 1.0)
+    UTIL_THROW(FormatLoadException, "Binary format claims to have a probing multiplier of " << out.fixed.probing_multiplier << " which is < 1.0.");
+
+  out.counts.resize(static_cast<std::size_t>(out.fixed.order));
+  ReadLoop(fd, &*out.counts.begin(), sizeof(uint64_t) * out.fixed.order);
 }
 
 void WriteHeader(void *to, const Parameters &params) {
@@ -90,7 +92,7 @@ bool IsBinaryFormat(int fd) {
   const off_t size = util::SizeFile(fd);
   if (size == util::kBadSize || (size <= static_cast<off_t>(sizeof(Sanity)))) return false;
   // Try reading the header.  
-  util::scoped_mmap memory(mmap(NULL, sizeof(Sanity), PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0), sizeof(Sanity));
+  util::scoped_mmap memory(util::MapForRead(sizeof(Sanity), false, fd), sizeof(Sanity));
   if (memory.get() == MAP_FAILED) return false;
   Sanity reference_header = Sanity();
   reference_header.SetToReference();
@@ -107,17 +109,30 @@ bool IsBinaryFormat(int fd) {
   return false;
 }
 
-uint8_t *SetupBinary(const Config &config, ModelType model_type, Parameters &params, Backing &backing) {
-  const off_t file_size = util::SizeFile(backing.file.get());
-  backing.memory.reset(util::MapForRead(file_size, config.prefault, backing.file.get()), file_size);
-
-  ReadHeader(backing.memory.get(), file_size, params);
-  if (params.fixed.probing_multiplier < 1.0)
-    UTIL_THROW(FormatLoadException, "Binary format claims to have a probing multiplier of " << params.fixed.probing_multiplier << " which is < 1.0.");
+void ReadParameters(const Config &config, ModelType model_type, Parameters &params, int fd) {
+  ReadHeader(fd, params);
   if (params.fixed.model_type != model_type) {
     if (static_cast<unsigned int>(params.fixed.model_type) >= (sizeof(kModelNames) / sizeof(const char *)))
       UTIL_THROW(FormatLoadException, "The binary file claims to be model type " << static_cast<unsigned int>(params.fixed.model_type) << " but this is not implemented for in this inference code.");
     UTIL_THROW(FormatLoadException, "The binary file was built for " << kModelNames[params.fixed.model_type] << " but the inference code is trying to load " << kModelNames[model_type]);
+  }
+}
+
+uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t memory_size, Backing &backing) {
+  const off_t file_size = util::SizeFile(backing.file.get());
+  // The header is smaller than a page, so we have to map the whole header as well.  
+  std::size_t total_map = TotalHeaderSize(params.counts.size()) + memory_size;
+  if (file_size != util::kBadSize && static_cast<uint64_t>(file_size) < total_map)
+    UTIL_THROW(FormatLoadException, "Binary file has size " << file_size << " but the headers say it should be at least " << total_map);
+
+  backing.memory.reset(util::MapForRead(total_map, config.prefault, backing.file.get()), total_map);
+
+  if (config.enumerate_vocab && !params.fixed.has_vocabulary)
+    UTIL_THROW(FormatLoadException, "The decoder requested all the vocabulary strings, but this binary file does not have them.  You may need to rebuild the binary file with an updated version of build_binary.");
+
+  if (config.enumerate_vocab) {
+    if ((off_t)-1 == lseek(backing.file.get(), total_map, SEEK_SET))
+      UTIL_THROW(util::ErrnoException, "Failed to seek in binary file to vocab words");
   }
   return reinterpret_cast<uint8_t*>(backing.memory.get()) + TotalHeaderSize(params.counts.size());
 }
@@ -141,12 +156,6 @@ uint8_t *SetupZeroed(const Config &config, ModelType model_type, const std::vect
     backing.memory.reset(util::MapAnonymous(memory_size), memory_size);
     return reinterpret_cast<uint8_t*>(backing.memory.get());
   } 
-}
-
-void SizeCheck(std::size_t expected, const uint8_t *start, const Backing &backing) {
-  if (expected < static_cast<std::size_t>(backing.memory.end() - start)) {
-    UTIL_THROW(FormatLoadException, "Binary file should have size >=" << (expected + start - backing.memory.begin()) << " based on the counts and configuration.");
-  }
 }
 
 void ComplainAboutARPA(const Config &config, ModelType model_type) {

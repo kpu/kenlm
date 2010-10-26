@@ -43,11 +43,11 @@ namespace detail {
 
 bool IsBinaryFormat(int fd);
 
-uint8_t *SetupBinary(const Config &config, ModelType model_type, Parameters &params, Backing &backing);
+void ReadParameters(const Config &config, ModelType model_type, Parameters &params, int fd);
+
+uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t memory_size, Backing &backing);
 
 uint8_t *SetupZeroed(const Config &config, ModelType model_type, const std::vector<uint64_t> &counts, std::size_t memory_size, Backing &backing);
-
-void SizeCheck(std::size_t expected, const uint8_t *start, const Backing &backing);
 
 void ComplainAboutARPA(const Config &config, ModelType model_type);
 
@@ -61,9 +61,9 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
 
   try {
     if (detail::IsBinaryFormat(backing.file.get())) {
-      uint8_t *start = detail::SetupBinary(config, To::kModelType, params, backing);
+      detail::ReadParameters(config, To::kModelType, params, backing.file.get());
       std::size_t memory_size = To::Size(params.counts, config);
-      detail::SizeCheck(memory_size, start, backing);
+      uint8_t *start = detail::SetupBinary(config, params, memory_size, backing);
       to.InitializeFromBinary(start, params, config, backing.file.get());
     } else {
       detail::ComplainAboutARPA(config, To::kModelType);
