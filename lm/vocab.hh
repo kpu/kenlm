@@ -58,7 +58,7 @@ class SortedVocabulary : public base::Vocabulary {
 
     bool SawUnk() const { return saw_unk_; }
 
-    void LoadedBinary();
+    void LoadedBinary(std::size_t expected_count, int fd);
 
   private:
     Entry *begin_, *end_;
@@ -89,7 +89,7 @@ class ProbingVocabulary : public base::Vocabulary {
 
     bool SawUnk() const { return saw_unk_; }
 
-    void LoadedBinary();
+    void LoadedBinary(std::size_t expected_count, int fd);
 
   private:
     // std::identity is an SGI extension :-(
@@ -100,6 +100,8 @@ class ProbingVocabulary : public base::Vocabulary {
     typedef util::ProbingHashTable<util::ByteAlignedPacking<uint64_t, WordIndex>, IdentityHash> Lookup;
 
     Lookup lookup_;
+
+    WordIndex available_;
 
     bool saw_unk_;
 

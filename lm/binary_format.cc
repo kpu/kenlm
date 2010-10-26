@@ -144,7 +144,7 @@ uint8_t *SetupZeroed(const Config &config, ModelType model_type, const std::vect
 }
 
 void SizeCheck(std::size_t expected, const uint8_t *start, const Backing &backing) {
-  if (expected < backing.memory.end() - start) {
+  if (expected < static_cast<std::size_t>(backing.memory.end() - start)) {
     UTIL_THROW(FormatLoadException, "Binary file should have size >=" << (expected + start - backing.memory.begin()) << " based on the counts and configuration.");
   }
 }

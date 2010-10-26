@@ -48,9 +48,9 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   P::Init(begin_sentence, null_context, vocab_, search_.middle.size() + 2);
 }
 
-template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(void *start, const Parameters &params, const Config &config) {
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(void *start, const Parameters &params, const Config &config, int fd) {
   SetupMemory(start, params.counts, config);
-  vocab_.LoadedBinary();
+  vocab_.LoadedBinary(params.counts[0], fd);
   search_.unigram.LoadedBinary();
   for (typename std::vector<Middle>::iterator i = search_.middle.begin(); i != search_.middle.end(); ++i) {
     i->LoadedBinary();

@@ -64,7 +64,7 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
       uint8_t *start = detail::SetupBinary(config, To::kModelType, params, backing);
       std::size_t memory_size = To::Size(params.counts, config);
       detail::SizeCheck(memory_size, start, backing);
-      to.InitializeFromBinary(start, params, config);
+      to.InitializeFromBinary(start, params, config, backing.file.get());
     } else {
       detail::ComplainAboutARPA(config, To::kModelType);
       util::FilePiece f(backing.file.release(), file, config.messages);

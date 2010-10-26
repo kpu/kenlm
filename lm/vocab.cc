@@ -1,8 +1,10 @@
 #include "lm/vocab.hh"
 
 #include "lm/enumerate_vocab.hh"
+#include "lm/lm_exception.hh"
 #include "lm/ngram_config.hh"
 #include "lm/weights.hh"
+#include "util/exception.hh"
 #include "util/joint_sort.hh"
 #include "util/murmur_hash.hh"
 #include "util/probing_hash_table.hh"
@@ -25,6 +27,38 @@ namespace {
 const uint64_t kUnknownHash = detail::HashForVocab("<unk>", 5);
 // Sadly some LMs have <UNK>.  
 const uint64_t kUnknownCapHash = detail::HashForVocab("<UNK>", 5);
+
+void ReadWords(std::size_t expected, int fd, EnumerateVocab *enumerate) {
+  if (!enumerate) return;
+  const std::size_t kBufSize = 16384;
+  std::string buf;
+  buf.reserve(kBufSize + 100);
+  // <unk> was sent by the destructor.
+  WordIndex index = 1;
+  while (true) {
+    ssize_t got = read(fd, &buf[0], kBufSize);
+    if (got == -1) UTIL_THROW(util::ErrnoException, "Reading vocabulary words");
+    if (got == 0) {
+      if (index != expected) UTIL_THROW(FormatLoadException, "Binary file has " << index << " vocabulary words but " << expected << " were expected.");
+      return;
+    }
+    buf.resize(got);
+    while (buf[buf.size() - 1]) {
+      char next_char;
+      ssize_t ret = read(fd, &next_char, 1);
+      if (ret == -1) UTIL_THROW(util::ErrnoException, "Reading vocabulary words");
+      if (ret == 0) UTIL_THROW(FormatLoadException, "Missing null terminator on a vocab word.");
+      buf.push_back(next_char);
+    }
+    // Ok now we have null terminated strings.  
+    for (const char *i = buf.data(); i != buf.data() + buf.size();) {
+      std::size_t length = strlen(i);
+      enumerate->Add(index++, StringPiece(i, length));
+      i += length + 1 /* null byte */;
+    }
+  }
+}
+
 } // namespace
 
 SortedVocabulary::SortedVocabulary(EnumerateVocab *enumerate) : begin_(NULL), end_(NULL), enumerate_(enumerate) {}
@@ -56,14 +90,15 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
 
 void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   util::JointSort(begin_, end_, reorder_vocab + 1);
-  SetSpecial(Index("<s>"), Index("</s>"), 0, end_ - begin_ + 1);
+  SetSpecial(Index("<s>"), Index("</s>"), 0);
   // Save size.  
   *(reinterpret_cast<uint64_t*>(begin_) - 1) = end_ - begin_;
 }
 
-void SortedVocabulary::LoadedBinary() {
+void SortedVocabulary::LoadedBinary(std::size_t expected_count, int fd) {
   end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
-  SetSpecial(Index("<s>"), Index("</s>"), 0, end_ - begin_ + 1);
+  ReadWords(expected_count, fd, enumerate_);
+  SetSpecial(Index("<s>"), Index("</s>"), 0);
 }
 
 ProbingVocabulary::ProbingVocabulary(EnumerateVocab *enumerate) : enumerate_(enumerate) {
@@ -77,7 +112,6 @@ std::size_t ProbingVocabulary::Size(std::size_t entries, const Config &config) {
 void ProbingVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t /*entries*/, const Config &config) {
   lookup_ = Lookup(start, allocated);
   available_ = 1;
-  // Later if available_ != expected_available_ then we can throw UnknownMissingException.
   saw_unk_ = false;
 }
 
@@ -96,12 +130,13 @@ WordIndex ProbingVocabulary::Insert(const StringPiece &str) {
 
 void ProbingVocabulary::FinishedLoading(ProbBackoff * /*reorder_vocab*/) {
   lookup_.FinishedInserting();
-  SetSpecial(Index("<s>"), Index("</s>"), 0, available_);
+  SetSpecial(Index("<s>"), Index("</s>"), 0);
 }
 
-void ProbingVocabulary::LoadedBinary() {
+void ProbingVocabulary::LoadedBinary(std::size_t expected_count, int fd) {
   lookup_.LoadedBinary();
-  SetSpecial(Index("<s>"), Index("</s>"), 0, available_);
+  ReadWords(expected_count, fd, enumerate_);
+  SetSpecial(Index("<s>"), Index("</s>"), 0);
 }
 
 } // namespace ngram
