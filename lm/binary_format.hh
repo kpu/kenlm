@@ -47,6 +47,8 @@ uint8_t *SetupBinary(const Config &config, ModelType model_type, Parameters &par
 
 uint8_t *SetupZeroed(const Config &config, ModelType model_type, const std::vector<uint64_t> &counts, std::size_t memory_size, Backing &backing);
 
+void SizeCheck(std::size_t expected, const uint8_t *start, const Backing &backing);
+
 void ComplainAboutARPA(const Config &config, ModelType model_type);
 
 } // namespace detail
@@ -57,25 +59,26 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
 
   Parameters params;
 
-  if (detail::IsBinaryFormat(backing.file.get())) {
-    uint8_t *start = detail::SetupBinary(config, To::kModelType, params, backing);
-    std::size_t memory_size = To::Size(params.counts, config);
-    if (static_cast<ptrdiff_t>(memory_size) != backing.memory.end() - start)
-      UTIL_THROW(FormatLoadException, "The mmap file " << file << " has size " << backing.memory.size() << " but " << (memory_size + start - backing.memory.begin()) << " was expected based on the counts and configuration.");
-    to.InitializeFromBinary(start, params, config);
-  } else {
-    detail::ComplainAboutARPA(config, To::kModelType);
-    util::FilePiece f(backing.file.release(), file, config.messages);
-    ReadARPACounts(f, params.counts);
-    uint8_t *start = detail::SetupZeroed(config, To::kModelType, params.counts, To::Size(params.counts, config), backing);
+  try {
+    if (detail::IsBinaryFormat(backing.file.get())) {
+      uint8_t *start = detail::SetupBinary(config, To::kModelType, params, backing);
+      std::size_t memory_size = To::Size(params.counts, config);
+      detail::SizeCheck(memory_size, start, backing);
+      to.InitializeFromBinary(start, params, config);
+    } else {
+      detail::ComplainAboutARPA(config, To::kModelType);
+      util::FilePiece f(backing.file.release(), file, config.messages);
+      ReadARPACounts(f, params.counts);
+      std::size_t memory_size = To::Size(params.counts, config);
+      uint8_t *start = detail::SetupZeroed(config, To::kModelType, params.counts, memory_size, backing);
 
-    try {
       to.InitializeFromARPA(file, f, start, params, config);
-    } catch (FormatLoadException &e) {
-      e << " in file " << file;
-      throw;
     }
+  } catch (util::Exception &e) {
+    e << " in file " << file;
+    throw;
   }
+
 }
 
 } // namespace ngram

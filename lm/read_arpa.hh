@@ -42,7 +42,6 @@ template <class Voc> void Read1Grams(util::FilePiece &f, std::size_t count, Voc 
   for (std::size_t i = 0; i < count; ++i) {
     Read1Gram(f, vocab, unigrams);
   }
-  if (f.ReadLine().size()) UTIL_THROW(FormatLoadException, "Expected blank line after unigrams at byte " << f.Offset());
   vocab.FinishedLoading(unigrams);
 }
 

@@ -43,7 +43,6 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
     store.Insert(Store::Packing::Make(key, value));
   }
 
-  if (f.ReadLine().size()) UTIL_THROW(FormatLoadException, "Expected blank line after " << n << "-grams at byte " << f.Offset());
   store.FinishedInserting();
 }
 
