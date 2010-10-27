@@ -140,17 +140,23 @@ uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t
 uint8_t *SetupZeroed(const Config &config, ModelType model_type, const std::vector<uint64_t> &counts, std::size_t memory_size, Backing &backing) {
   if (config.probing_multiplier <= 1.0) UTIL_THROW(FormatLoadException, "probing multiplier must be > 1.0");
   if (config.write_mmap) {
+    std::size_t total_map = TotalHeaderSize(counts.size()) + memory_size;
     // Write out an mmap file.  
-    util::MapZeroedWrite(config.write_mmap, TotalHeaderSize(counts.size()) + memory_size, backing.file, backing.memory);
+    util::MapZeroedWrite(config.write_mmap, total_map, backing.file, backing.memory);
 
     Parameters params;
     params.counts = counts;
     params.fixed.order = counts.size();
     params.fixed.probing_multiplier = config.probing_multiplier;
     params.fixed.model_type = model_type;
-    params.fixed.has_vocabulary = false;
+    params.fixed.has_vocabulary = config.include_vocab;
 
     WriteHeader(backing.memory.get(), params);
+
+    if (params.fixed.has_vocabulary) {
+      if ((off_t)-1 == lseek(backing.file.get(), total_map, SEEK_SET))
+        UTIL_THROW(util::ErrnoException, "Failed to seek in binary file " << config.write_mmap << " to vocab words");
+    }
     return reinterpret_cast<uint8_t*>(backing.memory.get()) + TotalHeaderSize(counts.size());
   } else {
     backing.memory.reset(util::MapAnonymous(memory_size), memory_size);
@@ -159,11 +165,11 @@ uint8_t *SetupZeroed(const Config &config, ModelType model_type, const std::vect
 }
 
 void ComplainAboutARPA(const Config &config, ModelType model_type) {
-  if (config.write_mmap) return;
+  if (config.write_mmap || !config.messages) return;
   if (config.arpa_complain == Config::ALL) {
-    std::cerr << "Loading the LM will be faster if you build a binary file." << std::endl;
+    *config.messages << "Loading the LM will be faster if you build a binary file." << std::endl;
   } else if (config.arpa_complain == Config::EXPENSIVE && model_type == TRIE_SORTED) {
-    std::cerr << "Building " << kModelNames[model_type] << " from ARPA is expensive.  Save time by building a binary format." << std::endl;
+    *config.messages << "Building " << kModelNames[model_type] << " from ARPA is expensive.  Save time by building a binary format." << std::endl;
   }
 }
 

@@ -1,9 +1,9 @@
 #ifndef LM_NGRAM_CONFIG__
 #define LM_NGRAM_CONFIG__
 
-/* Configuration for ngram model.  Separate header to reduce pollution. */
+#include <iosfwd>
 
-#include <iostream>
+/* Configuration for ngram model.  Separate header to reduce pollution. */
 
 namespace lm { namespace ngram {
 
@@ -59,6 +59,9 @@ struct Config {
   // to NULL to disable.  
   const char *write_mmap;
 
+  // Include the vocab in the binary file?  Only effective if write_mmap != NULL.  
+  bool include_vocab;
+
   
 
   // ONLY EFFECTIVE WHEN READING BINARY
@@ -66,18 +69,8 @@ struct Config {
 
 
 
-  // Defaults. 
-  Config() :
-    messages(&std::cerr),
-    enumerate_vocab(NULL),
-    unknown_missing(COMPLAIN),
-    unknown_missing_prob(0.0),
-    probing_multiplier(1.5),
-    building_memory(1073741824ULL), // 1 GB
-    temporary_directory_prefix(NULL),
-    arpa_complain(ALL),
-    write_mmap(NULL),
-    prefault(false) {}
+  // Set defaults. 
+  Config();
 };
 
 } /* namespace ngram */ } /* namespace lm */
