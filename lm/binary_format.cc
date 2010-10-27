@@ -109,7 +109,7 @@ bool IsBinaryFormat(int fd) {
   return false;
 }
 
-void ReadParameters(const Config &config, ModelType model_type, Parameters &params, int fd) {
+void ReadParameters(ModelType model_type, Parameters &params, int fd) {
   ReadHeader(fd, params);
   if (params.fixed.model_type != model_type) {
     if (static_cast<unsigned int>(params.fixed.model_type) >= (sizeof(kModelNames) / sizeof(const char *)))

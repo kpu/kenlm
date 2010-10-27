@@ -43,7 +43,7 @@ namespace detail {
 
 bool IsBinaryFormat(int fd);
 
-void ReadParameters(const Config &config, ModelType model_type, Parameters &params, int fd);
+void ReadParameters(ModelType model_type, Parameters &params, int fd);
 
 uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t memory_size, Backing &backing);
 
@@ -61,7 +61,7 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
 
   try {
     if (detail::IsBinaryFormat(backing.file.get())) {
-      detail::ReadParameters(config, To::kModelType, params, backing.file.get());
+      detail::ReadParameters(To::kModelType, params, backing.file.get());
       std::size_t memory_size = To::Size(params.counts, config);
       uint8_t *start = detail::SetupBinary(config, params, memory_size, backing);
       to.InitializeFromBinary(start, params, config, backing.file.get());
