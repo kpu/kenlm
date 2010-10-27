@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(StreamReadLine) {
   BOOST_CHECK_THROW(test.get(), EndOfFileException);
 }
 
-#ifdef USE_ZLIB
+#ifdef HAVE_ZLIB
 
 // gzip file
 BOOST_AUTO_TEST_CASE(PlainZipReadLine) {

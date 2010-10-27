@@ -11,7 +11,7 @@
 
 #include <cstddef>
 
-#define USE_ZLIB
+#define HAVE_ZLIB
 
 namespace util {
 
@@ -114,9 +114,9 @@ class FilePiece {
 
     std::string file_name_;
 
-#ifdef USE_ZLIB
+#ifdef HAVE_ZLIB
     void *gz_file_;
-#endif // USE_ZLIB
+#endif // HAVE_ZLIB
 };
 
 } // namespace util
