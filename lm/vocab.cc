@@ -30,12 +30,13 @@ const uint64_t kUnknownCapHash = detail::HashForVocab("<UNK>", 5);
 
 void ReadWords(int fd, EnumerateVocab *enumerate) {
   if (!enumerate) return;
-  const std::size_t kBufSize = 16384;
+  const std::size_t kInitialRead = 16384;
   std::string buf;
-  buf.reserve(kBufSize + 100);
+  buf.reserve(kInitialRead + 100);
+  buf.resize(kInitialRead);
   WordIndex index = 0;
   while (true) {
-    ssize_t got = read(fd, &buf[0], kBufSize);
+    ssize_t got = read(fd, &buf[0], kInitialRead);
     if (got == -1) UTIL_THROW(util::ErrnoException, "Reading vocabulary words");
     if (got == 0) return;
     buf.resize(got);
@@ -120,7 +121,7 @@ void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   if (enumerate_) {
     util::PairedIterator<ProbBackoff*, std::string*> values(reorder_vocab + 1, &*strings_to_enumerate_.begin());
     util::JointSort(begin_, end_, values);
-    for (WordIndex i = 0; i < strings_to_enumerate_.size(); ++i) {
+    for (WordIndex i = 0; i < end_ - begin_; ++i) {
       // <unk> strikes again: +1 here.  
       enumerate_->Add(i + 1, strings_to_enumerate_[i]);
     }
@@ -153,6 +154,9 @@ void ProbingVocabulary::SetupMemory(void *start, std::size_t allocated, std::siz
 
 void ProbingVocabulary::ConfigureEnumerate(EnumerateVocab *to, std::size_t /*max_entries*/) {
   enumerate_ = to;
+  if (enumerate_) {
+    enumerate_->Add(0, "<unk>");
+  }
 }
 
 WordIndex ProbingVocabulary::Insert(const StringPiece &str) {

@@ -111,73 +111,88 @@ template <class M> void Stateless(const M &model) {
   BOOST_CHECK_EQUAL(0, state.valid_length_);
 }
 
-BOOST_AUTO_TEST_CASE(probing) {
+//const char *kExpectedOrderProbing[] = {"<unk>", ",", ".", "</s>", "<s>", "a", "also", "beyond", "biarritz", "call", "concerns", "consider", "considering", "for", "higher", "however", "i", "immediate", "in", "is", "little", "loin", "look", "looking", "more", "on", "screening", "small", "the", "to", "watch", "watching", "what", "would"};
+
+class ExpectEnumerateVocab : public EnumerateVocab {
+  public:
+    ExpectEnumerateVocab() {}
+
+    void Add(WordIndex index, const StringPiece &str) {
+      BOOST_CHECK_EQUAL(seen.size(), index);
+      seen.push_back(std::string(str.data(), str.length()));
+    }
+
+    void Check(const base::Vocabulary &vocab) {
+      BOOST_CHECK_EQUAL(34, seen.size());
+      BOOST_REQUIRE(!seen.empty());
+      BOOST_CHECK_EQUAL("<unk>", seen[0]);
+      for (WordIndex i = 0; i < seen.size(); ++i) {
+        BOOST_CHECK_EQUAL(i, vocab.Index(seen[i]));
+      }
+    }
+
+    void Clear() {
+      seen.clear();
+    }
+
+    std::vector<std::string> seen;
+};
+
+template <class ModelT> void LoadingTest() {
   Config config;
   config.arpa_complain = Config::NONE;
   config.messages = NULL;
-  Model m("test.arpa", config);
+  ExpectEnumerateVocab enumerate;
+  config.enumerate_vocab = &enumerate;
+  ModelT m("test.arpa", config);
+  enumerate.Check(m.GetVocabulary());
   Starters(m);
   Continuation(m);
   Stateless(m);
 }
+
+BOOST_AUTO_TEST_CASE(probing) {
+  LoadingTest<Model>();
+}
+
 BOOST_AUTO_TEST_CASE(sorted) {
-  Config config;
-  config.arpa_complain = Config::NONE;
-  config.messages = NULL;
-  SortedModel m("test.arpa", config);
-  Starters(m);
-  Continuation(m);
-  Stateless(m);
+  LoadingTest<SortedModel>();
 }
 BOOST_AUTO_TEST_CASE(trie) {
+  LoadingTest<TrieModel>();
+}
+
+template <class ModelT> void BinaryTest() {
   Config config;
-  config.arpa_complain = Config::NONE;
+  config.write_mmap = "test.binary";
   config.messages = NULL;
-  TrieModel m("test.arpa", config);
-  Starters(m);
-  Continuation(m);
-  Stateless(m);
+  ExpectEnumerateVocab enumerate;
+  config.enumerate_vocab = &enumerate;
+
+  {
+    ModelT copy_model("test.arpa", config);
+    enumerate.Check(copy_model.GetVocabulary());
+    enumerate.Clear();
+  }
+
+  config.write_mmap = NULL;
+
+  ModelT binary("test.binary", config);
+  enumerate.Check(binary.GetVocabulary());
+  Starters(binary);
+  Continuation(binary);
+  Stateless(binary);
+  unlink("test.binary");
 }
 
 BOOST_AUTO_TEST_CASE(write_and_read_probing) {
-  Config config;
-  config.write_mmap = "test.binary";
-  config.messages = NULL;
-  {
-    Model copy_model("test.arpa", config);
-  }
-  Model binary("test.binary");
-  Starters(binary);
-  Continuation(binary);
-  Stateless(binary);
-  unlink("test.binary");
+  BinaryTest<Model>();
 }
-
 BOOST_AUTO_TEST_CASE(write_and_read_sorted) {
-  Config config;
-  config.write_mmap = "test.binary";
-  config.messages = NULL;
-  {
-    SortedModel copy_model("test.arpa", config);
-  }
-  SortedModel binary("test.binary");
-  Starters(binary);
-  Continuation(binary);
-  Stateless(binary);
-  unlink("test.binary");
+  BinaryTest<SortedModel>();
 }
 BOOST_AUTO_TEST_CASE(write_and_read_trie) {
-  Config config;
-  config.write_mmap = "test.binary";
-  config.messages = NULL;
-  {
-    TrieModel copy_model("test.arpa", config);
-  }
-  TrieModel binary("test.binary");
-  Starters(binary);
-  Continuation(binary);
-  Stateless(binary);
-  unlink("test.binary");
+  BinaryTest<TrieModel>();
 }
 
 } // namespace
