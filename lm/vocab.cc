@@ -30,12 +30,10 @@ const uint64_t kUnknownCapHash = detail::HashForVocab("<UNK>", 5);
 
 void ReadWords(int fd, EnumerateVocab *enumerate) {
   if (!enumerate) return;
-  enumerate->Add(0, "<unk>");
   const std::size_t kBufSize = 16384;
   std::string buf;
   buf.reserve(kBufSize + 100);
-  // <unk> was sent by the destructor.
-  WordIndex index = 1;
+  WordIndex index = 0;
   while (true) {
     ssize_t got = read(fd, &buf[0], kBufSize);
     if (got == -1) UTIL_THROW(util::ErrnoException, "Reading vocabulary words");
