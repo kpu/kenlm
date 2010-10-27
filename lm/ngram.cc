@@ -26,10 +26,10 @@ template <class Search, class VocabularyT> size_t GenericModel<Search, Vocabular
   return VocabularyT::Size(counts[0], config) + Search::Size(counts, config);
 }
 
-template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(void *base, const std::vector<uint64_t> &counts, const Config &config) {
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(void *base, const std::vector<uint64_t> &counts, const Config &config, bool load_from_binary) {
   uint8_t *start = static_cast<uint8_t*>(base);
   size_t allocated = VocabularyT::Size(counts[0], config);
-  vocab_.SetupMemory(start, allocated, counts[0], config);
+  vocab_.SetupMemory(start, allocated, counts[0], config, load_from_binary);
   start += allocated;
   start = search_.SetupMemory(start, counts, config);
   if (static_cast<std::size_t>(start - static_cast<uint8_t*>(base)) != Size(counts, config)) UTIL_THROW(FormatLoadException, "The data structures took " << (start - static_cast<uint8_t*>(base)) << " but Size says they should take " << Size(counts, config));
@@ -49,7 +49,7 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(void *start, const Parameters &params, const Config &config, int fd) {
-  SetupMemory(start, params.counts, config);
+  SetupMemory(start, params.counts, config, true);
   vocab_.LoadedBinary(params.counts[0], fd);
   search_.unigram.LoadedBinary();
   for (typename std::vector<Middle>::iterator i = search_.middle.begin(); i != search_.middle.end(); ++i) {
@@ -59,7 +59,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromARPA(const char *file, util::FilePiece &f, void *start, const Parameters &params, const Config &config) {
-  SetupMemory(start, params.counts, config);
+  SetupMemory(start, params.counts, config, false);
   search_.InitializeFromARPA(file, f, params.counts, config, vocab_);
   // TODO: fail faster?  
   if (!vocab_.SawUnk()) {

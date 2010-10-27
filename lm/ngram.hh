@@ -86,7 +86,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     FullScoreReturn ScoreExceptBackoff(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, unsigned char &backoff_start, State &out_state) const;
 
     // Appears after Size in the cc file.
-    void SetupMemory(void *start, const std::vector<uint64_t> &counts, const Config &config);
+    void SetupMemory(void *start, const std::vector<uint64_t> &counts, const Config &config, bool load_from_binary);
 
     void InitializeFromBinary(void *start, const Parameters &params, const Config &config, int fd);
 

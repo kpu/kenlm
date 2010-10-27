@@ -7,6 +7,9 @@
 #include "util/sorted_uniform.hh"
 #include "util/string_piece.hh"
 
+#include <string>
+#include <vector>
+
 namespace lm {
 class ProbBackoff;
 
@@ -49,7 +52,7 @@ class SortedVocabulary : public base::Vocabulary {
     static size_t Size(std::size_t entries, const Config &config);
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
-    void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
+    void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config, bool load_from_binary);
 
     WordIndex Insert(const StringPiece &str);
 
@@ -66,12 +69,15 @@ class SortedVocabulary : public base::Vocabulary {
     bool saw_unk_;
 
     EnumerateVocab *enumerate_;
+
+    // Actual strings.  Used only when loading from ARPA and enumerate_ != NULL 
+    std::vector<std::string> strings_to_enumerate_;
 };
 
 // Vocabulary storing a map from uint64_t to WordIndex. 
 class ProbingVocabulary : public base::Vocabulary {
   public:
-    ProbingVocabulary(EnumerateVocab *enumerate = NULL);
+    explicit ProbingVocabulary(EnumerateVocab *enumerate = NULL);
 
     WordIndex Index(const StringPiece &str) const {
       Lookup::ConstIterator i;
@@ -81,7 +87,7 @@ class ProbingVocabulary : public base::Vocabulary {
     static size_t Size(std::size_t entries, const Config &config);
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
-    void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
+    void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config, bool load_from_binary);
 
     WordIndex Insert(const StringPiece &str);
 

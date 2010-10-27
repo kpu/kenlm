@@ -61,15 +61,20 @@ void ReadWords(std::size_t expected, int fd, EnumerateVocab *enumerate) {
 
 } // namespace
 
-SortedVocabulary::SortedVocabulary(EnumerateVocab *enumerate) : begin_(NULL), end_(NULL), enumerate_(enumerate) {}
+SortedVocabulary::SortedVocabulary(EnumerateVocab *enumerate) : begin_(NULL), end_(NULL), enumerate_(enumerate) {
+  if (enumerate_) enumerate_->Add(0, "<unk>");
+}
 
 std::size_t SortedVocabulary::Size(std::size_t entries, const Config &/*config*/) {
   // Lead with the number of entries.  
   return sizeof(uint64_t) + sizeof(Entry) * entries;
 }
 
-void SortedVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config) {
+void SortedVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &/*config*/, bool load_from_binary) {
   assert(allocated >= Size(entries));
+  if (!load_from_binary && enumerate_) {
+    strings_to_enumerate_.resize(entries);
+  }
   // Leave space for number of entries.  
   begin_ = reinterpret_cast<Entry*>(reinterpret_cast<uint64_t*>(start) + 1);
   end_ = begin_;
@@ -83,13 +88,21 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
     return 0;
   }
   end_->key = hashed;
+  if (enumerate_) {
+    strings_to_enumerate_[end_ - begin_].assign(str.data(), str.size());
+  }
   ++end_;
   // This is 1 + the offset where it was inserted to make room for unk.  
   return end_ - begin_;
 }
 
 void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
-  util::JointSort(begin_, end_, reorder_vocab + 1);
+  if (enumerate_) {
+    util::PairedIterator<ProbBackoff*, std::string*> values(reorder_vocab + 1, &*strings_to_enumerate_.begin());
+    util::JointSort(begin_, end_, values);
+  } else {
+    util::JointSort(begin_, end_, reorder_vocab + 1);
+  }
   SetSpecial(Index("<s>"), Index("</s>"), 0);
   // Save size.  
   *(reinterpret_cast<uint64_t*>(begin_) - 1) = end_ - begin_;
@@ -109,7 +122,7 @@ std::size_t ProbingVocabulary::Size(std::size_t entries, const Config &config) {
   return Lookup::Size(entries, config.probing_multiplier);
 }
 
-void ProbingVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t /*entries*/, const Config &config) {
+void ProbingVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t /*entries*/, const Config &/*config*/, bool /*load_from_binary*/) {
   lookup_ = Lookup(start, allocated);
   available_ = 1;
   saw_unk_ = false;
