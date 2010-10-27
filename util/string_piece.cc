@@ -30,14 +30,14 @@
 
 #include "util/string_piece.hh"
 
-#ifdef USE_BOOST
+#ifdef HAVE_BOOST
 #include <boost/functional/hash/hash.hpp>
 #endif
 
 #include <algorithm>
 #include <iostream>
 
-#ifdef USE_ICU
+#ifdef HAVE_ICU
 U_NAMESPACE_BEGIN
 #endif
 
@@ -46,12 +46,12 @@ std::ostream& operator<<(std::ostream& o, const StringPiece& piece) {
   return o;
 }
 
-#ifdef USE_BOOST
+#ifdef HAVE_BOOST
 size_t hash_value(const StringPiece &str) {
   return boost::hash_range(str.data(), str.data() + str.length());
 }
 #endif
 
-#ifdef USE_ICU
+#ifdef HAVE_ICU
 U_NAMESPACE_END
 #endif

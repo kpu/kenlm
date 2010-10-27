@@ -1,4 +1,4 @@
-/* If you use ICU in your program, then compile with -DUSE_ICU -licui18n.  If
+/* If you use ICU in your program, then compile with -DHAVE_ICU -licui18n.  If
  * you don't use ICU, then this will use the Google implementation from Chrome.
  * This has been modified from the original version to let you choose.  
  */
@@ -49,14 +49,14 @@
 #define BASE_STRING_PIECE_H__
 
 //Uncomment this line if you use ICU in your code.  
-#define USE_ICU
+#define HAVE_ICU
 //Uncomment this line if you want boost hashing for your StringPieces.
-#define USE_BOOST
+#define HAVE_BOOST
 
 #include <cstring>
 #include <iosfwd>
 
-#ifdef USE_ICU
+#ifdef HAVE_ICU
 #include <unicode/stringpiece.h>
 U_NAMESPACE_BEGIN
 #else
@@ -230,7 +230,7 @@ inline bool operator>=(const StringPiece& x, const StringPiece& y) {
 // allow StringPiece to be logged (needed for unit testing).
 extern std::ostream& operator<<(std::ostream& o, const StringPiece& piece);
 
-#ifdef USE_BOOST
+#ifdef HAVE_BOOST
 size_t hash_value(const StringPiece &str);
 
 /* Support for lookup of StringPiece in boost::unordered_map<std::string> */
@@ -253,7 +253,7 @@ template <class T> typename T::iterator FindStringPiece(T &t, const StringPiece 
 }
 #endif
 
-#ifdef USE_ICU
+#ifdef HAVE_ICU
 U_NAMESPACE_END
 #endif
 
