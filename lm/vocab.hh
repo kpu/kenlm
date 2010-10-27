@@ -1,6 +1,7 @@
 #ifndef LM_VOCAB__
 #define LM_VOCAB__
 
+#include "lm/enumerate_vocab.hh"
 #include "lm/virtual_interface.hh"
 #include "util/key_value_packing.hh"
 #include "util/probing_hash_table.hh"
@@ -24,6 +25,19 @@ inline uint64_t HashForVocab(const StringPiece &str) {
 }
 } // namespace detail
 
+class WriteWordsWrapper : public EnumerateVocab {
+  public:
+    WriteWordsWrapper(EnumerateVocab *inner, int fd);
+
+    ~WriteWordsWrapper();
+    
+    void Add(WordIndex index, const StringPiece &str);
+
+  private:
+    EnumerateVocab *inner_;
+    int fd_;
+};
+
 // Vocabulary based on sorted uniform find storing only uint64_t values and using their offsets as indices.  
 class SortedVocabulary : public base::Vocabulary {
   private:
@@ -37,7 +51,7 @@ class SortedVocabulary : public base::Vocabulary {
     };
 
   public:
-    explicit SortedVocabulary(EnumerateVocab *enumerate = NULL);
+    SortedVocabulary();
 
     WordIndex Index(const StringPiece &str) const {
       const Entry *found;
@@ -52,7 +66,9 @@ class SortedVocabulary : public base::Vocabulary {
     static size_t Size(std::size_t entries, const Config &config);
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
-    void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config, bool load_from_binary);
+    void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
+
+    void ConfigureEnumerate(EnumerateVocab *to, std::size_t max_entries);
 
     WordIndex Insert(const StringPiece &str);
 
@@ -61,7 +77,7 @@ class SortedVocabulary : public base::Vocabulary {
 
     bool SawUnk() const { return saw_unk_; }
 
-    void LoadedBinary(std::size_t expected_count, int fd);
+    void LoadedBinary(int fd, EnumerateVocab *to);
 
   private:
     Entry *begin_, *end_;
@@ -77,7 +93,7 @@ class SortedVocabulary : public base::Vocabulary {
 // Vocabulary storing a map from uint64_t to WordIndex. 
 class ProbingVocabulary : public base::Vocabulary {
   public:
-    explicit ProbingVocabulary(EnumerateVocab *enumerate = NULL);
+    ProbingVocabulary();
 
     WordIndex Index(const StringPiece &str) const {
       Lookup::ConstIterator i;
@@ -87,7 +103,9 @@ class ProbingVocabulary : public base::Vocabulary {
     static size_t Size(std::size_t entries, const Config &config);
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
-    void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config, bool load_from_binary);
+    void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
+
+    void ConfigureEnumerate(EnumerateVocab *to, std::size_t max_entries);
 
     WordIndex Insert(const StringPiece &str);
 
@@ -95,7 +113,7 @@ class ProbingVocabulary : public base::Vocabulary {
 
     bool SawUnk() const { return saw_unk_; }
 
-    void LoadedBinary(std::size_t expected_count, int fd);
+    void LoadedBinary(int fd, EnumerateVocab *to);
 
   private:
     // std::identity is an SGI extension :-(

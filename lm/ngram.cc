@@ -26,16 +26,16 @@ template <class Search, class VocabularyT> size_t GenericModel<Search, Vocabular
   return VocabularyT::Size(counts[0], config) + Search::Size(counts, config);
 }
 
-template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(void *base, const std::vector<uint64_t> &counts, const Config &config, bool load_from_binary) {
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(void *base, const std::vector<uint64_t> &counts, const Config &config) {
   uint8_t *start = static_cast<uint8_t*>(base);
   size_t allocated = VocabularyT::Size(counts[0], config);
-  vocab_.SetupMemory(start, allocated, counts[0], config, load_from_binary);
+  vocab_.SetupMemory(start, allocated, counts[0], config);
   start += allocated;
   start = search_.SetupMemory(start, counts, config);
   if (static_cast<std::size_t>(start - static_cast<uint8_t*>(base)) != Size(counts, config)) UTIL_THROW(FormatLoadException, "The data structures took " << (start - static_cast<uint8_t*>(base)) << " but Size says they should take " << Size(counts, config));
 }
 
-template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) : vocab_(config.enumerate_vocab) {
+template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) {
   LoadLM(file, config, *this);
 
   // g++ prints warnings unless these are fully initialized.  
@@ -49,8 +49,8 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(void *start, const Parameters &params, const Config &config, int fd) {
-  SetupMemory(start, params.counts, config, true);
-  vocab_.LoadedBinary(params.counts[0], fd);
+  SetupMemory(start, params.counts, config);
+  vocab_.LoadedBinary(fd, config.enumerate_vocab);
   search_.unigram.LoadedBinary();
   for (typename std::vector<Middle>::iterator i = search_.middle.begin(); i != search_.middle.end(); ++i) {
     i->LoadedBinary();
@@ -59,8 +59,16 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromARPA(const char *file, util::FilePiece &f, void *start, const Parameters &params, const Config &config) {
-  SetupMemory(start, params.counts, config, false);
-  search_.InitializeFromARPA(file, f, params.counts, config, vocab_);
+  SetupMemory(start, params.counts, config);
+
+  if (config.write_mmap) {
+    WriteWordsWrapper wrap(config.enumerate_vocab, backing_.file.get());
+    vocab_.ConfigureEnumerate(&wrap, params.counts[0]);
+    search_.InitializeFromARPA(file, f, params.counts, config, vocab_);
+  } else {
+    vocab_.ConfigureEnumerate(config.enumerate_vocab, params.counts[0]);
+    search_.InitializeFromARPA(file, f, params.counts, config, vocab_);
+  }
   // TODO: fail faster?  
   if (!vocab_.SawUnk()) {
     switch(config.unknown_missing) {

@@ -1,6 +1,7 @@
 #ifndef LM_ENUMERATE_VOCAB__
 #define LM_ENUMERATE_VOCAB__
 
+#include "lm/word_index.hh"
 #include "util/string_piece.hh"
 
 namespace lm {

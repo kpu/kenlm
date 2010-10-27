@@ -28,8 +28,9 @@ const uint64_t kUnknownHash = detail::HashForVocab("<unk>", 5);
 // Sadly some LMs have <UNK>.  
 const uint64_t kUnknownCapHash = detail::HashForVocab("<UNK>", 5);
 
-void ReadWords(std::size_t expected, int fd, EnumerateVocab *enumerate) {
+void ReadWords(int fd, EnumerateVocab *enumerate) {
   if (!enumerate) return;
+  enumerate->Add(0, "<unk>");
   const std::size_t kBufSize = 16384;
   std::string buf;
   buf.reserve(kBufSize + 100);
@@ -38,10 +39,7 @@ void ReadWords(std::size_t expected, int fd, EnumerateVocab *enumerate) {
   while (true) {
     ssize_t got = read(fd, &buf[0], kBufSize);
     if (got == -1) UTIL_THROW(util::ErrnoException, "Reading vocabulary words");
-    if (got == 0) {
-      if (index != expected) UTIL_THROW(FormatLoadException, "Binary file has " << index << " vocabulary words but " << expected << " were expected.");
-      return;
-    }
+    if (got == 0) return;
     buf.resize(got);
     while (buf[buf.size() - 1]) {
       char next_char;
@@ -59,26 +57,50 @@ void ReadWords(std::size_t expected, int fd, EnumerateVocab *enumerate) {
   }
 }
 
+void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
+  const uint8_t *data = static_cast<const uint8_t*>(data_void);
+  while (size) {
+    ssize_t ret = write(fd, data, size);
+    if (ret < 1) UTIL_THROW(util::ErrnoException, "Write failed");
+    data += ret;
+    size -= ret;
+  }
+}
+
 } // namespace
 
-SortedVocabulary::SortedVocabulary(EnumerateVocab *enumerate) : begin_(NULL), end_(NULL), enumerate_(enumerate) {
-  if (enumerate_) enumerate_->Add(0, "<unk>");
+WriteWordsWrapper::WriteWordsWrapper(EnumerateVocab *inner, int fd) : inner_(inner), fd_(fd) {}
+WriteWordsWrapper::~WriteWordsWrapper() {}
+
+void WriteWordsWrapper::Add(WordIndex index, const StringPiece &str) {
+  if (inner_) inner_->Add(index, str);
+  WriteOrThrow(fd_, str.data(), str.size());
+  char null_byte = 0;
+  // Inefficient because it's unbuffered.  Sue me.  
+  WriteOrThrow(fd_, &null_byte, 1);
 }
+
+SortedVocabulary::SortedVocabulary() : begin_(NULL), end_(NULL), enumerate_(NULL) {}
 
 std::size_t SortedVocabulary::Size(std::size_t entries, const Config &/*config*/) {
   // Lead with the number of entries.  
   return sizeof(uint64_t) + sizeof(Entry) * entries;
 }
 
-void SortedVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &/*config*/, bool load_from_binary) {
-  assert(allocated >= Size(entries));
-  if (!load_from_binary && enumerate_) {
-    strings_to_enumerate_.resize(entries);
-  }
+void SortedVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config) {
+  assert(allocated >= Size(entries, config));
   // Leave space for number of entries.  
   begin_ = reinterpret_cast<Entry*>(reinterpret_cast<uint64_t*>(start) + 1);
   end_ = begin_;
   saw_unk_ = false;
+}
+
+void SortedVocabulary::ConfigureEnumerate(EnumerateVocab *to, std::size_t max_entries) {
+  enumerate_ = to;
+  if (enumerate_) {
+    enumerate_->Add(0, "<unk>");
+    strings_to_enumerate_.resize(max_entries);
+  }
 }
 
 WordIndex SortedVocabulary::Insert(const StringPiece &str) {
@@ -100,6 +122,11 @@ void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   if (enumerate_) {
     util::PairedIterator<ProbBackoff*, std::string*> values(reorder_vocab + 1, &*strings_to_enumerate_.begin());
     util::JointSort(begin_, end_, values);
+    for (WordIndex i = 0; i < strings_to_enumerate_.size(); ++i) {
+      // <unk> strikes again: +1 here.  
+      enumerate_->Add(i + 1, strings_to_enumerate_[i]);
+    }
+    strings_to_enumerate_.clear();
   } else {
     util::JointSort(begin_, end_, reorder_vocab + 1);
   }
@@ -108,24 +135,26 @@ void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   *(reinterpret_cast<uint64_t*>(begin_) - 1) = end_ - begin_;
 }
 
-void SortedVocabulary::LoadedBinary(std::size_t expected_count, int fd) {
+void SortedVocabulary::LoadedBinary(int fd, EnumerateVocab *to) {
   end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
-  ReadWords(expected_count, fd, enumerate_);
+  ReadWords(fd, to);
   SetSpecial(Index("<s>"), Index("</s>"), 0);
 }
 
-ProbingVocabulary::ProbingVocabulary(EnumerateVocab *enumerate) : enumerate_(enumerate) {
-  if (enumerate_) enumerate_->Add(0, "<unk>");
-}
+ProbingVocabulary::ProbingVocabulary() : enumerate_(NULL) {}
 
 std::size_t ProbingVocabulary::Size(std::size_t entries, const Config &config) {
   return Lookup::Size(entries, config.probing_multiplier);
 }
 
-void ProbingVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t /*entries*/, const Config &/*config*/, bool /*load_from_binary*/) {
+void ProbingVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t /*entries*/, const Config &/*config*/) {
   lookup_ = Lookup(start, allocated);
   available_ = 1;
   saw_unk_ = false;
+}
+
+void ProbingVocabulary::ConfigureEnumerate(EnumerateVocab *to, std::size_t /*max_entries*/) {
+  enumerate_ = to;
 }
 
 WordIndex ProbingVocabulary::Insert(const StringPiece &str) {
@@ -146,9 +175,9 @@ void ProbingVocabulary::FinishedLoading(ProbBackoff * /*reorder_vocab*/) {
   SetSpecial(Index("<s>"), Index("</s>"), 0);
 }
 
-void ProbingVocabulary::LoadedBinary(std::size_t expected_count, int fd) {
+void ProbingVocabulary::LoadedBinary(int fd, EnumerateVocab *to) {
   lookup_.LoadedBinary();
-  ReadWords(expected_count, fd, enumerate_);
+  ReadWords(fd, to);
   SetSpecial(Index("<s>"), Index("</s>"), 0);
 }
 

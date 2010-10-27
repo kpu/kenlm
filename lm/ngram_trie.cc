@@ -269,7 +269,6 @@ void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, 
     util::scoped_mapped_file unigram_file;
     util::MapZeroedWrite(unigram_name.c_str(), counts[0] * sizeof(ProbBackoff), unigram_file);
     Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_file.mem.get()));
-    vocab.FinishedLoading(reinterpret_cast<ProbBackoff*>(unigram_file.mem.get()));
   }
 
   util::scoped_memory mem;
