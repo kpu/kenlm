@@ -60,16 +60,6 @@ void ReadLoop(int fd, void *to_void, std::size_t size) {
   }
 }
 
-void ReadHeader(int fd, Parameters &out) {
-  if ((off_t)-1 == lseek(fd, sizeof(Sanity), SEEK_SET)) UTIL_THROW(util::ErrnoException, "Seek failed in binary file");
-  ReadLoop(fd, &out.fixed, sizeof(out.fixed));
-  if (out.fixed.probing_multiplier < 1.0)
-    UTIL_THROW(FormatLoadException, "Binary format claims to have a probing multiplier of " << out.fixed.probing_multiplier << " which is < 1.0.");
-
-  out.counts.resize(static_cast<std::size_t>(out.fixed.order));
-  ReadLoop(fd, &*out.counts.begin(), sizeof(uint64_t) * out.fixed.order);
-}
-
 void WriteHeader(void *to, const Parameters &params) {
   Sanity header = Sanity();
   header.SetToReference();
@@ -109,8 +99,17 @@ bool IsBinaryFormat(int fd) {
   return false;
 }
 
-void ReadParameters(ModelType model_type, Parameters &params, int fd) {
-  ReadHeader(fd, params);
+void ReadHeader(int fd, Parameters &out) {
+  if ((off_t)-1 == lseek(fd, sizeof(Sanity), SEEK_SET)) UTIL_THROW(util::ErrnoException, "Seek failed in binary file");
+  ReadLoop(fd, &out.fixed, sizeof(out.fixed));
+  if (out.fixed.probing_multiplier < 1.0)
+    UTIL_THROW(FormatLoadException, "Binary format claims to have a probing multiplier of " << out.fixed.probing_multiplier << " which is < 1.0.");
+
+  out.counts.resize(static_cast<std::size_t>(out.fixed.order));
+  ReadLoop(fd, &*out.counts.begin(), sizeof(uint64_t) * out.fixed.order);
+}
+
+void MatchCheck(ModelType model_type, const Parameters &params) {
   if (params.fixed.model_type != model_type) {
     if (static_cast<unsigned int>(params.fixed.model_type) >= (sizeof(kModelNames) / sizeof(const char *)))
       UTIL_THROW(FormatLoadException, "The binary file claims to be model type " << static_cast<unsigned int>(params.fixed.model_type) << " but this is not implemented for in this inference code.");
@@ -174,5 +173,15 @@ void ComplainAboutARPA(const Config &config, ModelType model_type) {
 }
 
 } // namespace detail
+
+bool RecognizeBinary(const char *file, ModelType &recognized) {
+  util::scoped_fd fd(util::OpenReadOrThrow(file));
+  if (!detail::IsBinaryFormat(fd.get())) return false;
+  Parameters params;
+  detail::ReadHeader(fd.get(), params);
+  recognized = params.fixed.model_type;
+  return true;
+}
+
 } // namespace ngram
 } // namespace lm
