@@ -6,10 +6,10 @@
 #include <limits>
 
 #include <assert.h>
-#include <cstdlib>
 #include <ctype.h>
 #include <err.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -116,7 +116,7 @@ float FilePiece::ReadFloat() throw(GZException, EndOfFileException, ParseNumberE
       // Hallucinate a null off the end of the file.
       std::string buffer(position_, position_end_);
       char *end;
-      float ret = std::strtof(buffer.c_str(), &end);
+      float ret = strtof(buffer.c_str(), &end);
       if (buffer.c_str() == end) throw ParseNumberException(buffer);
       position_ += end - buffer.c_str();
       return ret;
@@ -124,7 +124,7 @@ float FilePiece::ReadFloat() throw(GZException, EndOfFileException, ParseNumberE
     Shift();
   }
   char *end;
-  float ret = std::strtof(position_, &end);
+  float ret = strtof(position_, &end);
   if (end == position_) throw ParseNumberException(ReadDelimited());
   position_ = end;
   return ret;
