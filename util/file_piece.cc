@@ -69,7 +69,6 @@ FilePiece::~FilePiece() {
     int ret;
     if (Z_OK != (ret = gzclose(gz_file_))) {
       errx(1, "could not close file %s using zlib", file_name_.c_str());
-      abort();
     }
   }
 #endif
