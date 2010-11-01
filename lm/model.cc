@@ -1,8 +1,8 @@
-#include "lm/ngram.hh"
+#include "lm/model.hh"
 
 #include "lm/lm_exception.hh"
-#include "lm/ngram_hashed.hh"
-#include "lm/ngram_trie.hh"
+#include "lm/search_hashed.hh"
+#include "lm/search_trie.hh"
 #include "lm/read_arpa.hh"
 #include "util/murmur_hash.hh"
 
@@ -120,7 +120,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   float *backoff_out = out_state.backoff_ + 1;
   const WordIndex *i = context_rbegin + 1;
   for (; i < context_rend; ++i, ++backoff_out) {
-    if (!search_.LookupMiddle(search_.middle[i - context_rbegin - 1], *i, ignored_prob, *backoff_out, node)) {
+    if (!search_.LookupMiddleNoProb(search_.middle[i - context_rbegin - 1], *i, *backoff_out, node)) {
       out_state.valid_length_ = i - context_rbegin;
       std::copy(context_rbegin, i, out_state.history_);
       return;
@@ -143,10 +143,10 @@ template <class Search, class VocabularyT> float GenericModel<Search, Vocabulary
   if (!search_.FastMakeNode(context_rbegin, context_rbegin + start - 1, node)) {
     return 0.0;
   }
-  float ignored_prob, backoff;
+  float backoff;
   // i is the order of the backoff we're looking for.
   for (const WordIndex *i = context_rbegin + start - 1; i < context_rend; ++i) {
-    if (!search_.LookupMiddle(search_.middle[i - context_rbegin - 1], *i, ignored_prob, backoff, node)) break;
+    if (!search_.LookupMiddleNoProb(search_.middle[i - context_rbegin - 1], *i, backoff, node)) break;
     ret += backoff;
   }
   return ret;

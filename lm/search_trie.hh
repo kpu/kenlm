@@ -1,5 +1,5 @@
-#ifndef LM_NGRAM_TRIE__
-#define LM_NGRAM_TRIE__
+#ifndef LM_SEARCH_TRIE__
+#define LM_SEARCH_TRIE__
 
 #include "lm/binary_format.hh"
 #include "lm/trie.hh"
@@ -56,6 +56,10 @@ struct TrieSearch {
     return mid.Find(word, prob, backoff, node);
   }
 
+  bool LookupMiddleNoProb(const Middle &mid, WordIndex word, float &backoff, Node &node) const {
+    return mid.FindNoProb(word, backoff, node);
+  }
+
   bool LookupLongest(WordIndex word, float &prob, const Node &node) const {
     return longest.Find(word, prob, node);
   }
@@ -66,7 +70,7 @@ struct TrieSearch {
     float ignored_prob, ignored_backoff;
     LookupUnigram(*begin, ignored_prob, ignored_backoff, node);
     for (const WordIndex *i = begin + 1; i < end; ++i) {
-      if (!LookupMiddle(middle[i - begin - 1], *i, ignored_prob, ignored_backoff, node)) return false;
+      if (!LookupMiddleNoProb(middle[i - begin - 1], *i, ignored_backoff, node)) return false;
     }
     return true;
   }
@@ -76,4 +80,4 @@ struct TrieSearch {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_NGRAM_TRIE__
+#endif // LM_SEARCH_TRIE__

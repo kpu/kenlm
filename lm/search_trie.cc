@@ -1,4 +1,4 @@
-#include "lm/ngram_trie.hh"
+#include "lm/search_trie.hh"
 
 #include "lm/lm_exception.hh"
 #include "lm/read_arpa.hh"

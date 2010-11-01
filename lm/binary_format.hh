@@ -1,7 +1,7 @@
 #ifndef LM_BINARY_FORMAT__
 #define LM_BINARY_FORMAT__
 
-#include "lm/ngram_config.hh"
+#include "lm/config.hh"
 #include "lm/read_arpa.hh"
 
 #include "util/file_piece.hh"

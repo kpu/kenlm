@@ -1,5 +1,5 @@
-#ifndef LM_NGRAM_CONFIG__
-#define LM_NGRAM_CONFIG__
+#ifndef LM_CONFIG__
+#define LM_CONFIG__
 
 #include <iosfwd>
 
@@ -75,4 +75,4 @@ struct Config {
 
 } /* namespace ngram */ } /* namespace lm */
 
-#endif // LM_NGRAM_CONFIG__
+#endif // LM_CONFIG__

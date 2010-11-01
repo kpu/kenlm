@@ -1,4 +1,4 @@
-#include "lm/ngram_config.hh"
+#include "lm/config.hh"
 
 #include <iostream>
 

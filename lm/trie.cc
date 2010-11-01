@@ -123,6 +123,21 @@ bool BitPackedMiddle::Find(WordIndex word, float &prob, float &backoff, NodeRang
   return true;
 }
 
+bool BitPackedMiddle::FindNoProb(WordIndex word, float &backoff, NodeRange &range) const {
+  uint64_t at_pointer;
+  if (!FindBitPacked(base_, word_mask_, total_bits_, range.begin, range.end, word, at_pointer)) return false;
+  at_pointer *= total_bits_;
+  at_pointer += word_bits_;
+  at_pointer += prob_bits_;
+  backoff = util::ReadFloat32(base_ + (at_pointer >> 3), at_pointer & 7);
+  at_pointer += backoff_bits_;
+  range.begin = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_mask_);
+  // Read the next entry's pointer.  
+  at_pointer += total_bits_;
+  range.end = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_mask_);
+  return true;
+}
+
 void BitPackedMiddle::FinishedLoading(uint64_t next_end) {
   assert(next_end <= next_mask_);
   uint64_t last_next_write = (insert_index_ + 1) * total_bits_ - next_bits_;

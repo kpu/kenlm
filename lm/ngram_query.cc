@@ -1,4 +1,4 @@
-#include "lm/ngram.hh"
+#include "lm/model.hh"
 
 #include <cstdlib>
 #include <fstream>

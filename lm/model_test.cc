@@ -1,8 +1,8 @@
-#include "lm/ngram.hh"
+#include "lm/model.hh"
 
 #include <stdlib.h>
 
-#define BOOST_TEST_MODULE NGramTest
+#define BOOST_TEST_MODULE ModelTest
 #include <boost/test/unit_test.hpp>
 
 namespace lm {

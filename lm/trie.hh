@@ -95,6 +95,8 @@ class BitPackedMiddle : public BitPacked {
 
     bool Find(WordIndex word, float &prob, float &backoff, NodeRange &range) const;
 
+    bool FindNoProb(WordIndex word, float &backoff, NodeRange &range) const;
+
     void FinishedLoading(uint64_t next_end);
 
   private:

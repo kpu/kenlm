@@ -1,11 +1,11 @@
-#ifndef LM_NGRAM__
-#define LM_NGRAM__
+#ifndef LM_MODEL__
+#define LM_MODEL__
 
 #include "lm/binary_format.hh"
+#include "lm/config.hh"
 #include "lm/facade.hh"
-#include "lm/ngram_config.hh"
-#include "lm/ngram_hashed.hh"
-#include "lm/ngram_trie.hh"
+#include "lm/search_hashed.hh"
+#include "lm/search_trie.hh"
 #include "lm/vocab.hh"
 #include "lm/weights.hh"
 
@@ -123,4 +123,4 @@ typedef detail::GenericModel<trie::TrieSearch, SortedVocabulary> TrieModel;
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_NGRAM__
+#endif // LM_MODEL__
