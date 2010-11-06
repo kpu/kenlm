@@ -82,8 +82,12 @@ bool IsBinaryFormat(int fd) {
   const off_t size = util::SizeFile(fd);
   if (size == util::kBadSize || (size <= static_cast<off_t>(sizeof(Sanity)))) return false;
   // Try reading the header.  
-  util::scoped_mmap memory(util::MapForRead(sizeof(Sanity), false, fd), sizeof(Sanity));
-  if (memory.get() == MAP_FAILED) return false;
+  util::scoped_memory memory;
+  try {
+    util::MapRead(util::LAZY, fd, 0, sizeof(Sanity), memory);
+  } catch (const util::Exception &e) {
+    return false;
+  }
   Sanity reference_header = Sanity();
   reference_header.SetToReference();
   if (!memcmp(memory.get(), &reference_header, sizeof(Sanity))) return true;
@@ -124,7 +128,7 @@ uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t
   if (file_size != util::kBadSize && static_cast<uint64_t>(file_size) < total_map)
     UTIL_THROW(FormatLoadException, "Binary file has size " << file_size << " but the headers say it should be at least " << total_map);
 
-  backing.memory.reset(util::MapForRead(total_map, config.prefault, backing.file.get()), total_map);
+  util::MapRead(config.load_method, backing.file.get(), 0, total_map, backing.memory);
 
   if (config.enumerate_vocab && !params.fixed.has_vocabulary)
     UTIL_THROW(FormatLoadException, "The decoder requested all the vocabulary strings, but this binary file does not have them.  You may need to rebuild the binary file with an updated version of build_binary.");
@@ -141,7 +145,7 @@ uint8_t *SetupZeroed(const Config &config, ModelType model_type, const std::vect
   if (config.write_mmap) {
     std::size_t total_map = TotalHeaderSize(counts.size()) + memory_size;
     // Write out an mmap file.  
-    util::MapZeroedWrite(config.write_mmap, total_map, backing.file, backing.memory);
+    backing.memory.reset(util::MapZeroedWrite(config.write_mmap, total_map, backing.file), total_map, util::scoped_memory::MMAP_ALLOCATED);
 
     Parameters params;
     params.counts = counts;
@@ -158,7 +162,7 @@ uint8_t *SetupZeroed(const Config &config, ModelType model_type, const std::vect
     }
     return reinterpret_cast<uint8_t*>(backing.memory.get()) + TotalHeaderSize(counts.size());
   } else {
-    backing.memory.reset(util::MapAnonymous(memory_size), memory_size);
+    backing.memory.reset(util::MapAnonymous(memory_size), memory_size, util::scoped_memory::MMAP_ALLOCATED);
     return reinterpret_cast<uint8_t*>(backing.memory.get());
   } 
 }

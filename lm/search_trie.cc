@@ -266,13 +266,15 @@ template <> void ConvertToSorted<FullEntry<1> >(util::FilePiece &/*f*/, const So
 void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, std::size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab) {
   {
     std::string unigram_name = file_prefix + "unigrams";
-    util::scoped_mapped_file unigram_file;
-    util::MapZeroedWrite(unigram_name.c_str(), counts[0] * sizeof(ProbBackoff), unigram_file);
-    Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_file.mem.get()));
+    util::scoped_fd unigram_file;
+    util::scoped_mmap unigram_mmap;
+    unigram_mmap.reset(util::MapZeroedWrite(unigram_name.c_str(), counts[0] * sizeof(ProbBackoff), unigram_file), counts[0] * sizeof(ProbBackoff));
+    Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_mmap.get()));
   }
 
   util::scoped_memory mem;
-  mem.reset(new char[buffer], buffer, util::scoped_memory::ARRAY_ALLOCATED);
+  mem.reset(malloc(buffer), buffer, util::scoped_memory::ARRAY_ALLOCATED);
+  if (!mem.get()) UTIL_THROW(util::ErrnoException, "malloc failed for sort buffer size " << buffer);
   ConvertToSorted<ProbEntry<5> >(f, vocab, counts, mem, file_prefix);
   ReadEnd(f);
 }

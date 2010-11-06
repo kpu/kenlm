@@ -3,6 +3,8 @@
 
 #include <iosfwd>
 
+#include "util/mmap.hh"
+
 /* Configuration for ngram model.  Separate header to reduce pollution. */
 
 namespace lm { namespace ngram {
@@ -63,9 +65,12 @@ struct Config {
   bool include_vocab;
 
   
-
+  
   // ONLY EFFECTIVE WHEN READING BINARY
-  bool prefault;
+  
+  // How to get the giant array into memory: lazy mmap, populate, read etc.
+  // See util/mmap.hh for details of MapMethod.  
+  util::LoadMethod load_method;
 
 
 

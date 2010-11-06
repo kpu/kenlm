@@ -36,7 +36,7 @@ struct Backing {
   // File behind memory, if any.  
   util::scoped_fd file;
   // Raw block of memory backing the language model data structures
-  util::scoped_mmap memory;
+  util::scoped_memory memory;
 };
 
 namespace detail {

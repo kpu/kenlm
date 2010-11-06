@@ -80,23 +80,27 @@ class scoped_memory {
     scoped_memory &operator=(const scoped_memory &);
 };
 
-struct scoped_mapped_file {
-  scoped_fd fd;
-  scoped_mmap mem;
-};
+typedef enum {
+  // mmap with no prepopulate
+  LAZY,
+  // On linux, pass MAP_POPULATE to mmap.
+  POPULATE_OR_LAZY,
+  // Populate on Linux.  malloc and read on non-Linux.  
+  POPULATE_OR_READ,
+  // malloc and read.  
+  READ
+} LoadMethod;
+
 
 // Wrapper around mmap to check it worked and hide some platform macros.  
 void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int fd, off_t offset = 0);
-void *MapForRead(std::size_t size, bool prefault, int fd, off_t offset = 0);
+void MapRead(LoadMethod method, int fd, off_t offset, std::size_t size, scoped_memory &out);
 
 void *MapAnonymous(std::size_t size);
 
 // Open file name with mmap of size bytes, all of which are initially zero.  
-void MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file, scoped_mmap &mem);
-inline void MapZeroedWrite(const char *name, std::size_t size, scoped_mapped_file &out) {
-  MapZeroedWrite(name, size, out.fd, out.mem);
-}
- 
+void *MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file);
+
 } // namespace util
 
-#endif // UTIL_SCOPED__
+#endif // UTIL_MMAP__
