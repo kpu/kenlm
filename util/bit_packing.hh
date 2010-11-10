@@ -4,7 +4,12 @@
 /* Bit-level packing routines */
 
 #include <assert.h>
+#ifdef __APPLE__
+#include <architecture/byte_order.h>
+#else
 #include <endian.h>
+#endif
+
 #include <inttypes.h>
 
 #if __BYTE_ORDER != __LITTLE_ENDIAN
