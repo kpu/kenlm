@@ -8,9 +8,10 @@ namespace lm {
 namespace ngram {
 
 /* If you need the actual strings in the vocabulary, inherit from this class
- * and implement Add.  Then put a pointer in Config.enumerate_vocab.  
- * Add is called once per n-gram.  index starts at 0 and increases by 1 each
- * time.  
+ * and implement Add.  Then put a pointer in Config.enumerate_vocab; it does
+ * not take ownership.  Add is called once per vocab word.  index starts at 0
+ * and increases by 1 each time.  This is only used by the Model constructor;
+ * the pointer is not retained by the class.  
  */
 class EnumerateVocab {
   public:
