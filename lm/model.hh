@@ -12,6 +12,8 @@
 #include <algorithm>
 #include <vector>
 
+#include <string.h>
+
 namespace util { class FilePiece; }
 
 namespace lm {
@@ -21,9 +23,10 @@ namespace ngram {
 // Having this limit means that State can be
 // (kMaxOrder - 1) * sizeof(float) bytes instead of
 // sizeof(float*) + (kMaxOrder - 1) * sizeof(float) + malloc overhead
-const std::size_t kMaxOrder = 6;
+const unsigned char kMaxOrder = 6;
 
-// This is a POD.  
+// This is a POD but if you want memcmp to return the same as operator==, call
+// ZeroRemaining first.    
 class State {
   public:
     bool operator==(const State &other) const {
@@ -35,6 +38,22 @@ class State {
       }
       // If the histories are equal, so are the backoffs.  
       return true;
+    }
+
+    // Three way comparison function.  
+    int Compare(const State &other) const {
+      if (valid_length_ == other.valid_length_) {
+        return memcmp(history_, other.history_, valid_length_ * sizeof(WordIndex));
+      }
+      return (valid_length_ < other.valid_length_) ? -1 : 1;
+    }
+
+    // Call this before using raw memcmp.  
+    void ZeroRemaining() {
+      for (unsigned char i = valid_length_; i < kMaxOrder - 1; ++i) {
+        history_[i] = 0;
+        backoff_[i] = 0.0;
+      }
     }
 
     // You shouldn't need to touch anything below this line, but the members are public so FullState will qualify as a POD.  
