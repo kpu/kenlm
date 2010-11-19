@@ -68,6 +68,9 @@ class FilePiece {
     StringPiece ReadLine(char delim = '\n') throw(GZException, EndOfFileException);
 
     float ReadFloat() throw(GZException, EndOfFileException, ParseNumberException);
+    double ReadDouble() throw(GZException, EndOfFileException, ParseNumberException);
+    long int ReadLong() throw(GZException, EndOfFileException, ParseNumberException);
+    unsigned long int ReadULong() throw(GZException, EndOfFileException, ParseNumberException);
 
     void SkipSpaces() throw (GZException, EndOfFileException);
 
@@ -79,6 +82,8 @@ class FilePiece {
     
   private:
     void Initialize(const char *name, std::ostream *show_progress, off_t min_buffer) throw(GZException);
+
+    template <class T> T ReadNumber() throw(GZException, EndOfFileException, ParseNumberException);
 
     StringPiece Consume(const char *to) {
       StringPiece ret(position_, to - position_);
