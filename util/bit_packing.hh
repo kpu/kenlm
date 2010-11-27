@@ -12,19 +12,18 @@
 
 #include <inttypes.h>
 
-#if __BYTE_ORDER != __LITTLE_ENDIAN
-#error The bit aligned storage functions assume little endian architecture
-#endif
-
 namespace util {
 
 /* WARNING WARNING WARNING:
  * The write functions assume that memory is zero initially.  This makes them
  * faster and is the appropriate case for mmapped language model construction.
  * These routines assume that unaligned access to uint64_t is fast and that
- * storage is little endian.  This is the case on x86_64.  It may not be the
- * case on 32-bit x86 but my target audience is large language models for which
- * 64-bit is necessary.  
+ * storage is little endian.  This is the case on x86_64.  I'm not sure how 
+ * fast unaligned 64-bit access is on x86 but my target audience is large
+ * language models for which 64-bit is necessary.  
+ *
+ * Call the BitPackingSanity function to sanity check.  There's no point to
+ * calling it multiple times and little harm.  
  */
 
 /* Pack integers up to 57 bits using their least significant digits. 
