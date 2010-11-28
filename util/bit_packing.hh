@@ -6,7 +6,7 @@
 #include <assert.h>
 #ifdef __APPLE__
 #include <architecture/byte_order.h>
-#elif linux
+#elif __linux__
 #include <endian.h>
 #else
 #include <arpa/nameser_compat.h>
@@ -29,6 +29,7 @@ namespace util {
  */
 
 inline uint8_t BitPackShift(uint8_t bit, uint8_t length) {
+// Fun fact: __BYTE_ORDER is wrong on Solaris Sparc, but the version without __ is correct.  
 #if BYTE_ORDER == LITTLE_ENDIAN
   return bit;
 #elif BYTE_ORDER == BIG_ENDIAN

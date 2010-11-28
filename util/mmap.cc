@@ -2,8 +2,9 @@
 #include "util/mmap.hh"
 #include "util/scoped.hh"
 
+#include <iostream>
+
 #include <assert.h>
-#include <err.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -14,8 +15,10 @@ namespace util {
 
 scoped_mmap::~scoped_mmap() {
   if (data_ != (void*)-1) {
-    if (munmap(data_, size_))
-      err(1, "munmap failed ");
+    if (munmap(data_, size_)) {
+      std::cerr << "munmap failed for " << size_ << " bytes." << std::endl;
+      abort();
+    }
   }
 }
 
@@ -73,18 +76,27 @@ void ReadAll(int fd, void *to_void, std::size_t amount) {
     to += ret;
   }
 }
+
+const int kFileFlags =
+#ifdef MAP_FILE
+  MAP_FILE | MAP_SHARED
+#else
+  MAP_SHARED
+#endif
+  ;
+
 } // namespace
 
 void MapRead(LoadMethod method, int fd, off_t offset, std::size_t size, scoped_memory &out) {
   switch (method) {
     case LAZY:
-      out.reset(MapOrThrow(size, false, MAP_FILE | MAP_SHARED, false, fd, offset), size, scoped_memory::MMAP_ALLOCATED);
+      out.reset(MapOrThrow(size, false, kFileFlags, false, fd, offset), size, scoped_memory::MMAP_ALLOCATED);
       break;
     case POPULATE_OR_LAZY:
 #ifdef MAP_POPULATE
     case POPULATE_OR_READ:
 #endif
-      out.reset(MapOrThrow(size, false, MAP_FILE | MAP_SHARED, true, fd, offset), size, scoped_memory::MMAP_ALLOCATED);
+      out.reset(MapOrThrow(size, false, kFileFlags, true, fd, offset), size, scoped_memory::MMAP_ALLOCATED);
       break;
 #ifndef MAP_POPULATE
     case POPULATE_OR_READ:
@@ -115,7 +127,7 @@ void *MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file) {
   if (-1 == ftruncate(file.get(), size))
     UTIL_THROW(ErrnoException, "ftruncate on " << name << " to " << size << " failed");
   try {
-    return MapOrThrow(size, true, MAP_FILE | MAP_SHARED, false, file.get(), 0);
+    return MapOrThrow(size, true, kFileFlags, false, file.get(), 0);
   } catch (ErrnoException &e) {
     e << " in file " << name;
     throw;

@@ -2,12 +2,12 @@
 
 #include "util/exception.hh"
 
+#include <iostream>
 #include <string>
 #include <limits>
 
 #include <assert.h>
 #include <ctype.h>
-#include <err.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -68,7 +68,8 @@ FilePiece::~FilePiece() {
     file_.release();
     int ret;
     if (Z_OK != (ret = gzclose(gz_file_))) {
-      errx(1, "could not close file %s using zlib", file_name_.c_str());
+      std::cerr << "could not close file " << file_name_ << " using zlib" << std::endl;
+      abort();
     }
   }
 #endif
@@ -149,7 +150,11 @@ void FilePiece::Initialize(const char *name, std::ostream *show_progress, off_t 
 
 namespace {
 void ParseNumber(const char *begin, char *&end, float &out) {
+#ifdef sun
+  out = static_cast<float>(strtod(begin, &end));
+#else
   out = strtof(begin, &end);
+#endif
 }
 void ParseNumber(const char *begin, char *&end, double &out) {
   out = strtod(begin, &end);

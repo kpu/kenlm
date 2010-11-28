@@ -1,7 +1,7 @@
 #ifndef UTIL_MURMUR_HASH__
 #define UTIL_MURMUR_HASH__
 #include <cstddef>
-#include <stdint.h>
+#include <inttypes.h>
 
 namespace util {
 

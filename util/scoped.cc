@@ -1,16 +1,24 @@
 #include "util/scoped.hh"
 
-#include <err.h>
+#include <iostream>
+
+#include <stdlib.h>
 #include <unistd.h>
 
 namespace util {
 
 scoped_fd::~scoped_fd() {
-  if (fd_ != -1 && close(fd_)) err(1, "Could not close file %i", fd_);
+  if (fd_ != -1 && close(fd_)) {
+    std::cerr << "Could not close file " << fd_ << std::endl;
+    abort();
+  }
 }
 
 scoped_FILE::~scoped_FILE() {
-  if (file_ && fclose(file_)) err(1, "Could not close file");
+  if (file_ && fclose(file_)) {
+    std::cerr << "Could not close file " << std::endl;
+    abort();
+  }
 }
 
 } // namespace util
