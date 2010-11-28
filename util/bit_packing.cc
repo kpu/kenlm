@@ -28,15 +28,12 @@ void BitPackingSanity() {
   memset(mem, 0, sizeof(mem));
   const uint64_t test57 = 0x123456789abcdefULL;
   for (uint64_t b = 0; b < 57 * 8; b += 57) {
-    WriteInt57(mem + b / 8, b % 8, test57);
+    WriteInt57(mem + b / 8, b % 8, 57, test57);
   }
   for (uint64_t b = 0; b < 57 * 8; b += 57) {
-    if (test57 != ReadInt57(mem + b / 8, b % 8, (1ULL << 57) - 1))
-      UTIL_THROW(Exception, "The bit packing routines failed for offset " << b);
+    if (test57 != ReadInt57(mem + b / 8, b % 8, 57, (1ULL << 57) - 1))
+      UTIL_THROW(Exception, "The bit packing routines are failing for your architecture.  Please send a bug report with your architecture, operating system, and compiler.");
   }
-  #if __BYTE_ORDER != __LITTLE_ENDIAN
-  UTIL_THROW(Exception, "Your architecture is not little endian.");
-  #endif
   // TODO: more checks.  
 }
 
