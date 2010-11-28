@@ -3,6 +3,8 @@
 #define BOOST_TEST_MODULE BitPackingTest
 #include <boost/test/unit_test.hpp>
 
+#include <string.h>
+
 namespace util {
 namespace {
 
