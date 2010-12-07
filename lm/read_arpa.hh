@@ -54,7 +54,7 @@ template <class Voc, class Weights> void ReadNGram(util::FilePiece &f, const uns
     }
     ReadBackoff(f, weights);
   } catch(util::Exception &e) {
-    e << " in the " <<  n << "-gram at byte " << f.Offset();
+    e << " in the " << static_cast<unsigned int>(n) << "-gram at byte " << f.Offset();
     throw;
   }
 }

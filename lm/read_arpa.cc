@@ -49,7 +49,7 @@ template <class F> void GenericReadNGramHeader(F &in, unsigned int length) {
   while (IsEntirelyWhiteSpace(line = in.ReadLine())) {}
   std::stringstream expected;
   expected << '\\' << length << "-grams:";
-  if (line != expected.str()) UTIL_THROW(FormatLoadException, "Was expecting n-gram header " << expected.str() << " but got " << line << " instead.  ");
+  if (line != expected.str()) UTIL_THROW(FormatLoadException, "Was expecting n-gram header " << expected.str() << " but got " << line << " instead");
 }
 
 template <class F> void GenericReadEnd(F &in) {
@@ -110,7 +110,7 @@ void ReadBackoff(util::FilePiece &in, Prob &/*weights*/) {
       {
         float got = in.ReadFloat();
         if (got != 0.0)
-          UTIL_THROW(FormatLoadException, "Non-zero backoff " << got << " provided for an n-gram that should have no backoff.");
+          UTIL_THROW(FormatLoadException, "Non-zero backoff " << got << " provided for an n-gram that should have no backoff");
       }
       break;
     case '\n':
