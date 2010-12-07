@@ -1,3 +1,4 @@
+/* This is where the trie is built.  It's on-disk.  */
 #include "lm/search_trie.hh"
 
 #include "lm/lm_exception.hh"
