@@ -124,7 +124,7 @@ class ExpectEnumerateVocab : public EnumerateVocab {
     }
 
     void Check(const base::Vocabulary &vocab) {
-      BOOST_CHECK_EQUAL(34, seen.size());
+      BOOST_CHECK_EQUAL(34ULL, seen.size());
       BOOST_REQUIRE(!seen.empty());
       BOOST_CHECK_EQUAL("<unk>", seen[0]);
       for (WordIndex i = 0; i < seen.size(); ++i) {
@@ -145,6 +145,7 @@ template <class ModelT> void LoadingTest() {
   config.messages = NULL;
   ExpectEnumerateVocab enumerate;
   config.enumerate_vocab = &enumerate;
+  config.probing_multiplier = 2.0;
   ModelT m("test.arpa", config);
   enumerate.Check(m.GetVocabulary());
   Starters(m);

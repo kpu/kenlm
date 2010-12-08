@@ -67,9 +67,12 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
     if (detail::IsBinaryFormat(backing.file.get())) {
       detail::ReadHeader(backing.file.get(), params);
       detail::MatchCheck(To::kModelType, params);
-      std::size_t memory_size = To::Size(params.counts, config);
-      uint8_t *start = detail::SetupBinary(config, params, memory_size, backing);
-      to.InitializeFromBinary(start, params, config, backing.file.get());
+      // Replace the probing_multiplier.  
+      Config new_config(config);
+      new_config.probing_multiplier = params.fixed.probing_multiplier;
+      std::size_t memory_size = To::Size(params.counts, new_config);
+      uint8_t *start = detail::SetupBinary(new_config, params, memory_size, backing);
+      to.InitializeFromBinary(start, params, new_config, backing.file.get());
     } else {
       detail::ComplainAboutARPA(config, To::kModelType);
       util::FilePiece f(backing.file.release(), file, config.messages);
