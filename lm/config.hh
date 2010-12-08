@@ -39,7 +39,7 @@ struct Config {
   // this.  Time is probing_multiplier / (probing_multiplier - 1).  No effect
   // for sorted variant.  
   // If you find yourself setting this to a low number, consider using the
-  // Sorted version instead which has lower memory consumption.  
+  // TrieModel which has lower memory consumption.  
   float probing_multiplier;
 
   // Amount of memory to use for building.  The actual memory usage will be
@@ -53,7 +53,7 @@ struct Config {
   // defaults to input file name.  
   const char *temporary_directory_prefix;
 
-  // Level of complaining to do when an ARPA instead of a binary format.
+  // Level of complaining to do when loading from ARPA instead of binary format.
   typedef enum {ALL, EXPENSIVE, NONE} ARPALoadComplain;
   ARPALoadComplain arpa_complain;
 
