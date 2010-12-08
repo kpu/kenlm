@@ -8,6 +8,8 @@
 #include <iostream>
 
 #include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 namespace util {
 namespace {
@@ -31,10 +33,10 @@ BOOST_AUTO_TEST_CASE(MMapReadLine) {
 BOOST_AUTO_TEST_CASE(StreamReadLine) {
   std::fstream ref("file_piece.cc", std::ios::in);
 
-  scoped_FILE catter(popen("cat file_piece.cc", "r"));
-  BOOST_REQUIRE(catter.get());
+  FILE *catter = popen("cat file_piece.cc", "r");
+  BOOST_REQUIRE(catter);
   
-  FilePiece test(dup(fileno(catter.get())), "file_piece.cc", NULL, 1);
+  FilePiece test(dup(fileno(catter)), "file_piece.cc", NULL, 1);
   std::string ref_line;
   while (getline(ref, ref_line)) {
     StringPiece test_line(test.ReadLine());
@@ -44,6 +46,7 @@ BOOST_AUTO_TEST_CASE(StreamReadLine) {
     }
   }
   BOOST_CHECK_THROW(test.get(), EndOfFileException);
+  BOOST_REQUIRE(!pclose(catter));
 }
 
 #ifdef HAVE_ZLIB
@@ -68,10 +71,10 @@ BOOST_AUTO_TEST_CASE(PlainZipReadLine) {
 BOOST_AUTO_TEST_CASE(StreamZipReadLine) {
   std::fstream ref("file_piece.cc", std::ios::in);
 
-  scoped_FILE catter(popen("gzip <file_piece.cc", "r"));
-  BOOST_REQUIRE(catter.get());
+  FILE * catter = popen("gzip <file_piece.cc", "r");
+  BOOST_REQUIRE(catter);
   
-  FilePiece test(dup(fileno(catter.get())), "file_piece.cc", NULL, 1);
+  FilePiece test(dup(fileno(catter)), "file_piece.cc", NULL, 1);
   std::string ref_line;
   while (getline(ref, ref_line)) {
     StringPiece test_line(test.ReadLine());
@@ -81,6 +84,7 @@ BOOST_AUTO_TEST_CASE(StreamZipReadLine) {
     }
   }
   BOOST_CHECK_THROW(test.get(), EndOfFileException);
+  BOOST_REQUIRE(!pclose(catter));
 }
 
 #endif
