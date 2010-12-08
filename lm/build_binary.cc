@@ -9,12 +9,10 @@
 
 namespace {
 void Usage(const char *name) {
-  std::cerr << "Usage: " << name << "[-u unknown_probability] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [type] input.arpa output.mmap\n"
-"If the ARPA file does not have <unk>, -u sets the probability (default 0)\n"
-"There are three data structure options:\n\n"
-"probing uses a probing hash table.  It is the fastest but uses the most memory.\n\n"
-"probing_multiplier sets the space multiplier and must be >1.0.  The default is\n"
-"1.5.  probing is the default.\n\n"
+  std::cerr << "Usage: " << name << " [-u unknown_probability] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [type] input.arpa output.mmap\n\n"
+"Where type is one of probing, trie, or sorted:\n\n"
+"probing uses a probing hash table.  It is the fastest but uses the most memory.\n"
+"-p sets the space multiplier and must be >1.0.  The default is 1.5.\n\n"
 "trie is a straightforward trie with bit-level packing.  It uses the least\n"
 "memory and is still faster than SRI or IRST.  Building the trie format uses an\n"
 "on-disk sort to save memory.\n"
@@ -23,7 +21,8 @@ void Usage(const char *name) {
 "sorted is like probing but uses a sorted uniform map instead of a hash table.\n"
 "It uses more memory than trie and is also slower, so there's no real reason to\n"
 "use it.\n\n"
-"Passing only an input file will print memory usage of each data structure.\n";
+"Passing only an input file will print memory usage of each data structure.\n"
+"If the ARPA file does not have <unk>, -u sets <unk>'s probability; default 0.0.\n";
   exit(1);
 }
 } // namespace
