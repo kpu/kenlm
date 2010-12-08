@@ -4,8 +4,9 @@
 #include <iostream>
 #include <iomanip>
 
-#include <unistd.h>
 #include <math.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 namespace {
 void Usage(const char *name) {
@@ -25,6 +26,21 @@ void Usage(const char *name) {
 "If the ARPA file does not have <unk>, -u sets <unk>'s probability; default 0.0.\n";
   exit(1);
 }
+
+// I could really use boost::lexical_cast right about now.  
+float ParseFloat(const char *from) {
+  char *end;
+  float ret = strtod(from, &end);
+  if (*end) throw util::ParseNumberException(from);
+  return ret;
+}
+unsigned long int ParseUInt(const char *from) {
+  char *end;
+  unsigned long int ret = strtoul(from, &end, 10);
+  if (*end) throw util::ParseNumberException(from);
+  return ret;
+}
+
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -35,16 +51,16 @@ int main(int argc, char *argv[]) {
   while ((opt = getopt(argc, argv, "u:p:t:m:")) != -1) {
     switch(opt) {
       case 'u':
-        config.unknown_missing_prob = atof(optarg);
+        config.unknown_missing_prob = ParseFloat(optarg);
         break;
       case 'p':
-        config.probing_multiplier = atof(optarg);
+        config.probing_multiplier = ParseFloat(optarg);
         break;
       case 't':
         config.temporary_directory_prefix = optarg;
         break;
       case 'm':
-        config.building_memory = atol(optarg) * 1048576;
+        config.building_memory = ParseUInt(optarg) * 1048576;
         break;
       default:
         Usage(argv[0]);

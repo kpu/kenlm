@@ -27,7 +27,7 @@ EndOfFileException::EndOfFileException() throw() {
 EndOfFileException::~EndOfFileException() throw() {}
 
 ParseNumberException::ParseNumberException(StringPiece value) throw() {
-  *this << "Could not parse \"" << value << "\" into a float";
+  *this << "Could not parse \"" << value << "\" into a number";
 }
 
 GZException::GZException(void *file) {
