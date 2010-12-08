@@ -55,11 +55,13 @@ int main(int argc, char *argv[]) {
     util::FilePiece f(argv[optind]);
     lm::ReadARPACounts(f, counts);
     std::size_t probing_size = ProbingModel::Size(counts, config);
-    // probing is always largest.
-    long int length = lrint(ceil(log10(probing_size)));
-    std::cout << 
-      "Memory use in bytes:\n"
-      "probing " << std::setw(length) << probing_size << "\n"
+    // probing is always largest so use it to determine number of columns.  
+    long int length = std::max<long int>(5, lrint(ceil(log10(probing_size))));
+    std::cout << "Memory usage:\ntype    ";
+    // right align bytes.  
+    for (long int i = 0; i < length - 5; ++i) std::cout << ' ';
+    std::cout << "bytes\n"
+      "probing " << std::setw(length) << probing_size << " assuming -p " << config.probing_multiplier << "\n"
       "trie    " << std::setw(length) << TrieModel::Size(counts, config) << "\n"
       "sorted  " << std::setw(length) << SortedModel::Size(counts, config) << "\n";
   } else if (optind + 2 == argc) {
