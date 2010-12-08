@@ -109,8 +109,6 @@ class EntryProxy {
     InnerIterator &Inner() { return inner_; }
     const InnerIterator &Inner() const { return inner_; } 
     InnerIterator inner_;
-
-    EntryProxy(const EntryProxy &from) : inner_(from.Inner()) {}
 };
 
 typedef util::ProxyIterator<EntryProxy> NGramIter;
@@ -328,7 +326,8 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
       }
     }
     // TODO: __gnu_parallel::sort here.
-    std::sort(NGramIter(EntryProxy(begin, entry_size)), NGramIter(EntryProxy(out_end, entry_size)), CompareRecords(order));
+    EntryProxy proxy_begin(begin, entry_size), proxy_end(out_end, entry_size);
+    std::sort(NGramIter(proxy_begin), NGramIter(proxy_end), CompareRecords(order));
     
     files.push_back(DiskFlush(begin, out_end, file_prefix, batch, order, weights_size));
     done += (out_end - begin) / entry_size;
