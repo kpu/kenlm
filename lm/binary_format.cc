@@ -141,7 +141,6 @@ uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t
 }
 
 uint8_t *SetupZeroed(const Config &config, ModelType model_type, const std::vector<uint64_t> &counts, std::size_t memory_size, Backing &backing) {
-  if (config.probing_multiplier <= 1.0) UTIL_THROW(FormatLoadException, "probing multiplier must be > 1.0");
   if (config.write_mmap) {
     std::size_t total_map = TotalHeaderSize(counts.size()) + memory_size;
     // Write out an mmap file.  

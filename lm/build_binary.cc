@@ -8,7 +8,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+namespace lm {
+namespace ngram {
 namespace {
+
 void Usage(const char *name) {
   std::cerr << "Usage: " << name << " [-u unknown_probability] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [type] input.arpa output.mmap\n\n"
 "Where type is one of probing, trie, or sorted:\n\n"
@@ -41,6 +44,24 @@ unsigned long int ParseUInt(const char *from) {
   return ret;
 }
 
+void ShowSizes(const char *file, const lm::ngram::Config &config) {
+  std::vector<uint64_t> counts;
+  util::FilePiece f(file);
+  lm::ReadARPACounts(f, counts);
+  std::size_t probing_size = ProbingModel::Size(counts, config);
+  // probing is always largest so use it to determine number of columns.  
+  long int length = std::max<long int>(5, lrint(ceil(log10(probing_size))));
+  std::cout << "Memory usage:\ntype    ";
+  // right align bytes.  
+  for (long int i = 0; i < length - 5; ++i) std::cout << ' ';
+  std::cout << "bytes\n"
+    "probing " << std::setw(length) << probing_size << " assuming -p " << config.probing_multiplier << "\n"
+    "trie    " << std::setw(length) << TrieModel::Size(counts, config) << "\n"
+    "sorted  " << std::setw(length) << SortedModel::Size(counts, config) << "\n";
+}
+
+} // namespace ngram
+} // namespace lm
 } // namespace
 
 int main(int argc, char *argv[]) {
@@ -67,19 +88,7 @@ int main(int argc, char *argv[]) {
     }
   }
   if (optind + 1 == argc) {
-    std::vector<uint64_t> counts;
-    util::FilePiece f(argv[optind]);
-    lm::ReadARPACounts(f, counts);
-    std::size_t probing_size = ProbingModel::Size(counts, config);
-    // probing is always largest so use it to determine number of columns.  
-    long int length = std::max<long int>(5, lrint(ceil(log10(probing_size))));
-    std::cout << "Memory usage:\ntype    ";
-    // right align bytes.  
-    for (long int i = 0; i < length - 5; ++i) std::cout << ' ';
-    std::cout << "bytes\n"
-      "probing " << std::setw(length) << probing_size << " assuming -p " << config.probing_multiplier << "\n"
-      "trie    " << std::setw(length) << TrieModel::Size(counts, config) << "\n"
-      "sorted  " << std::setw(length) << SortedModel::Size(counts, config) << "\n";
+    ShowSizes(argv[optind], config);
   } else if (optind + 2 == argc) {
     config.write_mmap = argv[optind + 1];
     ProbingModel(argv[optind], config);
