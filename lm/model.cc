@@ -23,7 +23,7 @@ namespace detail {
 template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<uint64_t> &counts, const Config &config) {
   if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit ngram.hh's kMaxOrder to at least this value and recompile.");
   if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
-  if (config.probing_multiplier <= 1.0) UTIL_THROW(LoadException, "probing multiplier must be > 1.0");
+  if (config.probing_multiplier <= 1.0) UTIL_THROW(ConfigException, "probing multiplier must be > 1.0");
   return VocabularyT::Size(counts[0], config) + Search::Size(counts, config);
 }
 

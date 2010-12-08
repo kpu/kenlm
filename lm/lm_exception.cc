@@ -5,13 +5,17 @@
 
 namespace lm {
 
+ConfigException::ConfigException() throw() {}
+ConfigException::~ConfigException() throw() {}
+
 LoadException::LoadException() throw() {}
 LoadException::~LoadException() throw() {}
-VocabLoadException::VocabLoadException() throw() {}
-VocabLoadException::~VocabLoadException() throw() {}
 
 FormatLoadException::FormatLoadException() throw() {}
 FormatLoadException::~FormatLoadException() throw() {}
+
+VocabLoadException::VocabLoadException() throw() {}
+VocabLoadException::~VocabLoadException() throw() {}
 
 SpecialWordMissingException::SpecialWordMissingException(StringPiece which) throw() {
   *this << "Missing special word " << which;

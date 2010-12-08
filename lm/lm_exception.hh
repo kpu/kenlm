@@ -11,6 +11,12 @@
 
 namespace lm {
 
+class ConfigException : public util::Exception {
+  public:
+    ConfigException() throw();
+    ~ConfigException() throw();
+};
+
 class LoadException : public util::Exception {
    public:
       virtual ~LoadException() throw();
@@ -19,16 +25,16 @@ class LoadException : public util::Exception {
       LoadException() throw();
 };
 
-class VocabLoadException : public LoadException {
-  public:
-    virtual ~VocabLoadException() throw();
-    VocabLoadException() throw();
-};
-
 class FormatLoadException : public LoadException {
   public:
     FormatLoadException() throw();
     ~FormatLoadException() throw();
+};
+
+class VocabLoadException : public LoadException {
+  public:
+    virtual ~VocabLoadException() throw();
+    VocabLoadException() throw();
 };
 
 class SpecialWordMissingException : public VocabLoadException {
