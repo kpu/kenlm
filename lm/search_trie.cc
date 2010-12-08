@@ -481,7 +481,8 @@ void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const 
   temporary_directory.resize(strlen(temporary_directory.c_str()));
   // Add directory delimiter.  Assumes a real operating system.  
   temporary_directory += '/';
-  ARPAToSortedFiles(f, counts, config.building_memory, temporary_directory.c_str(), vocab);
+  // At least 1MB sorting memory.  
+  ARPAToSortedFiles(f, counts, std::max<size_t>(config.building_memory, 1048576), temporary_directory.c_str(), vocab);
   BuildTrie(temporary_directory.c_str(), counts, config.messages, *this);
   if (rmdir(temporary_directory.c_str())) {
     std::cerr << "Failed to delete " << temporary_directory << std::endl;
