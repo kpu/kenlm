@@ -25,6 +25,7 @@ void Usage(const char *name) {
 "sorted is like probing but uses a sorted uniform map instead of a hash table.\n"
 "It uses more memory than trie and is also slower, so there's no real reason to\n"
 "use it.\n\n"
+"See http://kheafield.com/code/kenlm/benchmark/ for data structure benchmarks.\n"
 "Passing only an input file will print memory usage of each data structure.\n"
 "If the ARPA file does not have <unk>, -u sets <unk>'s probability; default 0.0.\n";
   exit(1);
