@@ -77,6 +77,8 @@ void ReadAll(int fd, void *to_void, std::size_t amount) {
   }
 }
 
+} // namespace
+
 const int kFileFlags =
 #ifdef MAP_FILE
   MAP_FILE | MAP_SHARED
@@ -84,8 +86,6 @@ const int kFileFlags =
   MAP_SHARED
 #endif
   ;
-
-} // namespace
 
 void MapRead(LoadMethod method, int fd, off_t offset, std::size_t size, scoped_memory &out) {
   switch (method) {
