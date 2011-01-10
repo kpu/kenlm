@@ -368,8 +368,7 @@ void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, 
   {
     std::string unigram_name = file_prefix + "unigrams";
     util::scoped_fd unigram_file;
-    util::scoped_mmap unigram_mmap;
-    unigram_mmap.reset(util::MapZeroedWrite(unigram_name.c_str(), counts[0] * sizeof(ProbBackoff), unigram_file), counts[0] * sizeof(ProbBackoff));
+    util::scoped_mmap unigram_mmap(util::MapZeroedWrite(unigram_name.c_str(), counts[0] * sizeof(ProbBackoff), unigram_file), counts[0] * sizeof(ProbBackoff));
     Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_mmap.get()));
   }
 
@@ -407,6 +406,7 @@ uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
       }
     }
     if (!param_is_greater) break;
+
     // TODO: better than skipping entry
     if (order == params.max_order) {
       file.SkipEntry<Prob>();
@@ -494,7 +494,6 @@ void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &coun
 } // namespace
 
 void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, Backing &backing) {
-  SetupMemory(GrowForSearch(config, kModelType, counts, Size(counts, config), backing), counts, config);
   std::string temporary_directory;
   if (config.temporary_directory_prefix) {
     temporary_directory = config.temporary_directory_prefix;
@@ -515,6 +514,8 @@ void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const 
   temporary_directory += '/';
   // At least 1MB sorting memory.  
   ARPAToSortedFiles(f, counts, std::max<size_t>(config.building_memory, 1048576), temporary_directory.c_str(), vocab);
+
+  SetupMemory(GrowForSearch(config, kModelType, counts, Size(counts, config), backing), counts, config);
   BuildTrie(temporary_directory.c_str(), counts, config.messages, *this);
   if (rmdir(temporary_directory.c_str())) {
     std::cerr << "Failed to delete " << temporary_directory << std::endl;

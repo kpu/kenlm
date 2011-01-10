@@ -1,10 +1,10 @@
 
 \data\
 ngram 1=34
-ngram 2=43
-ngram 3=8
-ngram 4=5
-ngram 5=3
+ngram 2=44
+ngram 3=9
+ngram 4=6
+ngram 5=4
 
 \1-grams:
 -1.383514	,	-0.30103
@@ -86,6 +86,7 @@ ngram 5=3
 -0.2922095	watching considering
 -0.2922095	what i
 -0.2922095	would also
+-2	also would	-99
 
 \3-grams:
 -0.01916512	more . </s>
@@ -96,6 +97,7 @@ ngram 5=3
 -0.3488368	<s> looking on	-0.4771212
 -0.1892331	little more loin
 -0.04835128	looking on a	-0.4771212
+-3	also would consider	-99
 
 \4-grams:
 -0.009249173	looking on a little	-0.4771212
@@ -103,10 +105,12 @@ ngram 5=3
 -0.005464747	screening a little more
 -0.1453306	a little more loin
 -0.01552657	<s> looking on a	-0.4771212
+-2	also would consider higher	-99
 
 \5-grams:
 -0.003061223	<s> looking on a little
 -0.001813953	looking on a little more
 -0.0432557	on a little more loin
+-1	also would consider higher looking
 
 \end\
