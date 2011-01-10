@@ -152,11 +152,11 @@ void ReadOrThrow(FILE *from, void *data, size_t size) {
   if (1 != std::fread(data, size, 1, from)) UTIL_THROW(util::ErrnoException, "Short read; requested size " << size);
 }
 
+const std::size_t kCopyBufSize = 512;
 void CopyOrThrow(FILE *from, FILE *to, size_t size) {
-  const size_t kBufSize = 512;
-  char buf[kBufSize];
-  for (size_t i = 0; i < size; i += kBufSize) {
-    std::size_t amount = std::min(size - i, kBufSize);
+  char buf[std::min<size_t>(size, kCopyBufSize)];
+  for (size_t i = 0; i < size; i += kCopyBufSize) {
+    std::size_t amount = std::min(size - i, kCopyBufSize);
     ReadOrThrow(from, buf, amount);
     WriteOrThrow(to, buf, amount);
   }
@@ -217,15 +217,18 @@ class SortedFileReader {
       ReadOrThrow(file_.get(), &to, sizeof(WordIndex));
     }
 
-    void ReadWord(WordIndex &to) {
-      ReadOrThrow(file_.get(), &to, sizeof(WordIndex));
+    WordIndex ReadWord() {
+      WordIndex ret;
+      ReadOrThrow(file_.get(), &ret, sizeof(WordIndex));
+      return ret;
     }
 
-    template <class Weights> void ReadWeights(Weights &to) {
-      ReadOrThrow(file_.get(), &to, sizeof(Weights));
+    template <class Weights> void ReadEntry(WordIndex &word, Weights &weights) {
+      ReadOrThrow(file_.get(), &word, sizeof(WordIndex));
+      ReadOrThrow(file_.get(), &weights, sizeof(Weights));
     }
 
-    template <class Weights> void SkipEntry() {
+    template <class Weights> void SkipEntries() {
       WordIndex count;
       ReadCount(count);
       if (fseek(file_.get(), count * (sizeof(Weights) + sizeof(WordIndex)), SEEK_CUR))
@@ -278,20 +281,19 @@ void MergeSortedFiles(const char *first_name, const char *second_name, const cha
     WordIndex total_count = first_count + second_count;
     WriteOrThrow(out_file.get(), &total_count, sizeof(WordIndex));
 
-    WordIndex first_word, second_word;
-    first.ReadWord(first_word); second.ReadWord(second_word);
+    WordIndex first_word = first.ReadWord(), second_word = second.ReadWord();
     WordIndex first_index = 0, second_index = 0;
     while (true) {
       if (first_word < second_word) {
         WriteOrThrow(out_file.get(), &first_word, sizeof(WordIndex));
         CopyOrThrow(first.File(), out_file.get(), weights_size);
         if (++first_index == first_count) break;
-        first.ReadWord(first_word);
+        first_word = first.ReadWord();
       } else {
         WriteOrThrow(out_file.get(), &second_word, sizeof(WordIndex));
         CopyOrThrow(second.File(), out_file.get(), weights_size);
         if (++second_index == second_count) break;
-        second.ReadWord(second_word);
+        second_word = second.ReadWord();
       }
     }
     if (first_index == first_count) {
@@ -373,7 +375,7 @@ void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, 
   }
 
   util::scoped_memory mem;
-  mem.reset(malloc(buffer), buffer, util::scoped_memory::ARRAY_ALLOCATED);
+  mem.reset(malloc(buffer), buffer, util::scoped_memory::MALLOC_ALLOCATED);
   if (!mem.get()) UTIL_THROW(util::ErrnoException, "malloc failed for sort buffer size " << buffer);
   ConvertToSorted(f, vocab, counts, mem, file_prefix, counts.size());
   ReadEnd(f);
@@ -409,9 +411,9 @@ uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
 
     // TODO: better than skipping entry
     if (order == params.max_order) {
-      file.SkipEntry<Prob>();
+      file.SkipEntries<Prob>();
     } else {
-      file.SkipEntry<ProbBackoff>();
+      file.SkipEntries<ProbBackoff>();
     }
   }
 
@@ -421,8 +423,7 @@ uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
   if (order == params.max_order) {
     Prob value;
     for (WordIndex i = 0; i < count; ++i) {
-      file.ReadWord(key);
-      file.ReadWeights(value);
+      file.ReadEntry(key, value);
       params.longest->Insert(key, value.prob);
     }
     file.NextHeader();
@@ -430,8 +431,7 @@ uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
   }
   ProbBackoff value;
   for (WordIndex i = 0; i < count; ++i) {
-    file.ReadWord(params.words[order - 1]);
-    file.ReadWeights(value);
+    file.ReadEntry(params.words[order - 1], value);
     params.middle[order - 2].Insert(
         params.words[order - 1],
         value.prob,
@@ -493,7 +493,7 @@ void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &coun
 
 } // namespace
 
-void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, Backing &backing) {
+void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, Backing &backing) {
   std::string temporary_directory;
   if (config.temporary_directory_prefix) {
     temporary_directory = config.temporary_directory_prefix;
@@ -514,6 +514,8 @@ void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const 
   temporary_directory += '/';
   // At least 1MB sorting memory.  
   ARPAToSortedFiles(f, counts, std::max<size_t>(config.building_memory, 1048576), temporary_directory.c_str(), vocab);
+
+//  CountMissing(temporary_directory.c_str(), counts, 
 
   SetupMemory(GrowForSearch(config, kModelType, counts, Size(counts, config), backing), counts, config);
   BuildTrie(temporary_directory.c_str(), counts, config.messages, *this);
