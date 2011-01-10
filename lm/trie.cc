@@ -5,6 +5,8 @@
 #include "util/proxy_iterator.hh"
 #include "util/sorted_uniform.hh"
 
+#include <iostream>
+
 #include <assert.h>
 
 namespace lm {
@@ -109,7 +111,9 @@ void BitPackedMiddle::Insert(WordIndex word, float prob, float backoff, uint64_t
 
 bool BitPackedMiddle::Find(WordIndex word, float &prob, float &backoff, NodeRange &range) const {
   uint64_t at_pointer;
-  if (!FindBitPacked(base_, word_mask_, word_bits_, total_bits_, range.begin, range.end, word, at_pointer)) return false;
+  if (!FindBitPacked(base_, word_mask_, word_bits_, total_bits_, range.begin, range.end, word, at_pointer)) {
+    return false;
+  }
   at_pointer *= total_bits_;
   at_pointer += word_bits_;
   prob = util::ReadNonPositiveFloat31(base_ + (at_pointer >> 3), at_pointer & 7);
@@ -143,7 +147,6 @@ void BitPackedMiddle::FinishedLoading(uint64_t next_end) {
   uint64_t last_next_write = (insert_index_ + 1) * total_bits_ - next_bits_;
   util::WriteInt57(base_ + (last_next_write >> 3), last_next_write & 7, next_bits_, next_end);
 }
-
 
 void BitPackedLongest::Insert(WordIndex index, float prob) {
   assert(index <= word_mask_);

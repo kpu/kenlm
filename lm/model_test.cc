@@ -33,7 +33,7 @@ template <class M> void Starters(const M &model) {
   // , probability plus <s> backoff
   StartTest(",", 1, -1.383514 + -0.4149733);
   // <unk> probability plus <s> backoff
-  StartTest("this_is_not_found", 0, -1.995635 + -0.4149733);
+  StartTest("this_is_not_found", 1, -1.995635 + -0.4149733);
 }
 
 template <class M> void Continuation(const M &model) {
@@ -48,7 +48,7 @@ template <class M> void Continuation(const M &model) {
   State preserve = state;
   AppendTest("the", 1, -4.04005);
   AppendTest("biarritz", 1, -1.9889);
-  AppendTest("not_found", 0, -2.29666);
+  AppendTest("not_found", 1, -2.29666);
   AppendTest("more", 1, -1.20632);
   AppendTest(".", 2, -0.51363);
   AppendTest("</s>", 3, -0.0191651);
@@ -103,13 +103,14 @@ template <class M> void Stateless(const M &model) {
   // biarritz
   StatelessTest(6, 1, 1, -1.9889);
   // not found
-  StatelessTest(7, 1, 0, -2.29666);
-  StatelessTest(7, 0, 0, -1.995635);
+  StatelessTest(7, 1, 1, -2.29666);
+  StatelessTest(7, 0, 1, -1.995635);
 
   WordIndex unk[1];
   unk[0] = 0;
   model.GetState(unk, unk + 1, state);
-  BOOST_CHECK_EQUAL(0, state.valid_length_);
+  BOOST_CHECK_EQUAL(1, state.valid_length_);
+  BOOST_CHECK_EQUAL(static_cast<WordIndex>(0), state.history_[0]);
 }
 
 //const char *kExpectedOrderProbing[] = {"<unk>", ",", ".", "</s>", "<s>", "a", "also", "beyond", "biarritz", "call", "concerns", "consider", "considering", "for", "higher", "however", "i", "immediate", "in", "is", "little", "loin", "look", "looking", "more", "on", "screening", "small", "the", "to", "watch", "watching", "what", "would"};
@@ -157,9 +158,9 @@ BOOST_AUTO_TEST_CASE(probing) {
   LoadingTest<Model>();
 }
 
-BOOST_AUTO_TEST_CASE(sorted) {
+/*BOOST_AUTO_TEST_CASE(sorted) {
   LoadingTest<SortedModel>();
-}
+}*/
 BOOST_AUTO_TEST_CASE(trie) {
   LoadingTest<TrieModel>();
 }
@@ -190,9 +191,9 @@ template <class ModelT> void BinaryTest() {
 BOOST_AUTO_TEST_CASE(write_and_read_probing) {
   BinaryTest<Model>();
 }
-BOOST_AUTO_TEST_CASE(write_and_read_sorted) {
+/*BOOST_AUTO_TEST_CASE(write_and_read_sorted) {
   BinaryTest<SortedModel>();
-}
+}*/
 BOOST_AUTO_TEST_CASE(write_and_read_trie) {
   BinaryTest<TrieModel>();
 }

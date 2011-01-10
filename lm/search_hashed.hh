@@ -17,6 +17,7 @@ namespace util { class FilePiece; }
 
 namespace lm {
 namespace ngram {
+struct Backing;
 namespace detail {
 
 inline uint64_t CombineWordHash(uint64_t current, const WordIndex next) {
@@ -91,7 +92,7 @@ template <class MiddleT, class LongestT> struct TemplateHashedSearch : public Ha
     return start;
   }
 
-  template <class Voc> void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab);
+  template <class Voc> void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing);
 
   bool LookupMiddle(const Middle &middle, WordIndex word, float &prob, float &backoff, Node &node) const {
     node = CombineWordHash(node, word);
@@ -145,6 +146,8 @@ struct ProbingHashedSearch : public TemplateHashedSearch<
 struct SortedHashedSearch : public TemplateHashedSearch<
   util::SortedUniformMap<util::ByteAlignedPacking<uint64_t, ProbBackoff> >,
   util::SortedUniformMap<util::ByteAlignedPacking<uint64_t, Prob> > > {
+
+  SortedHashedSearch();
   
   static const ModelType kModelType = HASH_SORTED;
 };

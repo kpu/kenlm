@@ -27,15 +27,18 @@ inline uint64_t HashForVocab(const StringPiece &str) {
 
 class WriteWordsWrapper : public EnumerateVocab {
   public:
-    WriteWordsWrapper(EnumerateVocab *inner, int fd);
+    WriteWordsWrapper(EnumerateVocab *inner);
 
     ~WriteWordsWrapper();
     
     void Add(WordIndex index, const StringPiece &str);
 
+    void Write(int fd);
+
   private:
     EnumerateVocab *inner_;
-    int fd_;
+
+    std::string buffer_;
 };
 
 // Vocabulary based on sorted uniform find storing only uint64_t values and using their offsets as indices.  

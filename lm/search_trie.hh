@@ -9,6 +9,7 @@
 
 namespace lm {
 namespace ngram {
+struct Backing;
 class SortedVocabulary;
 namespace trie {
 
@@ -46,7 +47,7 @@ struct TrieSearch {
     return start + Longest::Size(counts.back(), counts[0]);
   }
 
-  void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab);
+  void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, Backing &backing);
 
   bool LookupUnigram(WordIndex word, float &prob, float &backoff, Node &node) const {
     return unigram.Find(word, prob, backoff, node);

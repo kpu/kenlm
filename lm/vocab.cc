@@ -68,15 +68,19 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
 
 } // namespace
 
-WriteWordsWrapper::WriteWordsWrapper(EnumerateVocab *inner, int fd) : inner_(inner), fd_(fd) {}
+WriteWordsWrapper::WriteWordsWrapper(EnumerateVocab *inner) : inner_(inner) {}
 WriteWordsWrapper::~WriteWordsWrapper() {}
 
 void WriteWordsWrapper::Add(WordIndex index, const StringPiece &str) {
   if (inner_) inner_->Add(index, str);
-  WriteOrThrow(fd_, str.data(), str.size());
-  char null_byte = 0;
-  // Inefficient because it's unbuffered.  Sue me.  
-  WriteOrThrow(fd_, &null_byte, 1);
+  buffer_.append(str.data(), str.size());
+  buffer_.push_back(0);
+}
+
+void WriteWordsWrapper::Write(int fd) {
+  if ((off_t)-1 == lseek(fd, 0, SEEK_END))
+    UTIL_THROW(util::ErrnoException, "Failed to seek in binary to vocab words");
+  WriteOrThrow(fd, buffer_.data(), buffer_.size());
 }
 
 SortedVocabulary::SortedVocabulary() : begin_(NULL), end_(NULL), enumerate_(NULL) {}

@@ -172,8 +172,10 @@ std::string DiskFlush(const void *mem_begin, const void *mem_end, const std::str
   if (!out.get()) UTIL_THROW(util::ErrnoException, "Couldn't open " << assembled.str().c_str() << " for writing");
   // Compress entries that being with the same (order-1) words.
   for (const uint8_t *group_begin = static_cast<const uint8_t*>(mem_begin); group_begin != static_cast<const uint8_t*>(mem_end);) {
-    const uint8_t *group_end = group_begin;
-    for (group_end += entry_size; (group_end != static_cast<const uint8_t*>(mem_end)) && !memcmp(group_begin, group_end, prefix_size); group_end += entry_size) {}
+    const uint8_t *group_end;
+    for (group_end = group_begin + entry_size;
+         (group_end != static_cast<const uint8_t*>(mem_end)) && !memcmp(group_begin, group_end, prefix_size);
+         group_end += entry_size) {}
     WriteOrThrow(out.get(), group_begin, prefix_size);
     WordIndex group_size = (group_end - group_begin) / entry_size;
     WriteOrThrow(out.get(), &group_size, sizeof(group_size));
@@ -221,6 +223,14 @@ class SortedFileReader {
 
     template <class Weights> void ReadWeights(Weights &to) {
       ReadOrThrow(file_.get(), &to, sizeof(Weights));
+    }
+
+    template <class Weights> void SkipEntry() {
+      WordIndex count;
+      ReadCount(count);
+      if (fseek(file_.get(), count * (sizeof(Weights) + sizeof(WordIndex)), SEEK_CUR))
+        UTIL_THROW(util::ErrnoException, "Failed to seek past an entry.");
+      NextHeader();
     }
 
     bool Ended() {
@@ -383,8 +393,28 @@ struct RecursiveInsertParams {
 uint64_t RecursiveInsert(RecursiveInsertParams &params, unsigned char order) {
   SortedFileReader &file = params.files[order - 2];
   const uint64_t ret = (order == params.max_order) ? params.longest->InsertIndex() : params.middle[order - 2].InsertIndex();
-  if (std::memcmp(params.words, file.Header(), sizeof(WordIndex) * (order - 1)))
-    return ret;
+
+  while (true) {
+    if (file.Ended()) return ret;
+    bool param_is_greater = false;
+    const WordIndex *param = static_cast<const WordIndex*>(params.words);
+    const WordIndex *head = static_cast<const WordIndex*>(file.Header());
+    for (; param != static_cast<const WordIndex*>(params.words) + order - 1; ++param, ++head) {
+      if (*param < *head) return ret;
+      if (*param > *head) {
+        param_is_greater = true;
+        break;
+      }
+    }
+    if (!param_is_greater) break;
+    // TODO: better than skipping entry
+    if (order == params.max_order) {
+      file.SkipEntry<Prob>();
+    } else {
+      file.SkipEntry<ProbBackoff>();
+    }
+  }
+
   WordIndex count;
   file.ReadCount(count);
   WordIndex key;
@@ -463,7 +493,8 @@ void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &coun
 
 } // namespace
 
-void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab) {
+void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, Backing &backing) {
+  SetupMemory(GrowForSearch(config, kModelType, counts, Size(counts, config), backing), counts, config);
   std::string temporary_directory;
   if (config.temporary_directory_prefix) {
     temporary_directory = config.temporary_directory_prefix;
@@ -473,7 +504,8 @@ void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, const 
     temporary_directory = file;
   }
   // Null on end is kludge to ensure null termination.
-  temporary_directory += "-tmp-XXXXXX\0";
+  temporary_directory += "-tmp-XXXXXX";
+  temporary_directory += '\0';
   if (!mkdtemp(&temporary_directory[0])) {
     UTIL_THROW(util::ErrnoException, "Failed to make a temporary directory based on the name " << temporary_directory.c_str());
   }

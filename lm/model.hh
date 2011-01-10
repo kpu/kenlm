@@ -109,7 +109,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 
     void InitializeFromBinary(void *start, const Parameters &params, const Config &config, int fd);
 
-    void InitializeFromARPA(const char *file, util::FilePiece &f, void *start, const Parameters &params, const Config &config);
+    void InitializeFromARPA(const char *file, const Config &config);
 
     Backing &MutableBacking() { return backing_; }
 

@@ -49,17 +49,23 @@ template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsi
 } // namespace
 namespace detail {
 
-template <class MiddleT, class LongestT> template <class Voc> void TemplateHashedSearch<MiddleT, LongestT>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &/*config*/, Voc &vocab) {
+template <class MiddleT, class LongestT> template <class Voc> void TemplateHashedSearch<MiddleT, LongestT>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing) {
+  // TODO: fix sorted.
+  SetupMemory(GrowForSearch(config, HASH_PROBING, counts, Size(counts, config), backing), counts, config);
+
   Read1Grams(f, counts[0], vocab, unigram.Raw());  
-  // Read the n-grams.
   for (unsigned int n = 2; n < counts.size(); ++n) {
     ReadNGrams(f, n, counts[n-1], vocab, middle[n-2]);
   }
   ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, longest);
 }
 
-template void TemplateHashedSearch<ProbingHashedSearch::Middle, ProbingHashedSearch::Longest>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab);
-template void TemplateHashedSearch<SortedHashedSearch::Middle, SortedHashedSearch::Longest>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, SortedVocabulary &vocab);
+template void TemplateHashedSearch<ProbingHashedSearch::Middle, ProbingHashedSearch::Longest>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab, Backing &backing);
+template void TemplateHashedSearch<SortedHashedSearch::Middle, SortedHashedSearch::Longest>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, SortedVocabulary &vocab, Backing &backing);
+
+SortedHashedSearch::SortedHashedSearch() {
+  UTIL_THROW(util::Exception, "Sorted is broken at the moment, sorry");
+}
 
 } // namespace detail
 } // namespace ngram

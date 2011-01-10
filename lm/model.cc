@@ -11,6 +11,8 @@
 #include <numeric>
 #include <cmath>
 
+#include <iostream>
+
 namespace lm {
 namespace ngram {
 
@@ -21,9 +23,6 @@ size_t hash_value(const State &state) {
 namespace detail {
 
 template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<uint64_t> &counts, const Config &config) {
-  if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit ngram.hh's kMaxOrder to at least this value and recompile.");
-  if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
-  if (config.probing_multiplier <= 1.0) UTIL_THROW(ConfigException, "probing multiplier must be > 1.0");
   return VocabularyT::Size(counts[0], config) + Search::Size(counts, config);
 }
 
@@ -59,17 +58,31 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   search_.longest.LoadedBinary();
 }
 
-template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromARPA(const char *file, util::FilePiece &f, void *start, const Parameters &params, const Config &config) {
-  SetupMemory(start, params.counts, config);
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromARPA(const char *file, const Config &config) {
+  // Backing file is the ARPA.  Steal it so we can make the backing file the mmap output if any.  
+  util::FilePiece f(backing_.file.release(), file, config.messages);
+  std::vector<uint64_t> counts;
+  // File counts do not include pruned trigrams that extend to quadgrams etc.   These will be fixed with search_.VariableSizeLoad
+  ReadARPACounts(f, counts);
+
+  if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit ngram.hh's kMaxOrder to at least this value and recompile.");
+  if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
+  if (config.probing_multiplier <= 1.0) UTIL_THROW(ConfigException, "probing multiplier must be > 1.0");
+
+  std::size_t vocab_size = VocabularyT::Size(counts[0], config);
+  // Setup the binary file for writing the vocab lookup table.  The search_ is responsible for growing the binary file to its needs.  
+  vocab_.SetupMemory(SetupJustVocab(config, counts.size(), vocab_size, backing_), vocab_size, counts[0], config);
 
   if (config.write_mmap) {
-    WriteWordsWrapper wrap(config.enumerate_vocab, backing_.file.get());
-    vocab_.ConfigureEnumerate(&wrap, params.counts[0]);
-    search_.InitializeFromARPA(file, f, params.counts, config, vocab_);
+    WriteWordsWrapper wrap(config.enumerate_vocab);
+    vocab_.ConfigureEnumerate(&wrap, counts[0]);
+    search_.InitializeFromARPA(file, f, counts, config, vocab_, backing_);
+    wrap.Write(backing_.file.get());
   } else {
-    vocab_.ConfigureEnumerate(config.enumerate_vocab, params.counts[0]);
-    search_.InitializeFromARPA(file, f, params.counts, config, vocab_);
+    vocab_.ConfigureEnumerate(config.enumerate_vocab, counts[0]);
+    search_.InitializeFromARPA(file, f, counts, config, vocab_, backing_);
   }
+
   // TODO: fail faster?  
   if (!vocab_.SawUnk()) {
     switch(config.unknown_missing) {
@@ -89,7 +102,6 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
         break;
     }
   }
-  if (std::fabs(search_.unigram.Unknown().backoff) > 0.0000001) UTIL_THROW(FormatLoadException, "Backoff for unknown word should be zero, but was given as " << search_.unigram.Unknown().backoff);  
 }
 
 template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::FullScore(const State &in_state, const WordIndex new_word, State &out_state) const {
@@ -111,7 +123,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::GetState(const WordIndex *context_rbegin, const WordIndex *context_rend, State &out_state) const {
   context_rend = std::min(context_rend, context_rbegin + P::Order() - 1);
-  if (context_rend == context_rbegin || *context_rbegin == 0) {
+  if (context_rend == context_rbegin) {
     out_state.valid_length_ = 0;
     return;
   }
@@ -168,12 +180,6 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   typename Search::Node node;
   float *backoff_out(out_state.backoff_);
   search_.LookupUnigram(new_word, ret.prob, *backoff_out, node);
-  if (new_word == 0) {
-    ret.ngram_length = out_state.valid_length_ = 0;
-    // All of backoff.  
-    backoff_start = 1;
-    return ret;
-  }
   out_state.history_[0] = new_word;
   if (context_rbegin == context_rend) {
     ret.ngram_length = out_state.valid_length_ = 1;
