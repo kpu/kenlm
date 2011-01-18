@@ -18,7 +18,6 @@
 #include <cstring>
 #include <cstdio>
 #include <deque>
-#include <iostream>
 #include <limits>
 //#include <parallel/algorithm>
 #include <vector>
@@ -660,8 +659,8 @@ void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, std::v
   ARPAToSortedFiles(f, counts, std::max<size_t>(config.building_memory, 1048576), temporary_directory.c_str(), vocab);
 
   BuildTrie(temporary_directory.c_str(), counts, config, *this, backing);
-  if (rmdir(temporary_directory.c_str())) {
-    std::cerr << "Failed to delete " << temporary_directory << std::endl;
+  if (rmdir(temporary_directory.c_str()) && config.messages) {
+    *config.messages << "Failed to delete " << temporary_directory << std::endl;
   }
 }
 

@@ -6,8 +6,6 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/test/floating_point_comparison.hpp>
 
-#include <iostream>
-
 namespace lm {
 namespace ngram {
 namespace {
@@ -51,7 +49,7 @@ template <class M> void Continuation(const M &model) {
   AppendTest("the", 1, -4.04005);
   AppendTest("biarritz", 1, -1.9889);
   AppendTest("not_found", 1, -2.29666);
-  AppendTest("more", 1, -1.20632);
+  AppendTest("more", 1, -1.20632 - 20.0);
   AppendTest(".", 2, -0.51363);
   AppendTest("</s>", 3, -0.0191651);
 
@@ -62,8 +60,8 @@ template <class M> void Continuation(const M &model) {
 
 template <class M> void Blanks(const M &model) {
   FullScoreReturn ret;
-  Model::State state(model.NullContextState());
-  Model::State out;
+  State state(model.NullContextState());
+  State out;
   AppendTest("also", 1, -1.687872);
   AppendTest("would", 2, -2);
   AppendTest("consider", 3, -3);
@@ -79,8 +77,21 @@ template <class M> void Blanks(const M &model) {
   AppendTest("higher", 1, -1.509559);
   AppendTest("looking", 1, -1.285941 - 0.30103);
   AppendTest("not_found", 1, -1.995635 - 0.4771212);
+}
 
-  state = model.NullContextState();
+template <class M> void Unknowns(const M &model) {
+  FullScoreReturn ret;
+  State state(model.NullContextState());
+  State out;
+
+  AppendTest("not_found", 1, -1.995635);
+  State preserve = state;
+  AppendTest("not_found2", 2, -15.0);
+  AppendTest("not_found3", 2, -15.0 - 2.0);
+  
+  state = preserve;
+  AppendTest("however", 2, -4);
+  AppendTest("not_found3", 3, -6);
 }
 
 #define StatelessTest(word, provide, ngram, score) \
@@ -138,6 +149,14 @@ template <class M> void Stateless(const M &model) {
   BOOST_CHECK_EQUAL(static_cast<WordIndex>(0), state.history_[0]);
 }
 
+template <class M> void Everything(const M &m) {
+  Starters(m);
+  Continuation(m);
+  Blanks(m);
+  Unknowns(m);
+  Stateless(m);
+}
+
 class ExpectEnumerateVocab : public EnumerateVocab {
   public:
     ExpectEnumerateVocab() {}
@@ -172,10 +191,7 @@ template <class ModelT> void LoadingTest() {
   config.probing_multiplier = 2.0;
   ModelT m("test.arpa", config);
   enumerate.Check(m.GetVocabulary());
-  Starters(m);
-  Continuation(m);
-  Stateless(m);
-  Blanks(m);
+  Everything(m);
 }
 
 BOOST_AUTO_TEST_CASE(probing) {
@@ -200,20 +216,14 @@ template <class ModelT> void BinaryTest() {
     ModelT copy_model("test.arpa", config);
     enumerate.Check(copy_model.GetVocabulary());
     enumerate.Clear();
-    Starters(copy_model);
-    Continuation(copy_model);
-    Stateless(copy_model);
-    Blanks(copy_model);
+    Everything(copy_model);
   }
 
   config.write_mmap = NULL;
 
   ModelT binary("test.binary", config);
   enumerate.Check(binary.GetVocabulary());
-  Starters(binary);
-  Continuation(binary);
-  Stateless(binary);
-  Blanks(binary);
+  Everything(binary);
   unlink("test.binary");
 }
 

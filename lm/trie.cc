@@ -5,8 +5,6 @@
 #include "util/proxy_iterator.hh"
 #include "util/sorted_uniform.hh"
 
-#include <iostream>
-
 #include <assert.h>
 
 namespace lm {

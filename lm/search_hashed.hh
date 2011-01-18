@@ -21,7 +21,7 @@ struct Backing;
 namespace detail {
 
 inline uint64_t CombineWordHash(uint64_t current, const WordIndex next) {
-  uint64_t ret = (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(next) * 17894857484156487943ULL);
+  uint64_t ret = (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(1 + next) * 17894857484156487943ULL);
   return ret;
 }
 

@@ -1,8 +1,8 @@
 
 \data\
 ngram 1=34
-ngram 2=44
-ngram 3=9
+ngram 2=46
+ngram 3=10
 ngram 4=6
 ngram 5=4
 
@@ -11,7 +11,7 @@ ngram 5=4
 -1.139057	.	-0.845098
 -1.029493	</s>
 -99	<s>	-0.4149733
--1.995635	<unk>
+-1.995635	<unk>	-20
 -1.285941	a	-0.69897
 -1.687872	also	-0.30103
 -1.687872	beyond	-0.30103
@@ -87,6 +87,8 @@ ngram 5=4
 -0.2922095	what i
 -0.2922095	would also
 -2	also would	-6
+-15	<unk> <unk>	-2
+-4	<unk> however	-1
 
 \3-grams:
 -0.01916512	more . </s>
@@ -98,6 +100,7 @@ ngram 5=4
 -0.1892331	little more loin
 -0.04835128	looking on a	-0.4771212
 -3	also would consider	-7
+-6	<unk> however <unk>	-12
 
 \4-grams:
 -0.009249173	looking on a little	-0.4771212

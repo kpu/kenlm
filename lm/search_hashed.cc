@@ -14,15 +14,6 @@ namespace ngram {
 
 namespace {
 
-/* All of the entropy is in low order bits and boost::hash does poorly with
- * these.  Odd numbers near 2^64 chosen by mashing on the keyboard.  There is a
- * stable point: 0.  But 0 is <unk> which won't be queried here anyway.  
- */
-inline uint64_t CombineWordHash(uint64_t current, const WordIndex next) {
-  uint64_t ret = (current * 8978948897894561157ULL) ^ (static_cast<uint64_t>(next) * 17894857484156487943ULL);
-  return ret;
-}
-
 template <class Voc, class Store, class Middle> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, std::vector<Middle> &middle, Store &store) {
   
   ReadNGramHeader(f, n);
@@ -37,9 +28,9 @@ template <class Voc, class Store, class Middle> void ReadNGrams(util::FilePiece 
   typename Middle::ConstIterator found;
   for (size_t i = 0; i < count; ++i) {
     ReadNGram(f, n, vocab, vocab_ids, value);
-    keys[0] = CombineWordHash(static_cast<uint64_t>(*vocab_ids), vocab_ids[1]);
+    keys[0] = detail::CombineWordHash(static_cast<uint64_t>(*vocab_ids), vocab_ids[1]);
     for (unsigned int h = 1; h < n - 1; ++h) {
-      keys[h] = CombineWordHash(keys[h-1], vocab_ids[h+1]);
+      keys[h] = detail::CombineWordHash(keys[h-1], vocab_ids[h+1]);
     }
     store.Insert(Store::Packing::Make(keys[n-2], value));
     // Go back and insert blanks.  
