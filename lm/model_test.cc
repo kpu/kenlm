@@ -75,8 +75,12 @@ template <class M> void Blanks(const M &model) {
   AppendTest("not_found", 1, -1.995635 - 7.0 - 0.30103);
 
   state = model.NullContextState();
+  // higher looking is a blank.  
   AppendTest("higher", 1, -1.509559);
-  AppendTest("looking", 1, -1.285941  -0.30103);
+  AppendTest("looking", 1, -1.285941 - 0.30103);
+  AppendTest("not_found", 1, -1.995635 - 0.4771212);
+
+  state = model.NullContextState();
 }
 
 #define StatelessTest(word, provide, ngram, score) \
