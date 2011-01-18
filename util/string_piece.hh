@@ -53,8 +53,13 @@
 //Uncomment this line if you want boost hashing for your StringPieces.
 #define HAVE_BOOST
 
+#ifdef HAVE_BOOST
+#include <boost/functional/hash/hash.hpp>
+#endif // HAVE_BOOST
+
 #include <cstring>
 #include <iosfwd>
+#include <ostream>
 
 #ifdef HAVE_ICU
 #include <unicode/stringpiece.h>
@@ -62,7 +67,6 @@ U_NAMESPACE_BEGIN
 #else
 
 #include <algorithm>
-#include <ostream>
 #include <string>
 #include <string.h>
 
@@ -228,10 +232,14 @@ inline bool operator>=(const StringPiece& x, const StringPiece& y) {
 }
 
 // allow StringPiece to be logged (needed for unit testing).
-extern std::ostream& operator<<(std::ostream& o, const StringPiece& piece);
+inline std::ostream& operator<<(std::ostream& o, const StringPiece& piece) {
+  return o.write(piece.data(), static_cast<std::streamsize>(piece.size()));
+}
 
 #ifdef HAVE_BOOST
-size_t hash_value(const StringPiece &str);
+size_t hash_value(const StringPiece &str) {
+  return boost::hash_range(str.data(), str.data() + str.length());
+}
 
 /* Support for lookup of StringPiece in boost::unordered_map<std::string> */
 struct StringPieceCompatibleHash : public std::unary_function<const StringPiece &, size_t> {
