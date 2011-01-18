@@ -1,5 +1,6 @@
 #include "lm/search_hashed.hh"
 
+#include "lm/blank.hh"
 #include "lm/lm_exception.hh"
 #include "lm/read_arpa.hh"
 #include "lm/vocab.hh"
@@ -22,25 +23,30 @@ inline uint64_t CombineWordHash(uint64_t current, const WordIndex next) {
   return ret;
 }
 
-uint64_t ChainedWordHash(const WordIndex *word, const WordIndex *word_end) {
-  if (word == word_end) return 0;
-  uint64_t current = static_cast<uint64_t>(*word);
-  for (++word; word != word_end; ++word) {
-    current = CombineWordHash(current, *word);
-  }
-  return current;
-}
-
-template <class Voc, class Store> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, Store &store) {
+template <class Voc, class Store, class Middle> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, std::vector<Middle> &middle, Store &store) {
+  
   ReadNGramHeader(f, n);
+  ProbBackoff blank;
+  blank.prob = kBlankProb;
+  blank.backoff = kBlankBackoff;
 
   // vocab ids of words in reverse order
   WordIndex vocab_ids[n];
+  uint64_t keys[n - 1];
   typename Store::Packing::Value value;
+  typename Middle::ConstIterator found;
   for (size_t i = 0; i < count; ++i) {
     ReadNGram(f, n, vocab, vocab_ids, value);
-    uint64_t key = ChainedWordHash(vocab_ids, vocab_ids + n);
-    store.Insert(Store::Packing::Make(key, value));
+    keys[0] = CombineWordHash(static_cast<uint64_t>(*vocab_ids), vocab_ids[1]);
+    for (unsigned int h = 1; h < n - 1; ++h) {
+      keys[h] = CombineWordHash(keys[h-1], vocab_ids[h+1]);
+    }
+    store.Insert(Store::Packing::Make(keys[n-2], value));
+    // Go back and insert blanks.  
+    for (int lower = n - 3; lower >= 0; --lower) {
+      if (middle[lower].Find(keys[lower], found)) break;
+      middle[lower].Insert(Middle::Packing::Make(keys[lower], blank));
+    }
   }
 
   store.FinishedInserting();
@@ -55,9 +61,9 @@ template <class MiddleT, class LongestT> template <class Voc> void TemplateHashe
 
   Read1Grams(f, counts[0], vocab, unigram.Raw());  
   for (unsigned int n = 2; n < counts.size(); ++n) {
-    ReadNGrams(f, n, counts[n-1], vocab, middle[n-2]);
+    ReadNGrams(f, n, counts[n-1], vocab, middle, middle[n-2]);
   }
-  ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, longest);
+  ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, middle, longest);
 }
 
 template void TemplateHashedSearch<ProbingHashedSearch::Middle, ProbingHashedSearch::Longest>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab, Backing &backing);

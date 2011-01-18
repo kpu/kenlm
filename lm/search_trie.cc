@@ -598,7 +598,7 @@ void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &coun
   std::vector<uint64_t> fixed_counts(counts.size());
   {
     RecursiveInsert<JustCount> counter(inputs, NULL, &*out.middle.begin(), out.longest, &*fixed_counts.begin(), counts.size());
-    counter.Apply(config.messages, "Counting pruned n-grams that have additional history", counts[0]);
+    counter.Apply(config.messages, "Counting n-grams that should not have been pruned", counts[0]);
   }
   SanityCheckCounts(counts, fixed_counts);
 
