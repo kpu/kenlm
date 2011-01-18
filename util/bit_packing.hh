@@ -73,7 +73,6 @@ inline float ReadNonPositiveFloat31(const void *base, uint8_t bit) {
   return encoded.f;
 }
 inline void WriteNonPositiveFloat31(void *base, uint8_t bit, float value) {
-  assert(value <= 0.0);
   detail::FloatEnc encoded;
   encoded.f = value;
   encoded.i &= ~0x80000000;

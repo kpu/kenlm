@@ -20,7 +20,9 @@ template <class T, class R, R (*Free)(T*)> class scoped_thing {
     }
 
     T &operator*() { return *c_; }
+    const T&operator*() const { return *c_; }
     T &operator->() { return *c_; }
+    const T&operator->() const { return *c_; }
 
     T *get() { return c_; }
     const T *get() const { return c_; }
@@ -78,6 +80,34 @@ class scoped_FILE {
 
   private:
     std::FILE *file_;
+};
+
+// Hat tip to boost.  
+template <class T> class scoped_array {
+  public:
+    explicit scoped_array(T *content = NULL) : c_(content) {}
+
+    ~scoped_array() { delete [] c_; }
+
+    T *get() { return c_; }
+    const T* get() const { return c_; }
+
+    T &operator*() { return *c_; }
+    const T&operator*() const { return *c_; }
+
+    T &operator->() { return *c_; }
+    const T&operator->() const { return *c_; }
+
+    T &operator[](std::size_t idx) { return c_[idx]; }
+    const T &operator[](std::size_t idx) const { return c_[idx]; }
+
+    void reset(T *to = NULL) {
+      scoped_array<T> other(c_);
+      c_ = to;
+    }
+
+  private:
+    T *c_;
 };
 
 } // namespace util
