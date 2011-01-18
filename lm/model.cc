@@ -228,7 +228,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   // It passed every lookup in search_.middle.  All that's left is to check search_.longest.  
   
   if (!search_.LookupLongest(*hist_iter, ret.prob, node)) {
-    assert(ret.ngram_length <= P::Order() - 1);
+    //assert(ret.ngram_length <= P::Order() - 1);
     out_state.valid_length_ = ret.ngram_length;
     std::copy(context_rbegin, context_rbegin + ret.ngram_length - 1, out_state.history_ + 1);
     // ret.prob was already set.  

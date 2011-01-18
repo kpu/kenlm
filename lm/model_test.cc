@@ -60,6 +60,25 @@ template <class M> void Continuation(const M &model) {
   AppendTest("loin", 5, -0.0432557);
 }
 
+template <class M> void Blanks(const M &model) {
+  FullScoreReturn ret;
+  Model::State state(model.NullContextState());
+  Model::State out;
+  AppendTest("also", 1, -1.687872);
+  AppendTest("would", 2, -2);
+  AppendTest("consider", 3, -3);
+  State preserve = state;
+  AppendTest("higher", 4, -4);
+  AppendTest("looking", 5, -5);
+
+  state = preserve;
+  AppendTest("not_found", 1, -1.995635 - 7.0 - 0.30103);
+
+  state = model.NullContextState();
+  AppendTest("higher", 1, -1.509559);
+  AppendTest("looking", 1, -1.285941  -0.30103);
+}
+
 #define StatelessTest(word, provide, ngram, score) \
   ret = model.FullScoreForgotState(indices + num_words - word, indices + num_words - word + provide, indices[num_words - word - 1], state); \
   BOOST_CHECK_CLOSE(score, ret.prob, 0.001); \
@@ -115,8 +134,6 @@ template <class M> void Stateless(const M &model) {
   BOOST_CHECK_EQUAL(static_cast<WordIndex>(0), state.history_[0]);
 }
 
-//const char *kExpectedOrderProbing[] = {"<unk>", ",", ".", "</s>", "<s>", "a", "also", "beyond", "biarritz", "call", "concerns", "consider", "considering", "for", "higher", "however", "i", "immediate", "in", "is", "little", "loin", "look", "looking", "more", "on", "screening", "small", "the", "to", "watch", "watching", "what", "would"};
-
 class ExpectEnumerateVocab : public EnumerateVocab {
   public:
     ExpectEnumerateVocab() {}
@@ -154,6 +171,7 @@ template <class ModelT> void LoadingTest() {
   Starters(m);
   Continuation(m);
   Stateless(m);
+  Blanks(m);
 }
 
 BOOST_AUTO_TEST_CASE(probing) {
@@ -178,6 +196,10 @@ template <class ModelT> void BinaryTest() {
     ModelT copy_model("test.arpa", config);
     enumerate.Check(copy_model.GetVocabulary());
     enumerate.Clear();
+    Starters(copy_model);
+    Continuation(copy_model);
+    Stateless(copy_model);
+    Blanks(copy_model);
   }
 
   config.write_mmap = NULL;
@@ -187,6 +209,7 @@ template <class ModelT> void BinaryTest() {
   Starters(binary);
   Continuation(binary);
   Stateless(binary);
+  Blanks(binary);
   unlink("test.binary");
 }
 

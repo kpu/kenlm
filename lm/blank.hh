@@ -6,7 +6,7 @@ namespace lm {
 namespace ngram {
 
 const float kBlankProb = -std::numeric_limits<float>::quiet_NaN();
-const float kBlankBackoff = std::numeric_limits<float>::quiet_NaN();
+const float kBlankBackoff = std::numeric_limits<float>::infinity();
 
 } // namespace ngram
 } // namespace lm
