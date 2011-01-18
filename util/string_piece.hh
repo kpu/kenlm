@@ -237,7 +237,7 @@ inline std::ostream& operator<<(std::ostream& o, const StringPiece& piece) {
 }
 
 #ifdef HAVE_BOOST
-size_t hash_value(const StringPiece &str) {
+inline size_t hash_value(const StringPiece &str) {
   return boost::hash_range(str.data(), str.data() + str.length());
 }
 
