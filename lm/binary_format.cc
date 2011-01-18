@@ -18,7 +18,7 @@ namespace lm {
 namespace ngram {
 namespace {
 const char kMagicBeforeVersion[] = "mmap lm http://kheafield.com/code format version";
-const char kMagicBytes[] = "mmap lm http://kheafield.com/code format version 2\n\0";
+const char kMagicBytes[] = "mmap lm http://kheafield.com/code format version 3\n\0";
 const long int kMagicVersion = 2;
 
 // Test values.  
