@@ -40,7 +40,11 @@ struct TrieSearch {
     start += Unigram::Size(counts[0]);
     middle.resize(counts.size() - 2);
     for (unsigned char i = 1; i < counts.size() - 1; ++i) {
-      middle[i-1].Init(start, counts[0], counts[i+1]);
+      middle[i-1].Init(
+          start,
+          counts[0],
+          counts[i+1], 
+          (i == counts.size() - 2) ? static_cast<const BitPacked&>(longest) : static_cast<const BitPacked &>(middle[i]));
       start += Middle::Size(counts[i], counts[0], counts[i+1]);
     }
     longest.Init(start, counts[0]);
@@ -66,7 +70,7 @@ struct TrieSearch {
   }
 
   bool FastMakeNode(const WordIndex *begin, const WordIndex *end, Node &node) const {
-    // TODO: don't decode prob.  
+    // TODO: don't decode backoff.
     assert(begin != end);
     float ignored_prob, ignored_backoff;
     LookupUnigram(*begin, ignored_prob, ignored_backoff, node);

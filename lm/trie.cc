@@ -84,7 +84,8 @@ std::size_t BitPackedMiddle::Size(uint64_t entries, uint64_t max_vocab, uint64_t
   return BaseSize(entries, max_vocab, 32 + util::RequiredBits(max_ptr));
 }
 
-void BitPackedMiddle::Init(void *base, uint64_t max_vocab, uint64_t max_next) {
+void BitPackedMiddle::Init(void *base, uint64_t max_vocab, uint64_t max_next, const BitPacked &next_source) {
+  next_source_ = &next_source;
   backoff_bits_ = 32;
   next_bits_ = util::RequiredBits(max_next);
   if (next_bits_ > 57) UTIL_THROW(util::Exception, "Sorry, this does not support more than " << (1ULL << 57) << " n-grams of a particular order.  Edit util/bit_packing.hh and fix the bit packing functions.");
@@ -93,9 +94,8 @@ void BitPackedMiddle::Init(void *base, uint64_t max_vocab, uint64_t max_next) {
   BaseInit(base, max_vocab, backoff_bits_ + next_bits_);
 }
 
-void BitPackedMiddle::Insert(WordIndex word, float prob, float backoff, uint64_t next) {
+void BitPackedMiddle::Insert(WordIndex word, float prob, float backoff) {
   assert(word <= word_mask_);
-  assert(next <= next_mask_);
   uint64_t at_pointer = insert_index_ * total_bits_;
 
   util::WriteInt57(base_ + (at_pointer >> 3), at_pointer & 7, word_bits_, word);
@@ -104,6 +104,8 @@ void BitPackedMiddle::Insert(WordIndex word, float prob, float backoff, uint64_t
   at_pointer += prob_bits_;
   util::WriteFloat32(base_ + (at_pointer >> 3), at_pointer & 7, backoff);
   at_pointer += backoff_bits_;
+  uint64_t next = next_source_->InsertIndex();
+  assert(next <= next_mask_);
   util::WriteInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_bits_, next);
 
   ++insert_index_;

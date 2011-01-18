@@ -89,9 +89,10 @@ class BitPackedMiddle : public BitPacked {
 
     static std::size_t Size(uint64_t entries, uint64_t max_vocab, uint64_t max_next);
 
-    void Init(void *base, uint64_t max_vocab, uint64_t max_next);
+    // next_source need not be initialized.  
+    void Init(void *base, uint64_t max_vocab, uint64_t max_next, const BitPacked &next_source);
 
-    void Insert(WordIndex word, float prob, float backoff, uint64_t next);
+    void Insert(WordIndex word, float prob, float backoff);
 
     bool Find(WordIndex word, float &prob, float &backoff, NodeRange &range) const;
 
@@ -102,6 +103,8 @@ class BitPackedMiddle : public BitPacked {
   private:
     uint8_t backoff_bits_, next_bits_;
     uint64_t next_mask_;
+
+    const BitPacked *next_source_;
 };
 
 
