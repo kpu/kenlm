@@ -317,9 +317,6 @@ void MergeSortedFiles(const char *first_name, const char *second_name, const cha
 }
 
 void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, util::scoped_memory &mem, const std::string &file_prefix, unsigned char order) {
-  if (order == 1) return;
-  ConvertToSorted(f, vocab, counts, mem, file_prefix, order - 1);
-
   ReadNGramHeader(f, order);
   const size_t count = counts[order - 1];
   // Size of weights.  Does it include backoff?  
@@ -378,10 +375,21 @@ void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, 
     Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_mmap.get()));
   }
 
+  // Only use as much buffer as we need.  
+  size_t buffer_use = 0;
+  for (unsigned int order = 2; order < counts.size(); ++order) {
+    buffer_use = std::max(buffer_use, (sizeof(WordIndex) * order + 2 * sizeof(float)) * counts[order - 1]);
+  }
+  buffer_use = std::max(buffer_use, (sizeof(WordIndex) * counts.size() + sizeof(float)) * counts.back());
+  buffer = std::min(buffer, buffer_use);
+
   util::scoped_memory mem;
   mem.reset(malloc(buffer), buffer, util::scoped_memory::MALLOC_ALLOCATED);
   if (!mem.get()) UTIL_THROW(util::ErrnoException, "malloc failed for sort buffer size " << buffer);
-  ConvertToSorted(f, vocab, counts, mem, file_prefix, counts.size());
+
+  for (unsigned char order = 2; order <= counts.size(); ++order) {
+    ConvertToSorted(f, vocab, counts, mem, file_prefix, order);
+  }
   ReadEnd(f);
 }
 

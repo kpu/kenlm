@@ -21,7 +21,7 @@ void Usage(const char *name) {
 "memory and is still faster than SRI or IRST.  Building the trie format uses an\n"
 "on-disk sort to save memory.\n"
 "-t is the temporary directory prefix.  Default is the output file name.\n"
-"-m is the amount of memory to use, in MB.  Default is 1024MB (1GB).\n\n"
+"-m limits memory use for sorting.  Measured in MB.  Default is 1024MB.\n\n"
 /*"sorted is like probing but uses a sorted uniform map instead of a hash table.\n"
 "It uses more memory than trie and is also slower, so there's no real reason to\n"
 "use it.\n\n"*/
