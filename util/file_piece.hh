@@ -36,7 +36,7 @@ class GZException : public Exception {
 
 int OpenReadOrThrow(const char *name);
 
-extern const bool kIsSpace[256];
+extern const bool kSpaces[256];
 
 // Return value for SizeFile when it can't size properly.  
 const off_t kBadSize = -1;
@@ -61,7 +61,7 @@ class FilePiece {
     }
 
     // Leaves the delimiter, if any, to be returned by get().  Delimiters defined by isspace().  
-    StringPiece ReadDelimited(const bool *delim = kIsSpace) throw(GZException, EndOfFileException) {
+    StringPiece ReadDelimited(const bool *delim = kSpaces) throw(GZException, EndOfFileException) {
       SkipSpaces(delim);
       return Consume(FindDelimiterOrEOF(delim));
     }
@@ -76,7 +76,7 @@ class FilePiece {
     unsigned long int ReadULong() throw(GZException, EndOfFileException, ParseNumberException);
 
     // Skip spaces defined by isspace.  
-    void SkipSpaces(const bool *delim = kIsSpace) throw (GZException, EndOfFileException) {
+    void SkipSpaces(const bool *delim = kSpaces) throw (GZException, EndOfFileException) {
       for (; ; ++position_) {
         if (position_ == position_end_) Shift();
         if (!delim[static_cast<unsigned char>(*position_)]) return;
@@ -100,7 +100,7 @@ class FilePiece {
       return ret;
     }
 
-    const char *FindDelimiterOrEOF(const bool *delim = kIsSpace) throw (GZException, EndOfFileException) {
+    const char *FindDelimiterOrEOF(const bool *delim = kSpaces) throw (GZException, EndOfFileException) {
       for (const char *i = position_; i < position_end_; ++i) {
         if (delim[static_cast<unsigned char>(*i)]) return i;
       }
