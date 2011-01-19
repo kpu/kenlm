@@ -43,9 +43,11 @@ template <class Model> void Query(const Model &model) {
     state = model.BeginSentenceState();
     float total = 0.0;
     bool got = false;
+    unsigned int oov = 0;
     while (std::cin >> word) {
       got = true;
       lm::WordIndex vocab = model.GetVocabulary().Index(word);
+      if (vocab == 0) ++oov;
       ret = model.FullScore(state, vocab, out);
       total += ret.prob;
       std::cout << word << '=' << vocab << ' ' << static_cast<unsigned int>(ret.ngram_length)  << ' ' << ret.prob << '\n';
@@ -56,22 +58,13 @@ template <class Model> void Query(const Model &model) {
     ret = model.FullScore(state, model.GetVocabulary().EndSentence(), out);
     total += ret.prob;
     std::cout << "</s>=" << model.GetVocabulary().EndSentence() << ' ' << static_cast<unsigned int>(ret.ngram_length)  << ' ' << ret.prob << '\n';
-    std::cout << "Total: " << total << '\n';
+    std::cout << "Total: " << total << " OOV: " << oov << '\n';
   }
   PrintUsage("After queries:\n");
 }
 
-class PrintVocab : public lm::ngram::EnumerateVocab {
-  public:
-    void Add(lm::WordIndex index, const StringPiece &str) {
-      std::cerr << "vocab " << index << ' ' << str << '\n';
-    }
-};
-
 template <class Model> void Query(const char *name) {
   lm::ngram::Config config;
-  PrintVocab printer;
-  config.enumerate_vocab = &printer;
   Model model(name, config);
   Query(model);
 }
