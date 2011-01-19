@@ -23,12 +23,14 @@ void ReadBackoff(util::FilePiece &in, ProbBackoff &weights);
 void ReadEnd(util::FilePiece &in);
 void ReadEnd(std::istream &in);
 
+extern const bool kARPASpaces[256];
+
 template <class Voc> void Read1Gram(util::FilePiece &f, Voc &vocab, ProbBackoff *unigrams) {
   try {
     float prob = f.ReadFloat();
     if (prob > 0) UTIL_THROW(FormatLoadException, "Positive probability " << prob);
     if (f.get() != '\t') UTIL_THROW(FormatLoadException, "Expected tab after probability");
-    ProbBackoff &value = unigrams[vocab.Insert(f.ReadDelimited())];
+    ProbBackoff &value = unigrams[vocab.Insert(f.ReadDelimited(kARPASpaces))];
     value.prob = prob;
     ReadBackoff(f, value);
   } catch(util::Exception &e) {
@@ -50,7 +52,7 @@ template <class Voc, class Weights> void ReadNGram(util::FilePiece &f, const uns
     weights.prob = f.ReadFloat();
     if (weights.prob > 0) UTIL_THROW(FormatLoadException, "Positive probability " << weights.prob);
     for (WordIndex *vocab_out = reverse_indices + n - 1; vocab_out >= reverse_indices; --vocab_out) {
-      *vocab_out = vocab.Index(f.ReadDelimited());
+      *vocab_out = vocab.Index(f.ReadDelimited(kARPASpaces));
     }
     ReadBackoff(f, weights);
   } catch(util::Exception &e) {

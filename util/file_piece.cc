@@ -37,6 +37,9 @@ GZException::GZException(void *file) {
 #endif // HAVE_ZLIB
 }
 
+// Sigh this is the only way I could come up with to do a _const_ bool. 
+const bool kIsSpace[256] = { isspace(0), isspace(1), isspace(2), isspace(3), isspace(4), isspace(5), isspace(6), isspace(7), isspace(8), isspace(9), isspace(10), isspace(11), isspace(12), isspace(13), isspace(14), isspace(15), isspace(16), isspace(17), isspace(18), isspace(19), isspace(20), isspace(21), isspace(22), isspace(23), isspace(24), isspace(25), isspace(26), isspace(27), isspace(28), isspace(29), isspace(30), isspace(31), isspace(32), isspace(33), isspace(34), isspace(35), isspace(36), isspace(37), isspace(38), isspace(39), isspace(40), isspace(41), isspace(42), isspace(43), isspace(44), isspace(45), isspace(46), isspace(47), isspace(48), isspace(49), isspace(50), isspace(51), isspace(52), isspace(53), isspace(54), isspace(55), isspace(56), isspace(57), isspace(58), isspace(59), isspace(60), isspace(61), isspace(62), isspace(63), isspace(64), isspace(65), isspace(66), isspace(67), isspace(68), isspace(69), isspace(70), isspace(71), isspace(72), isspace(73), isspace(74), isspace(75), isspace(76), isspace(77), isspace(78), isspace(79), isspace(80), isspace(81), isspace(82), isspace(83), isspace(84), isspace(85), isspace(86), isspace(87), isspace(88), isspace(89), isspace(90), isspace(91), isspace(92), isspace(93), isspace(94), isspace(95), isspace(96), isspace(97), isspace(98), isspace(99), isspace(100), isspace(101), isspace(102), isspace(103), isspace(104), isspace(105), isspace(106), isspace(107), isspace(108), isspace(109), isspace(110), isspace(111), isspace(112), isspace(113), isspace(114), isspace(115), isspace(116), isspace(117), isspace(118), isspace(119), isspace(120), isspace(121), isspace(122), isspace(123), isspace(124), isspace(125), isspace(126), isspace(127), isspace(128), isspace(129), isspace(130), isspace(131), isspace(132), isspace(133), isspace(134), isspace(135), isspace(136), isspace(137), isspace(138), isspace(139), isspace(140), isspace(141), isspace(142), isspace(143), isspace(144), isspace(145), isspace(146), isspace(147), isspace(148), isspace(149), isspace(150), isspace(151), isspace(152), isspace(153), isspace(154), isspace(155), isspace(156), isspace(157), isspace(158), isspace(159), isspace(160), isspace(161), isspace(162), isspace(163), isspace(164), isspace(165), isspace(166), isspace(167), isspace(168), isspace(169), isspace(170), isspace(171), isspace(172), isspace(173), isspace(174), isspace(175), isspace(176), isspace(177), isspace(178), isspace(179), isspace(180), isspace(181), isspace(182), isspace(183), isspace(184), isspace(185), isspace(186), isspace(187), isspace(188), isspace(189), isspace(190), isspace(191), isspace(192), isspace(193), isspace(194), isspace(195), isspace(196), isspace(197), isspace(198), isspace(199), isspace(200), isspace(201), isspace(202), isspace(203), isspace(204), isspace(205), isspace(206), isspace(207), isspace(208), isspace(209), isspace(210), isspace(211), isspace(212), isspace(213), isspace(214), isspace(215), isspace(216), isspace(217), isspace(218), isspace(219), isspace(220), isspace(221), isspace(222), isspace(223), isspace(224), isspace(225), isspace(226), isspace(227), isspace(228), isspace(229), isspace(230), isspace(231), isspace(232), isspace(233), isspace(234), isspace(235), isspace(236), isspace(237), isspace(238), isspace(239), isspace(240), isspace(241), isspace(242), isspace(243), isspace(244), isspace(245), isspace(246), isspace(247), isspace(248), isspace(249), isspace(250), isspace(251), isspace(252), isspace(253), isspace(254), isspace(255) };
+
 int OpenReadOrThrow(const char *name) {
   int ret = open(name, O_RDONLY);
   if (ret == -1) UTIL_THROW(ErrnoException, "in open (" << name << ") for reading");
@@ -105,13 +108,6 @@ long int FilePiece::ReadLong() throw(GZException, EndOfFileException, ParseNumbe
 }
 unsigned long int FilePiece::ReadULong() throw(GZException, EndOfFileException, ParseNumberException) {
   return ReadNumber<unsigned long int>();
-}
-
-void FilePiece::SkipSpaces() throw (GZException, EndOfFileException) {
-  for (; ; ++position_) {
-    if (position_ == position_end_) Shift();
-    if (!isspace(*position_)) return;
-  }
 }
 
 void FilePiece::Initialize(const char *name, std::ostream *show_progress, off_t min_buffer) throw (GZException) {
@@ -188,20 +184,6 @@ template <class T> T FilePiece::ReadNumber() throw(GZException, EndOfFileExcepti
   if (end == position_) throw ParseNumberException(ReadDelimited());
   position_ = end;
   return ret;
-}
-
-const char *FilePiece::FindDelimiterOrEOF() throw (GZException, EndOfFileException) {
-  for (const char *i = position_; i <= last_space_; ++i) {
-    if (isspace(*i)) return i;
-  }
-  while (!at_end_) {
-    size_t skip = position_end_ - position_;
-    Shift();
-    for (const char *i = position_ + skip; i <= last_space_; ++i) {
-      if (isspace(*i)) return i;
-    }
-  }
-  return position_end_;
 }
 
 void FilePiece::Shift() throw(GZException, EndOfFileException) {
