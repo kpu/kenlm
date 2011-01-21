@@ -12,6 +12,8 @@
 #include <numeric>
 #include <cmath>
 
+#include <iostream>
+
 namespace lm {
 namespace ngram {
 
@@ -105,8 +107,28 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
 
 template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::FullScore(const State &in_state, const WordIndex new_word, State &out_state) const {
   FullScoreReturn ret = ScoreExceptBackoff(in_state.history_, in_state.history_ + in_state.valid_length_, new_word, out_state);
+  State test;
+  GetState(in_state.history_, in_state.history_ + in_state.valid_length_, test);
+  if (!(test == in_state)) {
+    abort();
+  }
   if (ret.ngram_length - 1 < in_state.valid_length_) {
+//    std::cerr << "Pre-backoff probability from state is " << ret.prob << std::endl;
     ret.prob = std::accumulate(in_state.backoff_ + ret.ngram_length - 1, in_state.backoff_ + in_state.valid_length_, ret.prob);
+//    std::cerr << "Post-backoff probability from state is " << ret.prob << std::endl;
+  }
+  FullScoreReturn compare = FullScoreForgotState(in_state.history_, in_state.history_ + in_state.valid_length_, new_word, test);
+  if (!(test == out_state)) {
+    std::cerr << "FullScoreForgotState is different." << std::endl;
+    abort();
+  }
+  if (fabs(compare.prob - ret.prob) > 0.0001) {
+    std::cerr << "probs are different." << std::endl;
+    abort();
+  }
+  if (compare.ngram_length != ret.ngram_length) {
+    std::cerr << "ngram lengths are different." << std::endl;
+    abort();
   }
   return ret;
 }
@@ -114,7 +136,26 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::FullScoreForgotState(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, State &out_state) const {
   context_rend = std::min(context_rend, context_rbegin + P::Order() - 1);
   FullScoreReturn ret = ScoreExceptBackoff(context_rbegin, context_rend, new_word, out_state);
-  ret.prob += SlowBackoffLookup(context_rbegin, context_rend, ret.ngram_length);
+//  std::cerr << "Pre-backoff probability from stateless is " << ret.prob << std::endl;
+
+// Add the backoff weights for n-grams of order start to (context_rend - context_rbegin).
+  unsigned char start = ret.ngram_length;
+  if (context_rend - context_rbegin < static_cast<std::ptrdiff_t>(start)) return ret;
+  if (start <= 1) {
+    ret.prob += search_.unigram.Lookup(*context_rbegin).backoff;
+    start = 2;
+  }
+  typename Search::Node node;
+  if (!search_.FastMakeNode(context_rbegin, context_rbegin + start - 1, node)) {
+    return ret;
+  }
+  float backoff;
+  // i is the order of the backoff we're looking for.
+  for (const WordIndex *i = context_rbegin + start - 1; i < context_rend; ++i) {
+    if (!search_.LookupMiddleNoProb(search_.middle[i - context_rbegin - 1], *i, backoff, node)) break;
+    if (backoff != kBlankBackoff) ret.prob += backoff;
+  }
+//  std::cerr << "Post-backoff probability from stateless is " << ret.prob << std::endl;
   return ret;
 }
 
@@ -146,28 +187,6 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   std::copy(context_rbegin, context_rbegin + out_state.valid_length_, out_state.history_);
 }
 
-template <class Search, class VocabularyT> float GenericModel<Search, VocabularyT>::SlowBackoffLookup(
-    const WordIndex *const context_rbegin, const WordIndex *const context_rend, unsigned char start) const {
-  // Add the backoff weights for n-grams of order start to (context_rend - context_rbegin).
-  if (context_rend - context_rbegin < static_cast<std::ptrdiff_t>(start)) return 0.0;
-  float ret = 0.0;
-  if (start == 1) {
-    ret += search_.unigram.Lookup(*context_rbegin).backoff;
-    start = 2;
-  }
-  typename Search::Node node;
-  if (!search_.FastMakeNode(context_rbegin, context_rbegin + start - 1, node)) {
-    return 0.0;
-  }
-  float backoff;
-  // i is the order of the backoff we're looking for.
-  for (const WordIndex *i = context_rbegin + start - 1; i < context_rend; ++i) {
-    if (!search_.LookupMiddleNoProb(search_.middle[i - context_rbegin - 1], *i, backoff, node)) break;
-    if (backoff != kBlankBackoff) ret += backoff;
-  }
-  return ret;
-}
-
 /* Ugly optimized function.  Produce a score excluding backoff.  
  * The search goes in increasing order of ngram length.  
  * Context goes backward, so context_begin is the word immediately preceeding
@@ -185,6 +204,11 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   typename Search::Node node;
   float *backoff_out(out_state.backoff_);
   search_.LookupUnigram(new_word, ret.prob, *backoff_out, node);
+/*  if (new_word == 0) {
+    out_state.valid_length_ = 0;
+    ret.ngram_length = 0;
+    return ret;
+  }*/
   out_state.history_[0] = new_word;
   if (context_rbegin == context_rend) {
     out_state.valid_length_ = 1;
