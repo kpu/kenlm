@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 
+#include <ctype.h>
+
 #include <sys/resource.h>
 #include <sys/time.h>
 
@@ -52,7 +54,17 @@ template <class Model> void Query(const Model &model) {
       total += ret.prob;
       std::cout << word << '=' << vocab << ' ' << static_cast<unsigned int>(ret.ngram_length)  << ' ' << ret.prob << '\n';
       state = out;
-      if (std::cin.get() == '\n') break;
+      char c;
+      while (true) {
+        c = std::cin.get();
+        if (!std::cin) break;
+        if (c == '\n') break;
+        if (!isspace(c)) {
+          std::cin.unget();
+          break;
+        }
+      }
+      if (c == '\n') break;
     }
     if (!got && !std::cin) break;
     ret = model.FullScore(state, model.GetVocabulary().EndSentence(), out);
