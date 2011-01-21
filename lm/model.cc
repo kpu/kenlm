@@ -107,28 +107,8 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
 
 template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::FullScore(const State &in_state, const WordIndex new_word, State &out_state) const {
   FullScoreReturn ret = ScoreExceptBackoff(in_state.history_, in_state.history_ + in_state.valid_length_, new_word, out_state);
-  State test;
-  GetState(in_state.history_, in_state.history_ + in_state.valid_length_, test);
-  if (!(test == in_state)) {
-    abort();
-  }
   if (ret.ngram_length - 1 < in_state.valid_length_) {
-//    std::cerr << "Pre-backoff probability from state is " << ret.prob << std::endl;
     ret.prob = std::accumulate(in_state.backoff_ + ret.ngram_length - 1, in_state.backoff_ + in_state.valid_length_, ret.prob);
-//    std::cerr << "Post-backoff probability from state is " << ret.prob << std::endl;
-  }
-  FullScoreReturn compare = FullScoreForgotState(in_state.history_, in_state.history_ + in_state.valid_length_, new_word, test);
-  if (!(test == out_state)) {
-    std::cerr << "FullScoreForgotState is different." << std::endl;
-    abort();
-  }
-  if (fabs(compare.prob - ret.prob) > 0.0001) {
-    std::cerr << "probs are different." << std::endl;
-    abort();
-  }
-  if (compare.ngram_length != ret.ngram_length) {
-    std::cerr << "ngram lengths are different." << std::endl;
-    abort();
   }
   return ret;
 }
@@ -169,22 +149,21 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   float ignored_prob;
   typename Search::Node node;
   search_.LookupUnigram(*context_rbegin, ignored_prob, out_state.backoff_[0], node);
-  // Tricky part is that an entry might be blank, but out_state.valid_length_ always has the last non-blank n-gram length.  
-  out_state.valid_length_ = 1;
   float *backoff_out = out_state.backoff_ + 1;
   const typename Search::Middle *mid = &*search_.middle.begin();
   for (const WordIndex *i = context_rbegin + 1; i < context_rend; ++i, ++backoff_out, ++mid) {
     if (!search_.LookupMiddleNoProb(*mid, *i, *backoff_out, node)) {
-      std::copy(context_rbegin, context_rbegin + out_state.valid_length_, out_state.history_);
+      std::copy(context_rbegin, i, out_state.history_);
+      out_state.valid_length_ = i - context_rbegin;
       return;
     }
-    if (*backoff_out != kBlankBackoff) {
-      out_state.valid_length_ = i - context_rbegin + 1;
-    } else {
+    if (*backoff_out == kBlankBackoff) {
       *backoff_out = 0.0;
     }
   }
-  std::copy(context_rbegin, context_rbegin + out_state.valid_length_, out_state.history_);
+
+  out_state.valid_length_ = context_rend - context_rbegin;
+  std::copy(context_rbegin, context_rend, out_state.history_);
 }
 
 /* Ugly optimized function.  Produce a score excluding backoff.  
@@ -204,11 +183,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   typename Search::Node node;
   float *backoff_out(out_state.backoff_);
   search_.LookupUnigram(new_word, ret.prob, *backoff_out, node);
-/*  if (new_word == 0) {
-    out_state.valid_length_ = 0;
-    ret.ngram_length = 0;
-    return ret;
-  }*/
+
   out_state.history_[0] = new_word;
   if (context_rbegin == context_rend) {
     out_state.valid_length_ = 1;
