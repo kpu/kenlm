@@ -119,7 +119,7 @@ void ReadBackoff(util::FilePiece &in, Prob &/*weights*/) {
     case '\n':
       break;
     default:
-      UTIL_THROW(FormatLoadException, "Expected tab or newline after unigram");
+      UTIL_THROW(FormatLoadException, "Expected tab or newline for backoff");
   }
 }
 
@@ -133,7 +133,7 @@ void ReadBackoff(util::FilePiece &in, ProbBackoff &weights) {
       weights.backoff = 0.0;
       break;
     default:
-      UTIL_THROW(FormatLoadException, "Expected tab or newline after unigram");
+      UTIL_THROW(FormatLoadException, "Expected tab or newline for backoff");
   }
 }
 
