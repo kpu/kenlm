@@ -133,7 +133,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   // i is the order of the backoff we're looking for.
   for (const WordIndex *i = context_rbegin + start - 1; i < context_rend; ++i) {
     if (!search_.LookupMiddleNoProb(search_.middle[i - context_rbegin - 1], *i, backoff, node)) break;
-    if (backoff != kBlankBackoff) ret.prob += backoff;
+    ret.prob += backoff;
   }
 //  std::cerr << "Post-backoff probability from stateless is " << ret.prob << std::endl;
   return ret;
@@ -156,9 +156,6 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
       std::copy(context_rbegin, i, out_state.history_);
       out_state.valid_length_ = i - context_rbegin;
       return;
-    }
-    if (*backoff_out == kBlankBackoff) {
-      *backoff_out = 0.0;
     }
   }
 
@@ -214,8 +211,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
       // ret.prob was already set.  
       return ret;
     }
-    if (*backoff_out == kBlankBackoff) {
-      *backoff_out = 0.0;
+    if (ret.prob == kBlankProb) {
       ret.prob = revert;
     } else {
       ret.ngram_length = hist_iter - context_rbegin + 2;

@@ -124,13 +124,19 @@ void ReadBackoff(util::FilePiece &in, Prob &/*weights*/) {
 }
 
 void ReadBackoff(util::FilePiece &in, ProbBackoff &weights) {
+  // Always make zero negative.  
+  // Negative zero means that no (n+1)-gram has this n-gram as context.  
+  // Therefore the hypothesis state can be shorter.  Of course, many n-grams
+  // are context for (n+1)-grams.  An algorithm in the data structure will go
+  // back and set the backoff to positive zero in these cases.
   switch (in.get()) {
     case '\t':
       weights.backoff = in.ReadFloat();
+      if (weights.backoff == 0.0) weights.backoff = -0.0;
       if ((in.get() != '\n')) UTIL_THROW(FormatLoadException, "Expected newline after backoff");
       break;
     case '\n':
-      weights.backoff = 0.0;
+      weights.backoff = -0.0;
       break;
     default:
       UTIL_THROW(FormatLoadException, "Expected tab or newline for backoff");
