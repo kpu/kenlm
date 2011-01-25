@@ -16,7 +16,7 @@ const char *HandleStrerror(int ret, const char *buf) {
 }
 
 // The GNU version.
-const char *HandleStrerror(const char *ret, const char *buf) {
+const char *HandleStrerror(const char *ret, const char * /*buf*/) {
   return ret;
 }
 } // namespace
