@@ -544,9 +544,9 @@ void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, 
   // Only use as much buffer as we need.  
   size_t buffer_use = 0;
   for (unsigned int order = 2; order < counts.size(); ++order) {
-    buffer_use = std::max(buffer_use, (sizeof(WordIndex) * order + 2 * sizeof(float)) * counts[order - 1]);
+    buffer_use = std::max<size_t>(buffer_use, static_cast<size_t>((sizeof(WordIndex) * order + 2 * sizeof(float)) * counts[order - 1]));
   }
-  buffer_use = std::max(buffer_use, (sizeof(WordIndex) * counts.size() + sizeof(float)) * counts.back());
+  buffer_use = std::max<size_t>(buffer_use, static_cast<size_t>((sizeof(WordIndex) * counts.size() + sizeof(float)) * counts.back()));
   buffer = std::min(buffer, buffer_use);
 
   util::scoped_memory mem;
