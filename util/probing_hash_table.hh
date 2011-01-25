@@ -77,6 +77,16 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
 
     void LoadedBinary() {}
 
+    // Don't change anything related to GetKey,  
+    template <class Key> bool UnsafeMutableFind(const Key key, MutableIterator &out) {
+      for (MutableIterator i(begin_ + (hash_(key) % buckets_));;) {
+        Key got(i->GetKey());
+        if (equal_(got, key)) { out = i; return true; }
+        if (equal_(got, invalid_)) return false;
+        if (++i == end_) i = begin_;
+      }    
+    }
+
     template <class Key> bool Find(const Key key, ConstIterator &out) const {
 #ifdef DEBUG
       assert(initialized_);
@@ -84,8 +94,8 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
       for (ConstIterator i(begin_ + (hash_(key) % buckets_));;) {
         Key got(i->GetKey());
         if (equal_(got, key)) { out = i; return true; }
-        if (equal_(got, invalid_)) { return false; }
-        if (++i == end_) { i = begin_; }
+        if (equal_(got, invalid_)) return false;
+        if (++i == end_) i = begin_;
       }    
     }
 

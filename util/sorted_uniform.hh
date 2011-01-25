@@ -62,6 +62,7 @@ template <class PackingT> class SortedUniformMap {
   public:
     typedef PackingT Packing;
     typedef typename Packing::ConstIterator ConstIterator;
+    typedef typename Packing::MutableIterator MutableIterator;
 
   public:
     // Offer consistent API with probing hash.
@@ -111,6 +112,15 @@ template <class PackingT> class SortedUniformMap {
 #endif
       std::sort(begin_, end_);
       *size_ptr_ = (end_ - begin_);
+    }
+
+    // Don't use this to change the key.
+    template <class Key> bool UnsafeMutableFind(const Key key, MutableIterator &out) {
+#ifdef DEBUG
+      assert(initialized_);
+      assert(loaded_);
+#endif
+      return SortedUniformFind<MutableIterator, Key>(begin_, end_, key, out);
     }
 
     // Do not call before FinishedInserting.  

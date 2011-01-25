@@ -65,7 +65,6 @@ class SortedVocabulary : public base::Vocabulary {
       }
     }
 
-    // Ignores second argument for consistency with probing hash which has a float here.  
     static size_t Size(std::size_t entries, const Config &config);
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.

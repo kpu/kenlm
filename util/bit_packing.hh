@@ -53,29 +53,32 @@ inline void WriteInt57(void *base, uint8_t bit, uint8_t length, uint64_t value) 
   *reinterpret_cast<uint64_t*>(base) |= (value << BitPackShift(bit, length));
 }
 
-namespace detail { typedef union { float f; uint32_t i; } FloatEnc; }
+typedef union { float f; uint32_t i; } FloatEnc;
+
 inline float ReadFloat32(const void *base, uint8_t bit) {
-  detail::FloatEnc encoded;
+  FloatEnc encoded;
   encoded.i = *reinterpret_cast<const uint64_t*>(base) >> BitPackShift(bit, 32);
   return encoded.f;
 }
 inline void WriteFloat32(void *base, uint8_t bit, float value) {
-  detail::FloatEnc encoded;
+  FloatEnc encoded;
   encoded.f = value;
   WriteInt57(base, bit, 32, encoded.i);
 }
 
+const uint32_t kSignBit = 0x80000000;
+
 inline float ReadNonPositiveFloat31(const void *base, uint8_t bit) {
-  detail::FloatEnc encoded;
+  FloatEnc encoded;
   encoded.i = *reinterpret_cast<const uint64_t*>(base) >> BitPackShift(bit, 31);
   // Sign bit set means negative.  
-  encoded.i |= 0x80000000;
+  encoded.i |= kSignBit;
   return encoded.f;
 }
 inline void WriteNonPositiveFloat31(void *base, uint8_t bit, float value) {
-  detail::FloatEnc encoded;
+  FloatEnc encoded;
   encoded.f = value;
-  encoded.i &= ~0x80000000;
+  encoded.i &= ~kSignBit;
   WriteInt57(base, bit, 31, encoded.i);
 }
 

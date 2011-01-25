@@ -18,6 +18,8 @@ template <class Key, class Value> struct Entry {
   const Key &GetKey() const { return key; }
   const Value &GetValue() const { return value; }
 
+  Value &MutableValue() { return value; }
+
   void Set(const Key &key_in, const Value &value_in) {
     SetKey(key_in);
     SetValue(value_in);
@@ -76,6 +78,8 @@ template <class KeyT, class ValueT> class ByteAlignedPacking {
 
       const Key &GetKey() const { return key; }
       const Value &GetValue() const { return value; }
+
+      Value &MutableValue() { return value; }
 
       void Set(const Key &key_in, const Value &value_in) {
         SetKey(key_in);
