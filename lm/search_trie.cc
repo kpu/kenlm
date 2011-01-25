@@ -11,8 +11,16 @@
 #include "lm/word_index.hh"
 #include "util/ersatz_progress.hh"
 #include "util/file_piece.hh"
+#include "util/have.hh"
 #include "util/proxy_iterator.hh"
 #include "util/scoped.hh"
+
+#ifdef HAVE_GCC_PARALLEL
+#include <parallel/algorithm>
+#define SORT_ALGO __gnu_parallel::sort
+#else
+#define SORT_ALGO std::sort
+#endif
 
 #include <algorithm>
 #include <cmath>
@@ -20,7 +28,6 @@
 #include <cstdio>
 #include <deque>
 #include <limits>
-//#include <parallel/algorithm>
 #include <vector>
 
 #include <sys/mman.h>
@@ -170,7 +177,7 @@ template <class Proxy> class CompareRecords : public std::binary_function<const 
       return Compare(reinterpret_cast<const WordIndex*>(first.data()), second.Indices());
     }
     bool operator()(const std::string &first, const std::string &second) const {
-      return Compare(reinterpret_cast<const WordIndex*>(first.data()), reinterpret_cast<const WordIndex*>(first.data()));
+      return Compare(reinterpret_cast<const WordIndex*>(first.data()), reinterpret_cast<const WordIndex*>(second.data()));
     }
     
   private:
@@ -384,8 +391,7 @@ void WriteContextFile(uint8_t *begin, uint8_t *end, const std::string &ngram_fil
   PartialIter context_begin(PartialViewProxy(begin + sizeof(WordIndex), entry_size, context_size));
   PartialIter context_end(PartialViewProxy(end + sizeof(WordIndex), entry_size, context_size));
 
-  // TODO: __gnu_parallel::sort here.
-  std::sort(context_begin, context_end, CompareRecords<PartialViewProxy>(order - 1));
+  SORT_ALGO(context_begin, context_end, CompareRecords<PartialViewProxy>(order - 1));
 
   std::string name(ngram_file_name + kContextSuffix);
   util::scoped_FILE out(OpenOrThrow(name.c_str(), "w"));
@@ -503,7 +509,7 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
     // Sort full records by full n-gram.  
     EntryProxy proxy_begin(begin, entry_size), proxy_end(out_end, entry_size);
     // TODO: __gnu_parallel::sort here.
-    std::sort(NGramIter(proxy_begin), NGramIter(proxy_end), CompareRecords<EntryProxy>(order));
+    SORT_ALGO(NGramIter(proxy_begin), NGramIter(proxy_end), CompareRecords<EntryProxy>(order));
     files.push_back(DiskFlush(begin, out_end, file_prefix, batch, order, weights_size));
     WriteContextFile(begin, out_end, files.back(), entry_size, order);
 
@@ -533,7 +539,7 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
   }
 }
 
-void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab) {
+void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, std::size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab) {
   {
     std::string unigram_name = file_prefix + "unigrams";
     util::scoped_fd unigram_file;
@@ -544,10 +550,10 @@ void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, 
   // Only use as much buffer as we need.  
   size_t buffer_use = 0;
   for (unsigned int order = 2; order < counts.size(); ++order) {
-    buffer_use = std::max<size_t>(buffer_use, static_cast<size_t>((sizeof(WordIndex) * order + 2 * sizeof(float)) * counts[order - 1]));
+    buffer_use = std::max(buffer_use, (size_t)((sizeof(WordIndex) * order + 2 * sizeof(float)) * counts[order - 1]));
   }
-  buffer_use = std::max<size_t>(buffer_use, static_cast<size_t>((sizeof(WordIndex) * counts.size() + sizeof(float)) * counts.back()));
-  buffer = std::min<size_t>(buffer, buffer_use);
+  buffer_use = std::max(buffer_use, (size_t)((sizeof(WordIndex) * counts.size() + sizeof(float)) * counts.back()));
+  buffer = std::min((size_t)buffer, buffer_use);
 
   util::scoped_memory mem;
   mem.reset(malloc(buffer), buffer, util::scoped_memory::MALLOC_ALLOCATED);
