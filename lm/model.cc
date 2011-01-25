@@ -61,7 +61,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   // Backing file is the ARPA.  Steal it so we can make the backing file the mmap output if any.  
   util::FilePiece f(backing_.file.release(), file, config.messages);
   std::vector<uint64_t> counts;
-  // File counts do not include pruned trigrams that extend to quadgrams etc.   These will be fixed with search_.VariableSizeLoad
+  // File counts do not include pruned trigrams that extend to quadgrams etc.   These will be fixed by search_.
   ReadARPACounts(f, counts);
 
   if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit lm/max_order.hh, set kMaxOrder to at least this value, and recompile.");

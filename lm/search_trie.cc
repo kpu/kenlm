@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 namespace lm {
 namespace ngram {
@@ -837,19 +838,27 @@ void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &coun
   }
 }
 
+bool IsDirectory(const char *path) {
+  struct stat info;
+  if (0 != stat(path, &info)) return false;
+  return S_ISDIR(info.st_mode);
+}
+
 } // namespace
 
 void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, Backing &backing) {
   std::string temporary_directory;
   if (config.temporary_directory_prefix) {
     temporary_directory = config.temporary_directory_prefix;
+    if (!temporary_directory.empty() && temporary_directory[temporary_directory.size() - 1] != '/' && IsDirectory(temporary_directory.c_str()))
+      temporary_directory += '/';
   } else if (config.write_mmap) {
     temporary_directory = config.write_mmap;
   } else {
     temporary_directory = file;
   }
   // Null on end is kludge to ensure null termination.
-  temporary_directory += "-tmp-XXXXXX";
+  temporary_directory += "_trie_tmp_XXXXXX";
   temporary_directory += '\0';
   if (!mkdtemp(&temporary_directory[0])) {
     UTIL_THROW(util::ErrnoException, "Failed to make a temporary directory based on the name " << temporary_directory.c_str());
