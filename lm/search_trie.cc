@@ -539,7 +539,7 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
   }
 }
 
-void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, std::size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab) {
+void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab) {
   {
     std::string unigram_name = file_prefix + "unigrams";
     util::scoped_fd unigram_file;
@@ -550,10 +550,10 @@ void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, 
   // Only use as much buffer as we need.  
   size_t buffer_use = 0;
   for (unsigned int order = 2; order < counts.size(); ++order) {
-    buffer_use = std::max(buffer_use, (size_t)((sizeof(WordIndex) * order + 2 * sizeof(float)) * counts[order - 1]));
+    buffer_use = std::max<size_t>(buffer_use, static_cast<size_t>((sizeof(WordIndex) * order + 2 * sizeof(float)) * counts[order - 1]));
   }
-  buffer_use = std::max(buffer_use, (size_t)((sizeof(WordIndex) * counts.size() + sizeof(float)) * counts.back()));
-  buffer = std::min((size_t)buffer, buffer_use);
+  buffer_use = std::max<size_t>(buffer_use, static_cast<size_t>((sizeof(WordIndex) * counts.size() + sizeof(float)) * counts.back()));
+  buffer = std::min<size_t>(buffer, buffer_use);
 
   util::scoped_memory mem;
   mem.reset(malloc(buffer), buffer, util::scoped_memory::MALLOC_ALLOCATED);
