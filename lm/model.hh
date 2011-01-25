@@ -4,6 +4,7 @@
 #include "lm/binary_format.hh"
 #include "lm/config.hh"
 #include "lm/facade.hh"
+#include "lm/max_order.hh"
 #include "lm/search_hashed.hh"
 #include "lm/search_trie.hh"
 #include "lm/vocab.hh"
@@ -18,12 +19,6 @@ namespace util { class FilePiece; }
 
 namespace lm {
 namespace ngram {
-
-// If you need higher order, change this and recompile.  
-// Having this limit means that State can be
-// (kMaxOrder - 1) * sizeof(float) bytes instead of
-// sizeof(float*) + (kMaxOrder - 1) * sizeof(float) + malloc overhead
-const unsigned char kMaxOrder = 6;
 
 // This is a POD but if you want memcmp to return the same as operator==, call
 // ZeroRemaining first.    
@@ -55,6 +50,8 @@ class State {
         backoff_[i] = 0.0;
       }
     }
+
+    unsigned char ValidLength() const { return valid_length_; }
 
     // You shouldn't need to touch anything below this line, but the members are public so FullState will qualify as a POD.  
     // This order minimizes total size of the struct if WordIndex is 64 bit, float is 32 bit, and alignment of 64 bit integers is 64 bit.  

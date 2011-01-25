@@ -1,5 +1,7 @@
 #include "lm/read_arpa.hh"
 
+#include "lm/blank.hh"
+
 #include <cstdlib>
 #include <vector>
 
@@ -132,11 +134,11 @@ void ReadBackoff(util::FilePiece &in, ProbBackoff &weights) {
   switch (in.get()) {
     case '\t':
       weights.backoff = in.ReadFloat();
-      if (weights.backoff == 0.0) weights.backoff = -0.0;
+      if (weights.backoff == ngram::kExtensionBackoff) weights.backoff = ngram::kNoExtensionBackoff;
       if ((in.get() != '\n')) UTIL_THROW(FormatLoadException, "Expected newline after backoff");
       break;
     case '\n':
-      weights.backoff = -0.0;
+      weights.backoff = ngram::kNoExtensionBackoff;
       break;
     default:
       UTIL_THROW(FormatLoadException, "Expected tab or newline for backoff");

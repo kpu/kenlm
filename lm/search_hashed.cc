@@ -28,9 +28,7 @@ template <class Middle> class ActivateLowerMiddle {
       // TODO: somehow get text of n-gram for this error message.
       if (!modify_.UnsafeMutableFind(hash, i))
         UTIL_THROW(FormatLoadException, "The context of every " << n << "-gram should appear as a " << (n-1) << "-gram");
-      float &backoff = i->MutableValue().backoff;
-      // Ok this looks strange but it sets the sign bit to positive if the backoff is zero.  Positive zero means that the n-gram is used as context for another n-gram.  
-      if (backoff == -0.0) backoff = 0.0;
+      SetExtension(i->MutableValue().backoff);
     }
 
   private:
@@ -43,8 +41,7 @@ class ActivateUnigram {
 
     void operator()(const WordIndex *vocab_ids, const unsigned int /*n*/) {
       // assert(n == 2);
-      float &backoff = modify_[vocab_ids[1]].backoff;
-      if (backoff == -0.0) backoff = 0.0;
+      SetExtension(modify_[vocab_ids[1]].backoff);
     }
 
   private:
