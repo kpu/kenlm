@@ -15,13 +15,6 @@
 #include "util/proxy_iterator.hh"
 #include "util/scoped.hh"
 
-#ifdef HAVE_GCC_PARALLEL
-#include <parallel/algorithm>
-#define SORT_ALGO __gnu_parallel::sort
-#else
-#define SORT_ALGO std::sort
-#endif
-
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -391,7 +384,7 @@ void WriteContextFile(uint8_t *begin, uint8_t *end, const std::string &ngram_fil
   PartialIter context_begin(PartialViewProxy(begin + sizeof(WordIndex), entry_size, context_size));
   PartialIter context_end(PartialViewProxy(end + sizeof(WordIndex), entry_size, context_size));
 
-  SORT_ALGO(context_begin, context_end, CompareRecords<PartialViewProxy>(order - 1));
+  std::sort(context_begin, context_end, CompareRecords<PartialViewProxy>(order - 1));
 
   std::string name(ngram_file_name + kContextSuffix);
   util::scoped_FILE out(OpenOrThrow(name.c_str(), "w"));
@@ -508,8 +501,8 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
     }
     // Sort full records by full n-gram.  
     EntryProxy proxy_begin(begin, entry_size), proxy_end(out_end, entry_size);
-    // TODO: __gnu_parallel::sort here.
-    SORT_ALGO(NGramIter(proxy_begin), NGramIter(proxy_end), CompareRecords<EntryProxy>(order));
+    // parallel_sort uses too much RAM
+    std::sort(NGramIter(proxy_begin), NGramIter(proxy_end), CompareRecords<EntryProxy>(order));
     files.push_back(DiskFlush(begin, out_end, file_prefix, batch, order, weights_size));
     WriteContextFile(begin, out_end, files.back(), entry_size, order);
 
