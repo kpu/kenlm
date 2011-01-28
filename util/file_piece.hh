@@ -99,19 +99,7 @@ class FilePiece {
       return ret;
     }
 
-    const char *FindDelimiterOrEOF(const bool *delim = kSpaces) throw (GZException, EndOfFileException) {
-      for (const char *i = position_; i < position_end_; ++i) {
-        if (delim[static_cast<unsigned char>(*i)]) return i;
-      }
-      while (!at_end_) {
-        size_t skip = position_end_ - position_;
-        Shift();
-        for (const char *i = position_ + skip; i < position_end_; ++i) {
-          if (delim[static_cast<unsigned char>(*i)]) return i;
-        }
-      }
-      return position_end_;
-    }
+    const char *FindDelimiterOrEOF(const bool *delim = kSpaces) throw (GZException, EndOfFileException);
 
     void Shift() throw (EndOfFileException, GZException);
     // Backends to Shift().

@@ -13,7 +13,6 @@
 #include <boost/scoped_array.hpp>
 
 #include <fstream>
-#include <istream>
 #include <string>
 #include <vector>
 
@@ -74,6 +73,10 @@ class ARPAOutput : boost::noncopyable {
       ++fast_counter_;
     }
 
+    void AddNGram(const StringPiece &ngram, const StringPiece &line) {
+      AddNGram(line);
+    }
+
     template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const StringPiece &line) {
       AddNGram(line);
     }
@@ -97,13 +100,10 @@ template <class Output> void ReadNGrams(util::FilePiece &in, unsigned int length
   for (size_t i = 0; i < number; ++i) {
     StringPiece line = in.ReadLine();
     util::PieceIterator<'\t'> tabber(line);
-    if (!tabber) {
-      std::cerr << "Warning: empty line inside list of " << length << "-grams." << std::endl;
-      continue;
-    }
+    if (!tabber) throw ARPAInputException("blank line", line);
     if (!++tabber) throw ARPAInputException("no tab", line);
 
-    out.AddNGram(util::PieceIterator<' '>(*tabber), util::PieceIterator<' '>::end(), line);
+    out.AddNGram(*tabber, line);
   }
   out.EndLength(length);
 }

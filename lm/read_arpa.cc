@@ -153,9 +153,7 @@ void ReadEnd(util::FilePiece &in) {
       line = in.ReadLine();
       if (!IsEntirelyWhiteSpace(line)) UTIL_THROW(FormatLoadException, "Trailing line " << line);
     }
-  } catch (const util::EndOfFileException &e) {
-    return;
-  }
+  } catch (const util::EndOfFileException &e) {}
 }
 void ReadEnd(std::istream &in) {
   FakeFilePiece fake(in);

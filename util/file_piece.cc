@@ -80,7 +80,7 @@ FilePiece::~FilePiece() {
 
 StringPiece FilePiece::ReadLine(char delim) throw (GZException, EndOfFileException) {
   const char *start = position_;
-  do {
+  while (true) {
     for (const char *i = start; i < position_end_; ++i) {
       if (*i == delim) {
         StringPiece ret(position_, i - position_);
@@ -88,13 +88,14 @@ StringPiece FilePiece::ReadLine(char delim) throw (GZException, EndOfFileExcepti
         return ret;
       }
     }
+    if (at_end_) {
+      if (position_ == position_end_) throw EndOfFileException();
+      return Consume(position_end_);
+    }
     size_t skip = position_end_ - position_;
     Shift();
     start = position_ + skip;
-  } while (!at_end_);
-  StringPiece ret(position_, position_end_ - position_);
-  position_ = position_end_;
-  return ret;
+  }
 }
 
 float FilePiece::ReadFloat() throw(GZException, EndOfFileException, ParseNumberException) {
@@ -184,6 +185,21 @@ template <class T> T FilePiece::ReadNumber() throw(GZException, EndOfFileExcepti
   if (end == position_) throw ParseNumberException(ReadDelimited());
   position_ = end;
   return ret;
+}
+
+const char *FilePiece::FindDelimiterOrEOF(const bool *delim) throw (GZException, EndOfFileException) {
+  size_t skip = 0;
+  while (true) {
+    for (const char *i = position_ + skip; i < position_end_; ++i) {
+      if (delim[static_cast<unsigned char>(*i)]) return i;
+    }
+    if (at_end_) {
+      if (position_ == position_end_) throw EndOfFileException();
+      return position_end_;
+    }
+    skip = position_end_ - position_;
+    Shift();
+  }
 }
 
 void FilePiece::Shift() throw(GZException, EndOfFileException) {

@@ -24,6 +24,10 @@ class CountOutput : boost::noncopyable {
       AddNGram(line);
     }
 
+    void AddNGram(const StringPiece &ngram, const StringPiece &line) {
+      AddNGram(line);
+    }
+
   private:
     std::fstream file_;
 };
@@ -76,12 +80,7 @@ template <class Output> void ReadCount(util::FilePiece &in_file, Output &out) {
         std::cerr << "Warning: empty n-gram count line being removed\n";
         continue;
       }
-      util::PieceIterator<' '> words(*tabber);
-      if (!words) {
-        std::cerr << "Line has a tab but no words.\n";
-        continue;
-      }
-      out.AddNGram(words, util::PieceIterator<' '>::end(), line);
+      out.AddNGram(*tabber, line);
     }
   } catch (const util::EndOfFileException &e) {}
 }
