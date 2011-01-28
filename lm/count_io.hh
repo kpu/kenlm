@@ -6,6 +6,8 @@
 
 #include <err.h>
 
+#include "util/file_piece.hh"
+
 namespace lm {
 
 class CountOutput : boost::noncopyable {
@@ -65,24 +67,23 @@ class CountBatch {
     std::vector<char> buffer_;
 };
 
-template <class Output> void ReadCount(std::istream &in_file, Output &out) {
-  std::string line;
-  while (getline(in_file, line)) {
-    util::PieceIterator<'\t'> tabber(line);
-    if (!tabber) {
-      std::cerr << "Warning: empty n-gram count line being removed\n";
-      continue;
+template <class Output> void ReadCount(util::FilePiece &in_file, Output &out) {
+  try {
+    while (true) {
+      StringPiece line = in_file.ReadLine();
+      util::PieceIterator<'\t'> tabber(line);
+      if (!tabber) {
+        std::cerr << "Warning: empty n-gram count line being removed\n";
+        continue;
+      }
+      util::PieceIterator<' '> words(*tabber);
+      if (!words) {
+        std::cerr << "Line has a tab but no words.\n";
+        continue;
+      }
+      out.AddNGram(words, util::PieceIterator<' '>::end(), line);
     }
-    util::PieceIterator<' '> words(*tabber);
-    if (!words) {
-      std::cerr << "Line has a tab but no words.\n";
-      continue;
-    }
-    out.AddNGram(words, util::PieceIterator<' '>::end(), line);
-  }
-  if (!in_file.eof()) {
-    err(2, "Reading counts file failed");
-  }
+  } catch (const util::EndOfFileException &e) {}
 }
 
 } // namespace lm

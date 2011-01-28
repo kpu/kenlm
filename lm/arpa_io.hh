@@ -2,6 +2,7 @@
 #define LM_ARPA_IO__
 /* Input and output for ARPA format language model files.
  */
+#include "lm/read_arpa.hh"
 #include "util/exception.hh"
 #include "util/string_piece.hh"
 #include "util/tokenize_piece.hh"
@@ -51,13 +52,6 @@ class ARPAOutputException : public std::exception {
 
 // Handling for the counts of n-grams at the beginning of ARPA files.
 size_t SizeNeededForCounts(const std::vector<size_t> &number);
-// TODO: transition to FilePiece.
-void ReadCounts(std::istream &in, std::vector<size_t> &number) throw (ARPAInputException);
-
-// Read and verify the headers like \1-grams: 
-void ReadNGramHeader(std::istream &in_lm, unsigned int length);
-// Read and verify end marker.  
-void ReadEnd(std::istream &in_lm);
 
 /* Writes an ARPA file.  This has to be seekable so the counts can be written
  * at the end.  Hence, I just have it own a std::fstream instead of accepting
@@ -97,14 +91,11 @@ class ARPAOutput : boost::noncopyable {
 };
 
 
-template <class Output> void ReadNGrams(std::istream &in, unsigned int length, size_t max_length, size_t number, Output &out) {
-  std::string line;
+template <class Output> void ReadNGrams(util::FilePiece &in, unsigned int length, size_t number, Output &out) {
   ReadNGramHeader(in, length);
   out.BeginLength(length);
-  boost::progress_display display(number, std::cerr, std::string("Length ") + boost::lexical_cast<std::string>(length) + "/" + boost::lexical_cast<std::string>(max_length) + ": " + boost::lexical_cast<std::string>(number) + " total\n");
-  for (unsigned int i = 0; i < number;) {
-    if (!std::getline(in, line)) throw ARPAInputException("Reading ngram failed.  Maybe the counts are wrong?");
-
+  for (size_t i = 0; i < number; ++i) {
+    StringPiece line = in.ReadLine();
     util::PieceIterator<'\t'> tabber(line);
     if (!tabber) {
       std::cerr << "Warning: empty line inside list of " << length << "-grams." << std::endl;
@@ -113,18 +104,16 @@ template <class Output> void ReadNGrams(std::istream &in, unsigned int length, s
     if (!++tabber) throw ARPAInputException("no tab", line);
 
     out.AddNGram(util::PieceIterator<' '>(*tabber), util::PieceIterator<' '>::end(), line);
-    ++i;
-    ++display;
   }
   out.EndLength(length);
 }
 
-template <class Output> void ReadARPA(std::istream &in_lm, Output &out) {
+template <class Output> void ReadARPA(util::FilePiece &in_lm, Output &out) {
   std::vector<size_t> number;
-  ReadCounts(in_lm, number);
+  ReadARPACounts(in_lm, number);
   out.ReserveForCounts(SizeNeededForCounts(number));
   for (unsigned int i = 0; i < number.size(); ++i) {
-    ReadNGrams(in_lm, i + 1, number.size(), number[i], out);
+    ReadNGrams(in_lm, i + 1, number[i], out);
   }
   ReadEnd(in_lm);
   out.Finish();

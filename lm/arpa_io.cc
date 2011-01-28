@@ -67,44 +67,6 @@ bool IsEntirelyWhiteSpace(const StringPiece &line) {
   return true;
 }
 
-void ReadCounts(std::istream &in, std::vector<size_t> &number) throw (ARPAInputException) {
-  number.clear();
-  std::string line;
-  if (!getline(in, line)) throw ARPAInputException("reading input lm");
-  if (!IsEntirelyWhiteSpace(line)) throw ARPAInputException("first line was not blank", line);
-  if (!getline(in, line)) throw ARPAInputException("reading \\data\\");
-  if (!(line == "\\data\\")) throw ARPAInputException("second line was not \\data\\.", line);
-  while (getline(in, line)) {
-    if (IsEntirelyWhiteSpace(line)) {
-      return;
-    }
-    if (strncmp(line.c_str(), "ngram ", 6)) throw ARPAInputException("count line doesn't begin with \"ngram \"", line);
-    size_t equals = line.find('=');
-    if (equals == std::string::npos) throw ARPAInputException("expected = inside a count line", line);
-    unsigned int length = boost::lexical_cast<unsigned int>(line.substr(6, equals - 6));
-    if (length - 1 != number.size()) throw ARPAInputException("ngram count lengths should be consecutive starting with 1", line);
-    unsigned int count = boost::lexical_cast<unsigned int>(line.substr(equals + 1));
-    number.push_back(count);
-  }
-  throw ARPAInputException("reading counts from input lm failed");
-}
-
-void ReadNGramHeader(std::istream &in, unsigned int length) {
-  std::string line;
-  do {
-    if (!getline(in, line)) throw ARPAInputException(std::string("Reading header for n-gram length ") + boost::lexical_cast<std::string>(length) + " from input lm failed");
-  } while (IsEntirelyWhiteSpace(line));
-  if (line != (std::string("\\") + boost::lexical_cast<std::string>(length) + "-grams:")) throw ARPAInputException("wrong ngram header", line);
-}
-
-void ReadEnd(std::istream &in_lm) {
-  std::string line;
-  do {
-    if (!getline(in_lm, line)) throw ARPAInputException("reading end marker failed");
-  } while (IsEntirelyWhiteSpace(line));
-  if (line != "\\end\\") throw ARPAInputException("expected ending line \\end\\", line);
-}
-
 ARPAOutput::ARPAOutput(const char *name, size_t buffer_size) : file_name_(name), buffer_(new char[buffer_size]) {
   try {
     file_.exceptions(std::ostream::eofbit | std::ostream::failbit | std::ostream::badbit);
