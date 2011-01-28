@@ -13,15 +13,12 @@
 namespace lm {
 
 void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number);
-void ReadARPACounts(std::istream &in, std::vector<uint64_t> &number);
 void ReadNGramHeader(util::FilePiece &in, unsigned int length);
-void ReadNGramHeader(std::istream &in, unsigned int length);
 
 void ReadBackoff(util::FilePiece &in, Prob &weights);
 void ReadBackoff(util::FilePiece &in, ProbBackoff &weights);
 
 void ReadEnd(util::FilePiece &in);
-void ReadEnd(std::istream &in);
 
 extern const bool kARPASpaces[256];
 

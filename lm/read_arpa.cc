@@ -22,12 +22,14 @@ bool IsEntirelyWhiteSpace(const StringPiece &line) {
   return true;
 }
 
-template <class F> void GenericReadARPACounts(F &in, std::vector<uint64_t> &number) {
+} // namespace
+
+void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number) {
   number.clear();
   StringPiece line;
   if (!IsEntirelyWhiteSpace(line = in.ReadLine())) {
     if ((line.size() >= 2) && (line.data()[0] == 0x1f) && (static_cast<unsigned char>(line.data()[1]) == 0x8b)) {
-      UTIL_THROW(FormatLoadException, "Looks like a gzip file.  If this is an ARPA file, run\nzcat " << in.FileName() << " |kenlm/build_binary /dev/stdin " << in.FileName() << ".binary\nIf this already in binary format, you need to decompress it because mmap doesn't work on top of gzip.");
+      UTIL_THROW(FormatLoadException, "Looks like a gzip file.  If this is an ARPA file, pipe " << in.FileName() << " through zcat.  If this already in binary format, you need to decompress it because mmap doesn't work on top of gzip.");
     }
     UTIL_THROW(FormatLoadException, "First line was \"" << static_cast<int>(line.data()[1]) << "\" not blank");
   }
@@ -49,64 +51,12 @@ template <class F> void GenericReadARPACounts(F &in, std::vector<uint64_t> &numb
   }
 }
 
-template <class F> void GenericReadNGramHeader(F &in, unsigned int length) {
-  StringPiece line;
+void ReadNGramHeader(util::FilePiece &in, unsigned int length) {
+   StringPiece line;
   while (IsEntirelyWhiteSpace(line = in.ReadLine())) {}
   std::stringstream expected;
   expected << '\\' << length << "-grams:";
   if (line != expected.str()) UTIL_THROW(FormatLoadException, "Was expecting n-gram header " << expected.str() << " but got " << line << " instead");
-}
-
-template <class F> void GenericReadEnd(F &in) {
-  StringPiece line;
-  do {
-    line = in.ReadLine();
-  } while (IsEntirelyWhiteSpace(line));
-  if (line != "\\end\\") UTIL_THROW(FormatLoadException, "Expected \\end\\ but the ARPA file has " << line);
-}
-
-class FakeFilePiece {
-  public:
-    explicit FakeFilePiece(std::istream &in) : in_(in) {
-      in_.exceptions(std::ios::failbit | std::ios::badbit | std::ios::eofbit);
-    }
-
-    StringPiece ReadLine() throw(util::EndOfFileException) {
-      getline(in_, buffer_);
-      return StringPiece(buffer_);
-    }
-
-    float ReadFloat() {
-      float ret;
-      in_ >> ret;
-      return ret;
-    }
-
-    const char *FileName() const {
-      // This only used for error messages and we don't know the file name. . . 
-      return "$file";
-    }
-
-  private:
-    std::istream &in_;
-    std::string buffer_;
-};
-
-} // namespace
-
-void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number) {
-  GenericReadARPACounts(in, number);
-}
-void ReadARPACounts(std::istream &in, std::vector<uint64_t> &number) {
-  FakeFilePiece fake(in);
-  GenericReadARPACounts(fake, number);
-}
-void ReadNGramHeader(util::FilePiece &in, unsigned int length) {
-  GenericReadNGramHeader(in, length);
-}
-void ReadNGramHeader(std::istream &in, unsigned int length) {
-  FakeFilePiece fake(in);
-  GenericReadNGramHeader(fake, length);
 }
 
 void ReadBackoff(util::FilePiece &in, Prob &/*weights*/) {
@@ -146,18 +96,18 @@ void ReadBackoff(util::FilePiece &in, ProbBackoff &weights) {
 }
 
 void ReadEnd(util::FilePiece &in) {
-  GenericReadEnd(in);
   StringPiece line;
+  do {
+    line = in.ReadLine();
+  } while (IsEntirelyWhiteSpace(line));
+  if (line != "\\end\\") UTIL_THROW(FormatLoadException, "Expected \\end\\ but the ARPA file has " << line);
+
   try {
     while (true) {
       line = in.ReadLine();
       if (!IsEntirelyWhiteSpace(line)) UTIL_THROW(FormatLoadException, "Trailing line " << line);
     }
   } catch (const util::EndOfFileException &e) {}
-}
-void ReadEnd(std::istream &in) {
-  FakeFilePiece fake(in);
-  GenericReadEnd(fake);
 }
 
 } // namespace lm
