@@ -813,7 +813,7 @@ void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &coun
         ++contexts[0];
       }
     }
-    unlink(name.c_str());
+    RemoveOrThrow(name.c_str());
   }
 
   // Do not disable this error message or else too little state will be returned.  Both WriteEntries::Middle and returning state based on found n-grams will need to be fixed to handle this situation.   
