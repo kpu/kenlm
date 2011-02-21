@@ -405,16 +405,16 @@ void WriteContextFile(uint8_t *begin, uint8_t *end, const std::string &ngram_fil
 
 class ContextReader {
   public:
-    ContextReader() : length_(0) {}
+    ContextReader() : valid_(false) {}
 
-    ContextReader(const char *name, size_t length) : file_(OpenOrThrow(name, "r")), length_(length), words_(length), valid_(true) {
-      ++*this;
+    ContextReader(const char *name, unsigned char order) {
+      Reset(name, order);
     }
 
-    void Reset(const char *name, size_t length) {
+    void Reset(const char *name, unsigned char order) {
       file_.reset(OpenOrThrow(name, "r"));
-      length_ = length;
-      words_.resize(length);
+      length_ = sizeof(WordIndex) * static_cast<size_t>(order);
+      words_.resize(order);
       valid_ = true;
       ++*this;
     }
@@ -448,14 +448,14 @@ void MergeContextFiles(const std::string &first_base, const std::string &second_
   const size_t context_size = sizeof(WordIndex) * (order - 1);
   std::string first_name(first_base + kContextSuffix);
   std::string second_name(second_base + kContextSuffix);
-  ContextReader first(first_name.c_str(), context_size), second(second_name.c_str(), context_size);
+  ContextReader first(first_name.c_str(), order - 1), second(second_name.c_str(), order - 1);
   RemoveOrThrow(first_name.c_str());
   RemoveOrThrow(second_name.c_str());
   std::string out_name(out_base + kContextSuffix);
   util::scoped_FILE out(OpenOrThrow(out_name.c_str(), "w"));
   while (first && second) {
     for (const WordIndex *f = *first, *s = *second; ; ++f, ++s) {
-      if (f == *first + order) {
+      if (f == *first + order - 1) {
         // Equal.  
         WriteOrThrow(out.get(), *first, context_size);
         ++first;
@@ -474,7 +474,10 @@ void MergeContextFiles(const std::string &first_base, const std::string &second_
       }
     }
   }
-  CopyRestOrThrow((first ? first : second).GetFile(), out.get());
+  ContextReader &remaining = first ? first : second;
+  if (!remaining) return;
+  WriteOrThrow(out.get(), *remaining, context_size);
+  CopyRestOrThrow(remaining.GetFile(), out.get());
 }
 
 void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, util::scoped_memory &mem, const std::string &file_prefix, unsigned char order) {
@@ -776,7 +779,7 @@ void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &coun
     inputs[i-2].Init(assembled.str(), i);
     RemoveOrThrow(assembled.str().c_str());
     assembled << kContextSuffix;
-    contexts[i-2].Reset(assembled.str().c_str(), (i-1) * sizeof(WordIndex));
+    contexts[i-2].Reset(assembled.str().c_str(), i-1);
     RemoveOrThrow(assembled.str().c_str());
   }
 
