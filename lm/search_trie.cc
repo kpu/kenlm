@@ -825,7 +825,7 @@ void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &coun
       for (const WordIndex *i = *context; i != *context + order - 1; ++i) {
         e << ' ' << *i;
       }
-      e << " so this context must appear in the model as a " << static_cast<unsigned int>(order - 1) << "-gram but it does not.";
+      e << " so this context must appear in the model as a " << static_cast<unsigned int>(order - 1) << "-gram but it does not";
       throw e;
     }
   }
