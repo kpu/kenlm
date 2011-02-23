@@ -66,48 +66,56 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
 } // namespace
 
 int main(int argc, char *argv[]) {
-  using namespace lm::ngram;
+  try {
+    using namespace lm::ngram;
 
-  lm::ngram::Config config;
-  int opt;
-  while ((opt = getopt(argc, argv, "u:p:t:m:")) != -1) {
-    switch(opt) {
-      case 'u':
-        config.unknown_missing_prob = ParseFloat(optarg);
-        break;
-      case 'p':
-        config.probing_multiplier = ParseFloat(optarg);
-        break;
-      case 't':
-        config.temporary_directory_prefix = optarg;
-        break;
-      case 'm':
-        config.building_memory = ParseUInt(optarg) * 1048576;
-        break;
-      default:
-        Usage(argv[0]);
+    lm::ngram::Config config;
+    int opt;
+    while ((opt = getopt(argc, argv, "u:p:t:m:")) != -1) {
+      switch(opt) {
+        case 'u':
+          config.unknown_missing_prob = ParseFloat(optarg);
+          break;
+        case 'p':
+          config.probing_multiplier = ParseFloat(optarg);
+          break;
+        case 't':
+          config.temporary_directory_prefix = optarg;
+          break;
+        case 'm':
+          config.building_memory = ParseUInt(optarg) * 1048576;
+          break;
+        default:
+          Usage(argv[0]);
+      }
     }
-  }
-  if (optind + 1 == argc) {
-    ShowSizes(argv[optind], config);
-  } else if (optind + 2 == argc) {
-    config.write_mmap = argv[optind + 1];
-    ProbingModel(argv[optind], config);
-  } else if (optind + 3 == argc) {
-    const char *model_type = argv[optind];
-    const char *from_file = argv[optind + 1];
-    config.write_mmap = argv[optind + 2];
-    if (!strcmp(model_type, "probing")) {
-      ProbingModel(from_file, config);
-    } else if (!strcmp(model_type, "sorted")) {
-      SortedModel(from_file, config);
-    } else if (!strcmp(model_type, "trie")) {
-      TrieModel(from_file, config);
+    if (optind + 1 == argc) {
+      ShowSizes(argv[optind], config);
+    } else if (optind + 2 == argc) {
+      config.write_mmap = argv[optind + 1];
+      ProbingModel(argv[optind], config);
+    } else if (optind + 3 == argc) {
+      const char *model_type = argv[optind];
+      const char *from_file = argv[optind + 1];
+      config.write_mmap = argv[optind + 2];
+      if (!strcmp(model_type, "probing")) {
+        ProbingModel(from_file, config);
+      } else if (!strcmp(model_type, "sorted")) {
+        SortedModel(from_file, config);
+      } else if (!strcmp(model_type, "trie")) {
+        TrieModel(from_file, config);
+      } else {
+        Usage(argv[0]);
+      }
     } else {
       Usage(argv[0]);
     }
-  } else {
-    Usage(argv[0]);
+    return 0;
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << std::endl;
+    return 1;
+  } catch (...) {
+    std::cerr << "An exception occurred." << std::endl;
+    return 1;
   }
-  return 0;
 }
