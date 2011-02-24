@@ -43,7 +43,9 @@ struct Backing {
 
 uint8_t *SetupJustVocab(const Config &config, uint8_t order, std::size_t memory_size, Backing &backing);
 // Grow the binary file for the search data structure and set backing.search, returning the memory address where the search data structure should begin.  
-uint8_t *GrowForSearch(const Config &config, ModelType model_type, const std::vector<uint64_t> &counts, std::size_t memory_size, Backing &backing);
+uint8_t *GrowForSearch(const Config &config, std::size_t memory_size, Backing &backing);
+
+void FinishFile(const Config &config, ModelType model_type, const std::vector<uint64_t> &counts, Backing &backing);
 
 namespace detail {
 

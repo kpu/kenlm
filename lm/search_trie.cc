@@ -769,7 +769,7 @@ void SanityCheckCounts(const std::vector<uint64_t> &initial, const std::vector<u
   }
 }
 
-void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &counts, const Config &config, TrieSearch &out, Backing &backing) {
+void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch &out, Backing &backing) {
   SortedFileReader inputs[counts.size() - 1];
   ContextReader contexts[counts.size() - 1];
 
@@ -789,8 +789,9 @@ void BuildTrie(const std::string &file_prefix, const std::vector<uint64_t> &coun
     counter.Apply(config.messages, "Counting n-grams that should not have been pruned", counts[0]);
   }
   SanityCheckCounts(counts, fixed_counts);
+  counts = fixed_counts;
 
-  out.SetupMemory(GrowForSearch(config, TrieSearch::kModelType, fixed_counts, TrieSearch::Size(fixed_counts, config), backing), fixed_counts, config);
+  out.SetupMemory(GrowForSearch(config, TrieSearch::Size(fixed_counts, config), backing), fixed_counts, config);
 
   for (unsigned char i = 2; i <= counts.size(); ++i) {
     inputs[i-2].Rewind();

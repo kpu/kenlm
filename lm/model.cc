@@ -101,6 +101,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
         break;
     }
   }
+  FinishFile(config, kModelType, counts, backing_);
 }
 
 template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::FullScore(const State &in_state, const WordIndex new_word, State &out_state) const {
