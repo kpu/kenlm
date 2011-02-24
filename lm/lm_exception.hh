@@ -39,7 +39,7 @@ class VocabLoadException : public LoadException {
 
 class SpecialWordMissingException : public VocabLoadException {
   public:
-    explicit SpecialWordMissingException(StringPiece which) throw();
+    explicit SpecialWordMissingException() throw();
     ~SpecialWordMissingException() throw();
 };
 

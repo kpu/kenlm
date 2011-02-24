@@ -2,6 +2,7 @@
 #define LM_VOCAB__
 
 #include "lm/enumerate_vocab.hh"
+#include "lm/lm_exception.hh"
 #include "lm/virtual_interface.hh"
 #include "util/key_value_packing.hh"
 #include "util/probing_hash_table.hh"
@@ -133,6 +134,15 @@ class ProbingVocabulary : public base::Vocabulary {
 
     EnumerateVocab *enumerate_;
 };
+
+void MissingUnknown(const Config &config) throw(SpecialWordMissingException);
+void MissingSentenceMarker(const Config &config, const char *str) throw(SpecialWordMissingException);
+
+template <class Vocab> void CheckSpecials(const Config &config, const Vocab &vocab) throw(SpecialWordMissingException) {
+  if (!vocab.SawUnk()) MissingUnknown(config);
+  if (vocab.BeginSentence() == vocab.NotFound()) MissingSentenceMarker(config, "<s>");
+  if (vocab.EndSentence() == vocab.NotFound()) MissingSentenceMarker(config, "</s>");
+}
 
 } // namespace ngram
 } // namespace lm

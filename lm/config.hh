@@ -27,9 +27,12 @@ struct Config {
 
   // ONLY EFFECTIVE WHEN READING ARPA
 
+  typedef enum {THROW_UP, COMPLAIN, SILENT} WarningAction;
   // What to do when <unk> isn't in the provided model. 
-  typedef enum {THROW_UP, COMPLAIN, SILENT} UnknownMissing;
-  UnknownMissing unknown_missing;
+  WarningAction unknown_missing;
+  // What to do when <s> or </s> is missing from the model. 
+  // If THROW_UP, the exception will be of type util::SpecialWordMissingException.  
+  WarningAction sentence_marker_missing;
 
   // The probability to substitute for <unk> if it's missing from the model.  
   // No effect if the model has <unk> or unknown_missing == THROW_UP.

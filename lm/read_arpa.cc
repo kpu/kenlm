@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <ctype.h>
+#include <string.h>
 #include <inttypes.h>
 
 namespace lm {
@@ -22,6 +23,8 @@ bool IsEntirelyWhiteSpace(const StringPiece &line) {
   return true;
 }
 
+const char kBinaryMagic[] = "mmap lm http://kheafield.com/code";
+
 } // namespace
 
 void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number) {
@@ -31,7 +34,9 @@ void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number) {
     if ((line.size() >= 2) && (line.data()[0] == 0x1f) && (static_cast<unsigned char>(line.data()[1]) == 0x8b)) {
       UTIL_THROW(FormatLoadException, "Looks like a gzip file.  If this is an ARPA file, pipe " << in.FileName() << " through zcat.  If this already in binary format, you need to decompress it because mmap doesn't work on top of gzip.");
     }
-    UTIL_THROW(FormatLoadException, "First line was \"" << static_cast<int>(line.data()[1]) << "\" not blank");
+    if (static_cast<size_t>(line.size()) >= strlen(kBinaryMagic) && StringPiece(line.data(), strlen(kBinaryMagic)) == kBinaryMagic) 
+      UTIL_THROW(FormatLoadException, "This looks like a binary file but got sent to the ARPA parser.  Did you compress the binary file or pass a binary file where only ARPA files are accepted?");
+    UTIL_THROW(FormatLoadException, "First line was \"" << line.data() << "\" not blank");
   }
   if ((line = in.ReadLine()) != "\\data\\") UTIL_THROW(FormatLoadException, "second line was \"" << line << "\" not \\data\\.");
   while (!IsEntirelyWhiteSpace(line = in.ReadLine())) {

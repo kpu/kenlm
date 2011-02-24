@@ -1,6 +1,8 @@
 #include "lm/model.hh"
 #include "util/file_piece.hh"
 
+#include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <iomanip>
 
@@ -13,8 +15,10 @@ namespace ngram {
 namespace {
 
 void Usage(const char *name) {
-  std::cerr << "Usage: " << name << " [-u unknown_probability] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [type] input.arpa output.mmap\n\n"
-"Where type is one of probing, trie, or sorted:\n\n"
+  std::cerr << "Usage: " << name << " [-u unknown_probability] [-s] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [type] input.arpa output.mmap\n\n"
+"-u sets the default probability for <unk> if the ARPA file does not have one.\n"
+"-s allows models to be built even if they do not have <s> and </s>.\n"
+"type is one of probing, trie, or sorted:\n\n"
 "probing uses a probing hash table.  It is the fastest but uses the most memory.\n"
 "-p sets the space multiplier and must be >1.0.  The default is 1.5.\n\n"
 "trie is a straightforward trie with bit-level packing.  It uses the least\n"
@@ -65,57 +69,65 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
 } // namespace lm
 } // namespace
 
-int main(int argc, char *argv[]) {
-  try {
-    using namespace lm::ngram;
+void terminate_handler() {
+  try { throw; }
+  catch(const std::exception& e) {
+    std::cerr << e.what() << std::endl;
+  }
+  catch(...) {
+    std::cerr << "A non-standard exception was thrown." << std::endl;
+  }
+  std::abort();
+}
 
-    lm::ngram::Config config;
-    int opt;
-    while ((opt = getopt(argc, argv, "u:p:t:m:")) != -1) {
-      switch(opt) {
-        case 'u':
-          config.unknown_missing_prob = ParseFloat(optarg);
-          break;
-        case 'p':
-          config.probing_multiplier = ParseFloat(optarg);
-          break;
-        case 't':
-          config.temporary_directory_prefix = optarg;
-          break;
-        case 'm':
-          config.building_memory = ParseUInt(optarg) * 1048576;
-          break;
-        default:
-          Usage(argv[0]);
-      }
-    }
-    if (optind + 1 == argc) {
-      ShowSizes(argv[optind], config);
-    } else if (optind + 2 == argc) {
-      config.write_mmap = argv[optind + 1];
-      ProbingModel(argv[optind], config);
-    } else if (optind + 3 == argc) {
-      const char *model_type = argv[optind];
-      const char *from_file = argv[optind + 1];
-      config.write_mmap = argv[optind + 2];
-      if (!strcmp(model_type, "probing")) {
-        ProbingModel(from_file, config);
-      } else if (!strcmp(model_type, "sorted")) {
-        SortedModel(from_file, config);
-      } else if (!strcmp(model_type, "trie")) {
-        TrieModel(from_file, config);
-      } else {
+int main(int argc, char *argv[]) {
+  using namespace lm::ngram;
+
+  std::set_terminate(terminate_handler);
+
+  lm::ngram::Config config;
+  int opt;
+  while ((opt = getopt(argc, argv, "su:p:t:m:")) != -1) {
+    switch(opt) {
+      case 'u':
+        config.unknown_missing_prob = ParseFloat(optarg);
+        break;
+      case 'p':
+        config.probing_multiplier = ParseFloat(optarg);
+        break;
+      case 't':
+        config.temporary_directory_prefix = optarg;
+        break;
+      case 'm':
+        config.building_memory = ParseUInt(optarg) * 1048576;
+        break;
+      case 's':
+        config.sentence_marker_missing = lm::ngram::Config::SILENT;
+        break;
+      default:
         Usage(argv[0]);
-      }
+    }
+  }
+  if (optind + 1 == argc) {
+    ShowSizes(argv[optind], config);
+  } else if (optind + 2 == argc) {
+    config.write_mmap = argv[optind + 1];
+    ProbingModel(argv[optind], config);
+  } else if (optind + 3 == argc) {
+    const char *model_type = argv[optind];
+    const char *from_file = argv[optind + 1];
+    config.write_mmap = argv[optind + 2];
+    if (!strcmp(model_type, "probing")) {
+      ProbingModel(from_file, config);
+    } else if (!strcmp(model_type, "sorted")) {
+      SortedModel(from_file, config);
+    } else if (!strcmp(model_type, "trie")) {
+      TrieModel(from_file, config);
     } else {
       Usage(argv[0]);
     }
-    return 0;
-  } catch (const std::exception &e) {
-    std::cerr << e.what() << std::endl;
-    return 1;
-  } catch (...) {
-    std::cerr << "An exception occurred." << std::endl;
-    return 1;
+  } else {
+    Usage(argv[0]);
   }
+  return 0;
 }

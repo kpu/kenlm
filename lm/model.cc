@@ -82,24 +82,11 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     search_.InitializeFromARPA(file, f, counts, config, vocab_, backing_);
   }
 
-  // TODO: fail faster?  
   if (!vocab_.SawUnk()) {
-    switch(config.unknown_missing) {
-      case Config::THROW_UP:
-        {
-          SpecialWordMissingException e("<unk>");
-          e << " and configuration was set to throw if unknown is missing";
-          throw e;
-        }
-      case Config::COMPLAIN:
-        if (config.messages) *config.messages << "Language model is missing <unk>.  Substituting probability " << config.unknown_missing_prob << "." << std::endl; 
-        // There's no break;.  This is by design.  
-      case Config::SILENT:
-        // Default probabilities for unknown.  
-        search_.unigram.Unknown().backoff = 0.0;
-        search_.unigram.Unknown().prob = config.unknown_missing_prob;
-        break;
-    }
+    assert(config.unknown_missing != Config::THROW_UP);
+    // Default probabilities for unknown.  
+    search_.unigram.Unknown().backoff = 0.0;
+    search_.unigram.Unknown().prob = config.unknown_missing_prob;
   }
   FinishFile(config, kModelType, counts, backing_);
 }

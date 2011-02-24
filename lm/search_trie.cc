@@ -535,12 +535,13 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
   }
 }
 
-void ARPAToSortedFiles(util::FilePiece &f, const std::vector<uint64_t> &counts, size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab) {
+void ARPAToSortedFiles(const Config &config, util::FilePiece &f, const std::vector<uint64_t> &counts, size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab) {
   {
     std::string unigram_name = file_prefix + "unigrams";
     util::scoped_fd unigram_file;
     util::scoped_mmap unigram_mmap(util::MapZeroedWrite(unigram_name.c_str(), counts[0] * sizeof(ProbBackoff), unigram_file), counts[0] * sizeof(ProbBackoff));
     Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_mmap.get()));
+    CheckSpecials(config, vocab);
   }
 
   // Only use as much buffer as we need.  
@@ -871,7 +872,7 @@ void TrieSearch::InitializeFromARPA(const char *file, util::FilePiece &f, std::v
   // Add directory delimiter.  Assumes a real operating system.  
   temporary_directory += '/';
   // At least 1MB sorting memory.  
-  ARPAToSortedFiles(f, counts, std::max<size_t>(config.building_memory, 1048576), temporary_directory.c_str(), vocab);
+  ARPAToSortedFiles(config, f, counts, std::max<size_t>(config.building_memory, 1048576), temporary_directory.c_str(), vocab);
 
   BuildTrie(temporary_directory, counts, config, *this, backing);
   if (rmdir(temporary_directory.c_str()) && config.messages) {

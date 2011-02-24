@@ -17,9 +17,7 @@ FormatLoadException::~FormatLoadException() throw() {}
 VocabLoadException::VocabLoadException() throw() {}
 VocabLoadException::~VocabLoadException() throw() {}
 
-SpecialWordMissingException::SpecialWordMissingException(StringPiece which) throw() {
-  *this << "Missing special word " << which;
-}
+SpecialWordMissingException::SpecialWordMissingException() throw() {}
 SpecialWordMissingException::~SpecialWordMissingException() throw() {}
 
 } // namespace lm

@@ -21,7 +21,7 @@ namespace {
 const char kMagicBeforeVersion[] = "mmap lm http://kheafield.com/code format version";
 const char kMagicBytes[] = "mmap lm http://kheafield.com/code format version 4\n\0";
 // This must be shorter than kMagicBytes and indicates an incomplete binary file (i.e. build failed). 
-const char kMagicIncomplete[] = "incomplete mmap lm\n";
+const char kMagicIncomplete[] = "mmap lm http://kheafield.com/code incomplete\n";
 const long int kMagicVersion = 4;
 
 // Test values.  

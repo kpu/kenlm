@@ -83,7 +83,7 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
       to.InitializeFromARPA(file, config);
     }
   } catch (util::Exception &e) {
-    e << " in file " << file;
+    e << " File: " << file;
     throw;
   }
 

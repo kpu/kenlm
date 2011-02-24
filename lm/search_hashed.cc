@@ -85,7 +85,8 @@ template <class MiddleT, class LongestT> template <class Voc> void TemplateHashe
   // TODO: fix sorted.
   SetupMemory(GrowForSearch(config, Size(counts, config), backing), counts, config);
 
-  Read1Grams(f, counts[0], vocab, unigram.Raw());  
+  Read1Grams(f, counts[0], vocab, unigram.Raw());
+  CheckSpecials(config, vocab);
 
   try {
     if (counts.size() > 2) {
