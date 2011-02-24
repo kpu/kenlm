@@ -17,7 +17,7 @@ namespace {
 void Usage(const char *name) {
   std::cerr << "Usage: " << name << " [-u unknown_probability] [-s] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [type] input.arpa output.mmap\n\n"
 "-u sets the default probability for <unk> if the ARPA file does not have one.\n"
-"-s allows models to be built even if they do not have <s> and </s>.\n"
+"-s allows models to be built even if they do not have <s> and </s>.\n\n"
 "type is one of probing, trie, or sorted:\n\n"
 "probing uses a probing hash table.  It is the fastest but uses the most memory.\n"
 "-p sets the space multiplier and must be >1.0.  The default is 1.5.\n\n"
