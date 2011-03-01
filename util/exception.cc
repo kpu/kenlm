@@ -8,6 +8,20 @@ namespace util {
 Exception::Exception() throw() {}
 Exception::~Exception() throw() {}
 
+Exception::Exception(const Exception &from) {
+  stream_.str(from.stream_.str());
+}
+
+Exception &Exception::operator=(const Exception &from) {
+  stream_.str(from.stream_.str());
+  return *this;
+}
+
+const char *Exception::what() const throw() {
+  text_ = stream_.str();
+  return text_.c_str();
+}
+
 namespace {
 // The XOPEN version.
 const char *HandleStrerror(int ret, const char *buf) {

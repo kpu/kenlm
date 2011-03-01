@@ -9,24 +9,29 @@
 
 namespace util {
 
+template <class Except, class Data> typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const Data &data);
+
 class Exception : public std::exception {
   public:
     Exception() throw();
     virtual ~Exception() throw();
 
-    const char *what() const throw() { return what_.c_str(); }
+    Exception(const Exception &from);
+    Exception &operator=(const Exception &from);
+
+    // Not threadsafe, but probably doesn't matter.  FWIW, Boost's exception guidance implies that what() isn't threadsafe.  
+    const char *what() const throw();
+
+  private:
+    template <class Except, class Data> friend typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const Data &data);
 
     // This helps restrict operator<< defined below.  
     template <class T> struct ExceptionTag {
       typedef T Identity;
     };
 
-    std::string &Str() {
-      return what_;
-    }
-
-  protected:
-    std::string what_;
+    std::stringstream stream_;
+    mutable std::string text_;
 };
 
 /* This implements the normal operator<< for Exception and all its children. 
@@ -34,22 +39,7 @@ class Exception : public std::exception {
  * boost::enable_if.  
  */
 template <class Except, class Data> typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const Data &data) {
-  // Argh I had a stringstream in the exception, but the only way to get the string is by calling str().  But that's a temporary string, so virtual const char *what() const can't actually return it.  
-  std::stringstream stream;
-  stream << data;
-  e.Str() += stream.str();
-  return e;
-}
-template <class Except> typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const char *data) {
-  e.Str() += data;
-  return e;
-}
-template <class Except> typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const std::string &data) {
-  e.Str() += data;
-  return e;
-}
-template <class Except> typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const StringPiece &str) {
-  e.Str().append(str.data(), str.length());
+  e.stream_ << data;
   return e;
 }
 
