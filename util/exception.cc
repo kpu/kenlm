@@ -8,7 +8,7 @@ namespace util {
 Exception::Exception() throw() {}
 Exception::~Exception() throw() {}
 
-Exception::Exception(const Exception &from) {
+Exception::Exception(const Exception &from) : std::exception() {
   stream_.str(from.stream_.str());
 }
 
