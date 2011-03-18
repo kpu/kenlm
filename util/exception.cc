@@ -9,11 +9,11 @@ Exception::Exception() throw() {}
 Exception::~Exception() throw() {}
 
 Exception::Exception(const Exception &from) : std::exception() {
-  stream_.str(from.stream_.str());
+  stream_ << from.stream_.str();
 }
 
 Exception &Exception::operator=(const Exception &from) {
-  stream_.str(from.stream_.str());
+  stream_ << from.stream_.str();
   return *this;
 }
 
