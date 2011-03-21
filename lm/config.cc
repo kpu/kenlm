@@ -10,7 +10,7 @@ Config::Config() :
   enumerate_vocab(NULL),
   unknown_missing(COMPLAIN),
   sentence_marker_missing(THROW_UP),
-  unknown_missing_prob(0.0),
+  unknown_missing_logprob(-100.0),
   probing_multiplier(1.5),
   building_memory(1073741824ULL), // 1 GB
   temporary_directory_prefix(NULL),

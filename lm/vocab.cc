@@ -192,7 +192,7 @@ void MissingUnknown(const Config &config) throw(SpecialWordMissingException) {
     case Config::SILENT:
       return;
     case Config::COMPLAIN:
-      if (config.messages) *config.messages << "The ARPA file is missing <unk>.  Substituting probability " << config.unknown_missing_prob << "." << std::endl;
+      if (config.messages) *config.messages << "The ARPA file is missing <unk>.  Substituting log10 probability " << config.unknown_missing_logprob << "." << std::endl;
       break;
     case Config::THROW_UP:
       UTIL_THROW(SpecialWordMissingException, "The ARPA file is missing <unk> and the model is configured to throw an exception.");

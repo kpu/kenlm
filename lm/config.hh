@@ -36,7 +36,7 @@ struct Config {
 
   // The probability to substitute for <unk> if it's missing from the model.  
   // No effect if the model has <unk> or unknown_missing == THROW_UP.
-  float unknown_missing_prob;
+  float unknown_missing_logprob;
 
   // Size multiplier for probing hash table.  Must be > 1.  Space is linear in
   // this.  Time is probing_multiplier / (probing_multiplier - 1).  No effect
