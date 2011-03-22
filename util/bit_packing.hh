@@ -28,16 +28,19 @@ namespace util {
  * but it may be called multiple times when that's inconvenient.  
  */
 
-inline uint8_t BitPackShift(uint8_t bit, uint8_t length) {
+
 // Fun fact: __BYTE_ORDER is wrong on Solaris Sparc, but the version without __ is correct.  
 #if BYTE_ORDER == LITTLE_ENDIAN
+inline uint8_t BitPackShift(uint8_t bit, uint8_t /*length*/) {
   return bit;
+}
 #elif BYTE_ORDER == BIG_ENDIAN
+inline uint8_t BitPackShift(uint8_t bit, uint8_t length) {
   return 64 - length - bit;
+}
 #else
 #error "Bit packing code isn't written for your byte order."
 #endif
-}
 
 /* Pack integers up to 57 bits using their least significant digits. 
  * The length is specified using mask:
