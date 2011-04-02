@@ -293,7 +293,7 @@ class SortedFileReader {
       ReadOrThrow(file_.get(), &weights, sizeof(Weights));
     }
 
-    bool Ended() {
+    bool Ended() const {
       return ended_;
     }
 
@@ -775,8 +775,8 @@ void SanityCheckCounts(const std::vector<uint64_t> &initial, const std::vector<u
 }
 
 void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch &out, Backing &backing) {
-  SortedFileReader inputs[counts.size() - 1];
-  ContextReader contexts[counts.size() - 1];
+  std::vector<SortedFileReader> inputs(counts.size() - 1);
+  std::vector<ContextReader> contexts(counts.size() - 1);
 
   for (unsigned char i = 2; i <= counts.size(); ++i) {
     std::stringstream assembled;
@@ -790,11 +790,11 @@ void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, co
 
   std::vector<uint64_t> fixed_counts(counts.size());
   {
-    RecursiveInsert<JustCount> counter(inputs, contexts, NULL, &*out.middle.begin(), out.longest, &*fixed_counts.begin(), counts.size());
+    RecursiveInsert<JustCount> counter(&*inputs.begin(), &*contexts.begin(), NULL, &*out.middle.begin(), out.longest, &*fixed_counts.begin(), counts.size());
     counter.Apply(config.messages, "Counting n-grams that should not have been pruned", counts[0]);
   }
-  for (SortedFileReader *i = inputs; i < inputs + counts.size() - 1; ++i) {
-    if (!i->Ended()) UTIL_THROW(FormatLoadException, "There's a bug in the trie implementation: the " << (i - inputs + 2) << "-gram table did not complete reading");
+  for (std::vector<SortedFileReader>::const_iterator i = inputs.begin(); i != inputs.end(); ++i) {
+    if (!i->Ended()) UTIL_THROW(FormatLoadException, "There's a bug in the trie implementation: the " << (i - inputs.begin() + 2) << "-gram table did not complete reading");
   }
   SanityCheckCounts(counts, fixed_counts);
   counts = fixed_counts;
@@ -807,7 +807,7 @@ void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, co
   UnigramValue *unigrams = out.unigram.Raw();
   // Fill entries except unigram probabilities.  
   {
-    RecursiveInsert<WriteEntries> inserter(inputs, contexts, unigrams, &*out.middle.begin(), out.longest, &*fixed_counts.begin(), counts.size());
+    RecursiveInsert<WriteEntries> inserter(&*inputs.begin(), &*contexts.begin(), unigrams, &*out.middle.begin(), out.longest, &*fixed_counts.begin(), counts.size());
     inserter.Apply(config.messages, "Building trie", fixed_counts[0]);
   }
 
@@ -849,7 +849,7 @@ void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, co
       out.middle[i].FinishedLoading(out.middle[i+1].InsertIndex());
     }
     out.middle.back().FinishedLoading(out.longest.InsertIndex());
-  }
+  }  
 }
 
 bool IsDirectory(const char *path) {
