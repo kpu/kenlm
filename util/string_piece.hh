@@ -64,6 +64,7 @@ U_NAMESPACE_BEGIN
 #else
 
 #include <algorithm>
+#include <cstddef>
 #include <string>
 #include <string.h>
 
