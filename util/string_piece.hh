@@ -60,6 +60,23 @@
 
 #ifdef HAVE_ICU
 #include <unicode/stringpiece.h>
+#include <unicode/uversion.h>
+
+// Old versions of ICU don't define operator== and operator!=.  
+#if (U_ICU_VERSION_MAJOR_NUM < 4) || ((U_ICU_VERSION_MAJOR_NUM == 4) && (U_ICU_VERSION_MINOR_NUM < 4))
+#warning You are using an old version of ICU.  Consider upgrading to ICU >= 4.6.  
+inline bool operator==(const StringPiece& x, const StringPiece& y) {
+  if (x.size() != y.size())
+    return false;
+
+  return std::memcmp(x.data(), y.data(), x.size()) == 0;
+}
+
+inline bool operator!=(const StringPiece& x, const StringPiece& y) {
+  return !(x == y);
+}
+#endif // old version of ICU
+
 U_NAMESPACE_BEGIN
 #else
 
@@ -209,7 +226,7 @@ inline bool operator!=(const StringPiece& x, const StringPiece& y) {
   return !(x == y);
 }
 
-#endif
+#endif // HAVE_ICU undefined
 
 inline bool operator<(const StringPiece& x, const StringPiece& y) {
   const int r = std::memcmp(x.data(), y.data(),
