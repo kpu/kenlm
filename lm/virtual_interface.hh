@@ -8,8 +8,27 @@
 
 namespace lm {
 
+/* Structure returned by scoring routines. */
 struct FullScoreReturn {
+  // log10 probability
   float prob;
+
+  /* The length of n-gram matched.  Do not use this for recombination.  
+   * Consider a model containing only the following n-grams:
+   * -1 foo
+   * -3.14  bar
+   * -2.718 baz -5
+   * -6 foo bar
+   *
+   * If you score ``bar'' then ngram_length is 1 and recombination state is the
+   * empty string because bar has zero backoff and does not extend to the
+   * right.  
+   * If you score ``foo'' then ngram_length is 1 and recombination state is 
+   * ``foo''.  
+   *
+   * Ideally, keep output states around and compare them.  Failing that,
+   * get out_state.ValidLength() and use that length for recombination.
+   */
   unsigned char ngram_length;
 };
 
@@ -72,7 +91,8 @@ class Vocabulary {
 /* There are two ways to access a Model.  
  *
  *
- * OPTION 1: Access the Model directly (e.g. lm::ngram::Model in ngram.hh).
+ * OPTION 1: Access the Model directly (e.g. lm::ngram::Model in model.hh).
+ *
  * Every Model implements the scoring function:
  * float Score(
  *   const Model::State &in_state,
@@ -84,6 +104,7 @@ class Vocabulary {
  *   const Model::State &in_state,
  *   const WordIndex new_word,
  *   Model::State &out_state) const;
+ *
  *
  * There are also accessor functions:
  * const State &BeginSentenceState() const;
@@ -114,6 +135,7 @@ class Vocabulary {
  *
  * All the State objects are POD, so it's ok to use raw memory for storing
  * State.
+ * in_state and out_state must not have the same address. 
  */
 class Model {
   public:
@@ -123,8 +145,10 @@ class Model {
     const void *BeginSentenceMemory() const { return begin_sentence_memory_; }
     const void *NullContextMemory() const { return null_context_memory_; }
 
+    // Requires in_state != out_state
     virtual float Score(const void *in_state, const WordIndex new_word, void *out_state) const = 0;
 
+    // Requires in_state != out_state
     virtual FullScoreReturn FullScore(const void *in_state, const WordIndex new_word, void *out_state) const = 0;
 
     unsigned char Order() const { return order_; }

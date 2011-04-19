@@ -18,6 +18,12 @@ namespace ngram {
 
 typedef enum {HASH_PROBING=0, HASH_SORTED=1, TRIE_SORTED=2} ModelType;
 
+/*Inspect a file to determine if it is a binary lm.  If not, return false.  
+ * If so, return true and set recognized to the type.  This is the only API in
+ * this header designed for use by decoder authors.  
+ */
+bool RecognizeBinary(const char *file, ModelType &recognized);
+
 struct FixedWidthParameters {
   unsigned char order;
   float probing_multiplier;
@@ -27,6 +33,7 @@ struct FixedWidthParameters {
   bool has_vocabulary;
 };
 
+// Parameters stored in the header of a binary file.  
 struct Parameters {
   FixedWidthParameters fixed;
   std::vector<uint64_t> counts;
@@ -41,10 +48,13 @@ struct Backing {
   util::scoped_memory search;
 };
 
+// Create just enough of a binary file to write vocabulary to it.  
 uint8_t *SetupJustVocab(const Config &config, uint8_t order, std::size_t memory_size, Backing &backing);
 // Grow the binary file for the search data structure and set backing.search, returning the memory address where the search data structure should begin.  
 uint8_t *GrowForSearch(const Config &config, std::size_t memory_size, Backing &backing);
 
+// Write header to binary file.  This is done last to prevent incomplete files
+// from loading.   
 void FinishFile(const Config &config, ModelType model_type, const std::vector<uint64_t> &counts, Backing &backing);
 
 namespace detail {
@@ -60,8 +70,6 @@ uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t
 void ComplainAboutARPA(const Config &config, ModelType model_type);
 
 } // namespace detail
-
-bool RecognizeBinary(const char *file, ModelType &recognized);
 
 template <class To> void LoadLM(const char *file, const Config &config, To &to) {
   Backing &backing = to.MutableBacking();
@@ -86,7 +94,6 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
     e << " File: " << file;
     throw;
   }
-
 }
 
 } // namespace ngram
