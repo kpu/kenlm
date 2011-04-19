@@ -63,7 +63,6 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
   std::cout << "bytes\n"
     "probing " << std::setw(length) << probing_size << " assuming -p " << config.probing_multiplier << "\n"
     "trie    " << std::setw(length) << TrieModel::Size(counts, config) << "\n";
-/*    "sorted  " << std::setw(length) << SortedModel::Size(counts, config) << "\n";*/
 }
 
 } // namespace ngram
@@ -108,8 +107,6 @@ int main(int argc, char *argv[]) {
       config.write_mmap = argv[optind + 2];
       if (!strcmp(model_type, "probing")) {
         ProbingModel(from_file, config);
-      } else if (!strcmp(model_type, "sorted")) {
-        SortedModel(from_file, config);
       } else if (!strcmp(model_type, "trie")) {
         TrieModel(from_file, config);
       } else {
