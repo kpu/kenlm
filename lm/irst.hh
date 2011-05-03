@@ -5,6 +5,7 @@
 #include "lm/virtual_interface.hh"
 
 #include <memory>
+#include <string>
 
 class lmtable;  // irst lm table
 class lmmacro;  // irst lm for macro tags

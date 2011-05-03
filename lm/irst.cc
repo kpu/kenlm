@@ -50,11 +50,11 @@ Model::Model(const char *file_name) {
   vocab_.FinishedLoading();
 
   State begin, null_context;
-  // Automatically pads with <s>
+  // Call automatically pads with <s>
   begin.valid_length_ = 0;
-  // Won't work with multiple <unk> chains or where <unk> has backoff but there doesn't seem to be any other way to call IRST without context...
+  // Hack to force zero context.   
   null_context.valid_length_ = 1;
-  null_context.history_[0] = vocab_.NotFound();
+  null_context.history_[0] = vocab_.EndSentence();
   Init(begin, null_context, vocab_, max_level_);
 }
 
@@ -85,8 +85,9 @@ FullScoreReturn Model::FullScore(const State &in_state, const WordIndex new_word
     out_state.valid_length_ = max_level_;
     std::copy(in_state.history_ + 1, in_state.history_ + in_state.valid_length_, out_state.history_);
   } else {
-    out_state.valid_length_ = in_state.valid_length_ + 1;
-    std::copy(in_state.history_, in_state.history_ + in_state.valid_length_, out_state.history_);
+    out_state.valid_length_ = ret.ngram_length;
+    const int *end = in_state.history_ + in_state.valid_length_;
+    std::copy(end - ret.ngram_length + 1, end, out_state.history_);
   }
   out_state.history_[out_state.valid_length_ - 1] = new_word;
 
