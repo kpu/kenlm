@@ -14,8 +14,6 @@ template <class Model> void Convert(const char *name) {
   try {
     while (true) {
       line = in.ReadLine();
-      w = m.GetVocabulary().BeginSentence();
-      if (1 != fwrite(&w, sizeof(w), 1, stdout)) UTIL_THROW(util::ErrnoException, "fwrite failed.");
       for (util::PieceIterator<' '> i(line); i; ++i) {
         lm::WordIndex w = m.GetVocabulary().Index(*i);
         if (1 != fwrite(&w, sizeof(w), 1, stdout)) UTIL_THROW(util::ErrnoException, "fwrite failed.");

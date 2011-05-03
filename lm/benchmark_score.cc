@@ -33,7 +33,7 @@ template <class Model> void Score(const char *name) {
   typename Model::State state[2];
   state[0] = m.BeginSentenceState();
   typename Model::State *in_state = &state[0], *out_state = &state[1];
-  lm::WordIndex delimit = m.GetVocabulary().BeginSentence();
+  lm::WordIndex delimit = m.GetVocabulary().EndSentence();
   float total = 0.0;
   while (true) {
     const size_t amount = fread(&*indices.begin(), sizeof(lm::WordIndex), indices.size(), stdin);
@@ -42,12 +42,9 @@ template <class Model> void Score(const char *name) {
       UTIL_THROW(util::ErrnoException, "Reading stdin");
     }
     for (const lm::WordIndex *i = &*indices.begin(); i != &*indices.begin() + amount; ++i) {
-      if (*i == delimit) {
-        *in_state = m.BeginSentenceState();
-        continue;
-      }
       total += m.FullScore(*in_state, *i, *out_state).prob;
       std::swap(in_state, out_state);
+      if (*i == delimit) *in_state = m.BeginSentenceState();
     }
   }
   std::cout << total << std::endl;
