@@ -83,7 +83,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   }
 
   if (!vocab_.SawUnk()) {
-    assert(config.unknown_missing != Config::THROW_UP);
+    assert(config.unknown_missing != THROW_UP);
     // Default probabilities for unknown.  
     search_.unigram.Unknown().backoff = 0.0;
     search_.unigram.Unknown().prob = config.unknown_missing_logprob;
