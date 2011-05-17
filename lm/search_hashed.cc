@@ -48,7 +48,7 @@ class ActivateUnigram {
     ProbBackoff *modify_;
 };
 
-template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, std::vector<Middle> &middle, Activate activate, Store &store) {
+template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, std::vector<Middle> &middle, Activate activate, Store &store, PositiveProbWarn &warn) {
   
   ReadNGramHeader(f, n);
   ProbBackoff blank;
@@ -61,7 +61,7 @@ template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(
   typename Store::Packing::Value value;
   typename Middle::ConstIterator found;
   for (size_t i = 0; i < count; ++i) {
-    ReadNGram(f, n, vocab, vocab_ids, value);
+    ReadNGram(f, n, vocab, vocab_ids, value, warn);
     keys[0] = detail::CombineWordHash(static_cast<uint64_t>(*vocab_ids), vocab_ids[1]);
     for (unsigned int h = 1; h < n - 1; ++h) {
       keys[h] = detail::CombineWordHash(keys[h-1], vocab_ids[h+1]);
@@ -85,20 +85,22 @@ template <class MiddleT, class LongestT> template <class Voc> void TemplateHashe
   // TODO: fix sorted.
   SetupMemory(GrowForSearch(config, Size(counts, config), backing), counts, config);
 
-  Read1Grams(f, counts[0], vocab, unigram.Raw());
+  PositiveProbWarn warn(config.positive_log_probability);
+
+  Read1Grams(f, counts[0], vocab, unigram.Raw(), warn);
   CheckSpecials(config, vocab);
 
   try {
     if (counts.size() > 2) {
-      ReadNGrams(f, 2, counts[1], vocab, middle, ActivateUnigram(unigram.Raw()), middle[0]);
+      ReadNGrams(f, 2, counts[1], vocab, middle, ActivateUnigram(unigram.Raw()), middle[0], warn);
     }
     for (unsigned int n = 3; n < counts.size(); ++n) {
-      ReadNGrams(f, n, counts[n-1], vocab, middle, ActivateLowerMiddle<Middle>(middle[n-3]), middle[n-2]);
+      ReadNGrams(f, n, counts[n-1], vocab, middle, ActivateLowerMiddle<Middle>(middle[n-3]), middle[n-2], warn);
     }
     if (counts.size() > 2) {
-      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, middle, ActivateLowerMiddle<Middle>(middle.back()), longest);
+      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, middle, ActivateLowerMiddle<Middle>(middle.back()), longest, warn);
     } else {
-      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, middle, ActivateUnigram(unigram.Raw()), longest);
+      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, middle, ActivateUnigram(unigram.Raw()), longest, warn);
     }
   } catch (util::ProbingSizeException &e) {
     UTIL_THROW(util::ProbingSizeException, "Avoid pruning n-grams like \"bar baz quux\" when \"foo bar baz quux\" is still in the model.  KenLM will work when this pruning happens, but the probing model assumes these events are rare enough that using blank space in the probing hash table will cover all of them.  Increase probing_multiplier (-p to build_binary) to add more blank spaces.\n");

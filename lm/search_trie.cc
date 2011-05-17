@@ -480,7 +480,7 @@ void MergeContextFiles(const std::string &first_base, const std::string &second_
   CopyRestOrThrow(remaining.GetFile(), out.get());
 }
 
-void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, util::scoped_memory &mem, const std::string &file_prefix, unsigned char order) {
+void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, util::scoped_memory &mem, const std::string &file_prefix, unsigned char order, PositiveProbWarn &warn) {
   ReadNGramHeader(f, order);
   const size_t count = counts[order - 1];
   // Size of weights.  Does it include backoff?  
@@ -495,11 +495,11 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
     uint8_t *out_end = out + std::min(count - done, batch_size) * entry_size;
     if (order == counts.size()) {
       for (; out != out_end; out += entry_size) {
-        ReadNGram(f, order, vocab, reinterpret_cast<WordIndex*>(out), *reinterpret_cast<Prob*>(out + words_size));
+        ReadNGram(f, order, vocab, reinterpret_cast<WordIndex*>(out), *reinterpret_cast<Prob*>(out + words_size), warn);
       }
     } else {
       for (; out != out_end; out += entry_size) {
-        ReadNGram(f, order, vocab, reinterpret_cast<WordIndex*>(out), *reinterpret_cast<ProbBackoff*>(out + words_size));
+        ReadNGram(f, order, vocab, reinterpret_cast<WordIndex*>(out), *reinterpret_cast<ProbBackoff*>(out + words_size), warn);
       }
     }
     // Sort full records by full n-gram.  
@@ -536,13 +536,14 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
 }
 
 void ARPAToSortedFiles(const Config &config, util::FilePiece &f, std::vector<uint64_t> &counts, size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab) {
+  PositiveProbWarn warn(config.positive_log_probability);
   {
     std::string unigram_name = file_prefix + "unigrams";
     util::scoped_fd unigram_file;
     // In case <unk> appears.  
     size_t extra_count = counts[0] + 1;
     util::scoped_mmap unigram_mmap(util::MapZeroedWrite(unigram_name.c_str(), extra_count * sizeof(ProbBackoff), unigram_file), extra_count * sizeof(ProbBackoff));
-    Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_mmap.get()));
+    Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_mmap.get()), warn);
     CheckSpecials(config, vocab);
     if (!vocab.SawUnk()) ++counts[0];
   }
@@ -560,7 +561,7 @@ void ARPAToSortedFiles(const Config &config, util::FilePiece &f, std::vector<uin
   if (!mem.get()) UTIL_THROW(util::ErrnoException, "malloc failed for sort buffer size " << buffer);
 
   for (unsigned char order = 2; order <= counts.size(); ++order) {
-    ConvertToSorted(f, vocab, counts, mem, file_prefix, order);
+    ConvertToSorted(f, vocab, counts, mem, file_prefix, order, warn);
   }
   ReadEnd(f);
 }

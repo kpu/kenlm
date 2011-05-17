@@ -11,6 +11,8 @@
 
 namespace lm {
 
+typedef enum {THROW_UP, COMPLAIN, SILENT} WarningAction;
+
 class ConfigException : public util::Exception {
   public:
     ConfigException() throw();

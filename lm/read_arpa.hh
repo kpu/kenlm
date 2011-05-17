@@ -22,10 +22,26 @@ void ReadEnd(util::FilePiece &in);
 
 extern const bool kARPASpaces[256];
 
-template <class Voc> void Read1Gram(util::FilePiece &f, Voc &vocab, ProbBackoff *unigrams) {
+// Positive log probability warning.  
+class PositiveProbWarn {
+  public:
+    PositiveProbWarn() : action_(THROW_UP) {}
+
+    explicit PositiveProbWarn(WarningAction action) : action_(action) {}
+
+    void Warn(float prob);
+
+  private:
+    WarningAction action_;
+};
+
+template <class Voc> void Read1Gram(util::FilePiece &f, Voc &vocab, ProbBackoff *unigrams, PositiveProbWarn &warn) {
   try {
     float prob = f.ReadFloat();
-    if (prob > 0) UTIL_THROW(FormatLoadException, "Positive probability " << prob);
+    if (prob > 0.0) {
+      warn.Warn(prob);
+      prob = 0.0;
+    }
     if (f.get() != '\t') UTIL_THROW(FormatLoadException, "Expected tab after probability");
     ProbBackoff &value = unigrams[vocab.Insert(f.ReadDelimited(kARPASpaces))];
     value.prob = prob;
@@ -36,18 +52,23 @@ template <class Voc> void Read1Gram(util::FilePiece &f, Voc &vocab, ProbBackoff 
   }
 }
 
-template <class Voc> void Read1Grams(util::FilePiece &f, std::size_t count, Voc &vocab, ProbBackoff *unigrams) {
+// Return true if a positive log probability came out.
+template <class Voc> void Read1Grams(util::FilePiece &f, std::size_t count, Voc &vocab, ProbBackoff *unigrams, PositiveProbWarn &warn) {
   ReadNGramHeader(f, 1);
   for (std::size_t i = 0; i < count; ++i) {
-    Read1Gram(f, vocab, unigrams);
+    Read1Gram(f, vocab, unigrams, warn);
   }
   vocab.FinishedLoading(unigrams);
 }
 
-template <class Voc, class Weights> void ReadNGram(util::FilePiece &f, const unsigned char n, const Voc &vocab, WordIndex *const reverse_indices, Weights &weights) {
+// Return true if a positive log probability came out.
+template <class Voc, class Weights> void ReadNGram(util::FilePiece &f, const unsigned char n, const Voc &vocab, WordIndex *const reverse_indices, Weights &weights, PositiveProbWarn &warn) {
   try {
     weights.prob = f.ReadFloat();
-    if (weights.prob > 0) UTIL_THROW(FormatLoadException, "Positive probability " << weights.prob);
+    if (weights.prob > 0.0) {
+      warn.Warn(weights.prob);
+      weights.prob = 0.0;
+    }
     for (WordIndex *vocab_out = reverse_indices + n - 1; vocab_out >= reverse_indices; --vocab_out) {
       *vocab_out = vocab.Index(f.ReadDelimited(kARPASpaces));
     }

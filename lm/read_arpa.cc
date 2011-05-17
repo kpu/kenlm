@@ -3,6 +3,7 @@
 #include "lm/blank.hh"
 
 #include <cstdlib>
+#include <iostream>
 #include <vector>
 
 #include <ctype.h>
@@ -113,6 +114,19 @@ void ReadEnd(util::FilePiece &in) {
       if (!IsEntirelyWhiteSpace(line)) UTIL_THROW(FormatLoadException, "Trailing line " << line);
     }
   } catch (const util::EndOfFileException &e) {}
+}
+
+void PositiveProbWarn::Warn(float prob) {
+  switch (action_) {
+    case THROW_UP:
+      UTIL_THROW(FormatLoadException, "Positive log probability " << prob << " in the model.  This is a bug in IRSTLM; you can set config.positive_log_probability = SILENT or pass -i to build_binary to substitute 0.0 for the log probability.  Error");
+    case COMPLAIN:
+      std::cerr << "There's a positive log probability " << prob << " in the APRA file, probably because of a bug in IRSTLM.  This and subsequent entires will be mapepd to 0 log probability." << std::endl;
+      action_ = SILENT;
+      break;
+    case SILENT:
+      break;
+  }
 }
 
 } // namespace lm

@@ -3,6 +3,7 @@
 
 #include <iosfwd>
 
+#include "lm/lm_exception.hh"
 #include "util/mmap.hh"
 
 /* Configuration for ngram model.  Separate header to reduce pollution. */
@@ -27,12 +28,15 @@ struct Config {
 
   // ONLY EFFECTIVE WHEN READING ARPA
 
-  typedef enum {THROW_UP, COMPLAIN, SILENT} WarningAction;
   // What to do when <unk> isn't in the provided model. 
   WarningAction unknown_missing;
   // What to do when <s> or </s> is missing from the model. 
   // If THROW_UP, the exception will be of type util::SpecialWordMissingException.  
   WarningAction sentence_marker_missing;
+
+  // What to do with a positive log probability.  For COMPLAIN and SILENT, map
+  // to 0.  
+  WarningAction positive_log_probability;
 
   // The probability to substitute for <unk> if it's missing from the model.  
   // No effect if the model has <unk> or unknown_missing == THROW_UP.

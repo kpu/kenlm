@@ -15,10 +15,11 @@ namespace ngram {
 namespace {
 
 void Usage(const char *name) {
-  std::cerr << "Usage: " << name << " [-u log10_unknown_probability] [-s] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [type] input.arpa output.mmap\n\n"
+  std::cerr << "Usage: " << name << " [-u log10_unknown_probability] [-s] [-n] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [type] input.arpa output.mmap\n\n"
 "-u sets the default log10 probability for <unk> if the ARPA file does not have\n"
 "one.\n"
-"-s allows models to be built even if they do not have <s> and </s>.\n\n"
+"-s allows models to be built even if they do not have <s> and </s>.\n"
+"-i allows buggy models from IRSTLM by mapping positive log probability to 0.\n"
 "type is one of probing, trie, or sorted:\n\n"
 "probing uses a probing hash table.  It is the fastest but uses the most memory.\n"
 "-p sets the space multiplier and must be >1.0.  The default is 1.5.\n\n"
@@ -75,7 +76,7 @@ int main(int argc, char *argv[]) {
   try {
     lm::ngram::Config config;
     int opt;
-    while ((opt = getopt(argc, argv, "su:p:t:m:")) != -1) {
+    while ((opt = getopt(argc, argv, "siu:p:t:m:")) != -1) {
       switch(opt) {
         case 'u':
           config.unknown_missing_logprob = ParseFloat(optarg);
@@ -90,7 +91,10 @@ int main(int argc, char *argv[]) {
           config.building_memory = ParseUInt(optarg) * 1048576;
           break;
         case 's':
-          config.sentence_marker_missing = lm::ngram::Config::SILENT;
+          config.sentence_marker_missing = lm::SILENT;
+          break;
+        case 'i':
+          config.positive_log_probability = lm::SILENT;
           break;
         default:
           Usage(argv[0]);
