@@ -112,6 +112,8 @@ uint8_t *GrowForSearch(const Config &config, std::size_t memory_size, Backing &b
 
 void FinishFile(const Config &config, ModelType model_type, const std::vector<uint64_t> &counts, Backing &backing) {
   if (config.write_mmap) {
+    if (msync(backing.search.get(), backing.search.size(), MS_SYNC) || msync(backing.vocab.get(), backing.vocab.size(), MS_SYNC)) 
+      UTIL_THROW(util::ErrnoException, "msync failed for " << config.write_mmap);
     // header and vocab share the same mmap.  The header is written here because we know the counts.  
     Parameters params;
     params.counts = counts;
