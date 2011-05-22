@@ -237,7 +237,12 @@ void FilePiece::MMapShift(off_t desired_begin) throw() {
 
   // Forcibly clear the existing mmap first.  
   data_.reset();
-  data_.reset(mmap(NULL, mapped_size, PROT_READ, MAP_PRIVATE, *file_, mapped_offset), mapped_size, scoped_memory::MMAP_ALLOCATED);
+  data_.reset(mmap(NULL, mapped_size, PROT_READ, MAP_SHARED
+  // Populate where available on linux
+#ifdef MAP_POPULATE
+        | MAP_POPULATE
+#endif
+        , *file_, mapped_offset), mapped_size, scoped_memory::MMAP_ALLOCATED);
   if (data_.get() == MAP_FAILED) {
     if (desired_begin) {
       if (((off_t)-1) == lseek(*file_, desired_begin, SEEK_SET)) UTIL_THROW(ErrnoException, "mmap failed even though it worked before.  lseek failed too, so using read isn't an option either.");
