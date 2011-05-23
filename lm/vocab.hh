@@ -9,6 +9,7 @@
 #include "util/sorted_uniform.hh"
 #include "util/string_piece.hh"
 
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -59,7 +60,7 @@ class SortedVocabulary : public base::Vocabulary {
 
     WordIndex Index(const StringPiece &str) const {
       const Entry *found;
-      if (util::SortedUniformFind<const Entry *, uint64_t>(begin_, end_, detail::HashForVocab(str), found)) {
+      if (util::BoundedSortedUniformFind<const Entry *, uint64_t>(begin_ - 1, 0, end_, std::numeric_limits<uint64_t>::max(), detail::HashForVocab(str), found)) {
         return found - begin_ + 1; // +1 because <unk> is 0 and does not appear in the lookup table.
       } else {
         return 0;
