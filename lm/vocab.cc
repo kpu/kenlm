@@ -87,13 +87,13 @@ SortedVocabulary::SortedVocabulary() : begin_(NULL), end_(NULL), enumerate_(NULL
 
 std::size_t SortedVocabulary::Size(std::size_t entries, const Config &/*config*/) {
   // Lead with the number of entries.  
-  return sizeof(uint64_t) + sizeof(Entry) * entries;
+  return sizeof(uint64_t) + sizeof(uint64_t) * entries;
 }
 
 void SortedVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config) {
   assert(allocated >= Size(entries, config));
   // Leave space for number of entries.  
-  begin_ = reinterpret_cast<Entry*>(reinterpret_cast<uint64_t*>(start) + 1);
+  begin_ = reinterpret_cast<uint64_t*>(start) + 1;
   end_ = begin_;
   saw_unk_ = false;
 }
@@ -112,7 +112,7 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
     saw_unk_ = true;
     return 0;
   }
-  end_->key = hashed;
+  *end_ = hashed;
   if (enumerate_) {
     strings_to_enumerate_[end_ - begin_].assign(str.data(), str.size());
   }

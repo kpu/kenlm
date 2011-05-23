@@ -9,6 +9,12 @@
 
 namespace util {
 
+template <class T> class IdentityAccessor {
+  public:
+    typedef T Key;
+    T operator()(const uint64_t *in) const { return *in; }
+};
+
 inline std::size_t Pivot(uint64_t off, uint64_t range, std::size_t width) {
   std::size_t ret = static_cast<std::size_t>(static_cast<float>(off) / static_cast<float>(range) * static_cast<float>(width));
   // Cap for floating point rounding
@@ -29,10 +35,14 @@ inline std::size_t Pivot(unsigned char off, unsigned char range, std::size_t wid
 // before_v <= key <= after_v
 // before_v <= all values in the range [before_it + 1, after_it - 1] <= after_v
 // range is sorted.
-template <class Iterator, class Key> bool BoundedSortedUniformFind(Iterator before_it, Key before_v, Iterator after_it, Key after_v, const Key key, Iterator &out) {
+template <class Iterator, class Accessor> bool BoundedSortedUniformFind(
+    const Accessor &accessor,
+    Iterator before_it, typename Accessor::Key before_v,
+    Iterator after_it, typename Accessor::Key after_v,
+    const typename Accessor::Key key, Iterator &out) {
   while (after_it - before_it - 1 > 0) {
     Iterator pivot(before_it + (1 + Pivot(key - before_v, after_v - before_v, static_cast<std::size_t>(after_it - before_it - 1))));
-    Key mid(pivot->GetKey());
+    typename Accessor::Key mid(accessor(pivot));
     if (mid < key) {
       before_it = pivot;
       before_v = mid;
@@ -47,21 +57,21 @@ template <class Iterator, class Key> bool BoundedSortedUniformFind(Iterator befo
   return false;
 }
 
-template <class Iterator, class Key> bool SortedUniformFind(Iterator begin, Iterator end, const Key key, Iterator &out) {
+template <class Iterator, class Accessor> bool SortedUniformFind(const Accessor &accessor, Iterator begin, Iterator end, const typename Accessor::Key key, Iterator &out) {
   if (begin == end) return false;
-  Key below(begin->GetKey());
+  typename Accessor::Key below(accessor(begin));
   if (key <= below) {
     if (key == below) { out = begin; return true; }
     return false;
   }
   // Make the range [begin, end].  
   --end;
-  Key above(end->GetKey());
+  typename Accessor::Key above(accessor(end));
   if (key >= above) {
     if (key == above) { out = end; return true; }
     return false;
   }
-  return BoundedSortedUniformFind(begin, below, end, above, key, out);
+  return BoundedSortedUniformFind<Iterator, Accessor>(accessor, begin, below, end, above, key, out);
 }
 
 // To use this template, you need to define a Pivot function to match Key.  
@@ -71,7 +81,13 @@ template <class PackingT> class SortedUniformMap {
     typedef typename Packing::ConstIterator ConstIterator;
     typedef typename Packing::MutableIterator MutableIterator;
 
-  public:
+    struct Accessor {
+      public:
+        typedef typename Packing::Key Key;
+        const Key &operator()(const ConstIterator &i) const { return i->GetKey(); }
+        Key &operator()(const MutableIterator &i) const { return i->GetKey(); }
+    };
+
     // Offer consistent API with probing hash.
     static std::size_t Size(std::size_t entries, float /*ignore*/ = 0.0) {
       return sizeof(uint64_t) + entries * Packing::kBytes;
@@ -127,7 +143,7 @@ template <class PackingT> class SortedUniformMap {
       assert(initialized_);
       assert(loaded_);
 #endif
-      return SortedUniformFind<MutableIterator, Key>(begin_, end_, key, out);
+      return SortedUniformFind<MutableIterator, Accessor>(begin_, end_, key, out);
     }
 
     // Do not call before FinishedInserting.  
@@ -136,7 +152,7 @@ template <class PackingT> class SortedUniformMap {
       assert(initialized_);
       assert(loaded_);
 #endif
-      return SortedUniformFind<ConstIterator, Key>(ConstIterator(begin_), ConstIterator(end_), key, out);
+      return SortedUniformFind<ConstIterator, Accessor>(Accessor(), ConstIterator(begin_), ConstIterator(end_), key, out);
     }
 
     ConstIterator begin() const { return begin_; }

@@ -2,7 +2,6 @@
 
 #include "util/bit_packing.hh"
 #include "util/exception.hh"
-#include "util/proxy_iterator.hh"
 #include "util/sorted_uniform.hh"
 
 #include <assert.h>
@@ -12,47 +11,27 @@ namespace ngram {
 namespace trie {
 namespace {
 
-// Assumes key is first.  
-class JustKeyProxy {
+class KeyAccessor {
   public:
-    JustKeyProxy() : inner_(), base_(), key_mask_(), key_bits_(), total_bits_() {}
+    KeyAccessor(const void *base, uint64_t key_mask, uint8_t key_bits, uint8_t total_bits) 
+      : base_(reinterpret_cast<const uint8_t*>(base)), key_mask_(key_mask), key_bits_(key_bits), total_bits_(total_bits) {}
 
-    operator uint64_t() const { return GetKey(); }
+    typedef uint64_t Key;
 
-    uint64_t GetKey() const {
-      uint64_t bit_off = inner_ * static_cast<uint64_t>(total_bits_);
-      return util::ReadInt57(base_ + bit_off / 8, bit_off & 7, key_bits_, key_mask_);
+    Key operator()(uint64_t index) const {
+      uint64_t bit_off = index * static_cast<uint64_t>(total_bits_);
+      return util::ReadInt57(base_ + (bit_off >> 3), bit_off & 7, key_bits_, key_mask_);
     }
 
   private:
-    friend class util::ProxyIterator<JustKeyProxy>;
-    friend bool FindBitPacked(const void *base, uint64_t key_mask, uint8_t key_bits, uint8_t total_bits, uint64_t begin_index, uint64_t end_index, uint64_t max_vocab, WordIndex key, uint64_t &at_index);
-
-    JustKeyProxy(const void *base, uint64_t index, uint64_t key_mask, uint8_t key_bits, uint8_t total_bits)
-      : inner_(index), base_(static_cast<const uint8_t*>(base)), key_mask_(key_mask), key_bits_(key_bits), total_bits_(total_bits) {}
-
-    // This is a read-only iterator.  
-    JustKeyProxy &operator=(const JustKeyProxy &other);
-
-    typedef uint64_t value_type;
-
-    typedef uint64_t InnerIterator;
-    uint64_t &Inner() { return inner_; }
-    const uint64_t &Inner() const { return inner_; }
-
-    // The address in bits is base_ * 8 + inner_ * total_bits_.  
-    uint64_t inner_;
     const uint8_t *const base_;
-    const uint64_t key_mask_;
+    const WordIndex key_mask_;
     const uint8_t key_bits_, total_bits_;
 };
 
-bool FindBitPacked(const void *base, uint64_t key_mask, uint8_t key_bits, uint8_t total_bits, uint64_t begin_index, uint64_t end_index, const uint64_t max_vocab, const WordIndex key, uint64_t &at_index) {
-  util::ProxyIterator<JustKeyProxy> before_it(JustKeyProxy(base, begin_index, key_mask, key_bits, total_bits));
-  util::ProxyIterator<JustKeyProxy> after_it(JustKeyProxy(base, end_index, key_mask, key_bits, total_bits));
-  util::ProxyIterator<JustKeyProxy> out;
-  if (!util::BoundedSortedUniformFind<util::ProxyIterator<JustKeyProxy>, uint64_t>(before_it - 1, (uint64_t)0, after_it, max_vocab, key, out)) return false;
-  at_index = out.Inner();
+bool FindBitPacked(const void *base, uint64_t key_mask, uint8_t key_bits, uint8_t total_bits, uint64_t begin_index, uint64_t end_index, const uint64_t max_vocab, const uint64_t key, uint64_t &at_index) {
+  KeyAccessor accessor(base, key_mask, key_bits, total_bits);
+  if (!util::BoundedSortedUniformFind<uint64_t, KeyAccessor>(accessor, begin_index - 1, (uint64_t)0, end_index, max_vocab, key, at_index)) return false;
   return true;
 }
 } // namespace

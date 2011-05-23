@@ -45,22 +45,16 @@ class WriteWordsWrapper : public EnumerateVocab {
 
 // Vocabulary based on sorted uniform find storing only uint64_t values and using their offsets as indices.  
 class SortedVocabulary : public base::Vocabulary {
-  private:
-    // Sorted uniform requires a GetKey function.  
-    struct Entry {
-      uint64_t GetKey() const { return key; }
-      uint64_t key;
-      bool operator<(const Entry &other) const {
-        return key < other.key;
-      }
-    };
-
   public:
     SortedVocabulary();
 
     WordIndex Index(const StringPiece &str) const {
-      const Entry *found;
-      if (util::BoundedSortedUniformFind<const Entry *, uint64_t>(begin_ - 1, 0, end_, std::numeric_limits<uint64_t>::max(), detail::HashForVocab(str), found)) {
+      const uint64_t *found;
+      if (util::BoundedSortedUniformFind<const uint64_t*, util::IdentityAccessor<uint64_t> >(
+            util::IdentityAccessor<uint64_t>(),
+            begin_ - 1, 0,
+            end_, std::numeric_limits<uint64_t>::max(),
+            detail::HashForVocab(str), found)) {
         return found - begin_ + 1; // +1 because <unk> is 0 and does not appear in the lookup table.
       } else {
         return 0;
@@ -84,7 +78,7 @@ class SortedVocabulary : public base::Vocabulary {
     void LoadedBinary(int fd, EnumerateVocab *to);
 
   private:
-    Entry *begin_, *end_;
+    uint64_t *begin_, *end_;
 
     bool saw_unk_;
 

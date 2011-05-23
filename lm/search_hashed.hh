@@ -8,7 +8,6 @@
 
 #include "util/key_value_packing.hh"
 #include "util/probing_hash_table.hh"
-#include "util/sorted_uniform.hh"
 
 #include <algorithm>
 #include <vector>
@@ -141,15 +140,6 @@ struct ProbingHashedSearch : public TemplateHashedSearch<
   util::ProbingHashTable<util::ByteAlignedPacking<uint64_t, Prob>, IdentityHash> > {
 
   static const ModelType kModelType = HASH_PROBING;
-};
-
-struct SortedHashedSearch : public TemplateHashedSearch<
-  util::SortedUniformMap<util::ByteAlignedPacking<uint64_t, ProbBackoff> >,
-  util::SortedUniformMap<util::ByteAlignedPacking<uint64_t, Prob> > > {
-
-  SortedHashedSearch();
-  
-  static const ModelType kModelType = HASH_SORTED;
 };
 
 } // namespace detail

@@ -228,7 +228,6 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 }
 
 template class GenericModel<ProbingHashedSearch, ProbingVocabulary>;
-template class GenericModel<SortedHashedSearch, SortedVocabulary>;
 template class GenericModel<trie::TrieSearch, SortedVocabulary>;
 
 } // namespace detail

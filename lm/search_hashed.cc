@@ -109,11 +109,6 @@ template <class MiddleT, class LongestT> template <class Voc> void TemplateHashe
 }
 
 template void TemplateHashedSearch<ProbingHashedSearch::Middle, ProbingHashedSearch::Longest>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab, Backing &backing);
-template void TemplateHashedSearch<SortedHashedSearch::Middle, SortedHashedSearch::Longest>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, SortedVocabulary &vocab, Backing &backing);
-
-SortedHashedSearch::SortedHashedSearch() {
-  UTIL_THROW(util::Exception, "Sorted is broken at the moment, sorry");
-}
 
 } // namespace detail
 } // namespace ngram
