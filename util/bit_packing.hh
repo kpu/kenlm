@@ -42,49 +42,52 @@ inline uint8_t BitPackShift(uint8_t bit, uint8_t length) {
 #error "Bit packing code isn't written for your byte order."
 #endif
 
+inline uint64_t ReadOff(const void *base, uint64_t bit_off) {
+  return *reinterpret_cast<const uint64_t*>(reinterpret_cast<const uint8_t*>(base) + (bit_off >> 3));
+}
+
 /* Pack integers up to 57 bits using their least significant digits. 
  * The length is specified using mask:
  * Assumes mask == (1 << length) - 1 where length <= 57.   
  */
 inline uint64_t ReadInt57(const void *base, uint64_t bit_off, uint8_t length, uint64_t mask) {
-  uint64_t val = *reinterpret_cast<const uint64_t*>(
-      reinterpret_cast<const uint8_t*>(base) + (bit_off >> 3));
-  return (val >> BitPackShift(bit_off & 7, length)) & mask;
+  return (ReadOff(base, bit_off) >> BitPackShift(bit_off & 7, length)) & mask;
 }
 /* Assumes value < (1 << length) and length <= 57.
  * Assumes the memory is zero initially. 
  */
-inline void WriteInt57(void *base, uint8_t bit, uint8_t length, uint64_t value) {
-  *reinterpret_cast<uint64_t*>(base) |= (value << BitPackShift(bit, length));
+inline void WriteInt57(void *base, uint64_t bit_off, uint8_t length, uint64_t value) {
+  *reinterpret_cast<uint64_t*>(reinterpret_cast<uint8_t*>(base) + (bit_off >> 3)) |= 
+    (value << BitPackShift(bit_off & 7, length));
 }
 
 typedef union { float f; uint32_t i; } FloatEnc;
 
-inline float ReadFloat32(const void *base, uint8_t bit) {
+inline float ReadFloat32(const void *base, uint64_t bit_off) {
   FloatEnc encoded;
-  encoded.i = *reinterpret_cast<const uint64_t*>(base) >> BitPackShift(bit, 32);
+  encoded.i = ReadOff(base, bit_off) >> BitPackShift(bit_off & 7, 32);
   return encoded.f;
 }
-inline void WriteFloat32(void *base, uint8_t bit, float value) {
+inline void WriteFloat32(void *base, uint64_t bit_off, float value) {
   FloatEnc encoded;
   encoded.f = value;
-  WriteInt57(base, bit, 32, encoded.i);
+  WriteInt57(base, bit_off, 32, encoded.i);
 }
 
 const uint32_t kSignBit = 0x80000000;
 
-inline float ReadNonPositiveFloat31(const void *base, uint8_t bit) {
+inline float ReadNonPositiveFloat31(const void *base, uint64_t bit_off) {
   FloatEnc encoded;
-  encoded.i = *reinterpret_cast<const uint64_t*>(base) >> BitPackShift(bit, 31);
+  encoded.i = ReadOff(base, bit_off) >> BitPackShift(bit_off & 7, 31);
   // Sign bit set means negative.  
   encoded.i |= kSignBit;
   return encoded.f;
 }
-inline void WriteNonPositiveFloat31(void *base, uint8_t bit, float value) {
+inline void WriteNonPositiveFloat31(void *base, uint64_t bit_off, float value) {
   FloatEnc encoded;
   encoded.f = value;
   encoded.i &= ~kSignBit;
-  WriteInt57(base, bit, 31, encoded.i);
+  WriteInt57(base, bit_off, 31, encoded.i);
 }
 
 void BitPackingSanity();

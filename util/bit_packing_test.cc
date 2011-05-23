@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE(Consecutive) {
   char mem[57+8];
   memset(mem, 0, sizeof(mem));
   for (uint64_t b = 0; b < 57 * 8; b += 57) {
-    WriteInt57(mem + (b / 8), b % 8, 57, test57);
+    WriteInt57(mem, b, 57, test57);
     BOOST_CHECK_EQUAL(test57, ReadInt57(mem, b, 57, (1ULL << 57) - 1));
   }
   for (uint64_t b = 0; b < 57 * 8; b += 57) {

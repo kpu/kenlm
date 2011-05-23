@@ -28,7 +28,7 @@ void BitPackingSanity() {
   memset(mem, 0, sizeof(mem));
   const uint64_t test57 = 0x123456789abcdefULL;
   for (uint64_t b = 0; b < 57 * 8; b += 57) {
-    WriteInt57(mem + b / 8, b % 8, 57, test57);
+    WriteInt57(mem, b, 57, test57);
   }
   for (uint64_t b = 0; b < 57 * 8; b += 57) {
     if (test57 != ReadInt57(mem, b, 57, (1ULL << 57) - 1))
