@@ -50,7 +50,7 @@ class SortedVocabulary : public base::Vocabulary {
 
     WordIndex Index(const StringPiece &str) const {
       const uint64_t *found;
-      if (util::BoundedSortedUniformFind<const uint64_t*, util::IdentityAccessor<uint64_t> >(
+      if (util::BoundedSortedUniformFind<const uint64_t*, util::IdentityAccessor<uint64_t>, util::Pivot64>(
             util::IdentityAccessor<uint64_t>(),
             begin_ - 1, 0,
             end_, std::numeric_limits<uint64_t>::max(),

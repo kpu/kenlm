@@ -31,7 +31,7 @@ class KeyAccessor {
 
 bool FindBitPacked(const void *base, uint64_t key_mask, uint8_t key_bits, uint8_t total_bits, uint64_t begin_index, uint64_t end_index, const uint64_t max_vocab, const uint64_t key, uint64_t &at_index) {
   KeyAccessor accessor(base, key_mask, key_bits, total_bits);
-  if (!util::BoundedSortedUniformFind<uint64_t, KeyAccessor>(accessor, begin_index - 1, (uint64_t)0, end_index, max_vocab, key, at_index)) return false;
+  if (!util::BoundedSortedUniformFind<uint64_t, KeyAccessor, util::PivotSelect<sizeof(WordIndex)>::T>(accessor, begin_index - 1, (uint64_t)0, end_index, max_vocab, key, at_index)) return false;
   return true;
 }
 } // namespace
