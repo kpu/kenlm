@@ -46,8 +46,10 @@ inline uint8_t BitPackShift(uint8_t bit, uint8_t length) {
  * The length is specified using mask:
  * Assumes mask == (1 << length) - 1 where length <= 57.   
  */
-inline uint64_t ReadInt57(const void *base, uint8_t bit, uint8_t length, uint64_t mask) {
-  return (*reinterpret_cast<const uint64_t*>(base) >> BitPackShift(bit, length)) & mask;
+inline uint64_t ReadInt57(const void *base, uint64_t bit_off, uint8_t length, uint64_t mask) {
+  uint64_t val = *reinterpret_cast<const uint64_t*>(
+      reinterpret_cast<const uint8_t*>(base) + (bit_off >> 3));
+  return (val >> BitPackShift(bit_off & 7, length)) & mask;
 }
 /* Assumes value < (1 << length) and length <= 57.
  * Assumes the memory is zero initially. 

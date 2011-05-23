@@ -31,7 +31,7 @@ void BitPackingSanity() {
     WriteInt57(mem + b / 8, b % 8, 57, test57);
   }
   for (uint64_t b = 0; b < 57 * 8; b += 57) {
-    if (test57 != ReadInt57(mem + b / 8, b % 8, 57, (1ULL << 57) - 1))
+    if (test57 != ReadInt57(mem, b, 57, (1ULL << 57) - 1))
       UTIL_THROW(Exception, "The bit packing routines are failing for your architecture.  Please send a bug report with your architecture, operating system, and compiler.");
   }
   // TODO: more checks.  

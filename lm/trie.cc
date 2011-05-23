@@ -19,8 +19,7 @@ class KeyAccessor {
     typedef uint64_t Key;
 
     Key operator()(uint64_t index) const {
-      uint64_t bit_off = index * static_cast<uint64_t>(total_bits_);
-      return util::ReadInt57(base_ + (bit_off >> 3), bit_off & 7, key_bits_, key_mask_);
+      return util::ReadInt57(base_, index * static_cast<uint64_t>(total_bits_), key_bits_, key_mask_);
     }
 
   private:
@@ -99,10 +98,10 @@ bool BitPackedMiddle::Find(WordIndex word, float &prob, float &backoff, NodeRang
   at_pointer += prob_bits_;
   backoff = util::ReadFloat32(base_ + (at_pointer >> 3), at_pointer & 7);
   at_pointer += backoff_bits_;
-  range.begin = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_bits_, next_mask_);
+  range.begin = util::ReadInt57(base_, at_pointer, next_bits_, next_mask_);
   // Read the next entry's pointer.  
   at_pointer += total_bits_;
-  range.end = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_bits_, next_mask_);
+  range.end = util::ReadInt57(base_, at_pointer, next_bits_, next_mask_);
   return true;
 }
 
@@ -114,10 +113,10 @@ bool BitPackedMiddle::FindNoProb(WordIndex word, float &backoff, NodeRange &rang
   at_pointer += prob_bits_;
   backoff = util::ReadFloat32(base_ + (at_pointer >> 3), at_pointer & 7);
   at_pointer += backoff_bits_;
-  range.begin = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_bits_, next_mask_);
+  range.begin = util::ReadInt57(base_, at_pointer, next_bits_, next_mask_);
   // Read the next entry's pointer.  
   at_pointer += total_bits_;
-  range.end = util::ReadInt57(base_ + (at_pointer >> 3), at_pointer & 7, next_bits_, next_mask_);
+  range.end = util::ReadInt57(base_, at_pointer, next_bits_, next_mask_);
   return true;
 }
 
