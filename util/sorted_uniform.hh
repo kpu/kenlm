@@ -24,6 +24,29 @@ inline std::size_t Pivot(unsigned char off, unsigned char range, std::size_t wid
   return static_cast<std::size_t>(static_cast<std::size_t>(off) * width / static_cast<std::size_t>(range));
 }*/
 
+// Search the range [before_it + 1, after_it - 1] for key.  
+// Preconditions:
+// before_v <= key <= after_v
+// before_v <= all values in the range [before_it + 1, after_it - 1] <= after_v
+// range is sorted.
+template <class Iterator, class Key> bool BoundedSortedUniformFind(Iterator before_it, Key before_v, Iterator after_it, Key after_v, const Key key, Iterator &out) {
+  while (after_it - before_it - 1 > 0) {
+    Iterator pivot(before_it + (1 + Pivot(key - before_v, after_v - before_v, static_cast<std::size_t>(after_it - before_it - 1))));
+    Key mid(pivot->GetKey());
+    if (mid < key) {
+      before_it = pivot;
+      before_v = mid;
+    } else if (mid > key) {
+      after_it = pivot;
+      after_v = mid;
+    } else {
+      out = pivot;
+      return true;
+    }
+  }
+  return false;
+}
+
 template <class Iterator, class Key> bool SortedUniformFind(Iterator begin, Iterator end, const Key key, Iterator &out) {
   if (begin == end) return false;
   Key below(begin->GetKey());
@@ -38,23 +61,7 @@ template <class Iterator, class Key> bool SortedUniformFind(Iterator begin, Iter
     if (key == above) { out = end; return true; }
     return false;
   }
-
-  // Search the range [begin + 1, end - 1] knowing that *begin == below, *end == above.  
-  while (end - begin > 1) {
-    Iterator pivot(begin + (1 + Pivot(key - below, above - below, static_cast<std::size_t>(end - begin - 1))));
-    Key mid(pivot->GetKey());
-    if (mid < key) {
-      begin = pivot;
-      below = mid;
-    } else if (mid > key) {
-      end = pivot;
-      above = mid;
-    } else {
-      out = pivot;
-      return true;
-    }
-  }
-  return false;
+  return BoundedSortedUniformFind(begin, below, end, above, key, out);
 }
 
 // To use this template, you need to define a Pivot function to match Key.  

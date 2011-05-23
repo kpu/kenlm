@@ -80,7 +80,7 @@ class BitPacked {
 
     uint8_t *base_;
 
-    uint64_t insert_index_;
+    uint64_t insert_index_, max_vocab_;
 };
 
 class BitPackedMiddle : public BitPacked {
