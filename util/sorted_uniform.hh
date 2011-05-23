@@ -36,6 +36,27 @@ template <> struct PivotSelect<8> { typedef Pivot64 T; };
 template <> struct PivotSelect<4> { typedef Pivot32 T; };
 template <> struct PivotSelect<2> { typedef Pivot32 T; };
 
+/* Binary search. */
+template <class Iterator, class Accessor> bool BinaryFind(
+    const Accessor &accessor,
+    Iterator begin,
+    Iterator end,
+    const typename Accessor::Key key, Iterator &out) {
+  while (end > begin) {
+    Iterator pivot(begin + (end - begin) / 2);
+    typename Accessor::Key mid(accessor(pivot));
+    if (mid < key) {
+      begin = pivot;
+    } else if (mid > key) {
+      end = pivot - 1;
+    } else {
+      out = pivot;
+      return true;
+    }
+  }
+  return false;
+}
+
 // Search the range [before_it + 1, after_it - 1] for key.  
 // Preconditions:
 // before_v <= key <= after_v
