@@ -46,9 +46,9 @@ template <class Iterator, class Accessor> bool BinaryFind(
     Iterator pivot(begin + (end - begin) / 2);
     typename Accessor::Key mid(accessor(pivot));
     if (mid < key) {
-      begin = pivot;
+      begin = pivot + 1;
     } else if (mid > key) {
-      end = pivot - 1;
+      end = pivot;
     } else {
       out = pivot;
       return true;
