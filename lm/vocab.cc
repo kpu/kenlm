@@ -134,8 +134,10 @@ void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
     util::JointSort(begin_, end_, reorder_vocab + 1);
   }
   SetSpecial(Index("<s>"), Index("</s>"), 0);
-  // Save size.  
+  // Save size.  Excludes UNK.  
   *(reinterpret_cast<uint64_t*>(begin_) - 1) = end_ - begin_;
+  // Includes UNK.
+  bound_ = end_ - begin_ + 1;
 }
 
 void SortedVocabulary::LoadedBinary(int fd, EnumerateVocab *to) {

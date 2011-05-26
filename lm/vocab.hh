@@ -63,6 +63,9 @@ class SortedVocabulary : public base::Vocabulary {
 
     static size_t Size(std::size_t entries, const Config &config);
 
+    // Vocab words are [0, Bound())  Only valid after FinishedLoading.  
+    WordIndex Bound() const { return bound_; }
+
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
     void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
 
@@ -79,6 +82,10 @@ class SortedVocabulary : public base::Vocabulary {
 
   private:
     uint64_t *begin_, *end_;
+
+    WordIndex bound_;
+
+    WordIndex highest_value_;
 
     bool saw_unk_;
 
@@ -99,6 +106,9 @@ class ProbingVocabulary : public base::Vocabulary {
     }
 
     static size_t Size(std::size_t entries, const Config &config);
+
+    // Vocab words are [0, Bound())
+    WordIndex Bound() const { return available_; }
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
     void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
