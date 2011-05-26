@@ -63,7 +63,8 @@ class SortedVocabulary : public base::Vocabulary {
 
     static size_t Size(std::size_t entries, const Config &config);
 
-    // Vocab words are [0, Bound())  Only valid after FinishedLoading.  
+    // Vocab words are [0, Bound())  Only valid after FinishedLoading/LoadedBinary.  
+    // While this number is correct, ProbingVocabulary::Bound might not be correct in some cases.  
     WordIndex Bound() const { return bound_; }
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
@@ -107,7 +108,10 @@ class ProbingVocabulary : public base::Vocabulary {
 
     static size_t Size(std::size_t entries, const Config &config);
 
-    // Vocab words are [0, Bound())
+    // Vocab words are [0, Bound()).  
+    // WARNING WARNING: returns UINT_MAX when loading binary and not enumerating vocabulary.  
+    // Fixing this bug requires a binary file format change and will be fixed with the next binary file format update.  
+    // Specifically, the binary file format does not currently indicate whether <unk> is in count or not.  
     WordIndex Bound() const { return available_; }
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
