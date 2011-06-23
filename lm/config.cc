@@ -18,6 +18,8 @@ Config::Config() :
   arpa_complain(ALL),
   write_mmap(NULL),
   include_vocab(true),
+  prob_bits(8),
+  backoff_bits(8),
   load_method(util::POPULATE_OR_READ) {}
 
 } // namespace ngram

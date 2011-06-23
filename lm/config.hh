@@ -71,6 +71,11 @@ struct Config {
   // Include the vocab in the binary file?  Only effective if write_mmap != NULL.  
   bool include_vocab;
 
+  // Quantization options.  Only effective for QuantModel.  One value is
+  // reserved for each of prob and backoff, so 2^bits - 1 buckets will be used
+  // to quantize.  
+  uint8_t prob_bits, backoff_bits;
+
   
   
   // ONLY EFFECTIVE WHEN READING BINARY
