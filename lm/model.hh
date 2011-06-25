@@ -5,6 +5,7 @@
 #include "lm/config.hh"
 #include "lm/facade.hh"
 #include "lm/max_order.hh"
+#include "lm/quantize.hh"
 #include "lm/search_hashed.hh"
 #include "lm/search_trie.hh"
 #include "lm/vocab.hh"
@@ -145,7 +146,7 @@ typedef ProbingModel Model;
 
 // Smaller implementation.
 typedef ::lm::ngram::SortedVocabulary SortedVocabulary;
-typedef detail::GenericModel<trie::TrieSearch, SortedVocabulary> TrieModel;
+typedef detail::GenericModel<trie::TrieSearch<DontQuantize>, SortedVocabulary> TrieModel;
 
 } // namespace ngram
 } // namespace lm

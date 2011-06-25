@@ -1,0 +1,144 @@
+#ifndef LM_QUANTIZE_H__
+#define LM_QUANTIZE_H__
+
+#include "lm/blank.hh"
+#include "lm/config.hh"
+#include "util/bit_packing.hh"
+
+#include <algorithm>
+#include <vector>
+
+#include <inttypes.h>
+
+namespace lm {
+namespace ngram {
+
+class Config;
+
+/* Store values directly and don't quantize. */
+class DontQuantize {
+  public:
+    static std::size_t Size(const std::vector<uint64_t> &/*counts*/, const Config &/*config*/) { return 0; }
+    static uint8_t MiddleBits(const Config &/*config*/) { return 63; }
+    static uint8_t LongestBits(const Config &/*config*/) { return 31; }
+
+    struct Middle {
+      void Write(void *base, uint64_t bit_offset, float prob, float backoff) const {
+        util::WriteNonPositiveFloat31(base, bit_offset, prob);
+        util::WriteFloat32(base, bit_offset + 31, backoff);
+      }
+      void Read(const void *base, uint64_t bit_offset, float &prob, float &backoff) const {
+        prob = util::ReadNonPositiveFloat31(base, bit_offset);
+        backoff = util::ReadFloat32(base, bit_offset + 31);
+      }
+      void ReadBackoff(const void *base, uint64_t bit_offset, float &backoff) const {
+        backoff = util::ReadFloat32(base, bit_offset + 31);
+      }
+      uint8_t TotalBits() const { return 63; }
+    };
+
+    struct Longest {
+      void Write(void *base, uint64_t bit_offset, float prob) const {
+        util::WriteNonPositiveFloat31(base, bit_offset, prob);
+      }
+      void Read(const void *base, uint64_t bit_offset, float &prob) const {
+        prob = util::ReadNonPositiveFloat31(base, bit_offset);
+      }
+      uint8_t TotalBits() const { return 31; }
+    };
+
+    DontQuantize() {}
+
+    void Init(uint8_t * /*start*/, const std::vector<uint64_t> & /*counts*/, const Config & /*config*/) {}
+
+    Middle Mid(uint8_t /*order*/) const { return Middle(); }
+    Longest Long(uint8_t /*order*/) const { return Longest(); }
+};
+
+class SeparatelyQuantize {
+  private:
+    class Bins {
+      public:
+        Bins(uint8_t bits, const float *const begin) : begin_(begin), end_(begin_ + (1ULL << bits)), bits_(bits), mask_((1ULL << bits) - 1) {}
+
+        uint64_t Encode(float value) const {
+          const float *above = std::lower_bound(begin_, end_, value);
+          if (above == begin_) return 0;
+          if (above == end_) return end_ - begin_ - 1;
+          return above - begin_ - (value - *(above - 1) < *above - value);
+        }
+
+        float Decode(std::size_t off) const { return begin_[off]; }
+
+        uint8_t Bits() const { return bits_; }
+
+        uint64_t Mask() const { return mask_; }
+
+      private:
+        const float *const begin_;
+        const float *const end_;
+        const uint8_t bits_;
+        const uint64_t mask_;
+    };
+
+  public:
+    static std::size_t Size(const std::vector<uint64_t> &counts, const Config &config) {
+      size_t longest_table = (static_cast<size_t>(1) << static_cast<size_t>(config.prob_bits)) * sizeof(float);
+      size_t middle_table = (static_cast<size_t>(1) << static_cast<size_t>(config.backoff_bits)) * sizeof(float) + longest_table;
+      // unigrams are currently not quantized so no need for a table.  
+      return (counts.size() - 2) * middle_table + longest_table + /* for the bit counts and alignment padding) */ 8;
+    }
+
+    static uint8_t MiddleBits(const Config &config) { return config.prob_bits + config.backoff_bits; }
+    static uint8_t LongestBits(const Config &config) { return config.prob_bits; }
+
+    class Middle {
+      public:
+        Middle(uint8_t prob_bits, const float *prob_begin, uint8_t backoff_bits, const float *backoff_begin) : 
+          total_bits_(prob_bits + backoff_bits), total_mask_((1ULL << total_bits_) - 1), prob_(prob_bits, prob_begin), backoff_(backoff_bits, backoff_begin) {}
+
+        void Write(void *base, uint64_t bit_offset, float prob, float backoff) const {
+          util::WriteInt57(base, bit_offset, total_bits_, 
+              (prob_.Encode(prob) << backoff_.Bits()) | backoff_.Encode(prob));
+        }
+
+        void Read(const void *base, uint64_t bit_offset, float &prob, float &backoff) const {
+          uint64_t both = util::ReadInt57(base, bit_offset, total_bits_, total_mask_);
+          prob = prob_.Decode(both >> backoff_.Bits());
+          backoff = backoff_.Decode(both & backoff_.Mask());
+        }
+
+        void ReadBackoff(const void *base, uint64_t bit_offset, float &backoff) const {
+          backoff = backoff_.Decode(util::ReadInt25(base, bit_offset, backoff_.Bits(), backoff_.Mask()));
+        }
+
+        uint8_t TotalBits() const { return total_bits_; }
+
+      private:
+        const uint8_t total_bits_;
+        const uint64_t total_mask_;
+        const Bins prob_;
+        const Bins backoff_;
+    };
+
+    class Longest {
+      public:
+        Longest(uint8_t prob_bits, const float *prob_begin) : prob_(prob_bits, prob_begin) {}
+
+        void Write(void *base, uint64_t bit_offset, float prob) const {
+          util::WriteInt25(base, bit_offset, prob_.Bits(), prob_.Encode(prob));
+        }
+
+        void Read(const void *base, uint64_t bit_offset, float &prob) const {
+          prob = prob_.Decode(util::ReadInt25(base, bit_offset, prob_.Bits(), prob_.Mask()));
+        }
+
+      private:
+        const Bins prob_;
+    };
+};
+
+} // namespace ngram
+} // namespace lm
+
+#endif // LM_QUANTIZE_H__

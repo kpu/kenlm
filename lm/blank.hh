@@ -22,6 +22,7 @@ namespace ngram {
  */
 const float kNoExtensionBackoff = -0.0;
 const float kExtensionBackoff = 0.0;
+const uint32_t kNoExtensionQuant = 0;
 
 inline void SetExtension(float &backoff) {
   if (backoff == kNoExtensionBackoff) backoff = kExtensionBackoff;
@@ -47,6 +48,8 @@ inline bool HasExtension(const float &backoff) {
  */
 const float kBlankProb = -std::numeric_limits<float>::infinity();
 const float kBlankBackoff = kNoExtensionBackoff;
+const uint32_t kBlankProbQuant = 0;
+const uint32_t kBlankBackoffQuant = 0;
 
 } // namespace ngram
 } // namespace lm

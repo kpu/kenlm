@@ -61,73 +61,68 @@ struct HashedSearch {
   }
 };
 
-template <class MiddleT, class LongestT> struct TemplateHashedSearch : public HashedSearch {
-  typedef MiddleT Middle;
-  std::vector<Middle> middle;
+template <class MiddleT, class LongestT> class TemplateHashedSearch : public HashedSearch {
+  public:
+    typedef MiddleT Middle;
 
-  typedef LongestT Longest;
-  Longest longest;
+    typedef LongestT Longest;
+    Longest longest;
 
-  static std::size_t Size(const std::vector<uint64_t> &counts, const Config &config) {
-    std::size_t ret = Unigram::Size(counts[0]);
-    for (unsigned char n = 1; n < counts.size() - 1; ++n) {
-      ret += Middle::Size(counts[n], config.probing_multiplier);
+    static std::size_t Size(const std::vector<uint64_t> &counts, const Config &config) {
+      std::size_t ret = Unigram::Size(counts[0]);
+      for (unsigned char n = 1; n < counts.size() - 1; ++n) {
+        ret += Middle::Size(counts[n], config.probing_multiplier);
+      }
+      return ret + Longest::Size(counts.back(), config.probing_multiplier);
     }
-    return ret + Longest::Size(counts.back(), config.probing_multiplier);
-  }
 
-  uint8_t *SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
-    std::size_t allocated = Unigram::Size(counts[0]);
-    unigram = Unigram(start, allocated);
-    start += allocated;
-    for (unsigned int n = 2; n < counts.size(); ++n) {
-      allocated = Middle::Size(counts[n - 1], config.probing_multiplier);
-      middle.push_back(Middle(start, allocated));
-      start += allocated;
+    uint8_t *SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config);
+
+    template <class Voc> void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing);
+
+    const Middle *MiddleBegin() const { return &*middle_.begin(); }
+    const Middle *MiddleEnd() const { return &*middle_.end(); }
+
+    bool LookupMiddle(const Middle &middle, WordIndex word, float &prob, float &backoff, Node &node) const {
+      node = CombineWordHash(node, word);
+      typename Middle::ConstIterator found;
+      if (!middle.Find(node, found)) return false;
+      prob = found->GetValue().prob;
+      backoff = found->GetValue().backoff;
+      return true;
     }
-    allocated = Longest::Size(counts.back(), config.probing_multiplier);
-    longest = Longest(start, allocated);
-    start += allocated;
-    return start;
-  }
 
-  template <class Voc> void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing);
+    void LoadedBinary();
 
-  bool LookupMiddle(const Middle &middle, WordIndex word, float &prob, float &backoff, Node &node) const {
-    node = CombineWordHash(node, word);
-    typename Middle::ConstIterator found;
-    if (!middle.Find(node, found)) return false;
-    prob = found->GetValue().prob;
-    backoff = found->GetValue().backoff;
-    return true;
-  }
-
-  bool LookupMiddleNoProb(const Middle &middle, WordIndex word, float &backoff, Node &node) const {
-    node = CombineWordHash(node, word);
-    typename Middle::ConstIterator found;
-    if (!middle.Find(node, found)) return false;
-    backoff = found->GetValue().backoff;
-    return true;
-  }
-
-  bool LookupLongest(WordIndex word, float &prob, Node &node) const {
-    node = CombineWordHash(node, word);
-    typename Longest::ConstIterator found;
-    if (!longest.Find(node, found)) return false;
-    prob = found->GetValue().prob;
-    return true;
-  }
-
-  // Geenrate a node without necessarily checking that it actually exists.  
-  // Optionally return false if it's know to not exist.  
-  bool FastMakeNode(const WordIndex *begin, const WordIndex *end, Node &node) const {
-    assert(begin != end);
-    node = static_cast<Node>(*begin);
-    for (const WordIndex *i = begin + 1; i < end; ++i) {
-      node = CombineWordHash(node, *i);
+    bool LookupMiddleNoProb(const Middle &middle, WordIndex word, float &backoff, Node &node) const {
+      node = CombineWordHash(node, word);
+      typename Middle::ConstIterator found;
+      if (!middle.Find(node, found)) return false;
+      backoff = found->GetValue().backoff;
+      return true;
     }
-    return true;
-  }
+
+    bool LookupLongest(WordIndex word, float &prob, Node &node) const {
+      node = CombineWordHash(node, word);
+      typename Longest::ConstIterator found;
+      if (!longest.Find(node, found)) return false;
+      prob = found->GetValue().prob;
+      return true;
+    }
+
+    // Geenrate a node without necessarily checking that it actually exists.  
+    // Optionally return false if it's know to not exist.  
+    bool FastMakeNode(const WordIndex *begin, const WordIndex *end, Node &node) const {
+      assert(begin != end);
+      node = static_cast<Node>(*begin);
+      for (const WordIndex *i = begin + 1; i < end; ++i) {
+        node = CombineWordHash(node, *i);
+      }
+      return true;
+    }
+
+  private:
+    std::vector<Middle> middle_;
 };
 
 // std::identity is an SGI extension :-(
