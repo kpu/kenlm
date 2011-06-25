@@ -130,9 +130,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     
     VocabularyT vocab_;
 
-    typedef typename Search::Unigram Unigram;
     typedef typename Search::Middle Middle;
-    typedef typename Search::Longest Longest;
 
     Search search_;
 };
