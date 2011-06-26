@@ -38,7 +38,7 @@ const char kSeparatelyQuantizeVersion = 1;
 
 } // namespace
 
-void SeparatelyQuantize::UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {
+void SeparatelyQuantize::UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &/*counts*/, Config &config) {
   char version;
   if (read(fd, &version, 1) != 1 || read(fd, &config.prob_bits, 1) != 1 || read(fd, &config.backoff_bits, 1) != 1) 
     UTIL_THROW(util::ErrnoException, "Failed to read header for quantization.");

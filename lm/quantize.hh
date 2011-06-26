@@ -22,8 +22,8 @@ class Config;
 class DontQuantize {
   public:
     static const ModelType kModelType = TRIE_SORTED;
-    static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {}
-    static std::size_t Size(uint8_t order, const Config &/*config*/) { return 0; }
+    static void UpdateConfigFromBinary(int, const std::vector<uint64_t> &, Config &) {}
+    static std::size_t Size(uint8_t /*order*/, const Config &/*config*/) { return 0; }
     static uint8_t MiddleBits(const Config &/*config*/) { return 63; }
     static uint8_t LongestBits(const Config &/*config*/) { return 31; }
 
