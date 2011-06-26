@@ -69,7 +69,7 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
     Longest longest;
 
     // TODO: move probing_multiplier here with next binary file format update.  
-    static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {}
+    static void UpdateConfigFromBinary(int, const std::vector<uint64_t> &, Config &) {}
 
     static std::size_t Size(const std::vector<uint64_t> &counts, const Config &config) {
       std::size_t ret = Unigram::Size(counts[0]);
