@@ -77,6 +77,11 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
     "trie    " << std::setw(length) << (QuantTrieModel::Size(counts, config) / 1024) << " assuming -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits << " quantization \n";
 }
 
+void ProbingQuantizationUnsupported() {
+  std::cerr << "Quantization is only implemented in the trie data structure." << std::endl;
+  exit(1);
+}
+
 } // namespace ngram
 } // namespace lm
 } // namespace
@@ -129,16 +134,14 @@ int main(int argc, char *argv[]) {
       ShowSizes(argv[optind], config);
     } else if (optind + 2 == argc) {
       config.write_mmap = argv[optind + 1];
+      if (quantize || set_backoff_bits) ProbingQuantizationUnsupported();
       ProbingModel(argv[optind], config);
     } else if (optind + 3 == argc) {
       const char *model_type = argv[optind];
       const char *from_file = argv[optind + 1];
       config.write_mmap = argv[optind + 2];
       if (!strcmp(model_type, "probing")) {
-        if (quantize) {
-          std::cerr << "Quantization is only implemented in the trie data structure." << std::endl;
-          abort();
-        }
+        if (quantize || set_backoff_bits) ProbingQuantizationUnsupported();
         ProbingModel(from_file, config);
       } else if (!strcmp(model_type, "trie")) {
         if (quantize) {
