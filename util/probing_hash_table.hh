@@ -57,7 +57,7 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
         equal_(equal_func),
         entries_(0)
 #ifdef DEBUG
-        , initialized_(true),
+        , initialized_(true)
 #endif
     {}
 
