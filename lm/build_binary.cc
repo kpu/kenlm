@@ -15,7 +15,7 @@ namespace ngram {
 namespace {
 
 void Usage(const char *name) {
-  std::cerr << "Usage: " << name << " [-u log10_unknown_probability] [-s] [-n] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [type] input.arpa output.mmap\n\n"
+  std::cerr << "Usage: " << name << " [-u log10_unknown_probability] [-s] [-n] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [-q bits] [-b bits] [type] input.arpa output.mmap\n\n"
 "-u sets the default log10 probability for <unk> if the ARPA file does not have\n"
 "one.\n"
 "-s allows models to be built even if they do not have <s> and </s>.\n"
