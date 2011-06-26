@@ -80,6 +80,14 @@ void WriteHeader(void *to, const Parameters &params) {
 
 } // namespace
 
+void SeekOrThrow(int fd, off_t off) {
+  if ((off_t)-1 == lseek(fd, off, SEEK_SET)) UTIL_THROW(util::ErrnoException, "Seek failed");
+}
+
+void AdvanceOrThrow(int fd, off_t off) {
+  if ((off_t)-1 == lseek(fd, off, SEEK_CUR)) UTIL_THROW(util::ErrnoException, "Seek failed");
+}
+
 uint8_t *SetupJustVocab(const Config &config, uint8_t order, std::size_t memory_size, Backing &backing) {
   if (config.write_mmap) {
     std::size_t total = TotalHeaderSize(order) + memory_size;
@@ -156,7 +164,7 @@ bool IsBinaryFormat(int fd) {
 }
 
 void ReadHeader(int fd, Parameters &out) {
-  if ((off_t)-1 == lseek(fd, sizeof(Sanity), SEEK_SET)) UTIL_THROW(util::ErrnoException, "Seek failed in binary file");
+  SeekOrThrow(fd, sizeof(Sanity));
   ReadLoop(fd, &out.fixed, sizeof(out.fixed));
   if (out.fixed.probing_multiplier < 1.0)
     UTIL_THROW(FormatLoadException, "Binary format claims to have a probing multiplier of " << out.fixed.probing_multiplier << " which is < 1.0.");
@@ -173,6 +181,10 @@ void MatchCheck(ModelType model_type, const Parameters &params) {
   }
 }
 
+void SeekPastHeader(int fd, const Parameters &params) {
+  SeekOrThrow(fd, TotalHeaderSize(params.counts.size()));
+}
+
 uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t memory_size, Backing &backing) {
   const off_t file_size = util::SizeFile(backing.file.get());
   // The header is smaller than a page, so we have to map the whole header as well.  
@@ -186,8 +198,7 @@ uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t
     UTIL_THROW(FormatLoadException, "The decoder requested all the vocabulary strings, but this binary file does not have them.  You may need to rebuild the binary file with an updated version of build_binary.");
 
   if (config.enumerate_vocab) {
-    if ((off_t)-1 == lseek(backing.file.get(), total_map, SEEK_SET))
-      UTIL_THROW(util::ErrnoException, "Failed to seek in binary file to vocab words");
+    SeekOrThrow(backing.file.get(), total_map);
   }
   return reinterpret_cast<uint8_t*>(backing.search.get()) + TotalHeaderSize(params.counts.size());
 }

@@ -28,7 +28,11 @@ template <class Quant> class TrieSearch {
     typedef trie::BitPackedLongest<typename Quant::Longest> Longest;
     Longest longest;
 
-    static const ModelType kModelType = TRIE_SORTED;
+    static const ModelType kModelType = Quant::kModelType;
+
+    static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {
+      Quant::UpdateConfigFromBinary(fd, counts, config);
+    }
 
     static std::size_t Size(const std::vector<uint64_t> &counts, const Config &config) {
       std::size_t ret = Quant::Size(counts.size(), config) + Unigram::Size(counts[0]);

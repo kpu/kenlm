@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <numeric>
 
+#include <unistd.h>
+
 namespace lm {
 namespace ngram {
 
@@ -25,14 +27,23 @@ void MakeBins(float *values, float *values_end, float *centers, uint32_t bins) {
     finish = values + (((values_end - values) * static_cast<uint64_t>(i + 1)) / bins);
     if (finish == start) {
       // zero length bucket.
-      *centers = i ? *(centers - 1) : 0;
+      *centers = i ? *(centers - 1) : -std::numeric_limits<float>::infinity();
     } else {
       *centers = std::accumulate(start, finish, 0.0) / static_cast<float>(finish - start);
     }
   }
 }
 
+const char kSeparatelyQuantizeVersion = 1;
+
 } // namespace
+
+void SeparatelyQuantize::UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {
+  char version;
+  if (read(fd, &version, 1) != 1 || read(fd, &config.prob_bits, 1) != 1 || read(fd, &config.backoff_bits, 1) != 1) 
+    UTIL_THROW(util::ErrnoException, "Failed to read header for quantization.");
+  if (version != kSeparatelyQuantizeVersion) UTIL_THROW(FormatLoadException, "This file has quantization version " << (unsigned)version << " but the code expects version " << (unsigned)kSeparatelyQuantizeVersion);
+}
 
 void SeparatelyQuantize::SetupMemory(void *start, const Config &config) {
   // Reserve 8 byte header for bit counts.  
@@ -64,7 +75,7 @@ void SeparatelyQuantize::TrainProb(uint8_t order, std::vector<float> &prob) {
 
 void SeparatelyQuantize::FinishedLoading(const Config &config) {
   uint8_t *actual_base = reinterpret_cast<uint8_t*>(start_) - 8;
-  *(actual_base++) = 1; // version
+  *(actual_base++) = kSeparatelyQuantizeVersion; // version
   *(actual_base++) = config.prob_bits;
   *(actual_base++) = config.backoff_bits;
 }

@@ -248,7 +248,7 @@ BOOST_AUTO_TEST_CASE(trie) {
 }
 
 BOOST_AUTO_TEST_CASE(quant) {
-  LoadingTest<QuantModel>();
+  LoadingTest<QuantTrieModel>();
 }
 
 template <class ModelT> void BinaryTest() {
@@ -278,6 +278,9 @@ BOOST_AUTO_TEST_CASE(write_and_read_probing) {
 }
 BOOST_AUTO_TEST_CASE(write_and_read_trie) {
   BinaryTest<TrieModel>();
+}
+BOOST_AUTO_TEST_CASE(write_and_read_quant_trie) {
+  BinaryTest<QuantTrieModel>();
 }
 
 } // namespace

@@ -1,6 +1,7 @@
 #ifndef LM_QUANTIZE_H__
 #define LM_QUANTIZE_H__
 
+#include "lm/binary_format.hh" // for ModelType
 #include "lm/blank.hh"
 #include "lm/config.hh"
 #include "util/bit_packing.hh"
@@ -10,6 +11,8 @@
 
 #include <inttypes.h>
 
+#include <iostream>
+
 namespace lm {
 namespace ngram {
 
@@ -18,6 +21,8 @@ class Config;
 /* Store values directly and don't quantize. */
 class DontQuantize {
   public:
+    static const ModelType kModelType = TRIE_SORTED;
+    static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {}
     static std::size_t Size(uint8_t order, const Config &/*config*/) { return 0; }
     static uint8_t MiddleBits(const Config &/*config*/) { return 63; }
     static uint8_t LongestBits(const Config &/*config*/) { return 31; }
@@ -71,12 +76,15 @@ class SeparatelyQuantize {
 
         Bins(uint8_t bits, const float *const begin) : begin_(begin), end_(begin_ + (1ULL << bits)), bits_(bits), mask_((1ULL << bits) - 1) {}
 
-        uint64_t Encode(float value) const {
-          const float *above = std::lower_bound(begin_, end_, value);
-          if (above == begin_) return 0;
-          if (above == end_) return end_ - begin_ - 1;
-          uint64_t ret = above - begin_ - (value - *(above - 1) < *above - value);
-          return ret;
+        uint64_t EncodeProb(float value) const {
+          return(value == kBlankProb ? kBlankProbQuant : Encode(value, 1));
+        }
+
+        uint64_t EncodeBackoff(float value) const {
+          if (value == 0.0) {
+            return HasExtension(value) ? kExtensionQuant : kNoExtensionQuant;
+          }
+          return Encode(value, 2);
         }
 
         float Decode(std::size_t off) const { return begin_[off]; }
@@ -86,6 +94,13 @@ class SeparatelyQuantize {
         uint64_t Mask() const { return mask_; }
 
       private:
+        uint64_t Encode(float value, size_t reserved) const {
+          const float *above = std::lower_bound(begin_ + reserved, end_, value);
+          if (above == begin_ + reserved) return reserved;
+          if (above == end_) return end_ - begin_ - 1;
+          return above - begin_ - (value - *(above - 1) < *above - value);
+        }
+
         const float *begin_;
         const float *end_;
         uint8_t bits_;
@@ -93,6 +108,10 @@ class SeparatelyQuantize {
     };
 
   public:
+    static const ModelType kModelType = QUANT_TRIE_SORTED;
+
+    static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config);
+
     static std::size_t Size(uint8_t order, const Config &config) {
       size_t longest_table = (static_cast<size_t>(1) << static_cast<size_t>(config.prob_bits)) * sizeof(float);
       size_t middle_table = (static_cast<size_t>(1) << static_cast<size_t>(config.backoff_bits)) * sizeof(float) + longest_table;
@@ -110,7 +129,7 @@ class SeparatelyQuantize {
 
         void Write(void *base, uint64_t bit_offset, float prob, float backoff) const {
           util::WriteInt57(base, bit_offset, total_bits_, 
-              (prob_.Encode(prob) << backoff_.Bits()) | backoff_.Encode(backoff));
+              (prob_.EncodeProb(prob) << backoff_.Bits()) | backoff_.EncodeBackoff(backoff));
         }
 
         void Read(const void *base, uint64_t bit_offset, float &prob, float &backoff) const {
@@ -142,7 +161,7 @@ class SeparatelyQuantize {
         Longest(uint8_t prob_bits, const float *prob_begin) : prob_(prob_bits, prob_begin) {}
 
         void Write(void *base, uint64_t bit_offset, float prob) const {
-          util::WriteInt25(base, bit_offset, prob_.Bits(), prob_.Encode(prob));
+          util::WriteInt25(base, bit_offset, prob_.Bits(), prob_.EncodeProb(prob));
         }
 
         void Read(const void *base, uint64_t bit_offset, float &prob) const {

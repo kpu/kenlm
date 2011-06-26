@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <deque>
 #include <limits>
+#include <numeric>
 #include <vector>
 
 #include <sys/mman.h>
@@ -782,35 +783,37 @@ bool IsDirectory(const char *path) {
   return S_ISDIR(info.st_mode);
 }
 
-template <class Quant> void TrainQuantizer(uint8_t order, uint64_t count, SortedFileReader &reader, Quant &quant) {
+template <class Quant> void TrainQuantizer(uint8_t order, uint64_t count, SortedFileReader &reader, util::ErsatzProgress &progress, Quant &quant) {
   ProbBackoff weights;
   std::vector<float> probs, backoffs;
   probs.reserve(count);
   backoffs.reserve(count);
   for (reader.Rewind(); !reader.Ended(); reader.NextHeader()) {
-    uint64_t count = reader.ReadCount();
-    for (uint64_t c = 0; c < count; ++c) {
+    uint64_t entries = reader.ReadCount();
+    for (uint64_t c = 0; c < entries; ++c) {
       reader.ReadWord();
       reader.ReadWeights(weights);
       // kBlankProb isn't added yet.  
       probs.push_back(weights.prob);
       if (weights.backoff != 0.0) backoffs.push_back(weights.backoff);
+      ++progress;
     }
   }
   quant.Train(order, probs, backoffs);
 }
 
-template <class Quant> void TrainProbQuantizer(uint8_t order, uint64_t count, SortedFileReader &reader, Quant &quant) {
+template <class Quant> void TrainProbQuantizer(uint8_t order, uint64_t count, SortedFileReader &reader, util::ErsatzProgress &progress, Quant &quant) {
   Prob weights;
   std::vector<float> probs, backoffs;
   probs.reserve(count);
   for (reader.Rewind(); !reader.Ended(); reader.NextHeader()) {
-    uint64_t count = reader.ReadCount();
-    for (uint64_t c = 0; c < count; ++c) {
+    uint64_t entries = reader.ReadCount();
+    for (uint64_t c = 0; c < entries; ++c) {
       reader.ReadWord();
       reader.ReadWeights(weights);
       // kBlankProb isn't added yet.  
       probs.push_back(weights.prob);
+      ++progress;
     }
   }
   quant.TrainProb(order, probs);
@@ -846,10 +849,11 @@ template <class Quant> void BuildTrie(const std::string &file_prefix, std::vecto
   out.SetupMemory(GrowForSearch(config, TrieSearch<Quant>::Size(fixed_counts, config), backing), fixed_counts, config);
 
   if (Quant::kTrain) {
-    for (unsigned char i = 2; i < counts.size() - 1; ++i) {
-      TrainQuantizer(i, counts[i-1], inputs[i-2], quant);
+    util::ErsatzProgress progress(config.messages, "Quantizing", std::accumulate(counts.begin() + 1, counts.end(), 0));
+    for (unsigned char i = 2; i < counts.size(); ++i) {
+      TrainQuantizer(i, counts[i-1], inputs[i-2], progress, quant);
     }
-    TrainProbQuantizer(counts.size(), counts.back(), inputs[counts.size() - 2], quant);
+    TrainProbQuantizer(counts.size(), counts.back(), inputs[counts.size() - 2], progress, quant);
     quant.FinishedLoading(config);
   }
 

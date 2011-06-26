@@ -16,7 +16,7 @@
 namespace lm {
 namespace ngram {
 
-typedef enum {HASH_PROBING=0, HASH_SORTED=1, TRIE_SORTED=2} ModelType;
+typedef enum {HASH_PROBING=0, HASH_SORTED=1, TRIE_SORTED=2, QUANT_TRIE_SORTED=3} ModelType;
 
 /*Inspect a file to determine if it is a binary lm.  If not, return false.  
  * If so, return true and set recognized to the type.  This is the only API in
@@ -48,6 +48,10 @@ struct Backing {
   util::scoped_memory search;
 };
 
+void SeekOrThrow(int fd, off_t off);
+// Seek forward
+void AdvanceOrThrow(int fd, off_t off);
+
 // Create just enough of a binary file to write vocabulary to it.  
 uint8_t *SetupJustVocab(const Config &config, uint8_t order, std::size_t memory_size, Backing &backing);
 // Grow the binary file for the search data structure and set backing.search, returning the memory address where the search data structure should begin.  
@@ -64,6 +68,8 @@ bool IsBinaryFormat(int fd);
 void ReadHeader(int fd, Parameters &params);
 
 void MatchCheck(ModelType model_type, const Parameters &params);
+
+void SeekPastHeader(int fd, const Parameters &params);
 
 uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t memory_size, Backing &backing);
 
@@ -83,6 +89,8 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
       // Replace the run-time configured probing_multiplier with the one in the file.  
       Config new_config(config);
       new_config.probing_multiplier = params.fixed.probing_multiplier;
+      detail::SeekPastHeader(backing.file.get(), params);
+      To::UpdateConfigFromBinary(backing.file.get(), params.counts, new_config);
       std::size_t memory_size = To::Size(params.counts, new_config);
       uint8_t *start = detail::SetupBinary(new_config, params, memory_size, backing);
       to.InitializeFromBinary(start, params, new_config, backing.file.get());

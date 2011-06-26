@@ -71,9 +71,10 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
   private:
     typedef base::ModelFacade<GenericModel<Search, VocabularyT>, State, VocabularyT> P;
   public:
-    // Get the size of memory that will be mapped given ngram counts.  This
-    // does not include small non-mapped control structures, such as this class
-    // itself.  
+    /* Get the size of memory that will be mapped given ngram counts.  This
+     * does not include small non-mapped control structures, such as this class
+     * itself.  
+     */
     static size_t Size(const std::vector<uint64_t> &counts, const Config &config = Config());
 
     /* Load the model from a file.  It may be an ARPA or binary file.  Binary
@@ -112,6 +113,11 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
   private:
     friend void LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);
 
+    static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {
+      AdvanceOrThrow(fd, VocabularyT::Size(counts[0], config));
+      Search::UpdateConfigFromBinary(fd, counts, config);
+    }
+
     float SlowBackoffLookup(const WordIndex *const context_rbegin, const WordIndex *const context_rend, unsigned char start) const;
 
     FullScoreReturn ScoreExceptBackoff(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, State &out_state) const;
@@ -140,15 +146,15 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 
 // These must also be instantiated in the cc file.  
 typedef ::lm::ngram::ProbingVocabulary Vocabulary;
-typedef detail::GenericModel<detail::ProbingHashedSearch, Vocabulary> ProbingModel;
+typedef detail::GenericModel<detail::ProbingHashedSearch, Vocabulary> ProbingModel; // HASH_PROBING
 // Default implementation.  No real reason for it to be the default.  
 typedef ProbingModel Model;
 
 // Smaller implementation.
 typedef ::lm::ngram::SortedVocabulary SortedVocabulary;
-typedef detail::GenericModel<trie::TrieSearch<DontQuantize>, SortedVocabulary> TrieModel;
+typedef detail::GenericModel<trie::TrieSearch<DontQuantize>, SortedVocabulary> TrieModel; // TRIE_SORTED
 
-typedef detail::GenericModel<trie::TrieSearch<SeparatelyQuantize>, SortedVocabulary> QuantModel;
+typedef detail::GenericModel<trie::TrieSearch<SeparatelyQuantize>, SortedVocabulary> QuantTrieModel; // QUANT_TRIE_SORTED
 
 } // namespace ngram
 } // namespace lm

@@ -22,7 +22,8 @@ namespace ngram {
  */
 const float kNoExtensionBackoff = -0.0;
 const float kExtensionBackoff = 0.0;
-const uint32_t kNoExtensionQuant = 0;
+const uint64_t kNoExtensionQuant = 0;
+const uint64_t kExtensionQuant = 1;
 
 inline void SetExtension(float &backoff) {
   if (backoff == kNoExtensionBackoff) backoff = kExtensionBackoff;
