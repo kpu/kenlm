@@ -85,10 +85,10 @@ class BitPacked {
 
 template <class Quant> class BitPackedMiddle : public BitPacked {
   public:
+    static std::size_t Size(uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next);
+
     // next_source need not be initialized.  
     BitPackedMiddle(void *base, const Quant &quant, uint64_t max_vocab, uint64_t max_next, const BitPacked &next_source);
-
-    static std::size_t Size(uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next);
 
     void Insert(WordIndex word, float prob, float backoff);
 
@@ -109,14 +109,15 @@ template <class Quant> class BitPackedMiddle : public BitPacked {
 
 template <class Quant> class BitPackedLongest : public BitPacked {
   public:
-    BitPackedLongest() {}
-
     static std::size_t Size(uint8_t quant_bits, uint64_t entries, uint64_t max_vocab) {
       return BaseSize(entries, max_vocab, quant_bits);
     }
 
+    BitPackedLongest() {}
+
     void Init(void *base, const Quant &quant, uint64_t max_vocab) {
-      return BaseInit(base, max_vocab, quant_.TotalBits());
+      quant_ = quant;
+      BaseInit(base, max_vocab, quant_.TotalBits());
     }
 
     void Insert(WordIndex word, float prob);

@@ -90,6 +90,7 @@ template <class Quant> bool BitPackedMiddle<Quant>::Find(WordIndex word, float &
   at_pointer += word_bits_;
   quant_.Read(base_, at_pointer, prob, backoff);
   at_pointer += quant_.TotalBits();
+
   range.begin = util::ReadInt57(base_, at_pointer, next_bits_, next_mask_);
   // Read the next entry's pointer.  
   at_pointer += total_bits_;
@@ -135,7 +136,9 @@ template <class Quant> bool BitPackedLongest<Quant>::Find(WordIndex word, float 
 }
 
 template class BitPackedMiddle<DontQuantize::Middle>;
+template class BitPackedMiddle<SeparatelyQuantize::Middle>;
 template class BitPackedLongest<DontQuantize::Longest>;
+template class BitPackedLongest<SeparatelyQuantize::Longest>;
 
 } // namespace trie
 } // namespace ngram

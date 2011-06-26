@@ -226,6 +226,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
 template class GenericModel<ProbingHashedSearch, ProbingVocabulary>;
 template class GenericModel<trie::TrieSearch<DontQuantize>, SortedVocabulary>;
+template class GenericModel<trie::TrieSearch<SeparatelyQuantize>, SortedVocabulary>;
 
 } // namespace detail
 } // namespace ngram

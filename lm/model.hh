@@ -148,6 +148,8 @@ typedef ProbingModel Model;
 typedef ::lm::ngram::SortedVocabulary SortedVocabulary;
 typedef detail::GenericModel<trie::TrieSearch<DontQuantize>, SortedVocabulary> TrieModel;
 
+typedef detail::GenericModel<trie::TrieSearch<SeparatelyQuantize>, SortedVocabulary> QuantModel;
+
 } // namespace ngram
 } // namespace lm
 

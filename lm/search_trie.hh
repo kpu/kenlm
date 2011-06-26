@@ -14,7 +14,7 @@ class SortedVocabulary;
 namespace trie {
 
 template <class Quant> class TrieSearch;
-template <class Quant> void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant> &out, Backing     &backing);
+template <class Quant> void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant> &out, Quant &quant, Backing &backing);
 
 template <class Quant> class TrieSearch {
   public:
@@ -31,7 +31,7 @@ template <class Quant> class TrieSearch {
     static const ModelType kModelType = TRIE_SORTED;
 
     static std::size_t Size(const std::vector<uint64_t> &counts, const Config &config) {
-      std::size_t ret = Quant::Size(counts, config) + Unigram::Size(counts[0]);
+      std::size_t ret = Quant::Size(counts.size(), config) + Unigram::Size(counts[0]);
       for (unsigned char i = 1; i < counts.size() - 1; ++i) {
         ret += Middle::Size(Quant::MiddleBits(config), counts[i], counts[0], counts[i+1]);
       }
@@ -42,26 +42,7 @@ template <class Quant> class TrieSearch {
 
     ~TrieSearch() { FreeMiddles(); }
 
-    uint8_t *SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
-      quant_.Init(start, counts, config);
-      start += Quant::Size(counts, config);
-      unigram.Init(start);
-      start += Unigram::Size(counts[0]);
-      FreeMiddles();
-      middle_begin_ = static_cast<Middle*>(malloc(sizeof(Middle) * (counts.size() - 2)));
-      middle_end_ = middle_begin_ + (counts.size() - 2);
-      for (unsigned char i = counts.size() - 1; i >= 2; --i) {
-        new (middle_begin_ + i - 2) Middle(
-            start,
-            quant_.Mid(i),
-            counts[0],
-            counts[i], 
-            (i == counts.size() - 1) ? static_cast<const BitPacked&>(longest) : static_cast<const BitPacked &>(middle_begin_[i-1]));
-        start += Middle::Size(63, counts[i-1], counts[0], counts[i]);
-      }
-      longest.Init(start, quant_.Long(counts.size()), counts[0]);
-      return start + Longest::Size(31, counts.back(), counts[0]);
-    }
+    uint8_t *SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config);
 
     void LoadedBinary();
 
@@ -98,8 +79,9 @@ template <class Quant> class TrieSearch {
     }
 
   private:
-    friend void BuildTrie<Quant>(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant> &out, Backing     &backing);
+    friend void BuildTrie<Quant>(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant> &out, Quant &quant, Backing &backing);
 
+    // Middles are managed manually so we can delay construction and they don't have to be copyable.  
     void FreeMiddles() {
       for (const Middle *i = middle_begin_; i != middle_end_; ++i) {
         i->~Middle();

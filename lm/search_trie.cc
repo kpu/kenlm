@@ -782,9 +782,43 @@ bool IsDirectory(const char *path) {
   return S_ISDIR(info.st_mode);
 }
 
+template <class Quant> void TrainQuantizer(uint8_t order, uint64_t count, SortedFileReader &reader, Quant &quant) {
+  ProbBackoff weights;
+  std::vector<float> probs, backoffs;
+  probs.reserve(count);
+  backoffs.reserve(count);
+  for (reader.Rewind(); !reader.Ended(); reader.NextHeader()) {
+    uint64_t count = reader.ReadCount();
+    for (uint64_t c = 0; c < count; ++c) {
+      reader.ReadWord();
+      reader.ReadWeights(weights);
+      // kBlankProb isn't added yet.  
+      probs.push_back(weights.prob);
+      if (weights.backoff != 0.0) backoffs.push_back(weights.backoff);
+    }
+  }
+  quant.Train(order, probs, backoffs);
+}
+
+template <class Quant> void TrainProbQuantizer(uint8_t order, uint64_t count, SortedFileReader &reader, Quant &quant) {
+  Prob weights;
+  std::vector<float> probs, backoffs;
+  probs.reserve(count);
+  for (reader.Rewind(); !reader.Ended(); reader.NextHeader()) {
+    uint64_t count = reader.ReadCount();
+    for (uint64_t c = 0; c < count; ++c) {
+      reader.ReadWord();
+      reader.ReadWeights(weights);
+      // kBlankProb isn't added yet.  
+      probs.push_back(weights.prob);
+    }
+  }
+  quant.TrainProb(order, probs);
+}
+
 } // namespace
 
-template <class Quant> void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant> &out, Backing &backing) {
+template <class Quant> void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant> &out, Quant &quant, Backing &backing) {
   std::vector<SortedFileReader> inputs(counts.size() - 1);
   std::vector<ContextReader> contexts(counts.size() - 1);
 
@@ -810,6 +844,14 @@ template <class Quant> void BuildTrie(const std::string &file_prefix, std::vecto
   counts = fixed_counts;
 
   out.SetupMemory(GrowForSearch(config, TrieSearch<Quant>::Size(fixed_counts, config), backing), fixed_counts, config);
+
+  if (Quant::kTrain) {
+    for (unsigned char i = 2; i < counts.size() - 1; ++i) {
+      TrainQuantizer(i, counts[i-1], inputs[i-2], quant);
+    }
+    TrainProbQuantizer(counts.size(), counts.back(), inputs[counts.size() - 2], quant);
+    quant.FinishedLoading(config);
+  }
 
   for (unsigned char i = 2; i <= counts.size(); ++i) {
     inputs[i-2].Rewind();
@@ -862,6 +904,27 @@ template <class Quant> void BuildTrie(const std::string &file_prefix, std::vecto
   }  
 }
 
+template <class Quant> uint8_t *TrieSearch<Quant>::SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
+  quant_.SetupMemory(start, config);
+  start += Quant::Size(counts.size(), config);
+  unigram.Init(start);
+  start += Unigram::Size(counts[0]);
+  FreeMiddles();
+  middle_begin_ = static_cast<Middle*>(malloc(sizeof(Middle) * (counts.size() - 2)));
+  middle_end_ = middle_begin_ + (counts.size() - 2);
+  for (unsigned char i = counts.size() - 1; i >= 2; --i) {
+    new (middle_begin_ + i - 2) Middle(
+        start,
+        quant_.Mid(i),
+        counts[0],
+        counts[i],
+        (i == counts.size() - 1) ? static_cast<const BitPacked&>(longest) : static_cast<const BitPacked &>(middle_begin_[i-1]));
+    start += Middle::Size(Quant::MiddleBits(config), counts[i-1], counts[0], counts[i]);
+  }
+  longest.Init(start, quant_.Long(counts.size()), counts[0]);
+  return start + Longest::Size(Quant::LongestBits(config), counts.back(), counts[0]);
+}
+
 template <class Quant> void TrieSearch<Quant>::LoadedBinary() {
   unigram.LoadedBinary();
   for (Middle *i = middle_begin_; i != middle_end_; ++i) {
@@ -894,13 +957,14 @@ template <class Quant> void TrieSearch<Quant>::InitializeFromARPA(const char *fi
   // At least 1MB sorting memory.  
   ARPAToSortedFiles(config, f, counts, std::max<size_t>(config.building_memory, 1048576), temporary_directory.c_str(), vocab);
 
-  BuildTrie(temporary_directory, counts, config, *this, backing);
+  BuildTrie(temporary_directory, counts, config, *this, quant_, backing);
   if (rmdir(temporary_directory.c_str()) && config.messages) {
     *config.messages << "Failed to delete " << temporary_directory << std::endl;
   }
 }
 
 template class TrieSearch<DontQuantize>;
+template class TrieSearch<SeparatelyQuantize>;
 
 } // namespace trie
 } // namespace ngram
