@@ -85,9 +85,6 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
     divide = 1 << 30;
   }
   long int length = std::max<long int>(2, lrint(ceil(log10(max_length / divide))));
-  // probing is usually largest.
-  // but Quant could be bigger on very small models like the test.  
-  length = std::max<long int>(length, lrint(ceil(log10(QuantTrieModel::Size(counts, config) / 1024))));
   std::cout << "Memory estimate:\ntype    ";
   // right align bytes.  
   for (long int i = 0; i < length - 2; ++i) std::cout << ' ';
