@@ -63,18 +63,38 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
   std::vector<uint64_t> counts;
   util::FilePiece f(file);
   lm::ReadARPACounts(f, counts);
-  std::size_t probing_size = ProbingModel::Size(counts, config);
+  std::size_t sizes[3];
+  sizes[0] = ProbingModel::Size(counts, config);
+  sizes[1] = TrieModel::Size(counts, config);
+  sizes[2] = QuantTrieModel::Size(counts, config);
+  std::size_t max_length = *std::max_element(sizes, sizes + 3);
+  std::size_t min_length = *std::max_element(sizes, sizes + 3);
+  std::size_t divide;
+  char prefix;
+  if (min_length < (1 << 10) * 10) {
+    prefix = ' ';
+    divide = 1;
+  } else if (min_length < (1 << 20) * 10) {
+    prefix = 'k';
+    divide = 1 << 10;
+  } else if (min_length < (1ULL << 30) * 10) {
+    prefix = 'M';
+    divide = 1 << 20;
+  } else {
+    prefix = 'G';
+    divide = 1 << 30;
+  }
+  long int length = std::max<long int>(2, lrint(ceil(log10(max_length / divide))));
   // probing is usually largest.
-  long int length = std::max<long int>(2, lrint(ceil(log10(probing_size / 1024))));
   // but Quant could be bigger on very small models like the test.  
   length = std::max<long int>(length, lrint(ceil(log10(QuantTrieModel::Size(counts, config) / 1024))));
   std::cout << "Memory estimate:\ntype    ";
   // right align bytes.  
   for (long int i = 0; i < length - 2; ++i) std::cout << ' ';
-  std::cout << "kB\n"
-    "probing " << std::setw(length) << (probing_size / 1024) << " assuming -p " << config.probing_multiplier << "\n"
-    "trie    " << std::setw(length) << (TrieModel::Size(counts, config) / 1024) << " without quantization\n"
-    "trie    " << std::setw(length) << (QuantTrieModel::Size(counts, config) / 1024) << " assuming -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits << " quantization \n";
+  std::cout << prefix << "B\n"
+    "probing " << std::setw(length) << (sizes[0] / divide) << " assuming -p " << config.probing_multiplier << "\n"
+    "trie    " << std::setw(length) << (sizes[1] / divide) << " without quantization\n"
+    "trie    " << std::setw(length) << (sizes[2] / divide) << " assuming -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits << " quantization \n";
 }
 
 void ProbingQuantizationUnsupported() {
