@@ -61,6 +61,16 @@ inline void WriteInt57(void *base, uint64_t bit_off, uint8_t length, uint64_t va
     (value << BitPackShift(bit_off & 7, length));
 }
 
+/* Same caveats as above, but for a 25 bit limit. */
+inline uint32_t ReadInt25(const void *base, uint64_t bit_off, uint8_t length, uint32_t mask) {
+  return (*reinterpret_cast<const uint32_t*>(reinterpret_cast<const uint8_t*>(base) + (bit_off >> 3)) >> BitPackShift(bit_off & 7, length)) & mask;
+}
+
+inline void WriteInt25(void *base, uint64_t bit_off, uint8_t length, uint32_t value) {
+  *reinterpret_cast<uint32_t*>(reinterpret_cast<uint8_t*>(base) + (bit_off >> 3)) |= 
+    (value << BitPackShift(bit_off & 7, length));
+}
+
 typedef union { float f; uint32_t i; } FloatEnc;
 
 inline float ReadFloat32(const void *base, uint64_t bit_off) {
