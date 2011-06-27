@@ -34,7 +34,7 @@ void MakeBins(float *values, float *values_end, float *centers, uint32_t bins) {
   }
 }
 
-const char kSeparatelyQuantizeVersion = 1;
+const char kSeparatelyQuantizeVersion = 2;
 
 } // namespace
 
