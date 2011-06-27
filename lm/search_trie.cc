@@ -916,7 +916,7 @@ template <class Quant> uint8_t *TrieSearch<Quant>::SetupMemory(uint8_t *start, c
   FreeMiddles();
   middle_begin_ = static_cast<Middle*>(malloc(sizeof(Middle) * (counts.size() - 2)));
   middle_end_ = middle_begin_ + (counts.size() - 2);
-  uint8_t *middle_starts[counts.size() - 2];
+  std::vector<uint8_t*> middle_starts(counts.size() - 2);
   for (unsigned char i = 2; i < counts.size(); ++i) {
     middle_starts[i-2] = start;
     start += Middle::Size(Quant::MiddleBits(config), counts[i-1], counts[0], counts[i]);
