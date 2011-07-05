@@ -73,8 +73,11 @@ struct Config {
 
   // Quantization options.  Only effective for QuantTrieModel.  One value is
   // reserved for each of prob and backoff, so 2^bits - 1 buckets will be used
-  // to quantize.  
+  // to quantize (and one of the remaining backoffs will be 0).  
   uint8_t prob_bits, backoff_bits;
+
+  // Bhiksha compression (simple form).  Only works with trie.
+  uint8_t pointer_bhiksha_bits;
 
   
   

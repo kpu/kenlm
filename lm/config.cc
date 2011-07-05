@@ -20,6 +20,7 @@ Config::Config() :
   include_vocab(true),
   prob_bits(8),
   backoff_bits(8),
+  pointer_bhiksha_bits(16),
   load_method(util::POPULATE_OR_READ) {}
 
 } // namespace ngram

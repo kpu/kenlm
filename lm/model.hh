@@ -1,6 +1,7 @@
 #ifndef LM_MODEL__
 #define LM_MODEL__
 
+#include "lm/bhiksha.hh"
 #include "lm/binary_format.hh"
 #include "lm/config.hh"
 #include "lm/facade.hh"
@@ -152,9 +153,9 @@ typedef ProbingModel Model;
 
 // Smaller implementation.
 typedef ::lm::ngram::SortedVocabulary SortedVocabulary;
-typedef detail::GenericModel<trie::TrieSearch<DontQuantize>, SortedVocabulary> TrieModel; // TRIE_SORTED
+typedef detail::GenericModel<trie::TrieSearch<DontQuantize, trie::DontBhiksha>, SortedVocabulary> TrieModel; // TRIE_SORTED
 
-typedef detail::GenericModel<trie::TrieSearch<SeparatelyQuantize>, SortedVocabulary> QuantTrieModel; // QUANT_TRIE_SORTED
+typedef detail::GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::DontBhiksha>, SortedVocabulary> QuantTrieModel; // QUANT_TRIE_SORTED
 
 } // namespace ngram
 } // namespace lm

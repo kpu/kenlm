@@ -10,6 +10,7 @@
 
 namespace lm {
 namespace ngram {
+class Config;
 namespace trie {
 
 struct NodeRange {
@@ -83,12 +84,12 @@ class BitPacked {
     uint64_t insert_index_, max_vocab_;
 };
 
-template <class Quant> class BitPackedMiddle : public BitPacked {
+template <class Quant, class Bhiksha> class BitPackedMiddle : public BitPacked {
   public:
-    static std::size_t Size(uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next);
+    static std::size_t Size(uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const Config &config);
 
     // next_source need not be initialized.  
-    BitPackedMiddle(void *base, const Quant &quant, uint64_t max_vocab, uint64_t max_next, const BitPacked &next_source);
+    BitPackedMiddle(void *base, const Quant &quant, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const BitPacked &next_source, const Config &config);
 
     void Insert(WordIndex word, float prob, float backoff);
 
@@ -100,12 +101,10 @@ template <class Quant> class BitPackedMiddle : public BitPacked {
 
   private:
     Quant quant_;
-    uint8_t next_bits_;
-    uint64_t next_mask_;
+    Bhiksha bhiksha_;
 
     const BitPacked *next_source_;
 };
-
 
 template <class Quant> class BitPackedLongest : public BitPacked {
   public:
