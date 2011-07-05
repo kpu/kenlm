@@ -107,9 +107,20 @@ void BitPackingSanity();
 uint8_t RequiredBits(uint64_t max_value);
 
 struct BitsMask {
+  static BitsMask ByMax(uint64_t max_value) {
+    BitsMask ret;
+    ret.FromMax(max_value);
+    return ret;
+  }
+  static BitsMask ByBits(uint8_t bits) {
+    BitsMask ret;
+    ret.bits = bits;
+    ret.mask = (1ULL << bits) - 1;
+    return ret;
+  }
   void FromMax(uint64_t max_value) {
     bits = RequiredBits(max_value);
-    mask = (1 << bits) - 1;
+    mask = (1ULL << bits) - 1;
   }
   uint8_t bits;
   uint64_t mask;

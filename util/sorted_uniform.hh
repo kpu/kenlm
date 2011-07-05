@@ -12,7 +12,7 @@ namespace util {
 template <class T> class IdentityAccessor {
   public:
     typedef T Key;
-    T operator()(const uint64_t *in) const { return *in; }
+    T operator()(const T *in) const { return *in; }
 };
 
 struct Pivot64 {
@@ -99,6 +99,30 @@ template <class Iterator, class Accessor, class Pivot> bool SortedUniformFind(co
     return false;
   }
   return BoundedSortedUniformFind<Iterator, Accessor, Pivot>(accessor, begin, below, end, above, key, out);
+}
+
+/* Return the last iterator with key <= the given key. */
+template <class Iterator, class Accessor, class Pivot> Iterator BoundedInterpolationBelow(
+    const Accessor &accessor,
+    Iterator before_it, typename Accessor::Key before_v,
+    Iterator after_it, typename Accessor::Key after_v,
+    const typename Accessor::Key key) {
+  while (after_it - before_it > 1) {
+    Iterator pivot(before_it + (1 + Pivot::Calc(key - before_v, after_v - before_v, after_it - before_it - 1)));
+    typename Accessor::Key mid(accessor(pivot));
+    if (mid < key) {
+      before_it = pivot;
+      before_v = mid;
+    } else if (mid > key) {
+      after_it = pivot;
+      after_v = mid;
+    } else {
+      // Found.  Return the last value equal to it.  TODO: binary search?
+      for (++pivot; (pivot < after_it) && accessor(pivot) == mid; ++pivot) {}
+      return pivot - 1;
+    }
+  }
+  return before_it;
 }
 
 // To use this template, you need to define a Pivot function to match Key.  
