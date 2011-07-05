@@ -247,8 +247,14 @@ BOOST_AUTO_TEST_CASE(trie) {
   LoadingTest<TrieModel>();
 }
 
-BOOST_AUTO_TEST_CASE(quant) {
+BOOST_AUTO_TEST_CASE(bhiksha_trie) {
+  LoadingTest<ArrayTrieModel>();
+}
+BOOST_AUTO_TEST_CASE(quant_trie) {
   LoadingTest<QuantTrieModel>();
+}
+BOOST_AUTO_TEST_CASE(quant_bhiksha_trie) {
+  LoadingTest<QuantArrayTrieModel>();
 }
 
 template <class ModelT> void BinaryTest() {

@@ -68,8 +68,6 @@ class BitPacked {
       return insert_index_;
     }
 
-    void LoadedBinary() {}
-
   protected:
     static std::size_t BaseSize(uint64_t entries, uint64_t max_vocab, uint8_t remaining_bits);
 
@@ -93,11 +91,13 @@ template <class Quant, class Bhiksha> class BitPackedMiddle : public BitPacked {
 
     void Insert(WordIndex word, float prob, float backoff);
 
+    void FinishedLoading(uint64_t next_end);
+
+    void LoadedBinary() { bhiksha_.LoadedBinary(); }
+
     bool Find(WordIndex word, float &prob, float &backoff, NodeRange &range) const;
 
     bool FindNoProb(WordIndex word, float &backoff, NodeRange &range) const;
-
-    void FinishedLoading(uint64_t next_end);
 
   private:
     Quant quant_;
@@ -118,6 +118,8 @@ template <class Quant> class BitPackedLongest : public BitPacked {
       quant_ = quant;
       BaseInit(base, max_vocab, quant_.TotalBits());
     }
+
+    void LoadedBinary() {}
 
     void Insert(WordIndex word, float prob);
 

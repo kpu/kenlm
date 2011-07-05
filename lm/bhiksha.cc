@@ -9,8 +9,9 @@ DontBhiksha::DontBhiksha(const void * /*base*/, uint64_t /*max_offset*/, uint64_
   next_(util::BitsMask::ByMax(max_next)) {}
 
 std::size_t ArrayBhiksha::Size(uint64_t /*max_offset*/, uint64_t max_next, const Config &config) {
-  uint8_t storing = std::min(util::RequiredBits(max_next), config.pointer_bhiksha_bits);
-  return sizeof(uint64_t) * ((max_next >> storing) + 1);
+  uint8_t required = util::RequiredBits(max_next);
+  uint8_t storing = std::min(required, config.pointer_bhiksha_bits);
+  return sizeof(uint64_t) * ((max_next >> (required - storing)) + 1);
 }
 
 uint8_t ArrayBhiksha::InlineBits(uint64_t /*max_offset*/, uint64_t max_next, const Config &config) {

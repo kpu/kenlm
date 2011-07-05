@@ -976,7 +976,9 @@ template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::Initializ
 }
 
 template class TrieSearch<DontQuantize, DontBhiksha>;
+template class TrieSearch<DontQuantize, ArrayBhiksha>;
 template class TrieSearch<SeparatelyQuantize, DontBhiksha>;
+template class TrieSearch<SeparatelyQuantize, ArrayBhiksha>;
 
 } // namespace trie
 } // namespace ngram

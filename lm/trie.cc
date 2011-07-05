@@ -80,7 +80,6 @@ template <class Quant, class Bhiksha> void BitPackedMiddle<Quant, Bhiksha>::Inse
   quant_.Write(base_, at_pointer, prob, backoff);
   at_pointer += quant_.TotalBits();
   uint64_t next = next_source_->InsertIndex();
-  assert(next <= next_mask_);
   bhiksha_.WriteNext(base_, at_pointer, insert_index_, next);
 
   ++insert_index_;
@@ -117,6 +116,7 @@ template <class Quant, class Bhiksha> void BitPackedMiddle<Quant, Bhiksha>::Fini
   assert(next_end <= next_mask_);
   uint64_t last_next_write = (insert_index_ + 1) * total_bits_ - bhiksha_.InlineBits();
   bhiksha_.WriteNext(base_, last_next_write, insert_index_ + 1, next_end);
+  bhiksha_.FinishedLoading();
 }
 
 template <class Quant> void BitPackedLongest<Quant>::Insert(WordIndex index, float prob) {
@@ -137,7 +137,9 @@ template <class Quant> bool BitPackedLongest<Quant>::Find(WordIndex word, float 
 }
 
 template class BitPackedMiddle<DontQuantize::Middle, DontBhiksha>;
+template class BitPackedMiddle<DontQuantize::Middle, ArrayBhiksha>;
 template class BitPackedMiddle<SeparatelyQuantize::Middle, DontBhiksha>;
+template class BitPackedMiddle<SeparatelyQuantize::Middle, ArrayBhiksha>;
 template class BitPackedLongest<DontQuantize::Longest>;
 template class BitPackedLongest<SeparatelyQuantize::Longest>;
 
