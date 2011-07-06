@@ -91,7 +91,7 @@ template <class Quant, class Bhiksha> class BitPackedMiddle : public BitPacked {
 
     void Insert(WordIndex word, float prob, float backoff);
 
-    void FinishedLoading(uint64_t next_end);
+    void FinishedLoading(uint64_t next_end, const Config &config);
 
     void LoadedBinary() { bhiksha_.LoadedBinary(); }
 

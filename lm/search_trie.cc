@@ -903,9 +903,9 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
   // Last entry for unigrams was already set.  
   if (out.middle_begin_ != out.middle_end_) {
     for (typename TrieSearch<Quant, Bhiksha>::Middle *i = out.middle_begin_; i != out.middle_end_ - 1; ++i) {
-      i->FinishedLoading((i+1)->InsertIndex());
+      i->FinishedLoading((i+1)->InsertIndex(), config);
     }
-    (out.middle_end_ - 1)->FinishedLoading(out.longest.InsertIndex());
+    (out.middle_end_ - 1)->FinishedLoading(out.longest.InsertIndex(), config);
   }  
 }
 

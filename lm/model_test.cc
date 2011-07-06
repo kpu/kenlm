@@ -242,16 +242,14 @@ template <class ModelT> void LoadingTest() {
 BOOST_AUTO_TEST_CASE(probing) {
   LoadingTest<Model>();
 }
-
 BOOST_AUTO_TEST_CASE(trie) {
   LoadingTest<TrieModel>();
 }
-
-BOOST_AUTO_TEST_CASE(bhiksha_trie) {
-  LoadingTest<ArrayTrieModel>();
-}
 BOOST_AUTO_TEST_CASE(quant_trie) {
   LoadingTest<QuantTrieModel>();
+}
+BOOST_AUTO_TEST_CASE(bhiksha_trie) {
+  LoadingTest<ArrayTrieModel>();
 }
 BOOST_AUTO_TEST_CASE(quant_bhiksha_trie) {
   LoadingTest<QuantArrayTrieModel>();
@@ -273,6 +271,10 @@ template <class ModelT> void BinaryTest() {
 
   config.write_mmap = NULL;
 
+  ModelType type;
+  BOOST_REQUIRE(RecognizeBinary("test.binary", type));
+  BOOST_CHECK_EQUAL(ModelT::kModelType, type);
+
   ModelT binary("test.binary", config);
   enumerate.Check(binary.GetVocabulary());
   Everything(binary);
@@ -287,6 +289,12 @@ BOOST_AUTO_TEST_CASE(write_and_read_trie) {
 }
 BOOST_AUTO_TEST_CASE(write_and_read_quant_trie) {
   BinaryTest<QuantTrieModel>();
+}
+BOOST_AUTO_TEST_CASE(write_and_read_array_trie) {
+  BinaryTest<ArrayTrieModel>();
+}
+BOOST_AUTO_TEST_CASE(write_and_read_quant_array_trie) {
+  BinaryTest<QuantArrayTrieModel>();
 }
 
 } // namespace

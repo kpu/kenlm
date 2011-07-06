@@ -21,6 +21,8 @@ size_t hash_value(const State &state) {
 
 namespace detail {
 
+template <class Search, class VocabularyT> const ModelType GenericModel<Search, VocabularyT>::kModelType = Search::kModelType;
+
 template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<uint64_t> &counts, const Config &config) {
   return VocabularyT::Size(counts[0], config) + Search::Size(counts, config);
 }

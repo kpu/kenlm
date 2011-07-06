@@ -65,6 +65,7 @@ template <class Quant, class Bhiksha> std::size_t BitPackedMiddle<Quant, Bhiksha
 template <class Quant, class Bhiksha> BitPackedMiddle<Quant, Bhiksha>::BitPackedMiddle(void *base, const Quant &quant, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const BitPacked &next_source, const Config &config) :
   BitPacked(),
   quant_(quant),
+  // If the offset of the method changes, also change TrieSearch::UpdateConfigFromBinary.
   bhiksha_(base, entries + 1, max_next, config),
   next_source_(&next_source) {
   if (entries + 1 >= (1ULL << 57) || (max_next >= (1ULL << 57)))  UTIL_THROW(util::Exception, "Sorry, this does not support more than " << (1ULL << 57) << " n-grams of a particular order.  Edit util/bit_packing.hh and fix the bit packing functions.");
@@ -112,11 +113,11 @@ template <class Quant, class Bhiksha> bool BitPackedMiddle<Quant, Bhiksha>::Find
   return true;
 }
 
-template <class Quant, class Bhiksha> void BitPackedMiddle<Quant, Bhiksha>::FinishedLoading(uint64_t next_end) {
+template <class Quant, class Bhiksha> void BitPackedMiddle<Quant, Bhiksha>::FinishedLoading(uint64_t next_end, const Config &config) {
   assert(next_end <= next_mask_);
   uint64_t last_next_write = (insert_index_ + 1) * total_bits_ - bhiksha_.InlineBits();
   bhiksha_.WriteNext(base_, last_next_write, insert_index_ + 1, next_end);
-  bhiksha_.FinishedLoading();
+  bhiksha_.FinishedLoading(config);
 }
 
 template <class Quant> void BitPackedLongest<Quant>::Insert(WordIndex index, float prob) {

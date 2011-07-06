@@ -28,10 +28,12 @@ template <class Quant, class Bhiksha> class TrieSearch {
     typedef trie::BitPackedLongest<typename Quant::Longest> Longest;
     Longest longest;
 
-    static const ModelType kModelType = Quant::kModelType;
+    static const ModelType kModelType = static_cast<ModelType>(TRIE_SORTED + Quant::kModelTypeAdd + Bhiksha::kModelTypeAdd);
 
     static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {
       Quant::UpdateConfigFromBinary(fd, counts, config);
+      AdvanceOrThrow(fd, Quant::Size(counts.size(), config) + Unigram::Size(counts[0]));
+      Bhiksha::UpdateConfigFromBinary(fd, config);
     }
 
     static std::size_t Size(const std::vector<uint64_t> &counts, const Config &config) {

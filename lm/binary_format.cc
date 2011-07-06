@@ -40,7 +40,7 @@ struct Sanity {
   }
 };
 
-const char *kModelNames[3] = {"hashed n-grams with probing", "hashed n-grams with sorted uniform find", "bit packed trie"};
+const char *kModelNames[6] = {"hashed n-grams with probing", "hashed n-grams with sorted uniform find", "trie", "trie with quantization", "trie with array-compressed pointers", "trie with quantization and array-compressed pointers"};
 
 std::size_t Align8(std::size_t in) {
   std::size_t off = in % 8;

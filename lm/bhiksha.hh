@@ -12,6 +12,7 @@
 
 #include <inttypes.h>
 
+#include "lm/binary_format.hh"
 #include "lm/trie.hh"
 #include "util/bit_packing.hh"
 #include "util/sorted_uniform.hh"
@@ -24,6 +25,10 @@ namespace trie {
 
 class DontBhiksha {
   public:
+    static const ModelType kModelTypeAdd = static_cast<ModelType>(0);
+
+    static void UpdateConfigFromBinary(int /*fd*/, Config &/*config*/) {}
+
     static std::size_t Size(uint64_t /*max_offset*/, uint64_t /*max_next*/, const Config &/*config*/) { return 0; }
 
     static uint8_t InlineBits(uint64_t /*max_offset*/, uint64_t max_next, const Config &/*config*/) {
@@ -41,7 +46,7 @@ class DontBhiksha {
       util::WriteInt57(base, bit_offset, index, value);
     }
 
-    void FinishedLoading() {}
+    void FinishedLoading(const Config &/*config*/) {}
 
     void LoadedBinary() {}
 
@@ -53,6 +58,10 @@ class DontBhiksha {
 
 class ArrayBhiksha {
   public:
+    static const ModelType kModelTypeAdd = kArrayAdd;
+
+    static void UpdateConfigFromBinary(int fd, Config &config);
+
     static std::size_t Size(uint64_t max_offset, uint64_t max_next, const Config &config);
 
     static uint8_t InlineBits(uint64_t max_offset, uint64_t max_next, const Config &config);
@@ -65,8 +74,10 @@ class ArrayBhiksha {
       const uint64_t *end_it;
       for (end_it = begin_it; (end_it < offset_end_) && (*end_it <= index + 1); ++end_it) {}
       --end_it;
-      out.begin = ((begin_it - offset_begin_) << next_inline_.bits) | util::ReadInt57(base, bit_offset, next_inline_.bits, next_inline_.mask);
-      out.end = ((end_it - offset_begin_) << next_inline_.bits) | util::ReadInt57(base, bit_offset + total_bits, next_inline_.bits, next_inline_.mask);
+      out.begin = ((begin_it - offset_begin_) << next_inline_.bits) | 
+        util::ReadInt57(base, bit_offset, next_inline_.bits, next_inline_.mask);
+      out.end = ((end_it - offset_begin_) << next_inline_.bits) | 
+        util::ReadInt57(base, bit_offset + total_bits, next_inline_.bits, next_inline_.mask);
     }
 
     void WriteNext(void *base, uint64_t bit_offset, uint64_t index, uint64_t value) {
@@ -75,7 +86,7 @@ class ArrayBhiksha {
       util::WriteInt57(base, bit_offset, next_inline_.bits, value & next_inline_.mask);
     }
 
-    void FinishedLoading();
+    void FinishedLoading(const Config &config);
 
     void LoadedBinary();
 
@@ -89,6 +100,8 @@ class ArrayBhiksha {
     uint64_t offset_bound_;
 
     uint64_t *write_to_;
+
+    void *original_base_;
 };
 
 } // namespace trie

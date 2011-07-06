@@ -21,7 +21,7 @@ class Config;
 /* Store values directly and don't quantize. */
 class DontQuantize {
   public:
-    static const ModelType kModelType = TRIE_SORTED;
+    static const ModelType kModelTypeAdd = static_cast<ModelType>(0);
     static void UpdateConfigFromBinary(int, const std::vector<uint64_t> &, Config &) {}
     static std::size_t Size(uint8_t /*order*/, const Config &/*config*/) { return 0; }
     static uint8_t MiddleBits(const Config &/*config*/) { return 63; }
@@ -108,7 +108,7 @@ class SeparatelyQuantize {
     };
 
   public:
-    static const ModelType kModelType = QUANT_TRIE_SORTED;
+    static const ModelType kModelTypeAdd = kQuantAdd;
 
     static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config);
 

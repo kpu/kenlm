@@ -29,7 +29,8 @@ void Usage(const char *name) {
 "-t is the temporary directory prefix.  Default is the output file name.\n"
 "-m limits memory use for sorting.  Measured in MB.  Default is 1024MB.\n"
 "-q turns quantization on and sets the number of bits (e.g. -q 8).\n"
-"-b sets backoff quantization bits.  Requires -q and defaults to that value.\n\n"
+"-b sets backoff quantization bits.  Requires -q and defaults to that value.\n"
+"-a enables array-based pointer compression by chopping the specified bits.\n\n"
 "See http://kheafield.com/code/kenlm/benchmark/ for data structure benchmarks.\n"
 "Passing only an input file will print memory usage of each data structure.\n"
 "If the ARPA file does not have <unk>, -u sets <unk>'s probability; default 0.0.\n";
@@ -63,12 +64,14 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
   std::vector<uint64_t> counts;
   util::FilePiece f(file);
   lm::ReadARPACounts(f, counts);
-  std::size_t sizes[3];
+  std::size_t sizes[5];
   sizes[0] = ProbingModel::Size(counts, config);
   sizes[1] = TrieModel::Size(counts, config);
   sizes[2] = QuantTrieModel::Size(counts, config);
-  std::size_t max_length = *std::max_element(sizes, sizes + 3);
-  std::size_t min_length = *std::max_element(sizes, sizes + 3);
+  sizes[3] = ArrayTrieModel::Size(counts, config);
+  sizes[4] = QuantArrayTrieModel::Size(counts, config);
+  std::size_t max_length = *std::max_element(sizes, sizes + sizeof(sizes) / sizeof(size_t));
+  std::size_t min_length = *std::max_element(sizes, sizes + sizeof(sizes) / sizeof(size_t));
   std::size_t divide;
   char prefix;
   if (min_length < (1 << 10) * 10) {
@@ -91,7 +94,9 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
   std::cout << prefix << "B\n"
     "probing " << std::setw(length) << (sizes[0] / divide) << " assuming -p " << config.probing_multiplier << "\n"
     "trie    " << std::setw(length) << (sizes[1] / divide) << " without quantization\n"
-    "trie    " << std::setw(length) << (sizes[2] / divide) << " assuming -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits << " quantization \n";
+    "trie    " << std::setw(length) << (sizes[2] / divide) << " assuming -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits << " quantization \n"
+    "trie    " << std::setw(length) << (sizes[3] / divide) << " assuming -a " << (unsigned)config.pointer_bhiksha_bits << " array pointer compression\n"
+    "trie    " << std::setw(length) << (sizes[4] / divide) << " assuming -a " << (unsigned)config.pointer_bhiksha_bits << " -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits<< "\n";
 }
 
 void ProbingQuantizationUnsupported() {
@@ -106,11 +111,11 @@ void ProbingQuantizationUnsupported() {
 int main(int argc, char *argv[]) {
   using namespace lm::ngram;
 
-  bool quantize = false, set_backoff_bits = false;
+  bool quantize = false, set_backoff_bits = false, bhiksha = false;
   try {
     lm::ngram::Config config;
     int opt;
-    while ((opt = getopt(argc, argv, "siu:p:t:m:q:b:")) != -1) {
+    while ((opt = getopt(argc, argv, "siu:p:t:m:q:b:a:")) != -1) {
       switch(opt) {
         case 'q':
           config.prob_bits = ParseBitCount(optarg);
@@ -121,6 +126,9 @@ int main(int argc, char *argv[]) {
           config.backoff_bits = ParseBitCount(optarg);
           set_backoff_bits = true;
           break;
+        case 'a':
+          config.pointer_bhiksha_bits = ParseBitCount(optarg);
+          bhiksha = true;
         case 'u':
           config.unknown_missing_logprob = ParseFloat(optarg);
           break;
@@ -162,9 +170,17 @@ int main(int argc, char *argv[]) {
         ProbingModel(from_file, config);
       } else if (!strcmp(model_type, "trie")) {
         if (quantize) {
-          QuantTrieModel(from_file, config);
+          if (bhiksha) {
+            QuantArrayTrieModel(from_file, config);
+          } else {
+            QuantTrieModel(from_file, config);
+          }
         } else {
-          TrieModel(from_file, config);
+          if (bhiksha) {
+            ArrayTrieModel(from_file, config);
+          } else {
+            TrieModel(from_file, config);
+          }
         }
       } else {
         Usage(argv[0]);

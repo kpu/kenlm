@@ -99,6 +99,15 @@ int main(int argc, char *argv[]) {
       case lm::ngram::TRIE_SORTED:
         Query<lm::ngram::TrieModel>(argv[1], sentence_context);
         break;
+      case lm::ngram::QUANT_TRIE_SORTED:
+        Query<lm::ngram::QuantTrieModel>(argv[1], sentence_context);
+        break;
+      case lm::ngram::ARRAY_TRIE_SORTED:
+        Query<lm::ngram::ArrayTrieModel>(argv[1], sentence_context);
+        break;
+      case lm::ngram::QUANT_ARRAY_TRIE_SORTED:
+        Query<lm::ngram::QuantArrayTrieModel>(argv[1], sentence_context);
+        break;
       case lm::ngram::HASH_SORTED:
       default:
         std::cerr << "Unrecognized kenlm model type " << model_type << std::endl;
