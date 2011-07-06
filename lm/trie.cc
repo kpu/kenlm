@@ -114,7 +114,6 @@ template <class Quant, class Bhiksha> bool BitPackedMiddle<Quant, Bhiksha>::Find
 }
 
 template <class Quant, class Bhiksha> void BitPackedMiddle<Quant, Bhiksha>::FinishedLoading(uint64_t next_end, const Config &config) {
-  assert(next_end <= next_mask_);
   uint64_t last_next_write = (insert_index_ + 1) * total_bits_ - bhiksha_.InlineBits();
   bhiksha_.WriteNext(base_, last_next_write, insert_index_ + 1, next_end);
   bhiksha_.FinishedLoading(config);
