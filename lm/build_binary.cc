@@ -71,7 +71,7 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
   sizes[3] = ArrayTrieModel::Size(counts, config);
   sizes[4] = QuantArrayTrieModel::Size(counts, config);
   std::size_t max_length = *std::max_element(sizes, sizes + sizeof(sizes) / sizeof(size_t));
-  std::size_t min_length = *std::max_element(sizes, sizes + sizeof(sizes) / sizeof(size_t));
+  std::size_t min_length = *std::min_element(sizes, sizes + sizeof(sizes) / sizeof(size_t));
   std::size_t divide;
   char prefix;
   if (min_length < (1 << 10) * 10) {
