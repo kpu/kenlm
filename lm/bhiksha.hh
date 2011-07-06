@@ -69,8 +69,7 @@ class ArrayBhiksha {
     ArrayBhiksha(void *base, uint64_t max_offset, uint64_t max_value, const Config &config);
 
     void ReadNext(const void *base, uint64_t bit_offset, uint64_t index, uint8_t total_bits, NodeRange &out) const {
-      const uint64_t *begin_it = util::BoundedInterpolationBelow<const uint64_t *, util::IdentityAccessor<uint64_t>, util::Pivot64>(
-          util::IdentityAccessor<uint64_t>(), offset_begin_, 0, offset_end_, offset_bound_, index);
+      const uint64_t *begin_it = util::BinaryBelow(util::IdentityAccessor<uint64_t>(), offset_begin_, offset_end_, index);
       const uint64_t *end_it;
       for (end_it = begin_it; (end_it < offset_end_) && (*end_it <= index + 1); ++end_it) {}
       --end_it;
@@ -97,7 +96,6 @@ class ArrayBhiksha {
 
     const uint64_t *const offset_begin_;
     const uint64_t *const offset_end_;
-    uint64_t offset_bound_;
 
     uint64_t *write_to_;
 

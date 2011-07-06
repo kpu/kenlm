@@ -101,28 +101,25 @@ template <class Iterator, class Accessor, class Pivot> bool SortedUniformFind(co
   return BoundedSortedUniformFind<Iterator, Accessor, Pivot>(accessor, begin, below, end, above, key, out);
 }
 
-/* Return the last iterator with key <= the given key. */
-template <class Iterator, class Accessor, class Pivot> Iterator BoundedInterpolationBelow(
+// May return begin - 1.
+template <class Iterator, class Accessor> Iterator BinaryBelow(
     const Accessor &accessor,
-    Iterator before_it, typename Accessor::Key before_v,
-    Iterator after_it, typename Accessor::Key after_v,
+    Iterator begin,
+    Iterator end,
     const typename Accessor::Key key) {
-  while (after_it - before_it > 1) {
-    Iterator pivot(before_it + (1 + Pivot::Calc(key - before_v, after_v - before_v, after_it - before_it - 1)));
+  while (end > begin) {
+    Iterator pivot(begin + (end - begin) / 2);
     typename Accessor::Key mid(accessor(pivot));
     if (mid < key) {
-      before_it = pivot;
-      before_v = mid;
+      begin = pivot + 1;
     } else if (mid > key) {
-      after_it = pivot;
-      after_v = mid;
+      end = pivot;
     } else {
-      // Found.  Return the last value equal to it.  TODO: binary search?
-      for (++pivot; (pivot < after_it) && accessor(pivot) == mid; ++pivot) {}
+      for (++pivot; (pivot < end) && accessor(pivot) == mid; ++pivot) {}
       return pivot - 1;
     }
   }
-  return before_it;
+  return begin - 1;
 }
 
 // To use this template, you need to define a Pivot function to match Key.  

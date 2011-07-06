@@ -80,14 +80,12 @@ void ArrayBhiksha::FinishedLoading(const Config &config) {
 
   if (write_to_ != offset_end_) UTIL_THROW(util::Exception, "Did not get all the array entries that were expected.");
 
-  offset_bound_ = *(offset_end_ - 1);
   uint8_t *head_write = reinterpret_cast<uint8_t*>(original_base_);
   *(head_write++) = kArrayBhikshaVersion;
   *(head_write++) = config.pointer_bhiksha_bits;
 }
 
 void ArrayBhiksha::LoadedBinary() {
-  offset_bound_ = *(offset_end_ - 1);
 }
 
 } // namespace trie
