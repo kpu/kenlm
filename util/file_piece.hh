@@ -51,7 +51,7 @@ class FilePiece {
 
     ~FilePiece();
      
-    char get() throw(GZException, EndOfFileException) { 
+    char get() { 
       if (position_ == position_end_) {
         Shift();
         if (at_end_) throw EndOfFileException();
