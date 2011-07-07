@@ -20,8 +20,13 @@ class Exception : public std::exception {
     // Not threadsafe, but probably doesn't matter.  FWIW, Boost's exception guidance implies that what() isn't threadsafe.  
     const char *what() const throw();
 
-    // For use by the UTIL_THROW macro.
-    void SetLocation(const char *file, unsigned int line, const char *child_name, const char *condition = NULL);
+    // For use by the UTIL_THROW macros.  
+    void SetLocation(
+        const char *file,
+        unsigned int line,
+        const char *func,
+        const char *child_name,
+        const char *condition);
 
   private:
     template <class Except, class Data> friend typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const Data &data);
@@ -44,11 +49,37 @@ template <class Except, class Data> typename Except::template ExceptionTag<Excep
   return e;
 }
 
-// do .. while kludge to swallow ; http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html
-// Modify is not surrounded with () so that it can use << internally.  
+#ifdef __GNUC__
+#define UTIL_FUNC_NAME __PRETTY_FUNCTION__
+#else
+#ifdef _WIN32
+#define UTIL_FUNC_NAME __FUNCTION__
+#else
+#define UTIL_FUNC_NAME NULL
+#endif
+#endif
+
+#define UTIL_SET_LOCATION(UTIL_e, child, condition) do { \
+  (UTIL_e).SetLocation(__FILE__, __LINE__, UTIL_FUNC_NAME, (child), (condition)); \
+} while (0)
+
+/* Create an instance of Exception, add the message Modify, and throw it.
+ * Modify is appended to the what() message and can contain << for ostream
+ * operations.  
+ *
+ * do .. while kludge to swallow trailing ; character
+ * http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html .  
+ */
 #define UTIL_THROW(Exception, Modify) do { \
   Exception UTIL_e; \
-  UTIL_e.SetLocation(__FILE__, __LINE__, #Exception); \
+  UTIL_SET_LOCATION(UTIL_e, #Exception, NULL); \
+  UTIL_e << Modify; \
+  throw UTIL_e; \
+} while (0)
+
+#define UTIL_THROW_VAR(Var, Modify) do { \
+  Exception &UTIL_e = (Var); \
+  UTIL_SET_LOCATION(UTIL_e, NULL, NULL); \
   UTIL_e << Modify; \
   throw UTIL_e; \
 } while (0)
@@ -56,7 +87,7 @@ template <class Except, class Data> typename Except::template ExceptionTag<Excep
 #define UTIL_THROW_IF(Condition, Exception, Modify) do { \
   if (Condition) { \
     Exception UTIL_e; \
-    UTIL_e.SetLocation(__FILE__, __LINE__, #Exception, #Condition); \
+    UTIL_SET_LOCATION(UTIL_e, #Exception, #Condition); \
     UTIL_e << Modify; \
     throw UTIL_e; \
   } \
