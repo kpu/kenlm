@@ -37,14 +37,14 @@ WordIndex ReadWords(int fd, EnumerateVocab *enumerate) {
   WordIndex index = 0;
   while (true) {
     ssize_t got = read(fd, &buf[0], kInitialRead);
-    if (got == -1) UTIL_THROW(util::ErrnoException, "Reading vocabulary words");
+    UTIL_THROW_IF(got == -1, util::ErrnoException, "Reading vocabulary words");
     if (got == 0) return index;
     buf.resize(got);
     while (buf[buf.size() - 1]) {
       char next_char;
       ssize_t ret = read(fd, &next_char, 1);
-      if (ret == -1) UTIL_THROW(util::ErrnoException, "Reading vocabulary words");
-      if (ret == 0) UTIL_THROW(FormatLoadException, "Missing null terminator on a vocab word.");
+      UTIL_THROW_IF(ret == -1, util::ErrnoException, "Reading vocabulary words");
+      UTIL_THROW_IF(ret == 0, FormatLoadException, "Missing null terminator on a vocab word.");
       buf.push_back(next_char);
     }
     // Ok now we have null terminated strings.  

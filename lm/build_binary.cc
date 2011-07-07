@@ -111,8 +111,8 @@ void ProbingQuantizationUnsupported() {
 int main(int argc, char *argv[]) {
   using namespace lm::ngram;
 
-  bool quantize = false, set_backoff_bits = false, bhiksha = false;
   try {
+    bool quantize = false, set_backoff_bits = false, bhiksha = false;
     lm::ngram::Config config;
     int opt;
     while ((opt = getopt(argc, argv, "siu:p:t:m:q:b:a:")) != -1) {
@@ -189,9 +189,9 @@ int main(int argc, char *argv[]) {
       Usage(argv[0]);
     }
   }
-  catch (std::exception &e) {
+  catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;
-    abort();
+    return 1;
   }
   return 0;
 }
