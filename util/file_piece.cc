@@ -41,8 +41,8 @@ GZException::GZException(void *file) {
 const bool kSpaces[256] = {0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 int OpenReadOrThrow(const char *name) {
-  int ret = open(name, O_RDONLY);
-  if (ret == -1) UTIL_THROW(ErrnoException, "Failed to open " << name);
+  int ret;
+  UTIL_THROW_IF(-1 == (ret = open(name, O_RDONLY)), ErrnoException, "while opening " << name);
   return ret;
 }
 
@@ -264,16 +264,14 @@ void FilePiece::TransitionToRead() {
   fallback_to_read_ = true;
   data_.reset();
   data_.reset(malloc(default_map_size_), default_map_size_, scoped_memory::MALLOC_ALLOCATED);
-  if (!data_.get()) UTIL_THROW(ErrnoException, "malloc failed for " << default_map_size_);
+  UTIL_THROW_IF(!data_.get(), ErrnoException, "malloc failed for " << default_map_size_);
   position_ = data_.begin();
   position_end_ = position_;
 
 #ifdef HAVE_ZLIB
   assert(!gz_file_);
   gz_file_ = gzdopen(file_.get(), "r");
-  if (!gz_file_) {
-    UTIL_THROW(GZException, "zlib failed to open " << file_name_);
-  }
+  UTIL_THROW_IF(!gz_file_, GZException, "zlib failed to open " << file_name_);
 #endif
 }
 
@@ -297,7 +295,7 @@ void FilePiece::ReadShift() {
       std::size_t valid_length = position_end_ - position_;
       default_map_size_ *= 2;
       data_.call_realloc(default_map_size_);
-      if (!data_.get()) UTIL_THROW(ErrnoException, "realloc failed for " << default_map_size_);
+      UTIL_THROW_IF(!data_.get(), ErrnoException, "realloc failed for " << default_map_size_);
       position_ = data_.begin();
       position_end_ = position_ + valid_length;
     } else {
@@ -320,7 +318,7 @@ void FilePiece::ReadShift() {
   }
 #else
   read_return = read(file_.get(), static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
-  if (read_return == -1) UTIL_THROW(ErrnoException, "read failed");
+  UTIL_THROW_IF(read_return == -1, ErrnoException, "read failed");
   progress_.Set(mapped_offset_);
 #endif
   if (read_return == 0) {

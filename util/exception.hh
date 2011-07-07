@@ -20,6 +20,9 @@ class Exception : public std::exception {
     // Not threadsafe, but probably doesn't matter.  FWIW, Boost's exception guidance implies that what() isn't threadsafe.  
     const char *what() const throw();
 
+    // For use by the UTIL_THROW macro.
+    void SetLocation(const char *file, unsigned int line, const char *child_name, const char *condition = NULL);
+
   private:
     template <class Except, class Data> friend typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const Data &data);
 
@@ -41,7 +44,23 @@ template <class Except, class Data> typename Except::template ExceptionTag<Excep
   return e;
 }
 
-#define UTIL_THROW(Exception, Modify) { Exception UTIL_e; {UTIL_e << Modify;} throw UTIL_e; }
+// do .. while kludge to swallow ; http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html
+// Modify is not surrounded with () so that it can use << internally.  
+#define UTIL_THROW(Exception, Modify) do { \
+  Exception UTIL_e; \
+  UTIL_e.SetLocation(__FILE__, __LINE__, #Exception); \
+  UTIL_e << Modify; \
+  throw UTIL_e; \
+} while (0)
+
+#define UTIL_THROW_IF(Condition, Exception, Modify) do { \
+  if (Condition) { \
+    Exception UTIL_e; \
+    UTIL_e.SetLocation(__FILE__, __LINE__, #Exception, #Condition); \
+    UTIL_e << Modify; \
+    throw UTIL_e; \
+  } \
+} while (0)
 
 class ErrnoException : public Exception {
   public:
