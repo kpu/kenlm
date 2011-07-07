@@ -1,8 +1,6 @@
 #ifndef UTIL_EXCEPTION__
 #define UTIL_EXCEPTION__
 
-#include "util/string_piece.hh"
-
 #include <exception>
 #include <sstream>
 #include <string>
