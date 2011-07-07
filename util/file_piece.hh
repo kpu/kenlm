@@ -45,9 +45,9 @@ off_t SizeFile(int fd);
 class FilePiece {
   public:
     // 32 MB default.
-    explicit FilePiece(const char *file, std::ostream *show_progress = NULL, off_t min_buffer = 33554432) throw(GZException);
+    explicit FilePiece(const char *file, std::ostream *show_progress = NULL, off_t min_buffer = 33554432);
     // Takes ownership of fd.  name is used for messages.  
-    explicit FilePiece(int fd, const char *name, std::ostream *show_progress = NULL, off_t min_buffer = 33554432) throw(GZException);
+    explicit FilePiece(int fd, const char *name, std::ostream *show_progress = NULL, off_t min_buffer = 33554432);
 
     ~FilePiece();
      
@@ -60,22 +60,22 @@ class FilePiece {
     }
 
     // Leaves the delimiter, if any, to be returned by get().  Delimiters defined by isspace().  
-    StringPiece ReadDelimited(const bool *delim = kSpaces) throw(GZException, EndOfFileException) {
+    StringPiece ReadDelimited(const bool *delim = kSpaces) {
       SkipSpaces(delim);
       return Consume(FindDelimiterOrEOF(delim));
     }
 
     // Unlike ReadDelimited, this includes leading spaces and consumes the delimiter.
     // It is similar to getline in that way.  
-    StringPiece ReadLine(char delim = '\n') throw(GZException, EndOfFileException);
+    StringPiece ReadLine(char delim = '\n');
 
-    float ReadFloat() throw(GZException, EndOfFileException, ParseNumberException);
-    double ReadDouble() throw(GZException, EndOfFileException, ParseNumberException);
-    long int ReadLong() throw(GZException, EndOfFileException, ParseNumberException);
-    unsigned long int ReadULong() throw(GZException, EndOfFileException, ParseNumberException);
+    float ReadFloat();
+    double ReadDouble();
+    long int ReadLong();
+    unsigned long int ReadULong();
 
     // Skip spaces defined by isspace.  
-    void SkipSpaces(const bool *delim = kSpaces) throw (GZException, EndOfFileException) {
+    void SkipSpaces(const bool *delim = kSpaces) {
       for (; ; ++position_) {
         if (position_ == position_end_) Shift();
         if (!delim[static_cast<unsigned char>(*position_)]) return;
@@ -89,9 +89,9 @@ class FilePiece {
     const std::string &FileName() const { return file_name_; }
     
   private:
-    void Initialize(const char *name, std::ostream *show_progress, off_t min_buffer) throw(GZException);
+    void Initialize(const char *name, std::ostream *show_progress, off_t min_buffer);
 
-    template <class T> T ReadNumber() throw(GZException, EndOfFileException, ParseNumberException);
+    template <class T> T ReadNumber();
 
     StringPiece Consume(const char *to) {
       StringPiece ret(position_, to - position_);
@@ -99,14 +99,14 @@ class FilePiece {
       return ret;
     }
 
-    const char *FindDelimiterOrEOF(const bool *delim = kSpaces) throw (GZException, EndOfFileException);
+    const char *FindDelimiterOrEOF(const bool *delim = kSpaces);
 
-    void Shift() throw (EndOfFileException, GZException);
+    void Shift();
     // Backends to Shift().
-    void MMapShift(off_t desired_begin) throw ();
+    void MMapShift(off_t desired_begin);
 
-    void TransitionToRead() throw (GZException);
-    void ReadShift() throw (GZException, EndOfFileException);
+    void TransitionToRead();
+    void ReadShift();
 
     const char *position_, *last_space_, *position_end_;
 

@@ -42,7 +42,7 @@ const bool kSpaces[256] = {0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 int OpenReadOrThrow(const char *name) {
   int ret = open(name, O_RDONLY);
-  if (ret == -1) UTIL_THROW(ErrnoException, "in open (" << name << ") for reading");
+  if (ret == -1) UTIL_THROW(ErrnoException, "Failed to open " << name);
   return ret;
 }
 
@@ -52,13 +52,13 @@ off_t SizeFile(int fd) {
   return sb.st_size;
 }
 
-FilePiece::FilePiece(const char *name, std::ostream *show_progress, off_t min_buffer) throw (GZException) : 
+FilePiece::FilePiece(const char *name, std::ostream *show_progress, off_t min_buffer) : 
   file_(OpenReadOrThrow(name)), total_size_(SizeFile(file_.get())), page_(sysconf(_SC_PAGE_SIZE)),
   progress_(total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + name, total_size_) {
   Initialize(name, show_progress, min_buffer);
 }
 
-FilePiece::FilePiece(int fd, const char *name, std::ostream *show_progress, off_t min_buffer) throw (GZException) : 
+FilePiece::FilePiece(int fd, const char *name, std::ostream *show_progress, off_t min_buffer)  : 
   file_(fd), total_size_(SizeFile(file_.get())), page_(sysconf(_SC_PAGE_SIZE)),
   progress_(total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + name, total_size_) {
   Initialize(name, show_progress, min_buffer);
@@ -78,7 +78,7 @@ FilePiece::~FilePiece() {
 #endif
 }
 
-StringPiece FilePiece::ReadLine(char delim) throw (GZException, EndOfFileException) {
+StringPiece FilePiece::ReadLine(char delim) {
   size_t skip = 0;
   while (true) {
     for (const char *i = position_ + skip; i < position_end_; ++i) {
@@ -97,20 +97,20 @@ StringPiece FilePiece::ReadLine(char delim) throw (GZException, EndOfFileExcepti
   }
 }
 
-float FilePiece::ReadFloat() throw(GZException, EndOfFileException, ParseNumberException) {
+float FilePiece::ReadFloat() {
   return ReadNumber<float>();
 }
-double FilePiece::ReadDouble() throw(GZException, EndOfFileException, ParseNumberException) {
+double FilePiece::ReadDouble() {
   return ReadNumber<double>();
 }
-long int FilePiece::ReadLong() throw(GZException, EndOfFileException, ParseNumberException) {
+long int FilePiece::ReadLong() {
   return ReadNumber<long int>();
 }
-unsigned long int FilePiece::ReadULong() throw(GZException, EndOfFileException, ParseNumberException) {
+unsigned long int FilePiece::ReadULong() {
   return ReadNumber<unsigned long int>();
 }
 
-void FilePiece::Initialize(const char *name, std::ostream *show_progress, off_t min_buffer) throw (GZException) {
+void FilePiece::Initialize(const char *name, std::ostream *show_progress, off_t min_buffer)  {
 #ifdef HAVE_ZLIB
   gz_file_ = NULL;
 #endif
@@ -163,7 +163,7 @@ void ParseNumber(const char *begin, char *&end, unsigned long int &out) {
 }
 } // namespace
 
-template <class T> T FilePiece::ReadNumber() throw(GZException, EndOfFileException, ParseNumberException) {
+template <class T> T FilePiece::ReadNumber() {
   SkipSpaces();
   while (last_space_ < position_) {
     if (at_end_) {
@@ -186,7 +186,7 @@ template <class T> T FilePiece::ReadNumber() throw(GZException, EndOfFileExcepti
   return ret;
 }
 
-const char *FilePiece::FindDelimiterOrEOF(const bool *delim) throw (GZException, EndOfFileException) {
+const char *FilePiece::FindDelimiterOrEOF(const bool *delim)  {
   size_t skip = 0;
   while (true) {
     for (const char *i = position_ + skip; i < position_end_; ++i) {
@@ -201,7 +201,7 @@ const char *FilePiece::FindDelimiterOrEOF(const bool *delim) throw (GZException,
   }
 }
 
-void FilePiece::Shift() throw(GZException, EndOfFileException) {
+void FilePiece::Shift() {
   if (at_end_) {
     progress_.Finished();
     throw EndOfFileException();
@@ -217,7 +217,7 @@ void FilePiece::Shift() throw(GZException, EndOfFileException) {
   }
 }
 
-void FilePiece::MMapShift(off_t desired_begin) throw() {
+void FilePiece::MMapShift(off_t desired_begin) {
   // Use mmap.  
   off_t ignore = desired_begin % page_;
   // Duplicate request for Shift means give more data.  
@@ -259,7 +259,7 @@ void FilePiece::MMapShift(off_t desired_begin) throw() {
   progress_.Set(desired_begin);
 }
 
-void FilePiece::TransitionToRead() throw (GZException) {
+void FilePiece::TransitionToRead() {
   assert(!fallback_to_read_);
   fallback_to_read_ = true;
   data_.reset();
@@ -277,7 +277,7 @@ void FilePiece::TransitionToRead() throw (GZException) {
 #endif
 }
 
-void FilePiece::ReadShift() throw(GZException, EndOfFileException) {
+void FilePiece::ReadShift() {
   assert(fallback_to_read_);
   // Bytes [data_.begin(), position_) have been consumed.  
   // Bytes [position_, position_end_) have been read into the buffer.  
