@@ -34,18 +34,17 @@ void Exception::SetLocation(const char *file, unsigned int line, const char *fun
    */
   text_ = stream_.str();
   stream_.str("");
-  stream_ << "At " << file << ':' << line;
-  if (func) stream_ << " in " << func << ",\n";
+  stream_ << file << ':' << line;
+  if (func) stream_ << " in " << func << " threw ";
   if (child_name) {
     stream_ << child_name;
   } else {
 #ifdef __GXX_RTTI
     stream_ << typeid(this).name();
 #else
-    stream_ << "An exception";
+    stream_ << "an exception";
 #endif
   }
-  stream_ << " was throwed";
   if (condition) stream_ << " because `" << condition;
   stream_ << "'.\n";
   stream_ << text_;

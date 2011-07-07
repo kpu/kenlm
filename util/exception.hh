@@ -99,7 +99,7 @@ class ErrnoException : public Exception {
 
     virtual ~ErrnoException() throw();
 
-    int Error() { return errno_; }
+    int Error() const throw() { return errno_; }
 
   private:
     int errno_;
