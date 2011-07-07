@@ -40,10 +40,11 @@ class DontBhiksha {
     void ReadNext(const void *base, uint64_t bit_offset, uint64_t /*index*/, uint8_t total_bits, NodeRange &out) const {
       out.begin = util::ReadInt57(base, bit_offset, next_.bits, next_.mask);
       out.end = util::ReadInt57(base, bit_offset + total_bits, next_.bits, next_.mask);
+      //assert(out.end >= out.begin);
     }
 
     void WriteNext(void *base, uint64_t bit_offset, uint64_t index, uint64_t value) {
-      util::WriteInt57(base, bit_offset, index, value);
+      util::WriteInt57(base, bit_offset, next_.bits, value);
     }
 
     void FinishedLoading(const Config &/*config*/) {}
