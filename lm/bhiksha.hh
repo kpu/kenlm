@@ -43,7 +43,7 @@ class DontBhiksha {
       //assert(out.end >= out.begin);
     }
 
-    void WriteNext(void *base, uint64_t bit_offset, uint64_t index, uint64_t value) {
+    void WriteNext(void *base, uint64_t bit_offset, uint64_t /*index*/, uint64_t value) {
       util::WriteInt57(base, bit_offset, next_.bits, value);
     }
 
