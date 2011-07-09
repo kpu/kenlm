@@ -15,12 +15,12 @@ namespace ngram {
 namespace {
 
 void Usage(const char *name) {
-  std::cerr << "Usage: " << name << " [-u log10_unknown_probability] [-s] [-n] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [-q bits] [-b bits] [type] input.arpa output.mmap\n\n"
-"-u sets the default log10 probability for <unk> if the ARPA file does not have\n"
-"one.\n"
+  std::cerr << "Usage: " << name << " [-u log10_unknown_probability] [-s] [-i] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [-q bits] [-b bits] [-c bits] [type] input.arpa [output.mmap]\n\n"
+"-u sets the log10 probability for <unk> if the ARPA file does not have one.\n"
+"   Default is -100.  The ARPA file will always take precedence.\n"
 "-s allows models to be built even if they do not have <s> and </s>.\n"
-"-i allows buggy models from IRSTLM by mapping positive log probability to 0.\n"
-"type is either probing or trie:\n\n"
+"-i allows buggy models from IRSTLM by mapping positive log probability to 0.\n\n"
+"type is either probing or trie.  Default is probing.\n\n"
 "probing uses a probing hash table.  It is the fastest but uses the most memory.\n"
 "-p sets the space multiplier and must be >1.0.  The default is 1.5.\n\n"
 "trie is a straightforward trie with bit-level packing.  It uses the least\n"
@@ -30,10 +30,10 @@ void Usage(const char *name) {
 "-m limits memory use for sorting.  Measured in MB.  Default is 1024MB.\n"
 "-q turns quantization on and sets the number of bits (e.g. -q 8).\n"
 "-b sets backoff quantization bits.  Requires -q and defaults to that value.\n"
-"-a enables array-based pointer compression by chopping the specified bits.\n\n"
-"See http://kheafield.com/code/kenlm/benchmark/ for data structure benchmarks.\n"
-"Passing only an input file will print memory usage of each data structure.\n"
-"If the ARPA file does not have <unk>, -u sets <unk>'s probability; default 0.0.\n";
+"-a compresses pointers using an array of offsets.  The parameter is the\n"
+"   maximum number of bits encoded by the array.  Memory is minimized subject\n"
+"   to the maximum, so pick 255 to minimize memory.\n\n"
+"Get a memory estimate by passing an ARPA file without an output file name.\n";
   exit(1);
 }
 
