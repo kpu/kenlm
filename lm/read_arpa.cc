@@ -31,15 +31,15 @@ const char kBinaryMagic[] = "mmap lm http://kheafield.com/code";
 void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number) {
   number.clear();
   StringPiece line;
-  if (!IsEntirelyWhiteSpace(line = in.ReadLine())) {
+  while (IsEntirelyWhiteSpace(line = in.ReadLine())) {}
+  if (line != "\\data\\") {
     if ((line.size() >= 2) && (line.data()[0] == 0x1f) && (static_cast<unsigned char>(line.data()[1]) == 0x8b)) {
       UTIL_THROW(FormatLoadException, "Looks like a gzip file.  If this is an ARPA file, pipe " << in.FileName() << " through zcat.  If this already in binary format, you need to decompress it because mmap doesn't work on top of gzip.");
     }
     if (static_cast<size_t>(line.size()) >= strlen(kBinaryMagic) && StringPiece(line.data(), strlen(kBinaryMagic)) == kBinaryMagic) 
       UTIL_THROW(FormatLoadException, "This looks like a binary file but got sent to the ARPA parser.  Did you compress the binary file or pass a binary file where only ARPA files are accepted?");
-    UTIL_THROW(FormatLoadException, "First line was \"" << line.data() << "\" not blank");
+    UTIL_THROW(FormatLoadException, "first non-empty line was \"" << line << "\" not \\data\\.");
   }
-  if ((line = in.ReadLine()) != "\\data\\") UTIL_THROW(FormatLoadException, "second line was \"" << line << "\" not \\data\\.");
   while (!IsEntirelyWhiteSpace(line = in.ReadLine())) {
     if (line.size() < 6 || strncmp(line.data(), "ngram ", 6)) UTIL_THROW(FormatLoadException, "count line \"" << line << "\"doesn't begin with \"ngram \"");
     // So strtol doesn't go off the end of line.  
