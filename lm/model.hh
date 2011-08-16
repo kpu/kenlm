@@ -114,6 +114,9 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
      */
     void GetState(const WordIndex *context_rbegin, const WordIndex *context_rend, State &out_state) const;
 
+    /* Delete this */
+    Search &GetSearch() { return search_; }
+
   private:
     friend void LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);
 

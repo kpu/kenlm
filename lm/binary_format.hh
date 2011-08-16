@@ -60,7 +60,7 @@ void AdvanceOrThrow(int fd, off_t off);
 // Create just enough of a binary file to write vocabulary to it.  
 uint8_t *SetupJustVocab(const Config &config, uint8_t order, std::size_t memory_size, Backing &backing);
 // Grow the binary file for the search data structure and set backing.search, returning the memory address where the search data structure should begin.  
-uint8_t *GrowForSearch(const Config &config, std::size_t memory_size, Backing &backing);
+uint8_t *GrowForSearch(const Config &config, std::size_t vocab_pad, std::size_t memory_size, Backing &backing);
 
 // Write header to binary file.  This is done last to prevent incomplete files
 // from loading.   

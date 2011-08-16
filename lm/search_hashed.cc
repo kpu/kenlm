@@ -98,7 +98,7 @@ template <class MiddleT, class LongestT> uint8_t *TemplateHashedSearch<MiddleT, 
 
 template <class MiddleT, class LongestT> template <class Voc> void TemplateHashedSearch<MiddleT, LongestT>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing) {
   // TODO: fix sorted.
-  SetupMemory(GrowForSearch(config, Size(counts, config), backing), counts, config);
+  SetupMemory(GrowForSearch(config, 0, Size(counts, config), backing), counts, config);
 
   PositiveProbWarn warn(config.positive_log_probability);
 

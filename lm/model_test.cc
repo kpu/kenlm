@@ -193,6 +193,14 @@ template <class M> void Stateless(const M &model) {
   BOOST_CHECK_EQUAL(static_cast<WordIndex>(0), state.history_[0]);
 }
 
+template <class M> void NoUnkCheck(const M &model) {
+  WordIndex unk_index = 0;
+  State state;
+
+  FullScoreReturn ret = model.FullScoreForgotState(&unk_index, &unk_index + 1, unk_index, state);
+  BOOST_CHECK_CLOSE(-100.0, ret.prob, 0.001);
+}
+
 template <class M> void Everything(const M &m) {
   Starters(m);
   Continuation(m);
@@ -231,12 +239,21 @@ template <class ModelT> void LoadingTest() {
   Config config;
   config.arpa_complain = Config::NONE;
   config.messages = NULL;
-  ExpectEnumerateVocab enumerate;
-  config.enumerate_vocab = &enumerate;
   config.probing_multiplier = 2.0;
-  ModelT m("test.arpa", config);
-  enumerate.Check(m.GetVocabulary());
-  Everything(m);
+  {
+    ExpectEnumerateVocab enumerate;
+    config.enumerate_vocab = &enumerate;
+    ModelT m("test.arpa", config);
+    enumerate.Check(m.GetVocabulary());
+    Everything(m);
+  }
+  {
+    ExpectEnumerateVocab enumerate;
+    config.enumerate_vocab = &enumerate;
+    ModelT m("test_nounk.arpa", config);
+    enumerate.Check(m.GetVocabulary());
+    NoUnkCheck(m);
+  }
 }
 
 BOOST_AUTO_TEST_CASE(probing) {

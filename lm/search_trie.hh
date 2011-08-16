@@ -14,7 +14,7 @@ class SortedVocabulary;
 namespace trie {
 
 template <class Quant, class Bhiksha> class TrieSearch;
-template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, Backing &backing);
+template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing);
 
 template <class Quant, class Bhiksha> class TrieSearch {
   public:
@@ -57,8 +57,8 @@ template <class Quant, class Bhiksha> class TrieSearch {
 
     void InitializeFromARPA(const char *file, util::FilePiece &f, std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, Backing &backing);
 
-    bool LookupUnigram(WordIndex word, float &prob, float &backoff, Node &node) const {
-      return unigram.Find(word, prob, backoff, node);
+    void LookupUnigram(WordIndex word, float &prob, float &backoff, Node &node) const {
+      unigram.Find(word, prob, backoff, node);
     }
 
     bool LookupMiddle(const Middle &mid, WordIndex word, float &prob, float &backoff, Node &node) const {
@@ -85,7 +85,7 @@ template <class Quant, class Bhiksha> class TrieSearch {
     }
 
   private:
-    friend void BuildTrie<Quant, Bhiksha>(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, Backing &backing);
+    friend void BuildTrie<Quant, Bhiksha>(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing);
 
     // Middles are managed manually so we can delay construction and they don't have to be copyable.  
     void FreeMiddles() {

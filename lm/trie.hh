@@ -47,13 +47,12 @@ class Unigram {
     
     void LoadedBinary() {}
 
-    bool Find(WordIndex word, float &prob, float &backoff, NodeRange &next) const {
+    void Find(WordIndex word, float &prob, float &backoff, NodeRange &next) const {
       UnigramValue *val = unigram_ + word;
       prob = val->weights.prob;
       backoff = val->weights.backoff;
       next.begin = val->next;
       next.end = (val+1)->next;
-      return true;
     }
 
   private:

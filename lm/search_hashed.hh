@@ -52,12 +52,11 @@ struct HashedSearch {
 
   Unigram unigram;
 
-  bool LookupUnigram(WordIndex word, float &prob, float &backoff, Node &next) const {
+  void LookupUnigram(WordIndex word, float &prob, float &backoff, Node &next) const {
     const ProbBackoff &entry = unigram.Lookup(word);
     prob = entry.prob;
     backoff = entry.backoff;
     next = static_cast<Node>(word);
-    return true;
   }
 };
 

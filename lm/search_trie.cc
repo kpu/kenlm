@@ -544,8 +544,8 @@ void ARPAToSortedFiles(const Config &config, util::FilePiece &f, std::vector<uin
     std::string unigram_name = file_prefix + "unigrams";
     util::scoped_fd unigram_file;
     // In case <unk> appears.  
-    size_t extra_count = counts[0] + 1;
-    util::scoped_mmap unigram_mmap(util::MapZeroedWrite(unigram_name.c_str(), extra_count * sizeof(ProbBackoff), unigram_file), extra_count * sizeof(ProbBackoff));
+    size_t file_out = (counts[0] + 1) * sizeof(ProbBackoff);
+    util::scoped_mmap unigram_mmap(util::MapZeroedWrite(unigram_name.c_str(), file_out, unigram_file), file_out);
     Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_mmap.get()), warn);
     CheckSpecials(config, vocab);
     if (!vocab.SawUnk()) ++counts[0];
@@ -822,7 +822,7 @@ template <class Quant> void TrainProbQuantizer(uint8_t order, uint64_t count, So
 
 } // namespace
 
-template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, Backing &backing) {
+template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing) {
   std::vector<SortedFileReader> inputs(counts.size() - 1);
   std::vector<ContextReader> contexts(counts.size() - 1);
 
@@ -847,7 +847,7 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
   SanityCheckCounts(counts, fixed_counts);
   counts = fixed_counts;
 
-  out.SetupMemory(GrowForSearch(config, TrieSearch<Quant, Bhiksha>::Size(fixed_counts, config), backing), fixed_counts, config);
+  out.SetupMemory(GrowForSearch(config, vocab.UnkCountChangePadding(), TrieSearch<Quant, Bhiksha>::Size(fixed_counts, config), backing), fixed_counts, config);
 
   if (Quant::kTrain) {
     util::ErsatzProgress progress(config.messages, "Quantizing", std::accumulate(counts.begin() + 1, counts.end(), 0));
@@ -969,7 +969,7 @@ template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::Initializ
   // At least 1MB sorting memory.  
   ARPAToSortedFiles(config, f, counts, std::max<size_t>(config.building_memory, 1048576), temporary_directory.c_str(), vocab);
 
-  BuildTrie(temporary_directory, counts, config, *this, quant_, backing);
+  BuildTrie(temporary_directory, counts, config, *this, quant_, vocab, backing);
   if (rmdir(temporary_directory.c_str()) && config.messages) {
     *config.messages << "Failed to delete " << temporary_directory << std::endl;
   }

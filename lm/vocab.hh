@@ -61,6 +61,7 @@ class SortedVocabulary : public base::Vocabulary {
       }
     }
 
+    // Size for purposes of file writing
     static size_t Size(std::size_t entries, const Config &config);
 
     // Vocab words are [0, Bound())  Only valid after FinishedLoading/LoadedBinary.  
@@ -76,6 +77,9 @@ class SortedVocabulary : public base::Vocabulary {
 
     // Reorders reorder_vocab so that the IDs are sorted.  
     void FinishedLoading(ProbBackoff *reorder_vocab);
+
+    // Trie stores the correct counts including <unk> in the header.  If this was previously sized based on a count exluding <unk>, padding with 8 bytes will make it the correct size based on a count including <unk>.
+    std::size_t UnkCountChangePadding() const { return SawUnk() ? 0 : sizeof(uint64_t); }
 
     bool SawUnk() const { return saw_unk_; }
 
