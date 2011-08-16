@@ -292,10 +292,30 @@ template <class ModelT> void BinaryTest() {
   BOOST_REQUIRE(RecognizeBinary("test.binary", type));
   BOOST_CHECK_EQUAL(ModelT::kModelType, type);
 
-  ModelT binary("test.binary", config);
-  enumerate.Check(binary.GetVocabulary());
-  Everything(binary);
+  {
+    ModelT binary("test.binary", config);
+    enumerate.Check(binary.GetVocabulary());
+    Everything(binary);
+  }
   unlink("test.binary");
+
+  // Now test without <unk>.
+  config.write_mmap = "test_nounk.binary";
+  config.messages = NULL;
+  enumerate.Clear();
+  {
+    ModelT copy_model("test_nounk.arpa", config);
+    enumerate.Check(copy_model.GetVocabulary());
+    enumerate.Clear();
+    NoUnkCheck(copy_model);
+  }
+  config.write_mmap = NULL;
+  {
+    ModelT binary("test_nounk.binary", config);
+    enumerate.Check(binary.GetVocabulary());
+    NoUnkCheck(binary);
+  }
+  unlink("test_nounk.binary");
 }
 
 BOOST_AUTO_TEST_CASE(write_and_read_probing) {
