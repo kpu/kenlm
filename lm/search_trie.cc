@@ -15,6 +15,7 @@
 #include "util/file_piece.hh"
 #include "util/have.hh"
 #include "util/proxy_iterator.hh"
+#include "util/sized_iterator.hh"
 #include "util/scoped.hh"
 
 #include <algorithm>
@@ -38,86 +39,25 @@ namespace ngram {
 namespace trie {
 namespace {
 
-/* An entry is a n-gram with probability.  It consists of:
- * WordIndex[order]
- * float probability
- * backoff probability (omitted for highest order n-gram)
- * These are stored consecutively in memory.  We want to sort them.  
- *
- * The problem is the length depends on order (but all n-grams being compared
- * have the same order).  Allocating each entry on the heap (i.e. std::vector
- * or std::string) then sorting pointers is the normal solution.  But that's
- * too memory inefficient.  A lot of this code is just here to force std::sort
- * to work with records where length is specified at runtime (and avoid using
- * Boost for LM code).  I could have used qsort, but the point is to also
- * support __gnu_cxx:parallel_sort which doesn't have a qsort version.  
- */
-
-class EntryIterator {
+class EntryCompare : public std::binary_function<const void*, const void*, bool> {
   public:
-    EntryIterator() {}
+    explicit EntryCompare(unsigned char order) : order_(order) {}
 
-    EntryIterator(void *ptr, std::size_t size) : ptr_(static_cast<uint8_t*>(ptr)), size_(size) {}
-
-    bool operator==(const EntryIterator &other) const {
-      return ptr_ == other.ptr_;
+    bool operator()(const void *first_void, const void *second_void) const {
+      const WordIndex *first = static_cast<const WordIndex*>(first_void);
+      const WordIndex *second = static_cast<const WordIndex*>(second_void);
+      const WordIndex *end = first + order_;
+      for (; first != end; ++first, ++second) {
+        if (*first < *second) return true;
+        if (*first > *second) return false;
+      }
+      return false;
     }
-    bool operator<(const EntryIterator &other) const {
-      return ptr_ < other.ptr_;
-    }
-    EntryIterator &operator+=(std::ptrdiff_t amount) {
-      ptr_ += amount * size_;
-      return *this;
-    }
-    std::ptrdiff_t operator-(const EntryIterator &other) const {
-      return (ptr_ - other.ptr_) / size_;
-    }
-
-    const void *Data() const { return ptr_; }
-    void *Data() { return ptr_; }
-    std::size_t EntrySize() const { return size_; }
-    
   private:
-    uint8_t *ptr_;
-    std::size_t size_;
+    unsigned char order_;
 };
 
-class EntryProxy {
-  public:
-    EntryProxy() {}
-
-    EntryProxy(void *ptr, std::size_t size) : inner_(ptr, size) {}
-
-    operator std::string() const {
-      return std::string(reinterpret_cast<const char*>(inner_.Data()), inner_.EntrySize());
-    }
-
-    EntryProxy &operator=(const EntryProxy &from) {
-      memcpy(inner_.Data(), from.inner_.Data(), inner_.EntrySize());
-      return *this;
-    }
-
-    EntryProxy &operator=(const std::string &from) {
-      memcpy(inner_.Data(), from.data(), inner_.EntrySize());
-      return *this;
-    }
-
-    const WordIndex *Indices() const {
-      return reinterpret_cast<const WordIndex*>(inner_.Data());
-    }
-
-  private:
-    friend class util::ProxyIterator<EntryProxy>;
-
-    typedef std::string value_type;
-
-    typedef EntryIterator InnerIterator;
-    InnerIterator &Inner() { return inner_; }
-    const InnerIterator &Inner() const { return inner_; } 
-    InnerIterator inner_;
-};
-
-typedef util::ProxyIterator<EntryProxy> NGramIter;
+typedef util::SizedIterator NGramIter;
 
 // Proxy for an entry except there is some extra cruft between the entries.  This is used to sort (n-1)-grams using the same memory as the sorted n-grams.  
 class PartialViewProxy {
@@ -140,9 +80,8 @@ class PartialViewProxy {
       return *this;
     }
 
-    const WordIndex *Indices() const {
-      return reinterpret_cast<const WordIndex*>(inner_.Data());
-    }
+    const void *Data() const { return inner_.Data(); }
+    void *Data() { return inner_.Data(); }
 
   private:
     friend class util::ProxyIterator<PartialViewProxy>;
@@ -151,43 +90,13 @@ class PartialViewProxy {
 
     const std::size_t attention_size_;
 
-    typedef EntryIterator InnerIterator;
+    typedef util::SizedInnerIterator InnerIterator;
     InnerIterator &Inner() { return inner_; }
     const InnerIterator &Inner() const { return inner_; } 
     InnerIterator inner_;
 };
 
 typedef util::ProxyIterator<PartialViewProxy> PartialIter;
-
-template <class Proxy> class CompareRecords : public std::binary_function<const Proxy &, const Proxy &, bool> {
-  public:
-    explicit CompareRecords(unsigned char order) : order_(order) {}
-
-    bool operator()(const Proxy &first, const Proxy &second) const {
-      return Compare(first.Indices(), second.Indices());
-    }
-    bool operator()(const Proxy &first, const std::string &second) const {
-      return Compare(first.Indices(), reinterpret_cast<const WordIndex*>(second.data()));
-    }
-    bool operator()(const std::string &first, const Proxy &second) const {
-      return Compare(reinterpret_cast<const WordIndex*>(first.data()), second.Indices());
-    }
-    bool operator()(const std::string &first, const std::string &second) const {
-      return Compare(reinterpret_cast<const WordIndex*>(first.data()), reinterpret_cast<const WordIndex*>(second.data()));
-    }
-    
-  private:
-    bool Compare(const WordIndex *first, const WordIndex *second) const {
-      const WordIndex *end = first + order_;
-      for (; first != end; ++first, ++second) {
-        if (*first < *second) return true;
-        if (*first > *second) return false;
-      }
-      return false;
-    }
-
-    unsigned char order_;
-};
 
 FILE *OpenOrThrow(const char *name, const char *mode) {
   FILE *ret = fopen(name, mode);
@@ -387,7 +296,7 @@ void WriteContextFile(uint8_t *begin, uint8_t *end, const std::string &ngram_fil
   PartialIter context_begin(PartialViewProxy(begin + sizeof(WordIndex), entry_size, context_size));
   PartialIter context_end(PartialViewProxy(end + sizeof(WordIndex), entry_size, context_size));
 
-  std::sort(context_begin, context_end, CompareRecords<PartialViewProxy>(order - 1));
+  std::sort(context_begin, context_end, util::SizedCompare<PartialViewProxy, EntryCompare>(EntryCompare(order - 1)));
 
   std::string name(ngram_file_name + kContextSuffix);
   util::scoped_FILE out(OpenOrThrow(name.c_str(), "w"));
@@ -395,13 +304,13 @@ void WriteContextFile(uint8_t *begin, uint8_t *end, const std::string &ngram_fil
   // Write out to file and uniqueify at the same time.  Could have used unique_copy if there was an appropriate OutputIterator.  
   if (context_begin == context_end) return;
   PartialIter i(context_begin);
-  WriteOrThrow(out.get(), i->Indices(), context_size);
-  const WordIndex *previous = i->Indices();
+  WriteOrThrow(out.get(), i->Data(), context_size);
+  const void *previous = i->Data();
   ++i;
   for (; i != context_end; ++i) {
-    if (memcmp(previous, i->Indices(), context_size)) {
-      WriteOrThrow(out.get(), i->Indices(), context_size);
-      previous = i->Indices();
+    if (memcmp(previous, i->Data(), context_size)) {
+      WriteOrThrow(out.get(), i->Data(), context_size);
+      previous = i->Data();
     }
   }
 }
@@ -506,9 +415,9 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
       }
     }
     // Sort full records by full n-gram.  
-    EntryProxy proxy_begin(begin, entry_size), proxy_end(out_end, entry_size);
+    util::SizedProxy proxy_begin(begin, entry_size), proxy_end(out_end, entry_size);
     // parallel_sort uses too much RAM
-    std::sort(NGramIter(proxy_begin), NGramIter(proxy_end), CompareRecords<EntryProxy>(order));
+    std::sort(NGramIter(proxy_begin), NGramIter(proxy_end), util::SizedCompare<util::SizedProxy, EntryCompare>(EntryCompare(order)));
     files.push_back(DiskFlush(begin, out_end, file_prefix, batch, order, weights_size));
     WriteContextFile(begin, out_end, files.back(), entry_size, order);
 
