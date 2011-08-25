@@ -75,7 +75,7 @@ class SizedProxy {
 typedef ProxyIterator<SizedProxy> SizedIterator;
 
 // Useful wrapper for a comparison function i.e. sort.  
-template <class Proxy, class Delegate> class SizedCompare : public std::binary_function<const Proxy &, const Proxy &, bool> {
+template <class Delegate, class Proxy = SizedProxy> class SizedCompare : public std::binary_function<const Proxy &, const Proxy &, bool> {
   public:
     explicit SizedCompare(const Delegate &delegate = Delegate()) : delegate_(delegate) {}
 

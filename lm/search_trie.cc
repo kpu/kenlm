@@ -296,7 +296,7 @@ void WriteContextFile(uint8_t *begin, uint8_t *end, const std::string &ngram_fil
   PartialIter context_begin(PartialViewProxy(begin + sizeof(WordIndex), entry_size, context_size));
   PartialIter context_end(PartialViewProxy(end + sizeof(WordIndex), entry_size, context_size));
 
-  std::sort(context_begin, context_end, util::SizedCompare<PartialViewProxy, EntryCompare>(EntryCompare(order - 1)));
+  std::sort(context_begin, context_end, util::SizedCompare<EntryCompare, PartialViewProxy>(EntryCompare(order - 1)));
 
   std::string name(ngram_file_name + kContextSuffix);
   util::scoped_FILE out(OpenOrThrow(name.c_str(), "w"));
@@ -417,7 +417,7 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
     // Sort full records by full n-gram.  
     util::SizedProxy proxy_begin(begin, entry_size), proxy_end(out_end, entry_size);
     // parallel_sort uses too much RAM
-    std::sort(NGramIter(proxy_begin), NGramIter(proxy_end), util::SizedCompare<util::SizedProxy, EntryCompare>(EntryCompare(order)));
+    std::sort(NGramIter(proxy_begin), NGramIter(proxy_end), util::SizedCompare<EntryCompare>(EntryCompare(order)));
     files.push_back(DiskFlush(begin, out_end, file_prefix, batch, order, weights_size));
     WriteContextFile(begin, out_end, files.back(), entry_size, order);
 
