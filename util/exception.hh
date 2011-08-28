@@ -105,6 +105,12 @@ class ErrnoException : public Exception {
     int errno_;
 };
 
+class EndOfFileException : public Exception {
+  public:
+    EndOfFileException() throw();
+    ~EndOfFileException() throw();
+};
+
 } // namespace util
 
 #endif // UTIL_EXCEPTION__

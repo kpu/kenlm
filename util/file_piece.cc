@@ -21,11 +21,6 @@
 
 namespace util {
 
-EndOfFileException::EndOfFileException() throw() {
-  *this << "End of file";
-}
-EndOfFileException::~EndOfFileException() throw() {}
-
 ParseNumberException::ParseNumberException(StringPiece value) throw() {
   *this << "Could not parse \"" << value << "\" into a number";
 }

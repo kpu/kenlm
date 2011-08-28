@@ -79,4 +79,9 @@ ErrnoException::ErrnoException() throw() : errno_(errno) {
 
 ErrnoException::~ErrnoException() throw() {}
 
+EndOfFileException::EndOfFileException() throw() {
+  *this << "End of file";
+}
+EndOfFileException::~EndOfFileException() throw() {}
+
 } // namespace util

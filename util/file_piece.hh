@@ -14,12 +14,6 @@
 
 namespace util {
 
-class EndOfFileException : public Exception {
-  public:
-    EndOfFileException() throw();
-    ~EndOfFileException() throw();
-};
-
 class ParseNumberException : public Exception {
   public:
     explicit ParseNumberException(StringPiece value) throw();
