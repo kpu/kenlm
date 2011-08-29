@@ -6,6 +6,9 @@
 #include <functional>
 #include <string>
 
+#include <inttypes.h>
+#include <string.h>
+
 namespace util {
 
 class SizedInnerIterator {
@@ -74,6 +77,8 @@ class SizedProxy {
 
 typedef ProxyIterator<SizedProxy> SizedIterator;
 
+SizedIterator SizedIt(void *ptr, std::size_t size) { return SizedIterator(SizedProxy(ptr, size)); }
+
 // Useful wrapper for a comparison function i.e. sort.  
 template <class Delegate, class Proxy = SizedProxy> class SizedCompare : public std::binary_function<const Proxy &, const Proxy &, bool> {
   public:
@@ -91,6 +96,8 @@ template <class Delegate, class Proxy = SizedProxy> class SizedCompare : public 
     bool operator()(const std::string &first, const std::string &second) const {
       return delegate_(first.data(), second.data());
     }
+
+    const Delegate &GetDelegate() const { return delegate_; }
     
   private:
     const Delegate delegate_;
