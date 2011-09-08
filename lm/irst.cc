@@ -79,7 +79,7 @@ FullScoreReturn Model::FullScore(const State &in_state, const WordIndex new_word
 
   FullScoreReturn ret;
   ret.prob = table_->clprob(codes, idx, NULL, NULL, &msp, &ilen);
-  // TODO: check this is correct.  
+  // TODO: this is correct for state.  There's another argument for scoring basis.  
   ret.ngram_length = ilen;
   if (ret.ngram_length >= max_level_) {
     out_state.valid_length_ = max_level_;
