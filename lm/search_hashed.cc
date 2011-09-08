@@ -133,7 +133,7 @@ template <class MiddleT, class LongestT> void TemplateHashedSearch<MiddleT, Long
 
 template class TemplateHashedSearch<ProbingHashedSearch::Middle, ProbingHashedSearch::Longest>;
 
-template void TemplateHashedSearch<ProbingHashedSearch::Middle, ProbingHashedSearch::Longest>::InitializeFromARPA(const char *, util::FilePiece &f, const     std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab, Backing &backing);
+template void TemplateHashedSearch<ProbingHashedSearch::Middle, ProbingHashedSearch::Longest>::InitializeFromARPA(const char *, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &, ProbingVocabulary &vocab, Backing &backing);
 
 } // namespace detail
 } // namespace ngram
