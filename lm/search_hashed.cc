@@ -5,6 +5,7 @@
 #include "lm/read_arpa.hh"
 #include "lm/vocab.hh"
 
+#include "util/bit_packing.hh"
 #include "util/file_piece.hh"
 
 #include <string>
@@ -48,28 +49,41 @@ class ActivateUnigram {
     ProbBackoff *modify_;
 };
 
-template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, std::vector<Middle> &middle, Activate activate, Store &store, PositiveProbWarn &warn) {
-  
+template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, ProbBackoff *unigrams, std::vector<Middle> &middle, Activate activate, Store &store, PositiveProbWarn &warn) {
   ReadNGramHeader(f, n);
   ProbBackoff blank;
   blank.prob = kBlankProb;
+  // Unset sign bit of kBlankProb to indicate it extends left.
+  util::UnsetSign(blank.prob);
   blank.backoff = kBlankBackoff;
 
   // vocab ids of words in reverse order
   WordIndex vocab_ids[n];
   uint64_t keys[n - 1];
   typename Store::Packing::Value value;
-  typename Middle::ConstIterator found;
+  typename Middle::MutableIterator found;
   for (size_t i = 0; i < count; ++i) {
     ReadNGram(f, n, vocab, vocab_ids, value, warn);
+
     keys[0] = detail::CombineWordHash(static_cast<uint64_t>(*vocab_ids), vocab_ids[1]);
     for (unsigned int h = 1; h < n - 1; ++h) {
       keys[h] = detail::CombineWordHash(keys[h-1], vocab_ids[h+1]);
     }
+    // Initially the sign bit is on, indicating it does not extend left.  Most already have this but there might +0.0.  
+    util::SetSign(value.prob);
     store.Insert(Store::Packing::Make(keys[n-2], value));
-    // Go back and insert blanks.  
-    for (int lower = n - 3; lower >= 0; --lower) {
-      if (middle[lower].Find(keys[lower], found)) break;
+    // Go back and insert blanks and set sign to indicate that entries extend left.  
+    for (int lower = n - 3; ; --lower) {
+      if (lower == -1) {
+        util::UnsetSign(unigrams[vocab_ids[0]].prob);
+        break;
+      }
+      if (middle[lower].UnsafeMutableFind(keys[lower], found)) {
+        // Turn off sign bit to indicate that it extends left.  
+        util::UnsetSign(found->MutableValue().prob);
+        // We don't need to recurse further down because this entry already set the bits for lower entries.  
+        break;
+      }
       middle[lower].Insert(Middle::Packing::Make(keys[lower], blank));
     }
     activate(vocab_ids, n);
@@ -107,15 +121,15 @@ template <class MiddleT, class LongestT> template <class Voc> void TemplateHashe
 
   try {
     if (counts.size() > 2) {
-      ReadNGrams(f, 2, counts[1], vocab, middle_, ActivateUnigram(unigram.Raw()), middle_[0], warn);
+      ReadNGrams(f, 2, counts[1], vocab, unigram.Raw(), middle_, ActivateUnigram(unigram.Raw()), middle_[0], warn);
     }
     for (unsigned int n = 3; n < counts.size(); ++n) {
-      ReadNGrams(f, n, counts[n-1], vocab, middle_, ActivateLowerMiddle<Middle>(middle_[n-3]), middle_[n-2], warn);
+      ReadNGrams(f, n, counts[n-1], vocab, unigram.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_[n-3]), middle_[n-2], warn);
     }
     if (counts.size() > 2) {
-      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, middle_, ActivateLowerMiddle<Middle>(middle_.back()), longest, warn);
+      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, unigram.Raw(), middle_, ActivateLowerMiddle<Middle>(middle_.back()), longest, warn);
     } else {
-      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, middle_, ActivateUnigram(unigram.Raw()), longest, warn);
+      ReadNGrams(f, counts.size(), counts[counts.size() - 1], vocab, unigram.Raw(), middle_, ActivateUnigram(unigram.Raw()), longest, warn);
     }
   } catch (util::ProbingSizeException &e) {
     UTIL_THROW(util::ProbingSizeException, "Avoid pruning n-grams like \"bar baz quux\" when \"foo bar baz quux\" is still in the model.  KenLM will work when this pruning happens, but the probing model assumes these events are rare enough that using blank space in the probing hash table will cover all of them.  Increase probing_multiplier (-p to build_binary) to add more blank spaces.\n");

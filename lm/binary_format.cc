@@ -19,10 +19,10 @@ namespace lm {
 namespace ngram {
 namespace {
 const char kMagicBeforeVersion[] = "mmap lm http://kheafield.com/code format version";
-const char kMagicBytes[] = "mmap lm http://kheafield.com/code format version 4\n\0";
+const char kMagicBytes[] = "mmap lm http://kheafield.com/code format version 5\n\0";
 // This must be shorter than kMagicBytes and indicates an incomplete binary file (i.e. build failed). 
 const char kMagicIncomplete[] = "mmap lm http://kheafield.com/code incomplete\n";
-const long int kMagicVersion = 4;
+const long int kMagicVersion = 5;
 
 // Test values.  
 struct Sanity {

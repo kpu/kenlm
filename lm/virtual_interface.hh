@@ -30,6 +30,11 @@ struct FullScoreReturn {
    * get out_state.ValidLength() and use that length for recombination.
    */
   unsigned char ngram_length;
+
+  /* True if the n-gram matched (i.e. with length ngram_length) does not
+   * extend to the left.
+   */
+  bool no_left;
 };
 
 namespace base {
