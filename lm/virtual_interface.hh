@@ -31,10 +31,11 @@ struct FullScoreReturn {
    */
   unsigned char ngram_length;
 
-  /* True if the n-gram matched (i.e. with length ngram_length) does not
-   * extend to the left.
+  /* True iff the n-gram's probability entry is independent of anything that
+   * might be added to the left.  However, backoff should still be charged
+   * once the words to the left are known.  
    */
-  bool no_left;
+  bool independent_left;
 };
 
 namespace base {
