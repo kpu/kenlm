@@ -86,6 +86,8 @@ class scoped_fd {
       return ret;
     }
 
+    operator bool() { return fd_ != -1; }
+
   private:
     int fd_;
 

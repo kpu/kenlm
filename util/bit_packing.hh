@@ -86,6 +86,20 @@ inline void WriteFloat32(void *base, uint64_t bit_off, float value) {
 
 const uint32_t kSignBit = 0x80000000;
 
+inline void SetSign(float &to) {
+  FloatEnc enc;
+  enc.f = to;
+  enc.i |= kSignBit;
+  to = enc.f;
+}
+
+inline void UnsetSign(float &to) {
+  FloatEnc enc;
+  enc.f = to;
+  enc.i &= ~kSignBit;
+  to = enc.f;
+}
+
 inline float ReadNonPositiveFloat31(const void *base, uint64_t bit_off) {
   FloatEnc encoded;
   encoded.i = ReadOff(base, bit_off) >> BitPackShift(bit_off & 7, 31);
