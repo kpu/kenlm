@@ -1,6 +1,8 @@
 #include "lm/left.hh"
 #include "lm/model.hh"
 
+#include "util/tokenize_piece.hh"
+
 #define BOOST_TEST_MODULE LeftTest
 #include <boost/test/unit_test.hpp>
 #include <boost/test/floating_point_comparison.hpp>
@@ -106,6 +108,50 @@ BOOST_AUTO_TEST_CASE(Charge) {
   }
   BOOST_CHECK_EQUAL(0, tobos.left.valid_length);
   BOOST_CHECK_EQUAL(1, tobos.right.valid_length_);
+}
+
+float LeftToRight(const Model &m, const std::vector<WordIndex> &words) {
+  float ret = 0.0;
+  State right = m.NullContextState();
+  for (std::vector<WordIndex>::const_iterator i = words.begin(); i != words.end(); ++i) {
+    State copy(right);
+    ret += m.Score(copy, *i, right);
+  }
+  return ret;
+}
+
+float RightToLeft(const Model &m, const std::vector<WordIndex> &words) {
+  float ret = 0.0;
+  ChartState state;
+  for (std::vector<WordIndex>::const_reverse_iterator i = words.rbegin(); i != words.rend(); ++i) {
+    ChartState copy(state);
+    RuleScore<Model> score(m, state);
+    score.Terminal(*i);
+    score.NonTerminal(copy, ret);
+    ret = score.Finish();
+  }
+  return ret;
+}
+
+void LookupVocab(const Model &m, const StringPiece &str, std::vector<WordIndex> &out) {
+  out.clear();
+  for (util::PieceIterator<' '> i(str); i; ++i) {
+    out.push_back(m.GetVocabulary().Index(*i));
+  }
+}
+
+#define BIDIRECTION(str) \
+  LookupVocab(m, str, words); \
+  BOOST_CHECK_CLOSE(LeftToRight(m, words), RightToLeft(m, words), 1.5);
+
+// Build sentences, or parts thereof, from right to left.  
+BOOST_AUTO_TEST_CASE(GrowLeft) {
+  Config config;
+  config.messages = NULL;
+  Model m("test.arpa", config);
+
+  std::vector<WordIndex> words;
+  BIDIRECTION("in biarritz watching considering looking . on a little more loin also would consider higher to look good unknown the screening foo bar , unknown however unknown </s>");
 }
 
 } // namespace
