@@ -89,7 +89,7 @@ template <class M> class RuleScore {
         prob_ += charges;
         if (!left_done_) {
           out_.charge_backoff = true;
-//          out_.left_est += charges;
+          left_done_ = true;
         }
         out_.right = in.right;
       } else {
