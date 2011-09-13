@@ -25,6 +25,7 @@ uint64_t HashForVocab(const char *str, std::size_t len);
 inline uint64_t HashForVocab(const StringPiece &str) {
   return HashForVocab(str.data(), str.length());
 }
+class ProbingVocabularyHeader;
 } // namespace detail
 
 class WriteWordsWrapper : public EnumerateVocab {
@@ -113,10 +114,7 @@ class ProbingVocabulary : public base::Vocabulary {
     static size_t Size(std::size_t entries, const Config &config);
 
     // Vocab words are [0, Bound()).  
-    // WARNING WARNING: returns UINT_MAX when loading binary and not enumerating vocabulary.  
-    // Fixing this bug requires a binary file format change and will be fixed with the next binary file format update.  
-    // Specifically, the binary file format does not currently indicate whether <unk> is in count or not.  
-    WordIndex Bound() const { return available_; }
+    WordIndex Bound() const { return bound_; }
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
     void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
@@ -141,11 +139,13 @@ class ProbingVocabulary : public base::Vocabulary {
 
     Lookup lookup_;
 
-    WordIndex available_;
+    WordIndex bound_;
 
     bool saw_unk_;
 
     EnumerateVocab *enumerate_;
+
+    detail::ProbingVocabularyHeader *header_;
 };
 
 void MissingUnknown(const Config &config) throw(SpecialWordMissingException);
