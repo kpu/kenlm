@@ -4,6 +4,7 @@
 #include "lm/model_type.hh"
 #include "lm/config.hh"
 #include "lm/read_arpa.hh"
+#include "lm/return.hh"
 #include "lm/weights.hh"
 
 #include "util/bit_packing.hh"
@@ -53,11 +54,11 @@ struct HashedSearch {
 
   Unigram unigram;
 
-  void LookupUnigram(WordIndex word, float &prob, float &backoff, Node &next, bool &no_left) const {
+  void LookupUnigram(WordIndex word, float &prob, float &backoff, Node &next, uint64_t &extend_left) const {
     const ProbBackoff &entry = unigram.Lookup(word);
     union { float f; uint32_t i; } val;
     val.f = entry.prob;
-    no_left = val.i & util::kSignBit;
+    extend_left = (val.i & util::kSignBit) ? FullScoreReturn::kIndependentLeft : static_cast<uint64_t>(word);
     val.i |= util::kSignBit;
     prob = val.f;
     backoff = entry.backoff;
@@ -92,13 +93,13 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
     const Middle *MiddleBegin() const { return &*middle_.begin(); }
     const Middle *MiddleEnd() const { return &*middle_.end(); }
 
-    bool LookupMiddle(const Middle &middle, WordIndex word, float &prob, float &backoff, Node &node, bool &no_left) const {
+    bool LookupMiddle(const Middle &middle, WordIndex word, float &prob, float &backoff, Node &node, uint64_t &extend_left) const {
       node = CombineWordHash(node, word);
       typename Middle::ConstIterator found;
       if (!middle.Find(node, found)) return false;
       util::FloatEnc enc;
       enc.f = found->GetValue().prob;
-      no_left = enc.i & util::kSignBit;
+      extend_left = (enc.i & util::kSignBit) ? FullScoreReturn::kIndependentLeft : node;
       enc.i |= util::kSignBit;
       prob = enc.f;
       backoff = found->GetValue().backoff;

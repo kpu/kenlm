@@ -3,6 +3,7 @@
 
 #include "lm/config.hh"
 #include "lm/model_type.hh"
+#include "lm/return.hh"
 #include "lm/trie.hh"
 #include "lm/weights.hh"
 
@@ -64,15 +65,15 @@ template <class Quant, class Bhiksha> class TrieSearch {
 
     void InitializeFromARPA(const char *file, util::FilePiece &f, std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, Backing &backing);
 
-    void LookupUnigram(WordIndex word, float &prob, float &backoff, Node &node, bool &no_left) const {
+    void LookupUnigram(WordIndex word, float &prob, float &backoff, Node &node, uint64_t &extend_left) const {
       unigram.Find(word, prob, backoff, node);
-      no_left = (node.begin == node.end);
+      extend_left = (node.begin == node.end) ? -1 : static_cast<uint64_t>(word);
     }
 
-    bool LookupMiddle(const Middle &mid, WordIndex word, float &prob, float &backoff, Node &node, bool &no_left) const {
-      bool ret = mid.Find(word, prob, backoff, node);
-      no_left = (node.begin == node.end);
-      return ret;
+    bool LookupMiddle(const Middle &mid, WordIndex word, float &prob, float &backoff, Node &node, uint64_t &extend_left) const {
+      if (!mid.Find(word, prob, backoff, node, extend_left)) return false;
+      if (node.begin == node.end) extend_left = FullScoreReturn::kIndependentLeft;
+      return true;
     }
 
     bool LookupMiddleNoProb(const Middle &mid, WordIndex word, float &backoff, Node &node) const {
@@ -85,7 +86,7 @@ template <class Quant, class Bhiksha> class TrieSearch {
 
     bool FastMakeNode(const WordIndex *begin, const WordIndex *end, Node &node) const {
       // TODO: don't decode backoff.
-      bool ignored_left;
+      uint64_t ignored_left;
       assert(begin != end);
       float ignored_prob, ignored_backoff;
       LookupUnigram(*begin, ignored_prob, ignored_backoff, node, ignored_left);

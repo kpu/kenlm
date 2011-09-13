@@ -134,7 +134,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     out_state.length = 0;
     return;
   }
-  bool ignored_extend;
+  uint64_t ignored_extend;
   float ignored_prob;
   typename Search::Node node;
   search_.LookupUnigram(*context_rbegin, ignored_prob, out_state.backoff[0], node, ignored_extend);
@@ -178,7 +178,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
   float *backoff_out(out_state.backoff);
   typename Search::Node node;
-  search_.LookupUnigram(new_word, ret.prob, *backoff_out, node, ret.independent_left);
+  search_.LookupUnigram(new_word, ret.prob, *backoff_out, node, ret.extend_left);
   // This is the length of the context that should be used for continuation to the right.  
   out_state.length = HasExtension(*backoff_out) ? 1 : 0;
   // We'll write the word anyway since it will probably be used and does no harm being there.  
@@ -200,11 +200,11 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     if (mid_iter == search_.MiddleEnd()) break;
 
     float revert = ret.prob;
-    if (ret.independent_left || !search_.LookupMiddle(*mid_iter, *hist_iter, ret.prob, *backoff_out, node, ret.independent_left)) {
+    if (ret.IndependentLeft() || !search_.LookupMiddle(*mid_iter, *hist_iter, ret.prob, *backoff_out, node, ret.extend_left)) {
       // Didn't find an ngram using hist_iter.  
       CopyRemainingHistory(context_rbegin, out_state);
       // ret.prob was already set.
-      ret.independent_left = true;
+      ret.extend_left = FullScoreReturn::kIndependentLeft;
       return ret;
     }
     if (ret.prob == kBlankProb) {
@@ -219,20 +219,14 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   }
 
   // It passed every lookup in search_.middle.  All that's left is to check search_.longest.  
-  
-  if (ret.independent_left || !search_.LookupLongest(*hist_iter, ret.prob, node)) {
-    // Failed to find a longest n-gram.  Fall back to the most recent non-blank.  
-    CopyRemainingHistory(context_rbegin, out_state);
-    ret.independent_left = true;
-    // ret.prob was already set.  
-    return ret;
+  if (!ret.IndependentLeft() && search_.LookupLongest(*hist_iter, ret.prob, node)) {
+    // It's an P::Order()-gram.  
+    // There is no blank in longest_.
+    ret.ngram_length = P::Order();
   }
-
-  // It's an P::Order()-gram.  
-  ret.independent_left = true;
+  // This handles (N-1)-grams and N-grams.  
   CopyRemainingHistory(context_rbegin, out_state);
-  // There is no blank in longest_.
-  ret.ngram_length = P::Order();
+  ret.extend_left = FullScoreReturn::kIndependentLeft;
   return ret;
 }
 

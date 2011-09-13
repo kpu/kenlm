@@ -19,7 +19,7 @@ std::ostream &operator<<(std::ostream &o, const State &state) {
 
 namespace {
 
-#define StartTest(word, ngram, score, noleft) \
+#define StartTest(word, ngram, score, indep_left) \
   ret = model.FullScore( \
       state, \
       model.GetVocabulary().Index(word), \
@@ -27,7 +27,7 @@ namespace {
   BOOST_CHECK_CLOSE(score, ret.prob, 0.001); \
   BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), ret.ngram_length); \
   BOOST_CHECK_GE(std::min<unsigned char>(ngram, 5 - 1), out.length); \
-  BOOST_CHECK_EQUAL(noleft, ret.independent_left); \
+  BOOST_CHECK_EQUAL(indep_left, ret.IndependentLeft()); \
   {\
     WordIndex context[state.length + 1]; \
     context[0] = model.GetVocabulary().Index(word); \
@@ -37,8 +37,8 @@ namespace {
     BOOST_CHECK_EQUAL(out, get_state); \
   }
 
-#define AppendTest(word, ngram, score, no_left) \
-  StartTest(word, ngram, score, no_left) \
+#define AppendTest(word, ngram, score, indep_left) \
+  StartTest(word, ngram, score, indep_left) \
   state = out;
 
 template <class M> void Starters(const M &model) {
