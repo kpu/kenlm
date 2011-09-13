@@ -12,7 +12,7 @@
 
 #include <inttypes.h>
 
-#include "lm/binary_format.hh"
+#include "lm/model_type.hh"
 #include "lm/trie.hh"
 #include "util/bit_packing.hh"
 #include "util/sorted_uniform.hh"

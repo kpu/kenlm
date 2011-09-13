@@ -1,5 +1,6 @@
 #include "lm/search_hashed.hh"
 
+#include "lm/binary_format.hh"
 #include "lm/blank.hh"
 #include "lm/lm_exception.hh"
 #include "lm/read_arpa.hh"

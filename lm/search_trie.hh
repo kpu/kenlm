@@ -1,9 +1,14 @@
 #ifndef LM_SEARCH_TRIE__
 #define LM_SEARCH_TRIE__
 
-#include "lm/binary_format.hh"
+#include "lm/config.hh"
+#include "lm/model_type.hh"
 #include "lm/trie.hh"
 #include "lm/weights.hh"
+
+#include "util/file_piece.hh"
+
+#include <vector>
 
 #include <assert.h>
 
@@ -29,6 +34,8 @@ template <class Quant, class Bhiksha> class TrieSearch {
     Longest longest;
 
     static const ModelType kModelType = static_cast<ModelType>(TRIE_SORTED + Quant::kModelTypeAdd + Bhiksha::kModelTypeAdd);
+
+    static const unsigned int kVersion = 0;
 
     static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {
       Quant::UpdateConfigFromBinary(fd, counts, config);

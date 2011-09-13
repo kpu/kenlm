@@ -1,7 +1,7 @@
 #ifndef LM_SEARCH_HASHED__
 #define LM_SEARCH_HASHED__
 
-#include "lm/binary_format.hh"
+#include "lm/model_type.hh"
 #include "lm/config.hh"
 #include "lm/read_arpa.hh"
 #include "lm/weights.hh"
@@ -71,6 +71,8 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
 
     typedef LongestT Longest;
     Longest longest;
+
+    static const unsigned int kVersion = 0;
 
     // TODO: move probing_multiplier here with next binary file format update.  
     static void UpdateConfigFromBinary(int, const std::vector<uint64_t> &, Config &) {}

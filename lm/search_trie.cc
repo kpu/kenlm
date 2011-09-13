@@ -1,6 +1,7 @@
 /* This is where the trie is built.  It's on-disk.  */
 #include "lm/search_trie.hh"
 
+#include "lm/binary_format.hh"
 #include "lm/bhiksha.hh"
 #include "lm/blank.hh"
 #include "lm/lm_exception.hh"

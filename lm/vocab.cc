@@ -1,5 +1,6 @@
 #include "lm/vocab.hh"
 
+#include "lm/binary_format.hh"
 #include "lm/enumerate_vocab.hh"
 #include "lm/lm_exception.hh"
 #include "lm/config.hh"
@@ -161,12 +162,12 @@ struct ProbingVocabularyHeader {
 ProbingVocabulary::ProbingVocabulary() : enumerate_(NULL) {}
 
 std::size_t ProbingVocabulary::Size(std::size_t entries, const Config &config) {
-  return sizeof(detail::ProbingVocabularyHeader) + Lookup::Size(entries, config.probing_multiplier);
+  return Align8(sizeof(detail::ProbingVocabularyHeader)) + Lookup::Size(entries, config.probing_multiplier);
 }
 
 void ProbingVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t /*entries*/, const Config &/*config*/) {
   header_ = static_cast<detail::ProbingVocabularyHeader*>(start);
-  lookup_ = Lookup(header_ + 1, allocated);
+  lookup_ = Lookup(static_cast<uint8_t*>(start) + Align8(sizeof(detail::ProbingVocabularyHeader)), allocated);
   bound_ = 1;
   saw_unk_ = false;
 }

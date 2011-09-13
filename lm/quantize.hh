@@ -1,9 +1,9 @@
 #ifndef LM_QUANTIZE_H__
 #define LM_QUANTIZE_H__
 
-#include "lm/binary_format.hh" // for ModelType
 #include "lm/blank.hh"
 #include "lm/config.hh"
+#include "lm/model_type.hh"
 #include "util/bit_packing.hh"
 
 #include <algorithm>

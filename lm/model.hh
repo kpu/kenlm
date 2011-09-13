@@ -75,6 +75,8 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     // This is the model type returned by RecognizeBinary.
     static const ModelType kModelType;
 
+    static const unsigned int kVersion = Search::kVersion;
+
     /* Get the size of memory that will be mapped given ngram counts.  This
      * does not include small non-mapped control structures, such as this class
      * itself.  

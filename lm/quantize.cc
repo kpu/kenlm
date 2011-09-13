@@ -1,5 +1,6 @@
 #include "lm/quantize.hh"
 
+#include "lm/binary_format.hh"
 #include "lm/lm_exception.hh"
 
 #include <algorithm>
