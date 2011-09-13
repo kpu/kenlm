@@ -1,9 +1,9 @@
 #ifndef LM_LEFT__
 #define LM_LEFT__
 
-#include "lm/virtual_interface.hh"
 #include "lm/max_order.hh"
 #include "lm/model.hh"
+#include "lm/return.hh"
 
 namespace lm {
 namespace ngram {
@@ -28,7 +28,7 @@ struct Left {
 
 struct ChartState {
   bool operator==(const ChartState &other) {
-    return (left == other.left) && (right == other.right) && (charge_backoff == other.charge_backoff);
+    return (left == other.left) && (right == other.right) && (full == other.full);
   }
 
   int Compare(const ChartState &other) const {
@@ -36,12 +36,12 @@ struct ChartState {
     if (lres) return lres;
     int rres = right.Compare(other.right);
     if (rres) return rres;
-    return (int)charge_backoff - (int)other.charge_backoff;
+    return (int)full - (int)other.full;
   }
 
   Left left;
   State right;
-  bool charge_backoff;
+  bool full;
   float left_est;
 };
 
@@ -50,7 +50,7 @@ template <class M> class RuleScore {
     explicit RuleScore(const M &model, ChartState &out) : model_(model), out_(out), left_done_(false), left_write_(out.left.words), prob_(0.0) {
       out.left.length = 0;
       out.right.length = 0;
-      out.charge_backoff = false;
+      out.full = false;
       out.left_est = 0.0;
     }
 
@@ -67,7 +67,7 @@ template <class M> class RuleScore {
       if (left_done_) return;
 
       if (ret.independent_left) {
-        out_.charge_backoff = true;
+        out_.full = true;
         left_done_ = true;
         return;
       }
@@ -75,25 +75,31 @@ template <class M> class RuleScore {
       out_.left_est += ret.prob;
     }
 
+    // Faster version of NonTerminal for the case where the rule begins with a non-terminal.  
+    void BeginNonTerminal(const ChartState &in, float prob) {
+      prob_ = prob;
+      out_ = in;
+      left_done_ = in.full;
+      left_write_ = out_.left.words + out_.left.valid_length;
+    }
+
     void NonTerminal(const ChartState &in, float prob) {
       prob_ += prob - in.left_est;
       for (const WordIndex *i = in.left.words; i != in.left.words + in.left.length; ++i) {
         Terminal(*i);
       }
-      if (in.charge_backoff) {
-        // The last word of the left state was eliminated for recombination purposes.  
-        // Charge backoff for n-grams that start before left state.  
-        float charges = 0.0;
+      if (in.full) {
+        /* The last word of the left state was eliminated for recombination
+         * purposes or the state's length is Order() - 1 (in which case no
+         * backoff is charged, but we still want out_.right = in.right.
+         */
         for (const float *i = out_.right.backoff + in.left.length; i < out_.right.backoff + out_.right.length; ++i)
-          charges += *i;
-        prob_ += charges;
+          prob_ += *i;
         if (!left_done_) {
-          out_.charge_backoff = true;
+          out_.full = true;
           left_done_ = true;
         }
         out_.right = in.right;
-      } else {
-        if (in.left.length == model_.Order() - 1) out_.right = in.right;
       }
     }
 
