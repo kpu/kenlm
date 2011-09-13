@@ -66,7 +66,7 @@ template <class M> class RuleScore {
       prob_ += ret.prob;
       if (left_done_) return;
 
-      if (ret.IndependentLeft()) {
+      if (ret.independent_left) {
         out_.charge_backoff = true;
         left_done_ = true;
         return;

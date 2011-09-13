@@ -65,14 +65,15 @@ template <class Quant, class Bhiksha> class TrieSearch {
 
     void InitializeFromARPA(const char *file, util::FilePiece &f, std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, Backing &backing);
 
-    void LookupUnigram(WordIndex word, float &prob, float &backoff, Node &node, uint64_t &extend_left) const {
-      unigram.Find(word, prob, backoff, node);
-      extend_left = (node.begin == node.end) ? -1 : static_cast<uint64_t>(word);
+    void LookupUnigram(WordIndex word, float &backoff, Node &node, FullScoreReturn &ret) const {
+      unigram.Find(word, ret.prob, backoff, node);
+      ret.independent_left = (node.begin == node.end);
+      ret.extend_left = static_cast<uint64_t>(word);
     }
 
-    bool LookupMiddle(const Middle &mid, WordIndex word, float &prob, float &backoff, Node &node, uint64_t &extend_left) const {
-      if (!mid.Find(word, prob, backoff, node, extend_left)) return false;
-      if (node.begin == node.end) extend_left = FullScoreReturn::kIndependentLeft;
+    bool LookupMiddle(const Middle &mid, WordIndex word, float &backoff, Node &node, FullScoreReturn &ret) const {
+      if (!mid.Find(word, ret.prob, backoff, node, ret.extend_left)) return false;
+      ret.independent_left = (node.begin == node.end);
       return true;
     }
 
@@ -86,10 +87,10 @@ template <class Quant, class Bhiksha> class TrieSearch {
 
     bool FastMakeNode(const WordIndex *begin, const WordIndex *end, Node &node) const {
       // TODO: don't decode backoff.
-      uint64_t ignored_left;
       assert(begin != end);
-      float ignored_prob, ignored_backoff;
-      LookupUnigram(*begin, ignored_prob, ignored_backoff, node, ignored_left);
+      FullScoreReturn ignored;
+      float ignored_backoff;
+      LookupUnigram(*begin, ignored_backoff, node, ignored);
       for (const WordIndex *i = begin + 1; i < end; ++i) {
         if (!LookupMiddleNoProb(middle_begin_[i - begin - 1], *i, ignored_backoff, node)) return false;
       }

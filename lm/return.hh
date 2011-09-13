@@ -27,18 +27,12 @@ struct FullScoreReturn {
    */
   unsigned char ngram_length;
 
-  /* Left extension information.  If the n-gram's probability is independent
-   * (up to additional backoff) of words to the left, extend_left is set to
-   * kIndependentLeft.  Otherwise, it indicates an efficient way to extend
-   * left.  
+  /* Left extension information.  If independent_left is set, then prob is
+   * independent of words to the left (up to additional backoff).  Otherwise,
+   * extend_left indicates how to efficiently extend further to the left.  
    */
-  static const uint64_t kIndependentLeft = (uint64_t)-1;
-
-  bool IndependentLeft() const {
-    return extend_left == kIndependentLeft;
-  }
-
-  uint64_t extend_left;
+  bool independent_left;
+  uint64_t extend_left; // Defined only if independent_left
 };
 
 } // namespace lm

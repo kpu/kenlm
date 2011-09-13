@@ -27,7 +27,7 @@ namespace {
   BOOST_CHECK_CLOSE(score, ret.prob, 0.001); \
   BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), ret.ngram_length); \
   BOOST_CHECK_GE(std::min<unsigned char>(ngram, 5 - 1), out.length); \
-  BOOST_CHECK_EQUAL(indep_left, ret.IndependentLeft()); \
+  BOOST_CHECK_EQUAL(indep_left, ret.independent_left); \
   {\
     WordIndex context[state.length + 1]; \
     context[0] = model.GetVocabulary().Index(word); \

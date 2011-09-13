@@ -134,10 +134,9 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     out_state.length = 0;
     return;
   }
-  uint64_t ignored_extend;
-  float ignored_prob;
+  FullScoreReturn ignored;
   typename Search::Node node;
-  search_.LookupUnigram(*context_rbegin, ignored_prob, out_state.backoff[0], node, ignored_extend);
+  search_.LookupUnigram(*context_rbegin, out_state.backoff[0], node, ignored);
   out_state.length = HasExtension(out_state.backoff[0]) ? 1 : 0;
   float *backoff_out = out_state.backoff + 1;
   const typename Search::Middle *mid = search_.MiddleBegin();
@@ -178,7 +177,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
   float *backoff_out(out_state.backoff);
   typename Search::Node node;
-  search_.LookupUnigram(new_word, ret.prob, *backoff_out, node, ret.extend_left);
+  search_.LookupUnigram(new_word, *backoff_out, node, ret);
   // This is the length of the context that should be used for continuation to the right.  
   out_state.length = HasExtension(*backoff_out) ? 1 : 0;
   // We'll write the word anyway since it will probably be used and does no harm being there.  
@@ -200,11 +199,11 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     if (mid_iter == search_.MiddleEnd()) break;
 
     float revert = ret.prob;
-    if (ret.IndependentLeft() || !search_.LookupMiddle(*mid_iter, *hist_iter, ret.prob, *backoff_out, node, ret.extend_left)) {
+    if (ret.independent_left || !search_.LookupMiddle(*mid_iter, *hist_iter, *backoff_out, node, ret)) {
       // Didn't find an ngram using hist_iter.  
       CopyRemainingHistory(context_rbegin, out_state);
       // ret.prob was already set.
-      ret.extend_left = FullScoreReturn::kIndependentLeft;
+      ret.independent_left = true;
       return ret;
     }
     if (ret.prob == kBlankProb) {
@@ -219,14 +218,14 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   }
 
   // It passed every lookup in search_.middle.  All that's left is to check search_.longest.  
-  if (!ret.IndependentLeft() && search_.LookupLongest(*hist_iter, ret.prob, node)) {
+  if (!ret.independent_left && search_.LookupLongest(*hist_iter, ret.prob, node)) {
     // It's an P::Order()-gram.  
     // There is no blank in longest_.
     ret.ngram_length = P::Order();
   }
   // This handles (N-1)-grams and N-grams.  
   CopyRemainingHistory(context_rbegin, out_state);
-  ret.extend_left = FullScoreReturn::kIndependentLeft;
+  ret.independent_left = true;
   return ret;
 }
 
