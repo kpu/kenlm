@@ -30,11 +30,11 @@ BOOST_AUTO_TEST_CASE(Short) {
   }
   BOOST_CHECK_EQUAL(false, base.charge_backoff);
   BOOST_CHECK_CLOSE(-1.206319 - 0.3561665, base.left_est, 0.001);
-  BOOST_CHECK_EQUAL(2, base.left.valid_length);
+  BOOST_CHECK_EQUAL(2, base.left.length);
   VCheck("more", base.left.words[0]);
   VCheck("loin", base.left.words[1]);
-  BOOST_CHECK_EQUAL(1, base.right.valid_length_);
-  VCheck("loin", base.right.history_[0]);
+  BOOST_CHECK_EQUAL(1, base.right.length);
+  VCheck("loin", base.right.words[0]);
   BOOST_CHECK_EQUAL(false, base.charge_backoff);
 
   ChartState more_left;
@@ -46,12 +46,12 @@ BOOST_AUTO_TEST_CASE(Short) {
     BOOST_CHECK_CLOSE(-1.56538, score.Finish(), 0.001);
   }
   BOOST_CHECK_CLOSE(-1.56538, more_left.left_est, 0.001);
-  BOOST_CHECK_EQUAL(3, more_left.left.valid_length);
+  BOOST_CHECK_EQUAL(3, more_left.left.length);
   VCheck("little", more_left.left.words[0]);
   VCheck("more", more_left.left.words[1]);
   VCheck("loin", more_left.left.words[2]);
-  BOOST_CHECK_EQUAL(1, more_left.right.valid_length_);
-  VCheck("loin", more_left.right.history_[0]);
+  BOOST_CHECK_EQUAL(1, more_left.right.length);
+  VCheck("loin", more_left.right.words[0]);
   BOOST_CHECK_EQUAL(false, more_left.charge_backoff);
 
   ChartState shorter;
@@ -62,10 +62,10 @@ BOOST_AUTO_TEST_CASE(Short) {
     BOOST_CHECK_CLOSE(-0.30103 - 1.687872 - 1.206319 - 0.3561665, score.Finish(), 0.01);
   }
   BOOST_CHECK_CLOSE(-1.687872, shorter.left_est, 0.001);
-  BOOST_CHECK_EQUAL(1, shorter.left.valid_length);
+  BOOST_CHECK_EQUAL(1, shorter.left.length);
   VCheck("to", shorter.left.words[0]);
-  BOOST_CHECK_EQUAL(1, shorter.right.valid_length_);
-  VCheck("loin", shorter.right.history_[0]);
+  BOOST_CHECK_EQUAL(1, shorter.right.length);
+  VCheck("loin", shorter.right.words[0]);
   BOOST_CHECK(shorter.charge_backoff);
 }
 
@@ -81,10 +81,10 @@ BOOST_AUTO_TEST_CASE(Charge) {
     Term("more");
     BOOST_CHECK_CLOSE(-1.509559 -0.4771212 -1.206319, score.Finish(), 0.001);
   }
-  BOOST_CHECK_EQUAL(1, base.left.valid_length);
+  BOOST_CHECK_EQUAL(1, base.left.length);
   VCheck("on", base.left.words[0]);
-  BOOST_CHECK_EQUAL(1, base.right.valid_length_);
-  VCheck("more", base.right.history_[0]);
+  BOOST_CHECK_EQUAL(1, base.right.length);
+  VCheck("more", base.right.words[0]);
   BOOST_CHECK(base.charge_backoff);
 
   ChartState extend;
@@ -94,11 +94,11 @@ BOOST_AUTO_TEST_CASE(Charge) {
     score.NonTerminal(base, -1.509559 -0.4771212 -1.206319);
     BOOST_CHECK_CLOSE(-3.91039, score.Finish(), 0.001);
   }
-  BOOST_CHECK_EQUAL(2, extend.left.valid_length);
+  BOOST_CHECK_EQUAL(2, extend.left.length);
   VCheck("looking", extend.left.words[0]);
   VCheck("on", extend.left.words[1]);
-  BOOST_CHECK_EQUAL(1, extend.right.valid_length_);
-  VCheck("more", extend.right.history_[0]);
+  BOOST_CHECK_EQUAL(1, extend.right.length);
+  VCheck("more", extend.right.words[0]);
   BOOST_CHECK(extend.charge_backoff);
 
   ChartState tobos;
@@ -108,8 +108,8 @@ BOOST_AUTO_TEST_CASE(Charge) {
     score.NonTerminal(extend, -3.91039);
     BOOST_CHECK_CLOSE(-3.471169, score.Finish(), 0.001);
   }
-  BOOST_CHECK_EQUAL(0, tobos.left.valid_length);
-  BOOST_CHECK_EQUAL(1, tobos.right.valid_length_);
+  BOOST_CHECK_EQUAL(0, tobos.left.length);
+  BOOST_CHECK_EQUAL(1, tobos.right.length);
 }
 
 float LeftToRight(const Model &m, const std::vector<WordIndex> &words) {
@@ -125,8 +125,8 @@ float LeftToRight(const Model &m, const std::vector<WordIndex> &words) {
 float RightToLeft(const Model &m, const std::vector<WordIndex> &words) {
   float ret = 0.0;
   ChartState state;
-  state.left.valid_length = 0;
-  state.right.valid_length_ = 0;
+  state.left.length = 0;
+  state.right.length = 0;
   state.charge_backoff = false;
   state.left_est = 0.0;
   for (std::vector<WordIndex>::const_reverse_iterator i = words.rbegin(); i != words.rend(); ++i) {
@@ -245,7 +245,7 @@ BOOST_AUTO_TEST_CASE(FullGrow) {
     score.NonTerminal(lexical[5], lexical_scores[5]);
     CHECK_SCORE("looking .", l1_scores[2] = score.Finish());
   }
-  BOOST_CHECK_EQUAL(l1[2].left.valid_length, 1);
+  BOOST_CHECK_EQUAL(l1[2].left.length, 1);
   l1[3] = lexical[6];
   l1_scores[3] = lexical_scores[6];
 
@@ -263,7 +263,7 @@ BOOST_AUTO_TEST_CASE(FullGrow) {
     score.NonTerminal(l1[3], l1_scores[3]);
     CHECK_SCORE("looking . </s>", l2_scores[1] = score.Finish());
   }
-  BOOST_CHECK_EQUAL(l2[1].left.valid_length, 1);
+  BOOST_CHECK_EQUAL(l2[1].left.length, 1);
   VCheck("looking", l2[1].left.words[0]);
   BOOST_CHECK(l2[1].charge_backoff);
 

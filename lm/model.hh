@@ -27,9 +27,9 @@ namespace ngram {
 class State {
   public:
     bool operator==(const State &other) const {
-      if (valid_length_ != other.valid_length_) return false;
-      const WordIndex *end = history_ + valid_length_;
-      for (const WordIndex *first = history_, *second = other.history_;
+      if (length != other.length) return false;
+      const WordIndex *end = words + length;
+      for (const WordIndex *first = words, *second = other.words;
           first != end; ++first, ++second) {
         if (*first != *second) return false;
       }
@@ -39,27 +39,27 @@ class State {
 
     // Three way comparison function.  
     int Compare(const State &other) const {
-      if (valid_length_ == other.valid_length_) {
-        return memcmp(history_, other.history_, valid_length_ * sizeof(WordIndex));
+      if (length == other.length) {
+        return memcmp(words, other.words, length * sizeof(WordIndex));
       }
-      return (valid_length_ < other.valid_length_) ? -1 : 1;
+      return (length < other.length) ? -1 : 1;
     }
 
     // Call this before using raw memcmp.  
     void ZeroRemaining() {
-      for (unsigned char i = valid_length_; i < kMaxOrder - 1; ++i) {
-        history_[i] = 0;
-        backoff_[i] = 0.0;
+      for (unsigned char i = length; i < kMaxOrder - 1; ++i) {
+        words[i] = 0;
+        backoff[i] = 0.0;
       }
     }
 
-    unsigned char ValidLength() const { return valid_length_; }
+    unsigned char Length() const { return length; }
 
     // You shouldn't need to touch anything below this line, but the members are public so FullState will qualify as a POD.  
     // This order minimizes total size of the struct if WordIndex is 64 bit, float is 32 bit, and alignment of 64 bit integers is 64 bit.  
-    WordIndex history_[kMaxOrder - 1];
-    float backoff_[kMaxOrder - 1];
-    unsigned char valid_length_;
+    WordIndex words[kMaxOrder - 1];
+    float backoff[kMaxOrder - 1];
+    unsigned char length;
 };
 
 size_t hash_value(const State &state);

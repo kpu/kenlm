@@ -11,19 +11,19 @@ namespace ngram {
 struct Left {
   bool operator==(const Left &other) const {
     return 
-      (valid_length == other.valid_length) && 
-      !memcmp(words, other.words, sizeof(WordIndex) * valid_length);
+      (length == other.length) && 
+      !memcmp(words, other.words, sizeof(WordIndex) * length);
   }
 
   int Compare(const Left &other) const {
-    if (valid_length != other.valid_length) {
-      return (int)valid_length - (int)other.valid_length;
+    if (length != other.length) {
+      return (int)length - (int)other.length;
     }
-    return memcmp(words, other.words, sizeof(WordIndex) * valid_length);
+    return memcmp(words, other.words, sizeof(WordIndex) * length);
   }
 
   WordIndex words[kMaxOrder - 1];
-  unsigned char valid_length;
+  unsigned char length;
 };
 
 struct ChartState {
@@ -48,8 +48,8 @@ struct ChartState {
 template <class M> class RuleScore {
   public:
     explicit RuleScore(const M &model, ChartState &out) : model_(model), out_(out), left_done_(false), left_write_(out.left.words), prob_(0.0) {
-      out.left.valid_length = 0;
-      out.right.valid_length_ = 0;
+      out.left.length = 0;
+      out.right.length = 0;
       out.charge_backoff = false;
       out.left_est = 0.0;
     }
@@ -77,14 +77,14 @@ template <class M> class RuleScore {
 
     void NonTerminal(const ChartState &in, float prob) {
       prob_ += prob - in.left_est;
-      for (const WordIndex *i = in.left.words; i != in.left.words + in.left.valid_length; ++i) {
+      for (const WordIndex *i = in.left.words; i != in.left.words + in.left.length; ++i) {
         Terminal(*i);
       }
       if (in.charge_backoff) {
         // The last word of the left state was eliminated for recombination purposes.  
         // Charge backoff for n-grams that start before left state.  
         float charges = 0.0;
-        for (const float *i = out_.right.backoff_ + in.left.valid_length; i < out_.right.backoff_ + out_.right.valid_length_; ++i)
+        for (const float *i = out_.right.backoff + in.left.length; i < out_.right.backoff + out_.right.length; ++i)
           charges += *i;
         prob_ += charges;
         if (!left_done_) {
@@ -93,12 +93,12 @@ template <class M> class RuleScore {
         }
         out_.right = in.right;
       } else {
-        if (in.left.valid_length == model_.Order() - 1) out_.right = in.right;
+        if (in.left.length == model_.Order() - 1) out_.right = in.right;
       }
     }
 
     float Finish() {
-      out_.left.valid_length = left_write_ - out_.left.words;
+      out_.left.length = left_write_ - out_.left.words;
       return prob_;
     }
 

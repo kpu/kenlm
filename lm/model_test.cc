@@ -10,8 +10,8 @@ namespace lm {
 namespace ngram {
 
 std::ostream &operator<<(std::ostream &o, const State &state) {
-  o << "State length " << static_cast<unsigned int>(state.valid_length_) << ':';
-  for (const WordIndex *i = state.history_; i < state.history_ + state.valid_length_; ++i) {
+  o << "State length " << static_cast<unsigned int>(state.length) << ':';
+  for (const WordIndex *i = state.words; i < state.words + state.length; ++i) {
     o << ' ' << *i;
   }
   return o;
@@ -26,14 +26,14 @@ namespace {
       out);\
   BOOST_CHECK_CLOSE(score, ret.prob, 0.001); \
   BOOST_CHECK_EQUAL(static_cast<unsigned int>(ngram), ret.ngram_length); \
-  BOOST_CHECK_GE(std::min<unsigned char>(ngram, 5 - 1), out.valid_length_); \
+  BOOST_CHECK_GE(std::min<unsigned char>(ngram, 5 - 1), out.length); \
   BOOST_CHECK_EQUAL(noleft, ret.independent_left); \
   {\
-    WordIndex context[state.valid_length_ + 1]; \
+    WordIndex context[state.length + 1]; \
     context[0] = model.GetVocabulary().Index(word); \
-    std::copy(state.history_, state.history_ + state.valid_length_, context + 1); \
+    std::copy(state.words, state.words + state.length, context + 1); \
     State get_state; \
-    model.GetState(context, context + state.valid_length_ + 1, get_state); \
+    model.GetState(context, context + state.length + 1, get_state); \
     BOOST_CHECK_EQUAL(out, get_state); \
   }
 
@@ -70,13 +70,13 @@ template <class M> void Continuation(const M &model) {
   AppendTest("more", 1, -1.20632 - 20.0, true);
   AppendTest(".", 2, -0.51363, true);
   AppendTest("</s>", 3, -0.0191651, true);
-  BOOST_CHECK_EQUAL(0, state.valid_length_);
+  BOOST_CHECK_EQUAL(0, state.length);
 
   state = preserve;
   AppendTest("more", 5, -0.00181395, true);
-  BOOST_CHECK_EQUAL(4, state.valid_length_);
+  BOOST_CHECK_EQUAL(4, state.length);
   AppendTest("loin", 5, -0.0432557, true);
-  BOOST_CHECK_EQUAL(1, state.valid_length_);
+  BOOST_CHECK_EQUAL(1, state.length);
 }
 
 template <class M> void Blanks(const M &model) {
@@ -89,7 +89,7 @@ template <class M> void Blanks(const M &model) {
   State preserve = state;
   AppendTest("higher", 4, -4, true);
   AppendTest("looking", 5, -5, true);
-  BOOST_CHECK_EQUAL(1, state.valid_length_);
+  BOOST_CHECK_EQUAL(1, state.length);
 
   state = preserve;
   // also would consider not_found
@@ -102,7 +102,7 @@ template <class M> void Blanks(const M &model) {
 
   State higher_looking = state;
 
-  BOOST_CHECK_EQUAL(1, state.valid_length_);
+  BOOST_CHECK_EQUAL(1, state.length);
   AppendTest("not_found", 1, -1.995635 - 0.4771212, true);
 
   state = higher_looking;
@@ -137,20 +137,20 @@ template <class M> void MinimalState(const M &model) {
   State out;
 
   AppendTest("baz", 1, -6.535897, true);
-  BOOST_CHECK_EQUAL(0, state.valid_length_);
+  BOOST_CHECK_EQUAL(0, state.length);
   state = model.NullContextState();
   AppendTest("foo", 1, -3.141592, true);
-  BOOST_CHECK_EQUAL(1, state.valid_length_);
+  BOOST_CHECK_EQUAL(1, state.length);
   AppendTest("bar", 2, -6.0, true);
   // Has to include the backoff weight.  
-  BOOST_CHECK_EQUAL(1, state.valid_length_);
+  BOOST_CHECK_EQUAL(1, state.length);
   AppendTest("bar", 1, -2.718281 + 3.0, true);
-  BOOST_CHECK_EQUAL(1, state.valid_length_);
+  BOOST_CHECK_EQUAL(1, state.length);
 
   state = model.NullContextState();
   AppendTest("to", 1, -1.687872, false);
   AppendTest("look", 2, -0.2922095, true);
-  BOOST_CHECK_EQUAL(2, state.valid_length_);
+  BOOST_CHECK_EQUAL(2, state.length);
   AppendTest("good", 3, -7, true);
 }
 
@@ -205,8 +205,8 @@ template <class M> void Stateless(const M &model) {
   WordIndex unk[1];
   unk[0] = 0;
   model.GetState(unk, unk + 1, state);
-  BOOST_CHECK_EQUAL(1, state.valid_length_);
-  BOOST_CHECK_EQUAL(static_cast<WordIndex>(0), state.history_[0]);
+  BOOST_CHECK_EQUAL(1, state.length);
+  BOOST_CHECK_EQUAL(static_cast<WordIndex>(0), state.words[0]);
 }
 
 template <class M> void NoUnkCheck(const M &model) {

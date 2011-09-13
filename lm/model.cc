@@ -16,7 +16,7 @@ namespace lm {
 namespace ngram {
 
 size_t hash_value(const State &state) {
-  return util::MurmurHashNative(state.history_, sizeof(WordIndex) * state.valid_length_);
+  return util::MurmurHashNative(state.words, sizeof(WordIndex) * state.length);
 }
 
 namespace detail {
@@ -41,11 +41,11 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
 
   // g++ prints warnings unless these are fully initialized.  
   State begin_sentence = State();
-  begin_sentence.valid_length_ = 1;
-  begin_sentence.history_[0] = vocab_.BeginSentence();
-  begin_sentence.backoff_[0] = search_.unigram.Lookup(begin_sentence.history_[0]).backoff;
+  begin_sentence.length = 1;
+  begin_sentence.words[0] = vocab_.BeginSentence();
+  begin_sentence.backoff[0] = search_.unigram.Lookup(begin_sentence.words[0]).backoff;
   State null_context = State();
-  null_context.valid_length_ = 0;
+  null_context.length = 0;
   P::Init(begin_sentence, null_context, vocab_, search_.MiddleEnd() - search_.MiddleBegin() + 2);
 }
 
@@ -95,9 +95,9 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
 }
 
 template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::FullScore(const State &in_state, const WordIndex new_word, State &out_state) const {
-  FullScoreReturn ret = ScoreExceptBackoff(in_state.history_, in_state.history_ + in_state.valid_length_, new_word, out_state);
-  if (ret.ngram_length - 1 < in_state.valid_length_) {
-    ret.prob = std::accumulate(in_state.backoff_ + ret.ngram_length - 1, in_state.backoff_ + in_state.valid_length_, ret.prob);
+  FullScoreReturn ret = ScoreExceptBackoff(in_state.words, in_state.words + in_state.length, new_word, out_state);
+  if (ret.ngram_length - 1 < in_state.length) {
+    ret.prob = std::accumulate(in_state.backoff + ret.ngram_length - 1, in_state.backoff + in_state.length, ret.prob);
   }
   return ret;
 }
@@ -131,33 +131,33 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   // Generate a state from context.  
   context_rend = std::min(context_rend, context_rbegin + P::Order() - 1);
   if (context_rend == context_rbegin) {
-    out_state.valid_length_ = 0;
+    out_state.length = 0;
     return;
   }
   bool ignored_extend;
   float ignored_prob;
   typename Search::Node node;
-  search_.LookupUnigram(*context_rbegin, ignored_prob, out_state.backoff_[0], node, ignored_extend);
-  out_state.valid_length_ = HasExtension(out_state.backoff_[0]) ? 1 : 0;
-  float *backoff_out = out_state.backoff_ + 1;
+  search_.LookupUnigram(*context_rbegin, ignored_prob, out_state.backoff[0], node, ignored_extend);
+  out_state.length = HasExtension(out_state.backoff[0]) ? 1 : 0;
+  float *backoff_out = out_state.backoff + 1;
   const typename Search::Middle *mid = search_.MiddleBegin();
   for (const WordIndex *i = context_rbegin + 1; i < context_rend; ++i, ++backoff_out, ++mid) {
     if (!search_.LookupMiddleNoProb(*mid, *i, *backoff_out, node)) {
-      std::copy(context_rbegin, context_rbegin + out_state.valid_length_, out_state.history_);
+      std::copy(context_rbegin, context_rbegin + out_state.length, out_state.words);
       return;
     }
-    if (HasExtension(*backoff_out)) out_state.valid_length_ = i - context_rbegin + 1;
+    if (HasExtension(*backoff_out)) out_state.length = i - context_rbegin + 1;
   }
-  std::copy(context_rbegin, context_rbegin + out_state.valid_length_, out_state.history_);
+  std::copy(context_rbegin, context_rbegin + out_state.length, out_state.words);
 }
 
 namespace {
 // Do a paraonoid copy of history, assuming new_word has already been copied
-// (hence the -1).  out_state.valid_length_ could be zero so I avoided using
+// (hence the -1).  out_state.length could be zero so I avoided using
 // std::copy.   
 void CopyRemainingHistory(const WordIndex *from, State &out_state) {
-  WordIndex *out = out_state.history_ + 1;
-  const WordIndex *in_end = from + static_cast<ptrdiff_t>(out_state.valid_length_) - 1;
+  WordIndex *out = out_state.words + 1;
+  const WordIndex *in_end = from + static_cast<ptrdiff_t>(out_state.length) - 1;
   for (const WordIndex *in = from; in < in_end; ++in, ++out) *out = *in;
 }
 } // namespace
@@ -176,13 +176,13 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   // ret.ngram_length contains the last known non-blank ngram length.  
   ret.ngram_length = 1;
 
-  float *backoff_out(out_state.backoff_);
+  float *backoff_out(out_state.backoff);
   typename Search::Node node;
   search_.LookupUnigram(new_word, ret.prob, *backoff_out, node, ret.independent_left);
   // This is the length of the context that should be used for continuation to the right.  
-  out_state.valid_length_ = HasExtension(*backoff_out) ? 1 : 0;
+  out_state.length = HasExtension(*backoff_out) ? 1 : 0;
   // We'll write the word anyway since it will probably be used and does no harm being there.  
-  out_state.history_[0] = new_word;
+  out_state.words[0] = new_word;
   if (context_rbegin == context_rend) return ret;
   ++backoff_out;
 
@@ -213,7 +213,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     } else {
       ret.ngram_length = hist_iter - context_rbegin + 2;
       if (HasExtension(*backoff_out)) {
-        out_state.valid_length_ = ret.ngram_length;
+        out_state.length = ret.ngram_length;
       }
     }
   }
