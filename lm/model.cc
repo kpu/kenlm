@@ -189,7 +189,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
   if (ret.independent_left || !search_.LookupLongest(*i, ret.prob, node)) {
     // The last backoff weight, for Order() - 1.
-    ret.prob += *(backoff_in + (add_rend - add_rbegin - 1));
+    ret.prob += backoff_in[i - add_rbegin];
   } else {
     ret.ngram_length = P::Order();
   }
