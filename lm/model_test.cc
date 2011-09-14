@@ -154,6 +154,48 @@ template <class M> void MinimalState(const M &model) {
   AppendTest("good", 3, -7, true);
 }
 
+template <class M> void ExtendLeftTest(const M &model) {
+  State right;
+  FullScoreReturn little(model.FullScore(model.NullContextState(), model.GetVocabulary().Index("little"), right));
+  unsigned char continue_right;
+  float backoff_out[4];
+
+  FullScoreReturn extend_none(model.ExtendLeft(NULL, NULL, NULL, little.extend_left, 1, NULL, continue_right));
+  BOOST_CHECK_EQUAL(1, continue_right);
+  BOOST_CHECK_EQUAL(little.extend_left, extend_none.extend_left);
+  BOOST_CHECK_CLOSE(-1.285941, extend_none.prob, 0.001);
+  BOOST_CHECK_EQUAL(1, extend_none.ngram_length);
+
+  const WordIndex a = model.GetVocabulary().Index("a");
+  float backoff_in = 3.14;
+  // a little
+  FullScoreReturn extend_a(model.ExtendLeft(&a, &a + 1, &backoff_in, little.extend_left, 1, backoff_out, continue_right));
+  BOOST_CHECK_EQUAL(2, continue_right);
+  BOOST_CHECK_CLOSE(-0.69897, backoff_out[0], 0.001);
+  BOOST_CHECK_CLOSE(-0.09132547, extend_a.prob, 0.001);
+  BOOST_CHECK_EQUAL(2, extend_a.ngram_length);
+  BOOST_CHECK(!extend_a.independent_left);
+
+  const WordIndex on = model.GetVocabulary().Index("on");
+  FullScoreReturn extend_on(model.ExtendLeft(&on, &on + 1, &backoff_in, extend_a.extend_left, 2, backoff_out, continue_right));
+  BOOST_CHECK_EQUAL(3, continue_right);
+  BOOST_CHECK_CLOSE(-0.4771212, backoff_out[0], 0.001);
+  BOOST_CHECK_CLOSE(-0.0283603, extend_on.prob, 0.001);
+  BOOST_CHECK_EQUAL(3, extend_on.ngram_length);
+  BOOST_CHECK(!extend_on.independent_left);
+
+  const WordIndex both[2] = {a, on};
+  float backoff_in_arr[4];
+  FullScoreReturn extend_both(model.ExtendLeft(both, both + 2, backoff_in_arr, little.extend_left, 1, backoff_out, continue_right));
+  BOOST_CHECK_EQUAL(3, continue_right);
+  BOOST_CHECK_CLOSE(-0.69897, backoff_out[0], 0.001);
+  BOOST_CHECK_CLOSE(-0.4771212, backoff_out[1], 0.001);
+  BOOST_CHECK_CLOSE(-0.0283603, extend_both.prob, 0.001);
+  BOOST_CHECK_EQUAL(3, extend_both.ngram_length);
+  BOOST_CHECK(!extend_both.independent_left);
+  BOOST_CHECK_EQUAL(extend_on.extend_left, extend_both.extend_left);
+}
+
 #define StatelessTest(word, provide, ngram, score) \
   ret = model.FullScoreForgotState(indices + num_words - word, indices + num_words - word + provide, indices[num_words - word - 1], state); \
   BOOST_CHECK_CLOSE(score, ret.prob, 0.001); \
@@ -223,6 +265,7 @@ template <class M> void Everything(const M &m) {
   Blanks(m);
   Unknowns(m);
   MinimalState(m);
+  ExtendLeftTest(m);
   Stateless(m);
 }
 

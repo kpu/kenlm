@@ -166,7 +166,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   ret.extend_left = extend_pointer;
   const typename Search::Middle *mid_iter = search_.MiddleBegin() + extend_length - 1;
   const WordIndex *i = add_rbegin;
-  for (; ; ++i, ++backoff_in, ++backoff_out, ++extend_length) {
+  for (; ; ++i, ++backoff_out, ++mid_iter) {
     if (i == add_rend) {
       // Ran out words.
       return ret;
@@ -175,7 +175,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     float revert = ret.prob;
     if (ret.independent_left || !search_.LookupMiddle(*mid_iter, *i, *backoff_out, node, ret)) {
       // Didn't match a word.  Charge backoff.
-      for (const float *b = backoff_in; b < backoff_in + (add_rend - i); ++b) ret.prob += *b;
+      for (const float *b = backoff_in + (i - add_rbegin); b < backoff_in + (add_rend - i); ++b) ret.prob += *b;
       ret.independent_left = true;
       return ret;
     }
@@ -187,8 +187,10 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     }
   }
 
-  // Matched everything in middle.  
-  if (!ret.independent_left && search_.LookupLongest(*i, ret.prob, node)) {
+  if (ret.independent_left || !search_.LookupLongest(*i, ret.prob, node)) {
+    // The last backoff weight, for Order() - 1.
+    ret.prob += *(backoff_in + (add_rend - add_rbegin - 1));
+  } else {
     ret.ngram_length = P::Order();
   }
   ret.independent_left = true;
