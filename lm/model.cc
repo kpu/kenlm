@@ -150,6 +150,51 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   std::copy(context_rbegin, context_rbegin + out_state.length, out_state.words);
 }
 
+template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::ExtendLeft(
+    const WordIndex *add_rbegin, const WordIndex *add_rend,
+    const float *backoff_in,
+    uint64_t extend_pointer,
+    unsigned char extend_length,
+    float *backoff_out,
+    unsigned char &continue_right_length) const {
+  FullScoreReturn ret;
+  typename Search::Node node(search_.Unpack(extend_pointer, extend_length, ret.prob));
+  // continue_right_length might be longer than necessary.  However, if it's this short then the existing right state sufficies and is minimized.   
+  continue_right_length = ret.ngram_length = extend_length;
+  // If this function is called, then it does depend on left words.   
+  ret.independent_left = false;
+  ret.extend_left = extend_pointer;
+  const typename Search::Middle *mid_iter = search_.MiddleBegin() + extend_length - 1;
+  const WordIndex *i = add_rbegin;
+  for (; ; ++i, ++backoff_in, ++backoff_out, ++extend_length) {
+    if (i == add_rend) {
+      // Ran out words.
+      return ret;
+    }
+    if (mid_iter == search_.MiddleEnd()) break;
+    float revert = ret.prob;
+    if (ret.independent_left || !search_.LookupMiddle(*mid_iter, *i, *backoff_out, node, ret)) {
+      // Didn't match a word.  Charge backoff.
+      for (const float *b = backoff_in; b < backoff_in + (add_rend - i); ++b) ret.prob += *b;
+      ret.independent_left = true;
+      return ret;
+    }
+    if (ret.prob == kBlankProb) {
+      ret.prob = revert;
+    } else {
+      ret.ngram_length = mid_iter - search_.MiddleBegin() + 2;
+      if (HasExtension(*backoff_out)) continue_right_length = ret.ngram_length;
+    }
+  }
+
+  // Matched everything in middle.  
+  if (!ret.independent_left && search_.LookupLongest(*i, ret.prob, node)) {
+    ret.ngram_length = P::Order();
+  }
+  ret.independent_left = true;
+  return ret;
+}
+
 namespace {
 // Do a paraonoid copy of history, assuming new_word has already been copied
 // (hence the -1).  out_state.length could be zero so I avoided using

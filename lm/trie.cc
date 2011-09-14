@@ -93,9 +93,10 @@ template <class Quant, class Bhiksha> bool BitPackedMiddle<Quant, Bhiksha>::Find
   }
   uint64_t index = at_pointer;
   at_pointer *= total_bits_;
+  at_pointer += word_bits_;
+
   pointer = at_pointer;
 
-  at_pointer += word_bits_;
   quant_.Read(base_, at_pointer, prob, backoff);
   at_pointer += quant_.TotalBits();
 

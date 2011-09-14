@@ -97,6 +97,16 @@ template <class Quant, class Bhiksha> class TrieSearch {
       return true;
     }
 
+    Node Unpack(uint64_t extend_pointer, unsigned char extend_length, float &prob) const {
+      if (extend_length == 1) {
+        float ignored;
+        Node ret;
+        unigram.Find(static_cast<WordIndex>(extend_pointer), prob, ignored, ret);
+        return ret;
+      }
+      return middle_begin_[extend_length - 2].ReadEntry(extend_pointer, prob);
+    }
+
   private:
     friend void BuildTrie<Quant, Bhiksha>(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing);
 

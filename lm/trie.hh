@@ -98,6 +98,14 @@ template <class Quant, class Bhiksha> class BitPackedMiddle : public BitPacked {
 
     bool FindNoProb(WordIndex word, float &backoff, NodeRange &range) const;
 
+    NodeRange ReadEntry(uint64_t pointer, float &prob) {
+      quant_.ReadProb(base_, pointer, prob);
+      NodeRange ret;
+      // pointer/total_bits_ should always round down.  
+      bhiksha_.ReadNext(base_, pointer + quant_.TotalBits(), pointer / total_bits_, total_bits_, ret);
+      return ret;
+    }
+
   private:
     Quant quant_;
     Bhiksha bhiksha_;

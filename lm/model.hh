@@ -116,6 +116,25 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
      */
     void GetState(const WordIndex *context_rbegin, const WordIndex *context_rend, State &out_state) const;
 
+    /* More efficient version of FullScore where a partial n-gram has already
+     * been scored.  
+     * NOTE: THE RETURNED .prob IS RELATIVE, NOT ABSOLUTE.  So for example, if
+     * the n-gram does not end up extending further left, then 0 is returned.
+     */
+    FullScoreReturn ExtendLeft(
+        // Additional context in reverse order.  This will update add_rend to 
+        const WordIndex *add_rbegin, const WordIndex *add_rend,
+        // Backoff weights to use.  
+        const float *backoff_in,
+        // extend_left returned by a previous query.
+        uint64_t extend_pointer,
+        // Length of n-gram that the pointer corresponds to.  
+        unsigned char extend_length,
+        // Where to write additional backoffs for [extend_length + 1, min(Order() - 1, return.ngram_length)]
+        float *backoff_out,
+        // State length to be used for continuation to the right.  
+        unsigned char &continue_right_length) const;
+
   private:
     friend void LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);
 

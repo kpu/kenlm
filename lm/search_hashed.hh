@@ -56,7 +56,7 @@ struct HashedSearch {
 
   void LookupUnigram(WordIndex word, float &backoff, Node &next, FullScoreReturn &ret) const {
     const ProbBackoff &entry = unigram.Lookup(word);
-    union { float f; uint32_t i; } val;
+    util::FloatEnc val;
     val.f = entry.prob;
     ret.independent_left = (val.i & util::kSignBit);
     ret.extend_left = static_cast<uint64_t>(word);
@@ -93,6 +93,20 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
 
     const Middle *MiddleBegin() const { return &*middle_.begin(); }
     const Middle *MiddleEnd() const { return &*middle_.end(); }
+
+    Node Unpack(uint64_t extend_pointer, unsigned char extend_length, float &prob) const {
+      util::FloatEnc val;
+      if (extend_length == 1) {
+        val.f = unigram.Lookup(static_cast<uint64_t>(extend_pointer)).prob;
+      } else {
+        typename Middle::ConstIterator found;
+        UTIL_THROW_IF(!middle_[extend_length - 2].Find(extend_pointer, found), util::Exception, "Extend pointer " << extend_pointer << " should have been found.");
+        val.f = found->GetValue().prob;
+      }
+      val.i |= util::kSignBit;
+      prob = val.f;
+      return extend_pointer;
+    }
 
     bool LookupMiddle(const Middle &middle, WordIndex word, float &backoff, Node &node, FullScoreReturn &ret) const {
       node = CombineWordHash(node, word);
