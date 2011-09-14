@@ -80,7 +80,7 @@ template <class M> class RuleScore {
       prob_ = prob;
       out_ = in;
       left_done_ = in.full;
-      left_write_ = out_.left.words + out_.left.valid_length;
+      left_write_ = out_.left.words + out_.left.length;
     }
 
     void NonTerminal(const ChartState &in, float prob) {
