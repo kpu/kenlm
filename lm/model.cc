@@ -156,11 +156,13 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     uint64_t extend_pointer,
     unsigned char extend_length,
     float *backoff_out,
-    unsigned char &continue_right_length) const {
+    unsigned char &next_use) const {
   FullScoreReturn ret;
-  typename Search::Node node(search_.Unpack(extend_pointer, extend_length, ret.prob));
-  // continue_right_length might be longer than necessary.  However, if it's this short then the existing right state sufficies and is minimized.   
-  continue_right_length = ret.ngram_length = extend_length;
+  float subtract_me;
+  typename Search::Node node(search_.Unpack(extend_pointer, extend_length, subtract_me));
+  ret.prob = subtract_me;
+  ret.ngram_length = extend_length;
+  next_use = 0;
   // If this function is called, then it does depend on left words.   
   ret.independent_left = false;
   ret.extend_left = extend_pointer;
@@ -168,22 +170,25 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   const WordIndex *i = add_rbegin;
   for (; ; ++i, ++backoff_out, ++mid_iter) {
     if (i == add_rend) {
-      // Ran out words.
+      // Ran out of words.
+      for (const float *b = backoff_in + ret.ngram_length - extend_length; b < backoff_in + (add_rend - add_rbegin); ++b) ret.prob += *b;
+      ret.prob -= subtract_me;
       return ret;
     }
     if (mid_iter == search_.MiddleEnd()) break;
     float revert = ret.prob;
     if (ret.independent_left || !search_.LookupMiddle(*mid_iter, *i, *backoff_out, node, ret)) {
-      // Didn't match a word.  Charge backoff.
-      for (const float *b = backoff_in + (i - add_rbegin); b < backoff_in + (add_rend - i); ++b) ret.prob += *b;
+      // Didn't match a word. 
       ret.independent_left = true;
+      for (const float *b = backoff_in + ret.ngram_length - extend_length; b < backoff_in + (add_rend - add_rbegin); ++b) ret.prob += *b;
+      ret.prob -= subtract_me;
       return ret;
     }
     if (ret.prob == kBlankProb) {
       ret.prob = revert;
     } else {
       ret.ngram_length = mid_iter - search_.MiddleBegin() + 2;
-      if (HasExtension(*backoff_out)) continue_right_length = ret.ngram_length;
+      if (HasExtension(*backoff_out)) next_use = i - add_rbegin + 1;
     }
   }
 
@@ -194,6 +199,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     ret.ngram_length = P::Order();
   }
   ret.independent_left = true;
+  ret.prob -= subtract_me;
   return ret;
 }
 

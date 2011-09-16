@@ -132,8 +132,8 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
         unsigned char extend_length,
         // Where to write additional backoffs for [extend_length + 1, min(Order() - 1, return.ngram_length)]
         float *backoff_out,
-        // State length to be used for continuation to the right.  
-        unsigned char &continue_right_length) const;
+        // Amount of additional content that should be considered by the next call.
+        unsigned char &next_use) const;
 
   private:
     friend void LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);

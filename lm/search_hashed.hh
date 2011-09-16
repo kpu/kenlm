@@ -12,6 +12,7 @@
 #include "util/probing_hash_table.hh"
 
 #include <algorithm>
+#include <iostream>
 #include <vector>
 
 namespace util { class FilePiece; }
@@ -100,7 +101,10 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
         val.f = unigram.Lookup(static_cast<uint64_t>(extend_pointer)).prob;
       } else {
         typename Middle::ConstIterator found;
-        UTIL_THROW_IF(!middle_[extend_length - 2].Find(extend_pointer, found), util::Exception, "Extend pointer " << extend_pointer << " should have been found.");
+        if (!middle_[extend_length - 2].Find(extend_pointer, found)) {
+          std::cerr << "Extend pointer " << extend_pointer << " should have been found for length " << (unsigned) extend_length << std::endl;
+          abort();
+        }
         val.f = found->GetValue().prob;
       }
       val.i |= util::kSignBit;

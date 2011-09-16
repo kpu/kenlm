@@ -98,7 +98,7 @@ template <class M> void Blanks(const M &model) {
   state = model.NullContextState();
   // higher looking is a blank.  
   AppendTest("higher", 1, -1.509559, false);
-  AppendTest("looking", 1, -1.285941 - 0.30103, false);
+  AppendTest("looking", 2, -1.285941 - 0.30103, false);
 
   State higher_looking = state;
 
@@ -111,9 +111,12 @@ template <class M> void Blanks(const M &model) {
 
   state = model.NullContextState();
   AppendTest("would", 1, -1.687872, false);
-  AppendTest("consider", 1, -1.687872 -0.30103, false);
-  AppendTest("higher", 1, -1.509559 - 0.30103, false);
-  AppendTest("looking", 1, -1.285941 - 0.30103, false);
+  BOOST_CHECK_EQUAL(1, state.length);
+  AppendTest("consider", 2, -1.687872 -0.30103, false);
+  BOOST_CHECK_EQUAL(2, state.length);
+  AppendTest("higher", 3, -1.509559 - 0.30103, false);
+  BOOST_CHECK_EQUAL(3, state.length);
+  AppendTest("looking", 4, -1.285941 - 0.30103, false);
 }
 
 template <class M> void Unknowns(const M &model) {
@@ -157,40 +160,42 @@ template <class M> void MinimalState(const M &model) {
 template <class M> void ExtendLeftTest(const M &model) {
   State right;
   FullScoreReturn little(model.FullScore(model.NullContextState(), model.GetVocabulary().Index("little"), right));
-  unsigned char continue_right;
+  const float kLittleProb = -1.285941;
+  BOOST_CHECK_CLOSE(kLittleProb, little.prob, 0.001);
+  unsigned char next_use;
   float backoff_out[4];
 
-  FullScoreReturn extend_none(model.ExtendLeft(NULL, NULL, NULL, little.extend_left, 1, NULL, continue_right));
-  BOOST_CHECK_EQUAL(1, continue_right);
+  FullScoreReturn extend_none(model.ExtendLeft(NULL, NULL, NULL, little.extend_left, 1, NULL, next_use));
+  BOOST_CHECK_EQUAL(0, next_use);
   BOOST_CHECK_EQUAL(little.extend_left, extend_none.extend_left);
-  BOOST_CHECK_CLOSE(-1.285941, extend_none.prob, 0.001);
+  BOOST_CHECK_CLOSE(0.0, extend_none.prob, 0.001);
   BOOST_CHECK_EQUAL(1, extend_none.ngram_length);
 
   const WordIndex a = model.GetVocabulary().Index("a");
   float backoff_in = 3.14;
   // a little
-  FullScoreReturn extend_a(model.ExtendLeft(&a, &a + 1, &backoff_in, little.extend_left, 1, backoff_out, continue_right));
-  BOOST_CHECK_EQUAL(2, continue_right);
+  FullScoreReturn extend_a(model.ExtendLeft(&a, &a + 1, &backoff_in, little.extend_left, 1, backoff_out, next_use));
+  BOOST_CHECK_EQUAL(1, next_use);
   BOOST_CHECK_CLOSE(-0.69897, backoff_out[0], 0.001);
-  BOOST_CHECK_CLOSE(-0.09132547, extend_a.prob, 0.001);
+  BOOST_CHECK_CLOSE(-0.09132547 - kLittleProb, extend_a.prob, 0.001);
   BOOST_CHECK_EQUAL(2, extend_a.ngram_length);
   BOOST_CHECK(!extend_a.independent_left);
 
   const WordIndex on = model.GetVocabulary().Index("on");
-  FullScoreReturn extend_on(model.ExtendLeft(&on, &on + 1, &backoff_in, extend_a.extend_left, 2, backoff_out, continue_right));
-  BOOST_CHECK_EQUAL(3, continue_right);
+  FullScoreReturn extend_on(model.ExtendLeft(&on, &on + 1, &backoff_in, extend_a.extend_left, 2, backoff_out, next_use));
+  BOOST_CHECK_EQUAL(1, next_use);
   BOOST_CHECK_CLOSE(-0.4771212, backoff_out[0], 0.001);
-  BOOST_CHECK_CLOSE(-0.0283603, extend_on.prob, 0.001);
+  BOOST_CHECK_CLOSE(-0.0283603 - -0.09132547, extend_on.prob, 0.001);
   BOOST_CHECK_EQUAL(3, extend_on.ngram_length);
   BOOST_CHECK(!extend_on.independent_left);
 
   const WordIndex both[2] = {a, on};
   float backoff_in_arr[4];
-  FullScoreReturn extend_both(model.ExtendLeft(both, both + 2, backoff_in_arr, little.extend_left, 1, backoff_out, continue_right));
-  BOOST_CHECK_EQUAL(3, continue_right);
+  FullScoreReturn extend_both(model.ExtendLeft(both, both + 2, backoff_in_arr, little.extend_left, 1, backoff_out, next_use));
+  BOOST_CHECK_EQUAL(2, next_use);
   BOOST_CHECK_CLOSE(-0.69897, backoff_out[0], 0.001);
   BOOST_CHECK_CLOSE(-0.4771212, backoff_out[1], 0.001);
-  BOOST_CHECK_CLOSE(-0.0283603, extend_both.prob, 0.001);
+  BOOST_CHECK_CLOSE(-0.0283603 - kLittleProb, extend_both.prob, 0.001);
   BOOST_CHECK_EQUAL(3, extend_both.ngram_length);
   BOOST_CHECK(!extend_both.independent_left);
   BOOST_CHECK_EQUAL(extend_on.extend_left, extend_both.extend_left);
