@@ -184,17 +184,17 @@ BOOST_AUTO_TEST_CASE(GrowBig) {
   config.messages = NULL;
   Model m("test.arpa", config);
 
-/*  TEXT_TEST("in biarritz watching considering looking . on a little more loin also would consider higher to look good unknown the screening foo bar , unknown however unknown </s>");
+  TEXT_TEST("in biarritz watching considering looking . on a little more loin also would consider higher to look good unknown the screening foo bar , unknown however unknown </s>");
   TEXT_TEST("on a little more loin also would consider higher to look good unknown the screening foo bar , unknown however unknown </s>");
   TEXT_TEST("on a little more loin also would consider higher to look good");
   TEXT_TEST("more loin also would consider higher to look good");
   TEXT_TEST("more loin also would consider higher to look");
-  TEXT_TEST("also would consider higher to look");*/
+  TEXT_TEST("also would consider higher to look");
   TEXT_TEST("also would consider higher");
-/*  TEXT_TEST("would consider higher to look");
+  TEXT_TEST("would consider higher to look");
   TEXT_TEST("consider higher to look");
   TEXT_TEST("consider higher to");
-  TEXT_TEST("consider higher");*/
+  TEXT_TEST("consider higher");
 }
 
 BOOST_AUTO_TEST_CASE(AlsoWouldConsiderHigher) {
