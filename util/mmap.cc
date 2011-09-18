@@ -1,6 +1,6 @@
 #include "util/exception.hh"
+#include "util/file.hh"
 #include "util/mmap.hh"
-#include "util/scoped.hh"
 
 #include <iostream>
 
@@ -66,20 +66,6 @@ void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int
   return ret;
 }
 
-namespace {
-void ReadAll(int fd, void *to_void, std::size_t amount) {
-  uint8_t *to = static_cast<uint8_t*>(to_void);
-  while (amount) {
-    ssize_t ret = read(fd, to, amount);
-    if (ret == -1) UTIL_THROW(ErrnoException, "Reading " << amount << " from fd " << fd << " failed.");
-    if (ret == 0) UTIL_THROW(Exception, "Hit EOF in fd " << fd << " but there should be " << amount << " more bytes to read.");
-    amount -= ret;
-    to += ret;
-  }
-}
-
-} // namespace
-
 const int kFileFlags =
 #ifdef MAP_FILE
   MAP_FILE | MAP_SHARED
@@ -106,7 +92,7 @@ void MapRead(LoadMethod method, int fd, off_t offset, std::size_t size, scoped_m
       out.reset(malloc(size), size, scoped_memory::MALLOC_ALLOCATED);
       if (!out.get()) UTIL_THROW(util::ErrnoException, "Allocating " << size << " bytes with malloc");
       if (-1 == lseek(fd, offset, SEEK_SET)) UTIL_THROW(ErrnoException, "lseek to " << offset << " in fd " << fd << " failed.");
-      ReadAll(fd, out.get(), size);
+      ReadOrThrow(fd, out.get(), size);
       break;
   }
 }

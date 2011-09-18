@@ -3,9 +3,9 @@
 
 #include "util/ersatz_progress.hh"
 #include "util/exception.hh"
+#include "util/file.hh"
 #include "util/have.hh"
 #include "util/mmap.hh"
-#include "util/scoped.hh"
 #include "util/string_piece.hh"
 
 #include <string>
@@ -27,13 +27,7 @@ class GZException : public Exception {
     ~GZException() throw() {}
 };
 
-int OpenReadOrThrow(const char *name);
-
 extern const bool kSpaces[256];
-
-// Return value for SizeFile when it can't size properly.  
-const off_t kBadSize = -1;
-off_t SizeFile(int fd);
 
 // Memory backing the returned StringPiece may vanish on the next call.  
 class FilePiece {

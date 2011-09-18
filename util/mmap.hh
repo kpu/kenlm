@@ -2,14 +2,14 @@
 #define UTIL_MMAP__
 // Utilities for mmaped files.  
 
-#include "util/scoped.hh"
-
 #include <cstddef>
 
 #include <inttypes.h>
 #include <sys/types.h>
 
 namespace util {
+
+class scoped_fd;
 
 // (void*)-1 is MAP_FAILED; this is done to avoid including the mmap header here.  
 class scoped_mmap {
