@@ -21,6 +21,14 @@
 namespace lm {
 namespace ngram {
 namespace trie {
+
+const char *kContextSuffix = "_contexts";
+
+FILE *OpenOrThrow(const char *name, const char *mode) {
+  FILE *ret = fopen(name, mode);
+  if (!ret) UTIL_THROW(util::ErrnoException, "Could not open " << name << " for " << mode);
+  return ret;
+}
 namespace {
 
 typedef util::SizedIterator NGramIter;
@@ -64,12 +72,6 @@ class PartialViewProxy {
 
 typedef util::ProxyIterator<PartialViewProxy> PartialIter;
 
-FILE *OpenOrThrow(const char *name, const char *mode) {
-  FILE *ret = fopen(name, mode);
-  if (!ret) UTIL_THROW(util::ErrnoException, "Could not open " << name << " for " << mode);
-  return ret;
-}
-
 void WriteOrThrow(FILE *to, const void *data, size_t size) {
   assert(size);
   if (1 != std::fwrite(data, size, 1, to)) UTIL_THROW(util::ErrnoException, "Short write; requested size " << size);
@@ -83,8 +85,6 @@ std::string DiskFlush(const void *mem_begin, const void *mem_end, const std::str
   util::WriteOrThrow(out.get(), mem_begin, (uint8_t*)mem_end - (uint8_t*)mem_begin);
   return ret;
 }
-
-const char *kContextSuffix = "_contexts";
 
 void WriteContextFile(uint8_t *begin, uint8_t *end, const std::string &ngram_file_name, std::size_t entry_size, unsigned char order) {
   const size_t context_size = sizeof(WordIndex) * (order - 1);
@@ -212,6 +212,7 @@ void RecordReader::Init(const std::string &name, std::size_t entry_size) {
   data_.reset(malloc(entry_size));
   UTIL_THROW_IF(!data_.get(), util::ErrnoException, "Failed to malloc read buffer");
   remains_ = true;
+  entry_size_ = entry_size;
   ++*this;
 }
 

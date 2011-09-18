@@ -61,7 +61,7 @@ class RecordReader {
 
     operator bool() const { return remains_; }
 
-    void Rewind() { rewind(file_.get()); }
+    void Rewind() { rewind(file_.get()); ++*this; }
 
     std::size_t EntrySize() const { return entry_size_; }
 
@@ -74,6 +74,10 @@ class RecordReader {
 
     util::scoped_FILE file_;
 };
+
+extern const char *kContextSuffix;
+
+FILE *OpenOrThrow(const char *name, const char *mode);
 
 void ARPAToSortedFiles(const Config &config, util::FilePiece &f, std::vector<uint64_t> &counts, size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab);
 
