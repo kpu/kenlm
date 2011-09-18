@@ -208,7 +208,6 @@ template <class Doing> void RecursiveInsert(const unsigned char total_order, con
   assert(gram.empty());
 }
 
-
 void SanityCheckCounts(const std::vector<uint64_t> &initial, const std::vector<uint64_t> &fixed) {
   if (fixed[0] != initial[0]) UTIL_THROW(util::Exception, "Unigram count should be constant but initial is " << initial[0] << " and recounted is " << fixed[0]);
   if (fixed.back() != initial.back()) UTIL_THROW(util::Exception, "Longest count should be constant but it changed from " << initial.back() << " to " << fixed.back());
@@ -217,44 +216,29 @@ void SanityCheckCounts(const std::vector<uint64_t> &initial, const std::vector<u
   }
 }
 
-bool IsDirectory(const char *path) {
-  struct stat info;
-  if (0 != stat(path, &info)) return false;
-  return S_ISDIR(info.st_mode);
-}
-
-template <class Quant> void TrainQuantizer(uint8_t order, uint64_t count, SortedFileReader &reader, util::ErsatzProgress &progress, Quant &quant) {
+template <class Quant> void TrainQuantizer(uint8_t order, uint64_t count, RecordReader &reader, util::ErsatzProgress &progress, Quant &quant) {
   ProbBackoff weights;
   std::vector<float> probs, backoffs;
   probs.reserve(count);
   backoffs.reserve(count);
-  for (reader.Rewind(); !reader.Ended(); reader.NextHeader()) {
-    uint64_t entries = reader.ReadCount();
-    for (uint64_t c = 0; c < entries; ++c) {
-      reader.ReadWord();
-      reader.ReadWeights(weights);
-      // kBlankProb isn't added yet.  
-      probs.push_back(weights.prob);
-      if (weights.backoff != 0.0) backoffs.push_back(weights.backoff);
-      ++progress;
-    }
+  for (reader.Rewind(); reader; ++reader) {
+    const ProbBackoff &weights = *reinterpret_cast<const ProbBackoff*>(reinterpret_cast<const uint8_t*>(reader.Data()) + sizeof(WordIndex) * order);
+    probs.push_back(weights.prob);
+    if (weights.backoff != 0.0) backoffs.push_back(weights.backoff);
+    ++progress;
   }
   quant.Train(order, probs, backoffs);
 }
 
-template <class Quant> void TrainProbQuantizer(uint8_t order, uint64_t count, SortedFileReader &reader, util::ErsatzProgress &progress, Quant &quant) {
+template <class Quant> void TrainProbQuantizer(uint8_t order, uint64_t count, RecordReader &reader, util::ErsatzProgress &progress, Quant &quant) {
   Prob weights;
   std::vector<float> probs, backoffs;
   probs.reserve(count);
-  for (reader.Rewind(); !reader.Ended(); reader.NextHeader()) {
-    uint64_t entries = reader.ReadCount();
-    for (uint64_t c = 0; c < entries; ++c) {
-      reader.ReadWord();
-      reader.ReadWeights(weights);
-      // kBlankProb isn't added yet.  
-      probs.push_back(weights.prob);
-      ++progress;
-    }
+  for (reader.Rewind(); reader; ++reader) {
+    const Prob &weights = *reinterpret_cast<const Prob*>(reinterpret_cast<const uint8_t*>(reader.Data()) + sizeof(WordIndex) * order);
+    // kBlankProb isn't added yet.  
+    probs.push_back(weights.prob);
+    ++progress;
   }
   quant.TrainProb(order, probs);
 }
@@ -262,26 +246,26 @@ template <class Quant> void TrainProbQuantizer(uint8_t order, uint64_t count, So
 } // namespace
 
 template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing) {
-  std::vector<SortedFileReader> inputs(counts.size() - 1);
-  std::vector<ContextReader> contexts(counts.size() - 1);
+  RecordReader inputs[kMaxOrder - 1];
+  RecordReader contexts[kMaxOrder - 1];
 
   for (unsigned char i = 2; i <= counts.size(); ++i) {
     std::stringstream assembled;
     assembled << file_prefix << static_cast<unsigned int>(i) << "_merged";
-    inputs[i-2].Init(assembled.str(), i);
+    inputs[i-2].Init(assembled.str(), i * sizeof(WordIndex) + (order == counts.size() ? sizeof(Prob) : sizeof(ProbBackoff)));
     RemoveOrThrow(assembled.str().c_str());
     assembled << kContextSuffix;
-    contexts[i-2].Reset(assembled.str().c_str(), i-1);
+    contexts[i-2].Init(assembled.str(), (i-1) * sizeof(WordIndex));
     RemoveOrThrow(assembled.str().c_str());
   }
 
   std::vector<uint64_t> fixed_counts(counts.size());
   {
-    RecursiveInsert<JustCount> counter(&*inputs.begin(), &*contexts.begin(), NULL, out.middle_begin_, out.longest, &*fixed_counts.begin(), counts.size());
-    counter.Apply(config.messages, "Counting n-grams that should not have been pruned", counts[0]);
+    JustCount counter(&*fixed_counts.begin(), counts.size());
+    RecursiveInsert(counts.size(), counts[0], inputs, config.messages, "Identifying n-grams omitted by SRI", counter);
   }
-  for (std::vector<SortedFileReader>::const_iterator i = inputs.begin(); i != inputs.end(); ++i) {
-    if (!i->Ended()) UTIL_THROW(FormatLoadException, "There's a bug in the trie implementation: the " << (i - inputs.begin() + 2) << "-gram table did not complete reading");
+  for (const RecordReader *i = inputs; i != inputs + counts.size() - 2; ++i) {
+    if (!i->Ended()) UTIL_THROW(FormatLoadException, "There's a bug in the trie implementation: the " << (i - inputs + 2) << "-gram table did not complete reading");
   }
   SanityCheckCounts(counts, fixed_counts);
   counts = fixed_counts;
@@ -300,12 +284,8 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
   for (unsigned char i = 2; i <= counts.size(); ++i) {
     inputs[i-2].Rewind();
   }
+
   UnigramValue *unigrams = out.unigram.Raw();
-  // Fill entries except unigram probabilities.  
-  {
-    RecursiveInsert<WriteEntries<Quant, Bhiksha> > inserter(&*inputs.begin(), &*contexts.begin(), unigrams, out.middle_begin_, out.longest, &*fixed_counts.begin(), counts.size());
-    inserter.Apply(config.messages, "Building trie", fixed_counts[0]);
-  }
 
   // Fill unigram probabilities.  
   try {
@@ -322,6 +302,12 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
   } catch (util::Exception &e) {
     e << " while re-reading unigram probabilities";
     throw;
+  }
+
+  // Fill entries except unigram probabilities.  
+  {
+    WriteEntries<Quant, Bhiksha> writer(contexts, unigrams, out.middle_begin_, out.longest, counts.size());
+    RecursiveInsert(counts.size(), counts[0], inputs, config.messages, "Writing trie", writer);
   }
 
   // Do not disable this error message or else too little state will be returned.  Both WriteEntries::Middle and returning state based on found n-grams will need to be fixed to handle this situation.   
@@ -383,6 +369,14 @@ template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::LoadedBin
   }
   longest.LoadedBinary();
 }
+
+namespace {
+bool IsDirectory(const char *path) {
+  struct stat info;
+  if (0 != stat(path, &info)) return false;
+  return S_ISDIR(info.st_mode);
+}
+} // namespace
 
 template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::InitializeFromARPA(const char *file, util::FilePiece &f, std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, Backing &backing) {
   std::string temporary_directory;
