@@ -77,7 +77,7 @@ class SizedProxy {
 
 typedef ProxyIterator<SizedProxy> SizedIterator;
 
-SizedIterator SizedIt(void *ptr, std::size_t size) { return SizedIterator(SizedProxy(ptr, size)); }
+inline SizedIterator SizedIt(void *ptr, std::size_t size) { return SizedIterator(SizedProxy(ptr, size)); }
 
 // Useful wrapper for a comparison function i.e. sort.  
 template <class Delegate, class Proxy = SizedProxy> class SizedCompare : public std::binary_function<const Proxy &, const Proxy &, bool> {
