@@ -150,6 +150,7 @@ template <class Doing> class BlankManager {
       }
       // There are blanks to insert starting with order blank.  
       unsigned char blank = cur - to + 1;
+      UTIL_THROW_IF(blank == 1, FormatLoadException, "Missing a unigram that appears as context.");
       const float *lower_basis;
       for (lower_basis = basis_ + blank - 1; (lower_basis > basis_) && *lower_basis == kBadProb; --lower_basis) {}
       unsigned char based_on = lower_basis - basis_ + 1;
@@ -191,6 +192,7 @@ template <class Doing> void RecursiveInsert(const unsigned char total_order, con
     if (order == 1) {
       blank.Visit(&unigram, 1, doing.UnigramProb(unigram));
       doing.Unigram(unigram);
+      progress.Set(unigram);
       if (++unigram == unigram_count + 1) break;
       grams.push(top);
     } else {
@@ -206,6 +208,7 @@ template <class Doing> void RecursiveInsert(const unsigned char total_order, con
     }
   }
   assert(grams.empty());
+  doing.Cleanup();
 }
 
 void SanityCheckCounts(const std::vector<uint64_t> &initial, const std::vector<uint64_t> &fixed) {
