@@ -97,18 +97,18 @@ template <class Quant, class Bhiksha> class WriteEntries {
         SetExtension(weights.backoff);
         ++context;
       }
-      middle_[order - 1].Insert(words[order - 1], weights);
+      middle_[order - 1].Insert(words[order - 1], weights.prob, weights.backoff);
     }
 
     void Longest(const void *data) {
       const WordIndex *words = reinterpret_cast<const WordIndex*>(data);
-      longest_.Insert(words[order_ - 1], reinterpret_cast<const Prob*>(words + order)->prob);
+      longest_.Insert(words[order_ - 1], reinterpret_cast<const Prob*>(words + order_)->prob);
     }
 
     void Cleanup() {}
 
   private:
-    ContextReader *contexts_;
+    RecordReader *contexts_;
     UnigramValue *const unigrams_;
     BitPackedMiddle<typename Quant::Middle, Bhiksha> *const middle_;
     BitPackedLongest<typename Quant::Longest> &longest_;
@@ -123,14 +123,13 @@ struct Gram {
 
   // For queue, this is the direction we want.  
   bool operator<(const Gram &other) const {
-    return std::lexicographic_compare(other.begin, other.end, begin, end);
+    return std::lexicographical_compare(other.begin, other.end, begin, end);
   }
 };
 
-template <class Doing> class BlankManager {
-  private:
-    static float kBadProb = std::numeric_limits<float>::infinity();
+const float kBadProb = std::numeric_limits<float>::infinity();
 
+template <class Doing> class BlankManager {
   public:
     BlankManager(unsigned char total_order, Doing &doing) : total_order_(total_order), been_length_(0), doing_(doing) {
       for (float *i = basis_; i != basis_ + kMaxOrder - 1; ++i) *i = kBadProb;
@@ -138,8 +137,9 @@ template <class Doing> class BlankManager {
 
     void Visit(const WordIndex *to, unsigned char length, float prob) {
       basis_[length - 1] = prob;
-      unsigned char overlap = std::min(length - 1, been_length_);
-      const WordIndex *cur, *pre;
+      unsigned char overlap = std::min<unsigned char>(length - 1, been_length_);
+      const WordIndex *cur;
+      WordIndex *pre;
       for (cur = to, pre = been_; cur != to + overlap; ++cur, ++pre) {
         if (*pre != *cur) break;
       }
@@ -151,7 +151,7 @@ template <class Doing> class BlankManager {
       // There are blanks to insert starting with order blank.  
       unsigned char blank = cur - to + 1;
       const float *lower_basis;
-      for (lower_basis = basis_ + blank - 1; (lower_basis > basis_) && *lower_basis = kBadProb; --lower_basis) {}
+      for (lower_basis = basis_ + blank - 1; (lower_basis > basis_) && *lower_basis == kBadProb; --lower_basis) {}
       unsigned char based_on = lower_basis - basis_ + 1;
       for (; cur != to + length - 1; ++blank, ++cur, ++pre) {
         doing_.MiddleBlank(blank, *cur, based_on, *lower_basis);
@@ -173,39 +173,39 @@ template <class Doing> class BlankManager {
     Doing &doing_;
 };
 
-template <class Doing> void RecursiveInsert(const unsigned char total_order, const WordIndex unigram_count, RecordReader *input, std::ostream *progress_out, const char *message, Doing &out) {
+template <class Doing> void RecursiveInsert(const unsigned char total_order, const WordIndex unigram_count, RecordReader *input, std::ostream *progress_out, const char *message, Doing &doing) {
   util::ErsatzProgress progress(progress_out, message, unigram_count + 1);
   unsigned int unigram = 0;
   std::priority_queue<Gram> grams;
   grams.push(Gram(&unigram, 1));
   for (unsigned char i = 2; i <= total_order; ++i) {
-    grams.push(Gram(inputs[i-2].Data(), i));
+    grams.push(Gram(reinterpret_cast<const WordIndex*>(input[i-2].Data()), i));
   }
 
   BlankManager<Doing> blank(total_order, doing);
 
   while (true) {
-    Gram top = gram.top();
-    gram.pop();
+    Gram top = grams.top();
+    grams.pop();
     unsigned char order = top.end - top.begin;
     if (order == 1) {
-      blank.Visit(&unigram, 1, doing_.UnigramProb(unigram));
-      doing_.Unigram(unigram);
+      blank.Visit(&unigram, 1, doing.UnigramProb(unigram));
+      doing.Unigram(unigram);
       if (++unigram == unigram_count + 1) break;
-      gram.push(top);
+      grams.push(top);
     } else {
       if (order == total_order) {
         blank.Visit(top.begin, order, reinterpret_cast<const Prob*>(top.end)->prob);
-        doing_.Longest(top.begin);
+        doing.Longest(top.begin);
       } else {
         blank.Visit(top.begin, order, reinterpret_cast<const ProbBackoff*>(top.end)->prob);
-        doing_.Middle(order, top.begin);
+        doing.Middle(order, top.begin);
       }
-      RecordReader &reader = inputs[order - 2];
-      if (++reader) gram.push(top);
+      RecordReader &reader = input[order - 2];
+      if (++reader) grams.push(top);
     }
   }
-  assert(gram.empty());
+  assert(grams.empty());
 }
 
 void SanityCheckCounts(const std::vector<uint64_t> &initial, const std::vector<uint64_t> &fixed) {
@@ -217,7 +217,6 @@ void SanityCheckCounts(const std::vector<uint64_t> &initial, const std::vector<u
 }
 
 template <class Quant> void TrainQuantizer(uint8_t order, uint64_t count, RecordReader &reader, util::ErsatzProgress &progress, Quant &quant) {
-  ProbBackoff weights;
   std::vector<float> probs, backoffs;
   probs.reserve(count);
   backoffs.reserve(count);
@@ -231,7 +230,6 @@ template <class Quant> void TrainQuantizer(uint8_t order, uint64_t count, Record
 }
 
 template <class Quant> void TrainProbQuantizer(uint8_t order, uint64_t count, RecordReader &reader, util::ErsatzProgress &progress, Quant &quant) {
-  Prob weights;
   std::vector<float> probs, backoffs;
   probs.reserve(count);
   for (reader.Rewind(); reader; ++reader) {
@@ -243,6 +241,10 @@ template <class Quant> void TrainProbQuantizer(uint8_t order, uint64_t count, Re
   quant.TrainProb(order, probs);
 }
 
+void ReadOrThrow(FILE *from, void *data, size_t size) {
+  UTIL_THROW_IF(1 != std::fread(data, size, 1, from), util::ErrnoException, "Short read");
+}
+
 } // namespace
 
 template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing) {
@@ -252,11 +254,11 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
   for (unsigned char i = 2; i <= counts.size(); ++i) {
     std::stringstream assembled;
     assembled << file_prefix << static_cast<unsigned int>(i) << "_merged";
-    inputs[i-2].Init(assembled.str(), i * sizeof(WordIndex) + (order == counts.size() ? sizeof(Prob) : sizeof(ProbBackoff)));
-    RemoveOrThrow(assembled.str().c_str());
+    inputs[i-2].Init(assembled.str(), i * sizeof(WordIndex) + (i == counts.size() ? sizeof(Prob) : sizeof(ProbBackoff)));
+    util::RemoveOrThrow(assembled.str().c_str());
     assembled << kContextSuffix;
     contexts[i-2].Init(assembled.str(), (i-1) * sizeof(WordIndex));
-    RemoveOrThrow(assembled.str().c_str());
+    util::RemoveOrThrow(assembled.str().c_str());
   }
 
   std::vector<uint64_t> fixed_counts(counts.size());
@@ -265,7 +267,7 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
     RecursiveInsert(counts.size(), counts[0], inputs, config.messages, "Identifying n-grams omitted by SRI", counter);
   }
   for (const RecordReader *i = inputs; i != inputs + counts.size() - 2; ++i) {
-    if (!i->Ended()) UTIL_THROW(FormatLoadException, "There's a bug in the trie implementation: the " << (i - inputs + 2) << "-gram table did not complete reading");
+    if (*i) UTIL_THROW(FormatLoadException, "There's a bug in the trie implementation: the " << (i - inputs + 2) << "-gram table did not complete reading");
   }
   SanityCheckCounts(counts, fixed_counts);
   counts = fixed_counts;
@@ -293,12 +295,12 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
     util::scoped_FILE file(OpenOrThrow(name.c_str(), "r"));
     for (WordIndex i = 0; i < counts[0]; ++i) {
       ReadOrThrow(file.get(), &unigrams[i].weights, sizeof(ProbBackoff));
-      if (contexts[0] && **contexts[0] == i) {
+      if (contexts[0] && *reinterpret_cast<const WordIndex*>(contexts[0].Data()) == i) {
         SetExtension(unigrams[i].weights.backoff);
         ++contexts[0];
       }
     }
-    RemoveOrThrow(name.c_str());
+    util::RemoveOrThrow(name.c_str());
   } catch (util::Exception &e) {
     e << " while re-reading unigram probabilities";
     throw;
@@ -312,11 +314,12 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
 
   // Do not disable this error message or else too little state will be returned.  Both WriteEntries::Middle and returning state based on found n-grams will need to be fixed to handle this situation.   
   for (unsigned char order = 2; order <= counts.size(); ++order) {
-    const ContextReader &context = contexts[order - 2];
+    const RecordReader &context = contexts[order - 2];
     if (context) {
       FormatLoadException e;
       e << "An " << static_cast<unsigned int>(order) << "-gram has the context (i.e. all but the last word):";
-      for (const WordIndex *i = *context; i != *context + order - 1; ++i) {
+      const WordIndex *ctx = reinterpret_cast<const WordIndex*>(context.Data());
+      for (const WordIndex *i = ctx; i != ctx + order - 1; ++i) {
         e << ' ' << *i;
       }
       e << " so this context must appear in the model as a " << static_cast<unsigned int>(order - 1) << "-gram but it does not";
