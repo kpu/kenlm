@@ -7,8 +7,8 @@
 #include "lm/lm_exception.hh"
 #include "lm/max_order.hh"
 #include "lm/quantize.hh"
-#include "lm/read_arpa.hh"
 #include "lm/trie.hh"
+#include "lm/trie_sort.hh"
 #include "lm/vocab.hh"
 #include "lm/weights.hh"
 #include "lm/word_index.hh"
@@ -20,10 +20,9 @@
 #include "util/scoped.hh"
 
 #include <algorithm>
-#include <cmath>
 #include <cstring>
 #include <cstdio>
-#include <deque>
+#include <queue>
 #include <limits>
 #include <numeric>
 #include <vector>
@@ -31,483 +30,33 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <unistd.h>
 
 namespace lm {
 namespace ngram {
 namespace trie {
 namespace {
 
-class EntryCompare : public std::binary_function<const void*, const void*, bool> {
-  public:
-    explicit EntryCompare(unsigned char order) : order_(order) {}
-
-    bool operator()(const void *first_void, const void *second_void) const {
-      const WordIndex *first = static_cast<const WordIndex*>(first_void);
-      const WordIndex *second = static_cast<const WordIndex*>(second_void);
-      const WordIndex *end = first + order_;
-      for (; first != end; ++first, ++second) {
-        if (*first < *second) return true;
-        if (*first > *second) return false;
-      }
-      return false;
-    }
-  private:
-    unsigned char order_;
-};
-
-typedef util::SizedIterator NGramIter;
-
-// Proxy for an entry except there is some extra cruft between the entries.  This is used to sort (n-1)-grams using the same memory as the sorted n-grams.  
-class PartialViewProxy {
-  public:
-    PartialViewProxy() : attention_size_(0), inner_() {}
-
-    PartialViewProxy(void *ptr, std::size_t block_size, std::size_t attention_size) : attention_size_(attention_size), inner_(ptr, block_size) {}
-
-    operator std::string() const {
-      return std::string(reinterpret_cast<const char*>(inner_.Data()), attention_size_);
-    }
-
-    PartialViewProxy &operator=(const PartialViewProxy &from) {
-      memcpy(inner_.Data(), from.inner_.Data(), attention_size_);
-      return *this;
-    }
-
-    PartialViewProxy &operator=(const std::string &from) {
-      memcpy(inner_.Data(), from.data(), attention_size_);
-      return *this;
-    }
-
-    const void *Data() const { return inner_.Data(); }
-    void *Data() { return inner_.Data(); }
-
-  private:
-    friend class util::ProxyIterator<PartialViewProxy>;
-
-    typedef std::string value_type;
-
-    const std::size_t attention_size_;
-
-    typedef util::SizedInnerIterator InnerIterator;
-    InnerIterator &Inner() { return inner_; }
-    const InnerIterator &Inner() const { return inner_; } 
-    InnerIterator inner_;
-};
-
-typedef util::ProxyIterator<PartialViewProxy> PartialIter;
-
-FILE *OpenOrThrow(const char *name, const char *mode) {
-  FILE *ret = fopen(name, mode);
-  if (!ret) UTIL_THROW(util::ErrnoException, "Could not open " << name << " for " << mode);
-  return ret;
-}
-
-void WriteOrThrow(FILE *to, const void *data, size_t size) {
-  assert(size);
-  if (1 != std::fwrite(data, size, 1, to)) UTIL_THROW(util::ErrnoException, "Short write; requested size " << size);
-}
-
-void ReadOrThrow(FILE *from, void *data, size_t size) {
-  if (1 != std::fread(data, size, 1, from)) UTIL_THROW(util::ErrnoException, "Short read; requested size " << size);
-}
-
-const std::size_t kCopyBufSize = 512;
-void CopyOrThrow(FILE *from, FILE *to, size_t size) {
-  char buf[std::min<size_t>(size, kCopyBufSize)];
-  for (size_t i = 0; i < size; i += kCopyBufSize) {
-    std::size_t amount = std::min(size - i, kCopyBufSize);
-    ReadOrThrow(from, buf, amount);
-    WriteOrThrow(to, buf, amount);
-  }
-}
-
-void CopyRestOrThrow(FILE *from, FILE *to) {
-  char buf[kCopyBufSize];
-  size_t amount;
-  while ((amount = fread(buf, 1, kCopyBufSize, from))) {
-    WriteOrThrow(to, buf, amount);
-  }
-  if (!feof(from)) UTIL_THROW(util::ErrnoException, "Short read");
-}
-
-void RemoveOrThrow(const char *name) {
-  if (std::remove(name)) UTIL_THROW(util::ErrnoException, "Could not remove " << name);
-}
-
-std::string DiskFlush(const void *mem_begin, const void *mem_end, const std::string &file_prefix, std::size_t batch, unsigned char order, std::size_t weights_size) {
-  const std::size_t entry_size = sizeof(WordIndex) * order + weights_size;
-  const std::size_t prefix_size = sizeof(WordIndex) * (order - 1);
-  std::stringstream assembled;
-  assembled << file_prefix << static_cast<unsigned int>(order) << '_' << batch;
-  std::string ret(assembled.str());
-  util::scoped_FILE out(OpenOrThrow(ret.c_str(), "w"));
-  // Compress entries that being with the same (order-1) words.
-  for (const uint8_t *group_begin = static_cast<const uint8_t*>(mem_begin); group_begin != static_cast<const uint8_t*>(mem_end);) {
-    const uint8_t *group_end;
-    for (group_end = group_begin + entry_size;
-         (group_end != static_cast<const uint8_t*>(mem_end)) && !memcmp(group_begin, group_end, prefix_size);
-         group_end += entry_size) {}
-    WriteOrThrow(out.get(), group_begin, prefix_size);
-    WordIndex group_size = (group_end - group_begin) / entry_size;
-    WriteOrThrow(out.get(), &group_size, sizeof(group_size));
-    for (const uint8_t *i = group_begin; i != group_end; i += entry_size) {
-      WriteOrThrow(out.get(), i + prefix_size, sizeof(WordIndex));
-      WriteOrThrow(out.get(), i + sizeof(WordIndex) * order, weights_size);
-    }
-    group_begin = group_end;
-  }
-  return ret;
-}
-
-class SortedFileReader {
-  public:
-    SortedFileReader() : ended_(false) {}
-
-    void Init(const std::string &name, unsigned char order) {
-      file_.reset(OpenOrThrow(name.c_str(), "r"));
-      header_.resize(order - 1);
-      NextHeader();
-    }
-
-    // Preceding words.
-    const WordIndex *Header() const {
-      return &*header_.begin();
-    }
-    const std::vector<WordIndex> &HeaderVector() const { return header_;} 
-
-    std::size_t HeaderBytes() const { return header_.size() * sizeof(WordIndex); }
-
-    void NextHeader() {
-      if (1 != fread(&*header_.begin(), HeaderBytes(), 1, file_.get())) {
-        if (feof(file_.get())) {
-          ended_ = true;
-        } else {
-          UTIL_THROW(util::ErrnoException, "Short read of counts");
-        }
-      }
-    }
-
-    WordIndex ReadCount() {
-      WordIndex ret;
-      ReadOrThrow(file_.get(), &ret, sizeof(WordIndex));
-      return ret;
-    }
-
-    WordIndex ReadWord() {
-      WordIndex ret;
-      ReadOrThrow(file_.get(), &ret, sizeof(WordIndex));
-      return ret;
-    }
-
-    template <class Weights> void ReadWeights(Weights &weights) {
-      ReadOrThrow(file_.get(), &weights, sizeof(Weights));
-    }
-
-    bool Ended() const {
-      return ended_;
-    }
-
-    void Rewind() {
-      rewind(file_.get());
-      ended_ = false;
-      NextHeader();
-    }
-
-    FILE *File() { return file_.get(); }
-
-  private:
-    util::scoped_FILE file_;
-
-    std::vector<WordIndex> header_;
-
-    bool ended_;
-};
-
-void CopyFullRecord(SortedFileReader &from, FILE *to, std::size_t weights_size) {
-  WriteOrThrow(to, from.Header(), from.HeaderBytes());
-  WordIndex count = from.ReadCount();
-  WriteOrThrow(to, &count, sizeof(WordIndex));
-
-  CopyOrThrow(from.File(), to, (weights_size + sizeof(WordIndex)) * count);
-}
-
-void MergeSortedFiles(const std::string &first_name, const std::string &second_name, const std::string &out, std::size_t weights_size, unsigned char order) {
-  SortedFileReader first, second;
-  first.Init(first_name.c_str(), order);
-  RemoveOrThrow(first_name.c_str());
-  second.Init(second_name.c_str(), order);
-  RemoveOrThrow(second_name.c_str());
-  util::scoped_FILE out_file(OpenOrThrow(out.c_str(), "w"));
-  while (!first.Ended() && !second.Ended()) {
-    if (first.HeaderVector() < second.HeaderVector()) {
-      CopyFullRecord(first, out_file.get(), weights_size);
-      first.NextHeader();
-      continue;
-    } 
-    if (first.HeaderVector() > second.HeaderVector()) {
-      CopyFullRecord(second, out_file.get(), weights_size);
-      second.NextHeader();
-      continue;
-    }
-    // Merge at the entry level.
-    WriteOrThrow(out_file.get(), first.Header(), first.HeaderBytes());
-    WordIndex first_count = first.ReadCount(), second_count = second.ReadCount();
-    WordIndex total_count = first_count + second_count;
-    WriteOrThrow(out_file.get(), &total_count, sizeof(WordIndex));
-
-    WordIndex first_word = first.ReadWord(), second_word = second.ReadWord();
-    WordIndex first_index = 0, second_index = 0;
-    while (true) {
-      if (first_word < second_word) {
-        WriteOrThrow(out_file.get(), &first_word, sizeof(WordIndex));
-        CopyOrThrow(first.File(), out_file.get(), weights_size);
-        if (++first_index == first_count) break;
-        first_word = first.ReadWord();
-      } else {
-        WriteOrThrow(out_file.get(), &second_word, sizeof(WordIndex));
-        CopyOrThrow(second.File(), out_file.get(), weights_size);
-        if (++second_index == second_count) break;
-        second_word = second.ReadWord();
-      }
-    }
-    if (first_index == first_count) {
-      WriteOrThrow(out_file.get(), &second_word, sizeof(WordIndex));
-      CopyOrThrow(second.File(), out_file.get(), (second_count - second_index) * (weights_size + sizeof(WordIndex)) - sizeof(WordIndex));
-    } else {
-      WriteOrThrow(out_file.get(), &first_word, sizeof(WordIndex));
-      CopyOrThrow(first.File(), out_file.get(), (first_count - first_index) * (weights_size + sizeof(WordIndex)) - sizeof(WordIndex));
-    }
-    first.NextHeader();
-    second.NextHeader();
-  }
-
-  for (SortedFileReader &remaining = first.Ended() ? second : first; !remaining.Ended(); remaining.NextHeader()) {
-    CopyFullRecord(remaining, out_file.get(), weights_size);
-  }
-}
-
-const char *kContextSuffix = "_contexts";
-
-void WriteContextFile(uint8_t *begin, uint8_t *end, const std::string &ngram_file_name, std::size_t entry_size, unsigned char order) {
-  const size_t context_size = sizeof(WordIndex) * (order - 1);
-  // Sort just the contexts using the same memory.  
-  PartialIter context_begin(PartialViewProxy(begin + sizeof(WordIndex), entry_size, context_size));
-  PartialIter context_end(PartialViewProxy(end + sizeof(WordIndex), entry_size, context_size));
-
-  std::sort(context_begin, context_end, util::SizedCompare<EntryCompare, PartialViewProxy>(EntryCompare(order - 1)));
-
-  std::string name(ngram_file_name + kContextSuffix);
-  util::scoped_FILE out(OpenOrThrow(name.c_str(), "w"));
-
-  // Write out to file and uniqueify at the same time.  Could have used unique_copy if there was an appropriate OutputIterator.  
-  if (context_begin == context_end) return;
-  PartialIter i(context_begin);
-  WriteOrThrow(out.get(), i->Data(), context_size);
-  const void *previous = i->Data();
-  ++i;
-  for (; i != context_end; ++i) {
-    if (memcmp(previous, i->Data(), context_size)) {
-      WriteOrThrow(out.get(), i->Data(), context_size);
-      previous = i->Data();
-    }
-  }
-}
-
-class ContextReader {
-  public:
-    ContextReader() : valid_(false) {}
-
-    ContextReader(const char *name, unsigned char order) {
-      Reset(name, order);
-    }
-
-    void Reset(const char *name, unsigned char order) {
-      file_.reset(OpenOrThrow(name, "r"));
-      length_ = sizeof(WordIndex) * static_cast<size_t>(order);
-      words_.resize(order);
-      valid_ = true;
-      ++*this;
-    }
-
-    ContextReader &operator++() {
-      if (1 != fread(&*words_.begin(), length_, 1, file_.get())) {
-        if (!feof(file_.get()))
-          UTIL_THROW(util::ErrnoException, "Short read");
-        valid_ = false;
-      }
-      return *this;
-    }
-
-    const WordIndex *operator*() const { return &*words_.begin(); }
-
-    operator bool() const { return valid_; }
-
-    FILE *GetFile() { return file_.get(); }
-
-  private:
-    util::scoped_FILE file_;
-
-    size_t length_;
-
-    std::vector<WordIndex> words_;
-
-    bool valid_;
-};
-
-void MergeContextFiles(const std::string &first_base, const std::string &second_base, const std::string &out_base, unsigned char order) {
-  const size_t context_size = sizeof(WordIndex) * (order - 1);
-  std::string first_name(first_base + kContextSuffix);
-  std::string second_name(second_base + kContextSuffix);
-  ContextReader first(first_name.c_str(), order - 1), second(second_name.c_str(), order - 1);
-  RemoveOrThrow(first_name.c_str());
-  RemoveOrThrow(second_name.c_str());
-  std::string out_name(out_base + kContextSuffix);
-  util::scoped_FILE out(OpenOrThrow(out_name.c_str(), "w"));
-  while (first && second) {
-    for (const WordIndex *f = *first, *s = *second; ; ++f, ++s) {
-      if (f == *first + order - 1) {
-        // Equal.  
-        WriteOrThrow(out.get(), *first, context_size);
-        ++first;
-        ++second;
-        break;
-      }
-      if (*f < *s) {
-        // First lower
-        WriteOrThrow(out.get(), *first, context_size);
-        ++first;
-        break;
-      } else if (*f > *s) {
-        WriteOrThrow(out.get(), *second, context_size);
-        ++second;
-        break;
-      }
-    }
-  }
-  ContextReader &remaining = first ? first : second;
-  if (!remaining) return;
-  WriteOrThrow(out.get(), *remaining, context_size);
-  CopyRestOrThrow(remaining.GetFile(), out.get());
-}
-
-void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, util::scoped_memory &mem, const std::string &file_prefix, unsigned char order, PositiveProbWarn &warn) {
-  ReadNGramHeader(f, order);
-  const size_t count = counts[order - 1];
-  // Size of weights.  Does it include backoff?  
-  const size_t words_size = sizeof(WordIndex) * order;
-  const size_t weights_size = sizeof(float) + ((order == counts.size()) ? 0 : sizeof(float));
-  const size_t entry_size = words_size + weights_size;
-  const size_t batch_size = std::min(count, mem.size() / entry_size);
-  uint8_t *const begin = reinterpret_cast<uint8_t*>(mem.get());
-  std::deque<std::string> files;
-  for (std::size_t batch = 0, done = 0; done < count; ++batch) {
-    uint8_t *out = begin;
-    uint8_t *out_end = out + std::min(count - done, batch_size) * entry_size;
-    if (order == counts.size()) {
-      for (; out != out_end; out += entry_size) {
-        ReadNGram(f, order, vocab, reinterpret_cast<WordIndex*>(out), *reinterpret_cast<Prob*>(out + words_size), warn);
-      }
-    } else {
-      for (; out != out_end; out += entry_size) {
-        ReadNGram(f, order, vocab, reinterpret_cast<WordIndex*>(out), *reinterpret_cast<ProbBackoff*>(out + words_size), warn);
-      }
-    }
-    // Sort full records by full n-gram.  
-    util::SizedProxy proxy_begin(begin, entry_size), proxy_end(out_end, entry_size);
-    // parallel_sort uses too much RAM
-    std::sort(NGramIter(proxy_begin), NGramIter(proxy_end), util::SizedCompare<EntryCompare>(EntryCompare(order)));
-    files.push_back(DiskFlush(begin, out_end, file_prefix, batch, order, weights_size));
-    WriteContextFile(begin, out_end, files.back(), entry_size, order);
-
-    done += (out_end - begin) / entry_size;
-  }
-
-  // All individual files created.  Merge them.  
-
-  std::size_t merge_count = 0;
-  while (files.size() > 1) {
-    std::stringstream assembled;
-    assembled << file_prefix << static_cast<unsigned int>(order) << "_merge_" << (merge_count++);
-    files.push_back(assembled.str());
-    MergeSortedFiles(files[0], files[1], files.back(), weights_size, order);
-    MergeContextFiles(files[0], files[1], files.back(), order);
-    files.pop_front();
-    files.pop_front();
-  }
-  if (!files.empty()) {
-    std::stringstream assembled;
-    assembled << file_prefix << static_cast<unsigned int>(order) << "_merged";
-    std::string merged_name(assembled.str());
-    if (std::rename(files[0].c_str(), merged_name.c_str())) UTIL_THROW(util::ErrnoException, "Could not rename " << files[0].c_str() << " to " << merged_name.c_str());
-    std::string context_name = files[0] + kContextSuffix;
-    merged_name += kContextSuffix;
-    if (std::rename(context_name.c_str(), merged_name.c_str())) UTIL_THROW(util::ErrnoException, "Could not rename " << context_name << " to " << merged_name.c_str());
-  }
-}
-
-void ARPAToSortedFiles(const Config &config, util::FilePiece &f, std::vector<uint64_t> &counts, size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab) {
-  PositiveProbWarn warn(config.positive_log_probability);
-  {
-    std::string unigram_name = file_prefix + "unigrams";
-    util::scoped_fd unigram_file;
-    // In case <unk> appears.  
-    size_t file_out = (counts[0] + 1) * sizeof(ProbBackoff);
-    util::scoped_mmap unigram_mmap(util::MapZeroedWrite(unigram_name.c_str(), file_out, unigram_file), file_out);
-    Read1Grams(f, counts[0], vocab, reinterpret_cast<ProbBackoff*>(unigram_mmap.get()), warn);
-    CheckSpecials(config, vocab);
-    if (!vocab.SawUnk()) ++counts[0];
-  }
-
-  // Only use as much buffer as we need.  
-  size_t buffer_use = 0;
-  for (unsigned int order = 2; order < counts.size(); ++order) {
-    buffer_use = std::max<size_t>(buffer_use, static_cast<size_t>((sizeof(WordIndex) * order + 2 * sizeof(float)) * counts[order - 1]));
-  }
-  buffer_use = std::max<size_t>(buffer_use, static_cast<size_t>((sizeof(WordIndex) * counts.size() + sizeof(float)) * counts.back()));
-  buffer = std::min<size_t>(buffer, buffer_use);
-
-  util::scoped_memory mem;
-  mem.reset(malloc(buffer), buffer, util::scoped_memory::MALLOC_ALLOCATED);
-  if (!mem.get()) UTIL_THROW(util::ErrnoException, "malloc failed for sort buffer size " << buffer);
-
-  for (unsigned char order = 2; order <= counts.size(); ++order) {
-    ConvertToSorted(f, vocab, counts, mem, file_prefix, order, warn);
-  }
-  ReadEnd(f);
-}
-
-bool HeadMatch(const WordIndex *words, const WordIndex *const words_end, const WordIndex *header) {
-  for (; words != words_end; ++words, ++header) {
-    if (*words != *header) {
-      //assert(*words <= *header);
-      return false;
-    }
-  }
-  return true;
-}
-
 // Phase to count n-grams, including blanks inserted because they were pruned but have extensions
 class JustCount {
   public:
-    template <class Middle, class Longest> JustCount(ContextReader * /*contexts*/, UnigramValue * /*unigrams*/, Middle * /*middle*/, Longest &/*longest*/, uint64_t *counts, unsigned char order)
+    JustCount(uint64_t *counts, unsigned char order)
       : counts_(counts), longest_counts_(counts + order - 1) {}
 
-    void Unigrams(WordIndex begin, WordIndex end) {
-      counts_[0] += end - begin;
+    float UnigramProb(WordIndex /*index*/) { return 0.0; }
+
+    void Unigram(WordIndex /*index*/) {
+      ++counts_[0];
     }
 
-    void MiddleBlank(const unsigned char mid_idx, WordIndex /* idx */) {
-      ++counts_[mid_idx + 1];
+    void MiddleBlank(const unsigned char order, WordIndex /* idx */, unsigned char /*lower*/, float /* prob_base */) {
+      ++counts_[order - 1];
     }
 
-    void Middle(const unsigned char mid_idx, const WordIndex * /*before*/, WordIndex /*key*/, const ProbBackoff &/*weights*/) {
-      ++counts_[mid_idx + 1];
+    void Middle(const unsigned char order, const void * /*data*/) {
+      ++counts_[order - 1];
     }
 
-    void Longest(WordIndex /*key*/, Prob /*prob*/) {
+    void Longest(const void * /*data*/) {
       ++*longest_counts_;
     }
 
@@ -523,36 +72,37 @@ class JustCount {
 // Phase to actually write n-grams to the trie.  
 template <class Quant, class Bhiksha> class WriteEntries {
   public:
-    WriteEntries(ContextReader *contexts, UnigramValue *unigrams, BitPackedMiddle<typename Quant::Middle, Bhiksha> *middle, BitPackedLongest<typename Quant::Longest> &longest, const uint64_t * /*counts*/, unsigned char order) : 
+    WriteEntries(RecordReader *contexts, UnigramValue *unigrams, BitPackedMiddle<typename Quant::Middle, Bhiksha> *middle, BitPackedLongest<typename Quant::Longest> &longest, unsigned char order) : 
       contexts_(contexts),
       unigrams_(unigrams),
       middle_(middle),
       longest_(longest), 
-      bigram_pack_((order == 2) ? static_cast<BitPacked&>(longest_) : static_cast<BitPacked&>(*middle_)) {}
+      bigram_pack_((order == 2) ? static_cast<BitPacked&>(longest_) : static_cast<BitPacked&>(*middle_)), order_(order) {}
 
-    void Unigrams(WordIndex begin, WordIndex end) {
-      uint64_t next = bigram_pack_.InsertIndex();
-      for (UnigramValue *i = unigrams_ + begin; i < unigrams_ + end; ++i) {
-        i->next = next;
-      }
+    float UnigramProb(WordIndex index) const { return unigrams_[index].weights.prob; }
+
+    void Unigram(WordIndex word) {
+      unigrams_[word].next = bigram_pack_.InsertIndex();
     }
 
-    void MiddleBlank(const unsigned char mid_idx, WordIndex key) {
-      middle_[mid_idx].Insert(key, kBlankProb, kBlankBackoff);
+    void MiddleBlank(const unsigned char order, WordIndex word, unsigned char lower, float prob_base) {
+      middle_[order - 1].Insert(word, kBlankProb, kBlankBackoff);
     }
 
-    void Middle(const unsigned char mid_idx, const WordIndex *before, WordIndex key, ProbBackoff weights) {
-      // Order (mid_idx+2).  
-      ContextReader &context = contexts_[mid_idx + 1];
-      if (context && !memcmp(before, *context, sizeof(WordIndex) * (mid_idx + 1)) && (*context)[mid_idx + 1] == key) {
+    void Middle(const unsigned char order, const void *data) {
+      RecordReader &context = contexts_[order - 1];
+      const WordIndex *words = reinterpret_cast<const WordIndex*>(data);
+      ProbBackoff weights = *reinterpret_cast<const ProbBackoff*>(words + order);
+      if (context && !memcmp(data, context.Data(), sizeof(WordIndex) * order)) {
         SetExtension(weights.backoff);
         ++context;
       }
-      middle_[mid_idx].Insert(key, weights.prob, weights.backoff);
+      middle_[order - 1].Insert(words[order - 1], weights);
     }
 
-    void Longest(WordIndex key, Prob prob) {
-      longest_.Insert(key, prob.prob);
+    void Longest(const void *data) {
+      const WordIndex *words = reinterpret_cast<const WordIndex*>(data);
+      longest_.Insert(words[order_ - 1], reinterpret_cast<const Prob*>(words + order)->prob);
     }
 
     void Cleanup() {}
@@ -563,122 +113,101 @@ template <class Quant, class Bhiksha> class WriteEntries {
     BitPackedMiddle<typename Quant::Middle, Bhiksha> *const middle_;
     BitPackedLongest<typename Quant::Longest> &longest_;
     BitPacked &bigram_pack_;
+    const unsigned char order_;
 };
 
-template <class Doing> class RecursiveInsert {
+struct Gram {
+  Gram(const WordIndex *in_begin, unsigned char order) : begin(in_begin), end(in_begin + order) {}
+
+  const WordIndex *begin, *end;
+
+  // For queue, this is the direction we want.  
+  bool operator<(const Gram &other) const {
+    return std::lexicographic_compare(other.begin, other.end, begin, end);
+  }
+};
+
+template <class Doing> class BlankManager {
+  private:
+    static float kBadProb = std::numeric_limits<float>::infinity();
+
   public:
-    template <class MiddleT, class LongestT> RecursiveInsert(SortedFileReader *inputs, ContextReader *contexts, UnigramValue *unigrams, MiddleT *middle, LongestT &longest, uint64_t *counts, unsigned char order) : 
-      doing_(contexts, unigrams, middle, longest, counts, order), inputs_(inputs), inputs_end_(inputs + order - 1), order_minus_2_(order - 2) {
+    BlankManager(unsigned char total_order, Doing &doing) : total_order_(total_order), been_length_(0), doing_(doing) {
+      for (float *i = basis_; i != basis_ + kMaxOrder - 1; ++i) *i = kBadProb;
     }
 
-    // Outer unigram loop.
-    void Apply(std::ostream *progress_out, const char *message, WordIndex unigram_count) {
-      util::ErsatzProgress progress(progress_out, message, unigram_count + 1);
-      for (words_[0] = 0; ; ++words_[0]) {
-        progress.Set(words_[0]);
-        WordIndex min_continue = unigram_count;
-        for (SortedFileReader *other = inputs_; other != inputs_end_; ++other) {
-          if (other->Ended()) continue;
-          min_continue = std::min(min_continue, other->Header()[0]);
-        }
-        // This will write at unigram_count.  This is by design so that the next pointers will make sense.  
-        doing_.Unigrams(words_[0], min_continue + 1);
-        if (min_continue == unigram_count) break;
-        words_[0] = min_continue;
-        Middle(0);
+    void Visit(const WordIndex *to, unsigned char length, float prob) {
+      basis_[length - 1] = prob;
+      unsigned char overlap = std::min(length - 1, been_length_);
+      const WordIndex *cur, *pre;
+      for (cur = to, pre = been_; cur != to + overlap; ++cur, ++pre) {
+        if (*pre != *cur) break;
       }
-      doing_.Cleanup();
+      if (cur == to + length - 1) {
+        *pre = *cur;
+        been_length_ = length;
+        return;
+      }
+      // There are blanks to insert starting with order blank.  
+      unsigned char blank = cur - to + 1;
+      const float *lower_basis;
+      for (lower_basis = basis_ + blank - 1; (lower_basis > basis_) && *lower_basis = kBadProb; --lower_basis) {}
+      unsigned char based_on = lower_basis - basis_ + 1;
+      for (; cur != to + length - 1; ++blank, ++cur, ++pre) {
+        doing_.MiddleBlank(blank, *cur, based_on, *lower_basis);
+        *pre = *cur;
+        // Mark that the probability is a blank so it shouldn't be used as the basis for a later n-gram.  
+        basis_[blank - 1] = kBadProb;
+      }
+      been_length_ = length;
     }
 
   private:
-    void Middle(const unsigned char mid_idx) {
-      // (mid_idx + 2)-gram.
-      if (mid_idx == order_minus_2_) {
-        Longest();
-        return;
-      }
-      // Orders [2, order)
+    const unsigned char total_order_;
 
-      SortedFileReader &reader = inputs_[mid_idx];
+    WordIndex been_[kMaxOrder];
+    unsigned char been_length_;
 
-      if (reader.Ended() || !HeadMatch(words_, words_ + mid_idx + 1, reader.Header())) {
-        // This order doesn't have a header match, but longer ones might.  
-        MiddleAllBlank(mid_idx);
-        return;
-      }
-
-      // There is a header match.  
-      WordIndex count = reader.ReadCount();
-      WordIndex current = reader.ReadWord();
-      while (count) {
-        WordIndex min_continue = std::numeric_limits<WordIndex>::max();
-        for (SortedFileReader *other = inputs_ + mid_idx + 1; other < inputs_end_; ++other) {
-          if (!other->Ended() && HeadMatch(words_, words_ + mid_idx + 1, other->Header()))
-            min_continue = std::min(min_continue, other->Header()[mid_idx + 1]);
-        }
-        while (true) {
-          if (current > min_continue) {
-            doing_.MiddleBlank(mid_idx, min_continue);
-            words_[mid_idx + 1] = min_continue;
-            Middle(mid_idx + 1);
-            break;
-          }
-          ProbBackoff weights;
-          reader.ReadWeights(weights);
-          doing_.Middle(mid_idx, words_, current, weights);
-          --count;
-          if (current == min_continue) {
-            words_[mid_idx + 1] = min_continue;
-            Middle(mid_idx + 1);
-            if (count) current = reader.ReadWord();
-            break;
-          }
-          if (!count) break;
-          current = reader.ReadWord();
-        }
-      }
-      // Count is now zero.  Finish off remaining blanks.  
-      MiddleAllBlank(mid_idx);
-      reader.NextHeader();
-    }
-
-    void MiddleAllBlank(const unsigned char mid_idx) {
-      while (true) {
-        WordIndex min_continue = std::numeric_limits<WordIndex>::max();
-        for (SortedFileReader *other = inputs_ + mid_idx + 1; other < inputs_end_; ++other) {
-          if (!other->Ended() && HeadMatch(words_, words_ + mid_idx + 1, other->Header()))
-            min_continue = std::min(min_continue, other->Header()[mid_idx + 1]);
-        }
-        if (min_continue == std::numeric_limits<WordIndex>::max()) return;
-        doing_.MiddleBlank(mid_idx, min_continue);
-        words_[mid_idx + 1] = min_continue;
-        Middle(mid_idx + 1);
-      }
-    }
-
-    void Longest() {
-      SortedFileReader &reader = *(inputs_end_ - 1);
-      if (reader.Ended() || !HeadMatch(words_, words_ + order_minus_2_ + 1, reader.Header())) return;
-      WordIndex count = reader.ReadCount();
-      for (WordIndex i = 0; i < count; ++i) {
-        WordIndex word = reader.ReadWord();
-        Prob prob;
-        reader.ReadWeights(prob);
-        doing_.Longest(word, prob);
-      }
-      reader.NextHeader();
-      return;
-    }
-
-    Doing doing_;
-
-    SortedFileReader *inputs_;
-    SortedFileReader *inputs_end_;
-
-    WordIndex words_[kMaxOrder];
-
-    const unsigned char order_minus_2_;
+    float basis_[kMaxOrder];
+    
+    Doing &doing_;
 };
+
+template <class Doing> void RecursiveInsert(const unsigned char total_order, const WordIndex unigram_count, RecordReader *input, std::ostream *progress_out, const char *message, Doing &out) {
+  util::ErsatzProgress progress(progress_out, message, unigram_count + 1);
+  unsigned int unigram = 0;
+  std::priority_queue<Gram> grams;
+  grams.push(Gram(&unigram, 1));
+  for (unsigned char i = 2; i <= total_order; ++i) {
+    grams.push(Gram(inputs[i-2].Data(), i));
+  }
+
+  BlankManager<Doing> blank(total_order, doing);
+
+  while (true) {
+    Gram top = gram.top();
+    gram.pop();
+    unsigned char order = top.end - top.begin;
+    if (order == 1) {
+      blank.Visit(&unigram, 1, doing_.UnigramProb(unigram));
+      doing_.Unigram(unigram);
+      if (++unigram == unigram_count + 1) break;
+      gram.push(top);
+    } else {
+      if (order == total_order) {
+        blank.Visit(top.begin, order, reinterpret_cast<const Prob*>(top.end)->prob);
+        doing_.Longest(top.begin);
+      } else {
+        blank.Visit(top.begin, order, reinterpret_cast<const ProbBackoff*>(top.end)->prob);
+        doing_.Middle(order, top.begin);
+      }
+      RecordReader &reader = inputs[order - 2];
+      if (++reader) gram.push(top);
+    }
+  }
+  assert(gram.empty());
+}
+
 
 void SanityCheckCounts(const std::vector<uint64_t> &initial, const std::vector<uint64_t> &fixed) {
   if (fixed[0] != initial[0]) UTIL_THROW(util::Exception, "Unigram count should be constant but initial is " << initial[0] << " and recounted is " << fixed[0]);
