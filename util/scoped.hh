@@ -43,7 +43,7 @@ class scoped_malloc {
 
     ~scoped_malloc() { std::free(p_); }
 
-    void reset(void *p) {
+    void reset(void *p = NULL) {
       scoped_malloc other(p_);
       p_ = p;
     }
