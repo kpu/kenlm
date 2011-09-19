@@ -209,7 +209,7 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
 } // namespace
 
 void RecordReader::Init(const std::string &name, std::size_t entry_size) {
-  file_.reset(OpenOrThrow(name.c_str(), "r"));
+  file_.reset(OpenOrThrow(name.c_str(), "r+"));
   data_.reset(malloc(entry_size));
   UTIL_THROW_IF(!data_.get(), util::ErrnoException, "Failed to malloc read buffer");
   remains_ = true;
