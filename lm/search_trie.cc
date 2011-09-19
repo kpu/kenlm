@@ -86,7 +86,7 @@ template <class Quant, class Bhiksha> class WriteEntries {
     }
 
     void MiddleBlank(const unsigned char order, WordIndex word, unsigned char lower, float prob_base) {
-      middle_[order - 1].Insert(word, kBlankProb, kBlankBackoff);
+      middle_[order - 2].Insert(word, kBlankProb, kBlankBackoff);
     }
 
     void Middle(const unsigned char order, const void *data) {
@@ -97,7 +97,7 @@ template <class Quant, class Bhiksha> class WriteEntries {
         SetExtension(weights.backoff);
         ++context;
       }
-      middle_[order - 1].Insert(words[order - 1], weights.prob, weights.backoff);
+      middle_[order - 2].Insert(words[order - 1], weights.prob, weights.backoff);
     }
 
     void Longest(const void *data) {
