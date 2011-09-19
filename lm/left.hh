@@ -61,7 +61,9 @@ template <class M> class RuleScore {
 
     void Terminal(WordIndex word) {
       State copy(out_.right);
-      ProcessRet(model_.FullScore(copy, word, out_.right));
+      FullScoreReturn ret = model_.FullScore(copy, word, out_.right);
+      ProcessRet(ret);
+      if (out_.right.length < copy.length + 1) left_done_ = true;
     }
 
     // Faster version of NonTerminal for the case where the rule begins with a non-terminal.  
@@ -102,7 +104,7 @@ template <class M> class RuleScore {
       unsigned char next_use;
       FullScoreReturn ret;
       ProcessRet(ret = model_.ExtendLeft(out_.right.words, out_.right.words + out_.right.length, out_.right.backoff, in.left.pointers[0], 1, back, next_use));
-      if (ret.ngram_length == 1) {
+      if (!next_use) {
         left_done_ = true;
         out_.right = in.right;
         return;
@@ -110,7 +112,7 @@ template <class M> class RuleScore {
       unsigned char extend_length = 2;
       for (const uint64_t *i = in.left.pointers + 1; i < in.left.pointers + in.left.length; ++i, ++extend_length) {
         ProcessRet(ret = model_.ExtendLeft(out_.right.words, out_.right.words + next_use, back, *i, extend_length, back2, next_use));
-        if (ret.ngram_length == extend_length) {
+        if (!next_use) {
           left_done_ = true;
           out_.right = in.right;
           return;
@@ -126,7 +128,6 @@ template <class M> class RuleScore {
       }
 
       // Right state was minimized, so it's already independent of the new words to the left.  
-      // TODO: This is wrong.  
       if (in.right.length < in.left.length) {
         out_.right = in.right;
         return;

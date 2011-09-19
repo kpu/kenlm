@@ -28,14 +28,13 @@ BOOST_AUTO_TEST_CASE(Short) {
     Term("loin");
     BOOST_CHECK_CLOSE(-1.206319 - 0.3561665, score.Finish(), 0.001);
   }
-  BOOST_CHECK_EQUAL(false, base.full);
+  BOOST_CHECK(base.full);
 //  BOOST_CHECK_CLOSE(-1.206319 - 0.3561665, base.left_est, 0.001);
   BOOST_CHECK_EQUAL(2, base.left.length);
 //  VCheck("more", base.left.words[0]);
 //  VCheck("loin", base.left.words[1]);
   BOOST_CHECK_EQUAL(1, base.right.length);
   VCheck("loin", base.right.words[0]);
-  BOOST_CHECK_EQUAL(false, base.full);
 
   ChartState more_left;
   {
@@ -52,7 +51,7 @@ BOOST_AUTO_TEST_CASE(Short) {
 //  VCheck("loin", more_left.left.words[2]);
   BOOST_CHECK_EQUAL(1, more_left.right.length);
   VCheck("loin", more_left.right.words[0]);
-  BOOST_CHECK_EQUAL(false, more_left.full);
+  BOOST_CHECK(more_left.full);
 
   ChartState shorter;
   {
