@@ -21,7 +21,9 @@ struct Left {
     if (length != other.length) {
       return (int)length - (int)other.length;
     }
-    return pointers[length - 1] - other.pointers[length - 1];
+    if (pointers[length - 1] > other.pointers[length - 1]) return 1;
+    if (pointers[length - 1] < other.pointers[length - 1]) return -1;
+    return 0;
   }
 
   uint64_t pointers[kMaxOrder - 1];
@@ -63,7 +65,7 @@ template <class M> class RuleScore {
       State copy(out_.right);
       FullScoreReturn ret = model_.FullScore(copy, word, out_.right);
       ProcessRet(ret);
-      if (out_.right.length < copy.length + 1) left_done_ = true;
+      if (out_.right.length != copy.length + 1) left_done_ = true;
     }
 
     // Faster version of NonTerminal for the case where the rule begins with a non-terminal.  
