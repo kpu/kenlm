@@ -180,7 +180,7 @@ template <class Doing> void RecursiveInsert(const unsigned char total_order, con
   std::priority_queue<Gram> grams;
   grams.push(Gram(&unigram, 1));
   for (unsigned char i = 2; i <= total_order; ++i) {
-    grams.push(Gram(reinterpret_cast<const WordIndex*>(input[i-2].Data()), i));
+    if (input[i-2]) grams.push(Gram(reinterpret_cast<const WordIndex*>(input[i-2].Data()), i));
   }
 
   BlankManager<Doing> blank(total_order, doing);

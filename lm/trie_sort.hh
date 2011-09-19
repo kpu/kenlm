@@ -61,7 +61,11 @@ class RecordReader {
 
     operator bool() const { return remains_; }
 
-    void Rewind() { rewind(file_.get()); ++*this; }
+    void Rewind() {
+      rewind(file_.get());
+      remains_ = true;
+      ++*this;
+    }
 
     std::size_t EntrySize() const { return entry_size_; }
 
