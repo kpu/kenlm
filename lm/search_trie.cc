@@ -1,8 +1,8 @@
 /* This is where the trie is built.  It's on-disk.  */
 #include "lm/search_trie.hh"
 
-#include "lm/binary_format.hh"
 #include "lm/bhiksha.hh"
+#include "lm/binary_format.hh"
 #include "lm/blank.hh"
 #include "lm/lm_exception.hh"
 #include "lm/max_order.hh"
@@ -13,11 +13,9 @@
 #include "lm/weights.hh"
 #include "lm/word_index.hh"
 #include "util/ersatz_progress.hh"
-#include "util/file_piece.hh"
-#include "util/have.hh"
 #include "util/proxy_iterator.hh"
-#include "util/sized_iterator.hh"
 #include "util/scoped.hh"
+#include "util/sized_iterator.hh"
 
 #include <algorithm>
 #include <cstring>
@@ -36,11 +34,63 @@ namespace ngram {
 namespace trie {
 namespace {
 
-// Phase to count n-grams, including blanks inserted because they were pruned but have extensions
-class JustCount {
+// Array of n-grams and float indices.  
+class BackoffMessages {
   public:
-    JustCount(uint64_t *counts, unsigned char order)
-      : counts_(counts), longest_counts_(counts + order - 1) {}
+    void Init(std::size_t entry_size) {
+      current_ = NULL;
+      allocated_ = NULL;
+      entry_size_ = entry_size;
+    }
+
+    void Add(const WordIndex *to, uint64_t index) {
+      while (current_ + entry_size_ > allocated_) {
+        std::size_t allocated_size = allocated_ - (uint8_t*)backing_.get();
+        Resize(std::max<std::size_t>(allocated_size * 2, entry_size_));
+      }
+      memcpy(current_, to, entry_size_ - sizeof(uint64_t));
+      *reinterpret_cast<uint64_t*>(current_ + entry_size_ - sizeof(uint64_t)) = index;
+      current_ += entry_size_;
+    }
+
+  private:
+    void Resize(std::size_t to) {
+      std::size_t current = current_ - (uint8_t*)backing_.get();
+      backing_.call_realloc(to);
+      current_ = (uint8_t*)backing_.get() + current;
+      allocated_ = (uint8_t*)backing_.get() + to;
+    }
+
+    util::scoped_malloc backing_;
+
+    uint8_t *current_, *allocated_;
+
+    std::size_t entry_size_;
+};
+
+class SRISucks {
+  public:
+    SRISucks() {
+      for (BackoffMessages *i = messages_; i != messages_ + kMaxOrder - 1; ++i)
+        i->Init(sizeof(uint64_t) + sizeof(WordIndex) * (i - messages_ + 1));
+    }
+
+    void Send(unsigned char begin, unsigned char end, const WordIndex *to) {
+      for (unsigned char i = begin; i < end; ++i) {
+        messages_[i - 1].Add(to, values_.size());
+      }
+      values_.resize(values_.size() + 1);
+    }
+
+  private:
+    std::vector<float> values_;
+    BackoffMessages messages_[kMaxOrder - 1];
+};
+
+class FindBlanks {
+  public:
+    FindBlanks(uint64_t *counts, unsigned char order, SRISucks &messages)
+      : counts_(counts), longest_counts_(counts + order - 1), sri_(messages) {}
 
     float UnigramProb(WordIndex /*index*/) { return 0.0; }
 
@@ -48,7 +98,8 @@ class JustCount {
       ++counts_[0];
     }
 
-    void MiddleBlank(const unsigned char order, WordIndex /* idx */, unsigned char /*lower*/, float /* prob_base */) {
+    void MiddleBlank(const unsigned char order, const WordIndex *indices, unsigned char lower, float /* prob_base */) {
+      sri_.Send(lower, order, indices + 1);
       ++counts_[order - 1];
     }
 
@@ -67,6 +118,8 @@ class JustCount {
 
   private:
     uint64_t *const counts_, *const longest_counts_;
+
+    SRISucks &sri_;
 };
 
 // Phase to actually write n-grams to the trie.  
@@ -85,8 +138,8 @@ template <class Quant, class Bhiksha> class WriteEntries {
       unigrams_[word].next = bigram_pack_.InsertIndex();
     }
 
-    void MiddleBlank(const unsigned char order, WordIndex word, unsigned char lower, float prob_base) {
-      middle_[order - 2].Insert(word, kBlankProb, kBlankBackoff);
+    void MiddleBlank(const unsigned char order, const WordIndex *indices, unsigned char lower, float prob_base) {
+      middle_[order - 2].Insert(indices[order - 1], kBlankProb, kBlankBackoff);
     }
 
     void Middle(const unsigned char order, const void *data) {
@@ -155,7 +208,7 @@ template <class Doing> class BlankManager {
       for (lower_basis = basis_ + blank - 1; (lower_basis > basis_) && *lower_basis == kBadProb; --lower_basis) {}
       unsigned char based_on = lower_basis - basis_ + 1;
       for (; cur != to + length - 1; ++blank, ++cur, ++pre) {
-        doing_.MiddleBlank(blank, *cur, based_on, *lower_basis);
+        doing_.MiddleBlank(blank, to, based_on, *lower_basis);
         *pre = *cur;
         // Mark that the probability is a blank so it shouldn't be used as the basis for a later n-gram.  
         basis_[blank - 1] = kBadProb;
@@ -265,7 +318,6 @@ void PopulateUnigramWeights(const std::string &file_prefix, WordIndex unigram_co
     e << " while re-reading unigram probabilities";
     throw;
   }
-
 }
 
 } // namespace
@@ -284,10 +336,11 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
     util::RemoveOrThrow(assembled.str().c_str());
   }
 
+  SRISucks sri;
   std::vector<uint64_t> fixed_counts(counts.size());
   {
-    JustCount counter(&*fixed_counts.begin(), counts.size());
-    RecursiveInsert(counts.size(), counts[0], inputs, config.messages, "Identifying n-grams omitted by SRI", counter);
+    FindBlanks finder(&*fixed_counts.begin(), counts.size(), sri);
+    RecursiveInsert(counts.size(), counts[0], inputs, config.messages, "Identifying n-grams omitted by SRI", finder);
   }
   for (const RecordReader *i = inputs; i != inputs + counts.size() - 2; ++i) {
     if (*i) UTIL_THROW(FormatLoadException, "There's a bug in the trie implementation: the " << (i - inputs + 2) << "-gram table did not complete reading");
@@ -324,7 +377,7 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
     const RecordReader &context = contexts[order - 2];
     if (context) {
       FormatLoadException e;
-      e << "An " << static_cast<unsigned int>(order) << "-gram has the context (i.e. all but the last word):";
+      e << "An " << static_cast<unsigned int>(order) << "-gram has context";
       const WordIndex *ctx = reinterpret_cast<const WordIndex*>(context.Data());
       for (const WordIndex *i = ctx; i != ctx + order - 1; ++i) {
         e << ' ' << *i;
