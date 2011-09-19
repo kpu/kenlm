@@ -248,6 +248,26 @@ void ReadOrThrow(FILE *from, void *data, size_t size) {
   UTIL_THROW_IF(1 != std::fread(data, size, 1, from), util::ErrnoException, "Short read");
 }
 
+void PopulateUnigramWeights(const std::string &file_prefix, WordIndex unigram_count, RecordReader &contexts, UnigramValue *unigrams) {
+  // Fill unigram probabilities.  
+  try {
+    std::string name(file_prefix + "unigrams");
+    util::scoped_FILE file(OpenOrThrow(name.c_str(), "r"));
+    for (WordIndex i = 0; i < unigram_count; ++i) {
+      ReadOrThrow(file.get(), &unigrams[i].weights, sizeof(ProbBackoff));
+      if (contexts && *reinterpret_cast<const WordIndex*>(contexts.Data()) == i) {
+        SetExtension(unigrams[i].weights.backoff);
+        ++contexts;
+      }
+    }
+    util::RemoveOrThrow(name.c_str());
+  } catch (util::Exception &e) {
+    e << " while re-reading unigram probabilities";
+    throw;
+  }
+
+}
+
 } // namespace
 
 template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing) {
@@ -291,23 +311,7 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
   }
 
   UnigramValue *unigrams = out.unigram.Raw();
-
-  // Fill unigram probabilities.  
-  try {
-    std::string name(file_prefix + "unigrams");
-    util::scoped_FILE file(OpenOrThrow(name.c_str(), "r"));
-    for (WordIndex i = 0; i < counts[0]; ++i) {
-      ReadOrThrow(file.get(), &unigrams[i].weights, sizeof(ProbBackoff));
-      if (contexts[0] && *reinterpret_cast<const WordIndex*>(contexts[0].Data()) == i) {
-        SetExtension(unigrams[i].weights.backoff);
-        ++contexts[0];
-      }
-    }
-    util::RemoveOrThrow(name.c_str());
-  } catch (util::Exception &e) {
-    e << " while re-reading unigram probabilities";
-    throw;
-  }
+  PopulateUnigramWeights(file_prefix, counts[0], contexts[0], unigrams);
 
   // Fill entries except unigram probabilities.  
   {
