@@ -35,15 +35,15 @@ template <class T, class R, R (*Free)(T*)> class scoped_thing {
     scoped_thing &operator=(const scoped_thing &);
 };
 
-template <class T> class scoped_malloc {
+class scoped_malloc {
   public:
     scoped_malloc() : p_(NULL) {}
 
-    scoped_malloc(T *p) : p_(p) {}
+    scoped_malloc(void *p) : p_(p) {}
 
     ~scoped_malloc() { std::free(p_); }
 
-    void reset(T *p) {
+    void reset(void *p) {
       scoped_malloc other(p_);
       p_ = p;
     }
@@ -54,16 +54,11 @@ template <class T> class scoped_malloc {
       p_ = ret;
     }
 
-    T &operator*() { return *p_; }
-    const T &operator*() const { return *p_; }
-    T &operator->() { return *p_; }
-    const T&operator->() const { return *p_; }
-
-    T *get() { return p_; }
-    const T *get() const { return p_; }
+    void *get() { return p_; }
+    const void *get() const { return p_; }
 
   private:
-    T *p_;
+    void *p_;
 
     scoped_malloc(const scoped_malloc &);
     scoped_malloc &operator=(const scoped_malloc &);

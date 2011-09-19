@@ -3,6 +3,7 @@
 #include "util/exception.hh"
 
 #include <cstdlib>
+#include <cstdio>
 #include <iostream>
 
 #include <sys/types.h>
@@ -33,6 +34,12 @@ int OpenReadOrThrow(const char *name) {
   return ret;
 }
 
+int CreateOrThrow(const char *name) {
+  int ret;
+  UTIL_THROW_IF(-1 == (ret = open(name, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR)), ErrnoException, "while creating " << name);
+  return ret;
+}
+
 off_t SizeFile(int fd) {
   struct stat sb;
   if (fstat(fd, &sb) == -1 || (!sb.st_size && !S_ISREG(sb.st_mode))) return kBadSize;
@@ -58,6 +65,10 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
     data += ret;
     size -= ret;
   }
+}
+
+void RemoveOrThrow(const char *name) {
+  UTIL_THROW_IF(std::remove(name), util::ErrnoException, "Could not remove " << name);
 }
 
 } // namespace util
