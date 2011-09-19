@@ -309,7 +309,7 @@ template <class ModelT> void LoadingTest() {
     config.enumerate_vocab = &enumerate;
     ModelT m("test.arpa", config);
     enumerate.Check(m.GetVocabulary());
-    BOOST_CHECK_EQUAL(37, m.GetVocabulary().Bound());
+    BOOST_CHECK_EQUAL((WordIndex)37, m.GetVocabulary().Bound());
     Everything(m);
   }
   {
@@ -317,7 +317,7 @@ template <class ModelT> void LoadingTest() {
     config.enumerate_vocab = &enumerate;
     ModelT m("test_nounk.arpa", config);
     enumerate.Check(m.GetVocabulary());
-    BOOST_CHECK_EQUAL(37, m.GetVocabulary().Bound());
+    BOOST_CHECK_EQUAL((WordIndex)37, m.GetVocabulary().Bound());
     NoUnkCheck(m);
   }
 }
