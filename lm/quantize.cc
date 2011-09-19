@@ -71,8 +71,7 @@ void SeparatelyQuantize::Train(uint8_t order, std::vector<float> &prob, std::vec
 
 void SeparatelyQuantize::TrainProb(uint8_t order, std::vector<float> &prob) {
   float *centers = start_ + TableStart(order);
-  *(centers++) = kBlankProb;
-  MakeBins(&*prob.begin(), &*prob.end(), centers, (1ULL << prob_bits_) - 1);
+  MakeBins(&*prob.begin(), &*prob.end(), centers, (1ULL << prob_bits_));
 }
 
 void SeparatelyQuantize::FinishedLoading(const Config &config) {

@@ -80,7 +80,7 @@ class SeparatelyQuantize {
         Bins(uint8_t bits, const float *const begin) : begin_(begin), end_(begin_ + (1ULL << bits)), bits_(bits), mask_((1ULL << bits) - 1) {}
 
         uint64_t EncodeProb(float value) const {
-          return(value == kBlankProb ? kBlankProbQuant : Encode(value, 1));
+          return Encode(value, 0);
         }
 
         uint64_t EncodeBackoff(float value) const {
