@@ -2,6 +2,7 @@
 #define UTIL_FILE__
 
 #include <cstdio>
+#include <unistd.h>
 
 namespace util {
 
