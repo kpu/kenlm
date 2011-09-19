@@ -23,6 +23,10 @@ class Config;
 
 namespace trie {
 
+extern const char *kContextSuffix;
+FILE *OpenOrThrow(const char *name, const char *mode);
+void WriteOrThrow(FILE *to, const void *data, size_t size);
+
 class EntryCompare : public std::binary_function<const void*, const void*, bool> {
   public:
     explicit EntryCompare(unsigned char order) : order_(order) {}
@@ -69,6 +73,8 @@ class RecordReader {
 
     std::size_t EntrySize() const { return entry_size_; }
 
+    void Overwrite(const void *start, std::size_t amount);
+
   private:
     util::scoped_malloc data_;
 
@@ -78,10 +84,6 @@ class RecordReader {
 
     util::scoped_FILE file_;
 };
-
-extern const char *kContextSuffix;
-
-FILE *OpenOrThrow(const char *name, const char *mode);
 
 void ARPAToSortedFiles(const Config &config, util::FilePiece &f, std::vector<uint64_t> &counts, size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab);
 

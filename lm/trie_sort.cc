@@ -29,6 +29,12 @@ FILE *OpenOrThrow(const char *name, const char *mode) {
   if (!ret) UTIL_THROW(util::ErrnoException, "Could not open " << name << " for " << mode);
   return ret;
 }
+
+void WriteOrThrow(FILE *to, const void *data, size_t size) {
+  assert(size);
+  if (1 != std::fwrite(data, size, 1, to)) UTIL_THROW(util::ErrnoException, "Short write; requested size " << size);
+}
+
 namespace {
 
 typedef util::SizedIterator NGramIter;
@@ -71,11 +77,6 @@ class PartialViewProxy {
 };
 
 typedef util::ProxyIterator<PartialViewProxy> PartialIter;
-
-void WriteOrThrow(FILE *to, const void *data, size_t size) {
-  assert(size);
-  if (1 != std::fwrite(data, size, 1, to)) UTIL_THROW(util::ErrnoException, "Short write; requested size " << size);
-}
 
 std::string DiskFlush(const void *mem_begin, const void *mem_end, const std::string &file_prefix, std::size_t batch, unsigned char order, std::size_t weights_size) {
   std::stringstream assembled;
@@ -214,6 +215,14 @@ void RecordReader::Init(const std::string &name, std::size_t entry_size) {
   remains_ = true;
   entry_size_ = entry_size;
   ++*this;
+}
+
+void RecordReader::Overwrite(const void *start, std::size_t amount) {
+  long internal = (uint8_t*)start - (uint8_t*)data_.get();
+  UTIL_THROW_IF(fseek(file_.get(), internal - entry_size_, SEEK_CUR), util::ErrnoException, "Couldn't seek backwards for revision");
+  WriteOrThrow(file_.get(), start, amount);
+  long forward = entry_size_ - internal - amount;
+  if (forward) UTIL_THROW_IF(fseek(file_.get(), forward, SEEK_CUR), util::ErrnoException, "Couldn't seek forwards past revision");
 }
 
 void ARPAToSortedFiles(const Config &config, util::FilePiece &f, std::vector<uint64_t> &counts, size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab) {
