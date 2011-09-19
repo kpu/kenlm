@@ -57,16 +57,6 @@ WordIndex ReadWords(int fd, EnumerateVocab *enumerate) {
   }
 }
 
-void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
-  const uint8_t *data = static_cast<const uint8_t*>(data_void);
-  while (size) {
-    ssize_t ret = write(fd, data, size);
-    if (ret < 1) UTIL_THROW(util::ErrnoException, "Write failed");
-    data += ret;
-    size -= ret;
-  }
-}
-
 } // namespace
 
 WriteWordsWrapper::WriteWordsWrapper(EnumerateVocab *inner) : inner_(inner) {}
@@ -81,7 +71,7 @@ void WriteWordsWrapper::Add(WordIndex index, const StringPiece &str) {
 void WriteWordsWrapper::Write(int fd) {
   if ((off_t)-1 == lseek(fd, 0, SEEK_END))
     UTIL_THROW(util::ErrnoException, "Failed to seek in binary to vocab words");
-  WriteOrThrow(fd, buffer_.data(), buffer_.size());
+  util::WriteOrThrow(fd, buffer_.data(), buffer_.size());
 }
 
 SortedVocabulary::SortedVocabulary() : begin_(NULL), end_(NULL), enumerate_(NULL) {}
