@@ -92,11 +92,14 @@ class BackoffMessages {
         const ProbPointer &write_to = *reinterpret_cast<const ProbPointer*>(current_ + sizeof(WordIndex));
         base[write_to.array][write_to.index] += weights.backoff;
       }
+      backing_.reset();
     }
 
     void Apply(float *const *const base, RecordReader &reader) {
       FinishedAdding();
       if (current_ == allocated_) return;
+      // We'll also use the same buffer to record messages to blanks that they extend.  
+      WordIndex *extend_out = reinterpret_cast<WordIndex*>(current_);
       const unsigned char order = (entry_size_ - sizeof(ProbPointer)) / sizeof(WordIndex);
       for (reader.Rewind(); reader && (current_ != allocated_); ) {
         switch (Compare(order, reader.Data(), current_)) {
@@ -104,7 +107,8 @@ class BackoffMessages {
             ++reader;
             break;
           case 1:
-            // Message but nobody to receive it.  
+            // Message but nobody to receive it.  Write it down at the beginning of the buffer so we can inform this blank that it extends.  
+            for (const WordIndex *w = reinterpret_cast<const WordIndex *>(current_); w != reinterpret_cast<const WordIndex *>(current_) + order; ++w, ++extend_out) *extend_out = *w;
             current_ += entry_size_;
             break;
           case 0:
@@ -118,6 +122,28 @@ class BackoffMessages {
             }
             current_ += entry_size_;
             break;
+        }
+      }
+      // Now this is a list of blanks that extend right.  
+      entry_size_ = sizeof(WordIndex) * order;
+      Resize(sizeof(WordIndex) * (extend_out - (const WordIndex*)backing_.get()));
+      current_ = (uint8_t*)backing_.get();
+    }
+
+    // Call after Apply
+    bool Extends(unsigned char order, const WordIndex *words) {
+      if (current_ == allocated_) return false;
+      assert(order * sizeof(WordIndex) == entry_size_);
+      while (true) {
+        switch(Compare(order, words, current_)) {
+          case 1:
+            current_ += entry_size_;
+            if (current_ == allocated_) return false;
+            break;
+          case -1:
+            return false;
+          case 0:
+            return true;
         }
       }
     }
@@ -174,8 +200,12 @@ class SRISucks {
       }
     }
 
-    float GetBlankProb(unsigned char order) {
-      return *(it_[order - 1]++);
+    ProbBackoff GetBlank(unsigned char total_order, unsigned char order, const WordIndex *indices) {
+      assert(order > 1);
+      ProbBackoff ret;
+      ret.prob = *(it_[order - 1]++);
+      ret.backoff = ((order != total_order - 1) && messages_[order - 1].Extends(order, indices)) ? kExtensionBackoff : kNoExtensionBackoff;
+      return ret;
     }
 
     const std::vector<float> &Values(unsigned char order) const {
@@ -248,7 +278,8 @@ template <class Quant, class Bhiksha> class WriteEntries {
     }
 
     void MiddleBlank(const unsigned char order, const WordIndex *indices, unsigned char lower, float prob_base) {
-      middle_[order - 2].Insert(indices[order - 1], sri_.GetBlankProb(order), kBlankBackoff);
+      ProbBackoff weights = sri_.GetBlank(order_, order, indices);
+      middle_[order - 2].Insert(indices[order - 1], weights.prob, weights.backoff);
     }
 
     void Middle(const unsigned char order, const void *data) {
