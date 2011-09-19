@@ -430,7 +430,6 @@ template <class Quant> void TrainProbQuantizer(uint8_t order, uint64_t count, Re
   probs.reserve(count);
   for (reader.Rewind(); reader; ++reader) {
     const Prob &weights = *reinterpret_cast<const Prob*>(reinterpret_cast<const uint8_t*>(reader.Data()) + sizeof(WordIndex) * order);
-    // kBlankProb isn't added yet.  
     probs.push_back(weights.prob);
     ++progress;
   }

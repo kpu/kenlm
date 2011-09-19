@@ -52,7 +52,7 @@ class ActivateUnigram {
 
 template <class Middle> void FixSRI(int lower, float negative_lower_prob, unsigned int n, const uint64_t *keys, const WordIndex *vocab_ids, ProbBackoff *unigrams, std::vector<Middle> &middle) {
   ProbBackoff blank;
-  blank.backoff = kBlankBackoff;
+  blank.backoff = kNoExtensionBackoff;
   // Fix SRI's stupidity. 
   // Note that negative_lower_prob is the negative of the probability (so it's currently >= 0).  We still want the sign bit off to indicate left extension, so I just do -= on the backoffs.  
   blank.prob = negative_lower_prob;

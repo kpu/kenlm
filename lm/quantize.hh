@@ -186,7 +186,7 @@ class SeparatelyQuantize {
     void SetupMemory(void *start, const Config &config);
 
     static const bool kTrain = true;
-    // Assumes kBlankProb is removed from prob and 0.0 is removed from backoff.  
+    // Assumes 0.0 is removed from backoff.  
     void Train(uint8_t order, std::vector<float> &prob, std::vector<float> &backoff);
     // Train just probabilities (for longest order).
     void TrainProb(uint8_t order, std::vector<float> &prob);

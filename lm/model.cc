@@ -176,7 +176,6 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
       return ret;
     }
     if (mid_iter == search_.MiddleEnd()) break;
-    float revert = ret.prob;
     if (ret.independent_left || !search_.LookupMiddle(*mid_iter, *i, *backoff_out, node, ret)) {
       // Didn't match a word. 
       ret.independent_left = true;
@@ -184,12 +183,8 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
       ret.prob -= subtract_me;
       return ret;
     }
-    if (ret.prob == kBlankProb) {
-      ret.prob = revert;
-    } else {
-      ret.ngram_length = mid_iter - search_.MiddleBegin() + 2;
-      if (HasExtension(*backoff_out)) next_use = i - add_rbegin + 1;
-    }
+    ret.ngram_length = mid_iter - search_.MiddleBegin() + 2;
+    if (HasExtension(*backoff_out)) next_use = i - add_rbegin + 1;
   }
 
   if (ret.independent_left || !search_.LookupLongest(*i, ret.prob, node)) {
@@ -251,7 +246,6 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
     if (mid_iter == search_.MiddleEnd()) break;
 
-    float revert = ret.prob;
     if (ret.independent_left || !search_.LookupMiddle(*mid_iter, *hist_iter, *backoff_out, node, ret)) {
       // Didn't find an ngram using hist_iter.  
       CopyRemainingHistory(context_rbegin, out_state);
@@ -259,14 +253,9 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
       ret.independent_left = true;
       return ret;
     }
-    if (ret.prob == kBlankProb) {
-      // It's a blank.  Go back to the old probability.  
-      ret.prob = revert;
-    } else {
-      ret.ngram_length = hist_iter - context_rbegin + 2;
-      if (HasExtension(*backoff_out)) {
-        out_state.length = ret.ngram_length;
-      }
+    ret.ngram_length = hist_iter - context_rbegin + 2;
+    if (HasExtension(*backoff_out)) {
+      out_state.length = ret.ngram_length;
     }
   }
 
