@@ -34,6 +34,20 @@ namespace ngram {
 namespace trie {
 namespace {
 
+void ReadOrThrow(FILE *from, void *data, size_t size) {
+  UTIL_THROW_IF(1 != std::fread(data, size, 1, from), util::ErrnoException, "Short read");
+}
+
+int Compare(unsigned char order, const void *first_void, const void *second_void) {
+  const WordIndex *first = reinterpret_cast<const WordIndex*>(first_void), *second = reinterpret_cast<const WordIndex*>(second_void);
+  const WordIndex *end = first + order;
+  for (; first != end; ++first, ++second) {
+    if (*first < *second) return -1;
+    if (*first > *second) return 1;
+  }
+  return 0;
+}
+
 // Array of n-grams and float indices.  
 class BackoffMessages {
   public:
@@ -53,7 +67,60 @@ class BackoffMessages {
       current_ += entry_size_;
     }
 
+    void Apply(float *base, FILE *unigrams) {
+      FinishedAdding();
+      if (current_ == allocated_) return;
+      rewind(unigrams);
+      ProbBackoff weights;
+      WordIndex unigram = 0;
+      ReadOrThrow(unigrams, &weights, sizeof(weights));
+      for (; current_ != allocated_; current_ += entry_size_) {
+        const WordIndex &cur_word = *reinterpret_cast<const WordIndex*>(current_);
+        for (; unigram < cur_word; ++unigram) {
+          ReadOrThrow(unigrams, &weights, sizeof(weights));
+        }
+        if (!HasExtension(weights.backoff)) {
+          weights.backoff = kExtensionBackoff;
+          UTIL_THROW_IF(fseek(unigrams, -sizeof(weights), SEEK_CUR), util::ErrnoException, "Seeking backwards to denote unigram extension failed.");
+          WriteOrThrow(unigrams, &weights, sizeof(weights));
+        }
+        base[*reinterpret_cast<const uint64_t*>(current_ + sizeof(WordIndex))] += weights.backoff;
+      }
+    }
+
+    void Apply(float *base, RecordReader &reader) {
+      FinishedAdding();
+      if (current_ == allocated_) return;
+      const unsigned char order = (entry_size_ - sizeof(uint64_t)) / sizeof(WordIndex);
+      for (reader.Rewind(); reader && (current_ != allocated_); ) {
+        switch (Compare(order, reader.Data(), current_)) {
+          case -1:
+            ++reader;
+            break;
+          case 1:
+            // Message but nobody to receive it.  
+            current_ += entry_size_;
+            break;
+          case 0:
+            float &backoff = reinterpret_cast<ProbBackoff*>((uint8_t*)reader.Data() + order * sizeof(WordIndex))->backoff;
+            if (!HasExtension(backoff)) {
+              backoff = kExtensionBackoff;
+              reader.Overwrite(&backoff, sizeof(float));
+            } else {
+              base[*reinterpret_cast<const uint64_t*>(current_ + entry_size_ - sizeof(uint64_t))] += backoff;
+            }
+            current_ += entry_size_;
+            break;
+        }
+      }
+    }
+
   private:
+    void FinishedAdding() {
+      Resize(current_ - (uint8_t*)backing_.get());
+      current_ = (uint8_t*)backing_.get();
+    }
+
     void Resize(std::size_t to) {
       std::size_t current = current_ - (uint8_t*)backing_.get();
       backing_.call_realloc(to);
@@ -68,6 +135,8 @@ class BackoffMessages {
     std::size_t entry_size_;
 };
 
+const float kBadProb = std::numeric_limits<float>::infinity();
+
 class SRISucks {
   public:
     SRISucks() {
@@ -75,11 +144,21 @@ class SRISucks {
         i->Init(sizeof(uint64_t) + sizeof(WordIndex) * (i - messages_ + 1));
     }
 
-    void Send(unsigned char begin, unsigned char end, const WordIndex *to) {
+    void Send(unsigned char begin, unsigned char end, const WordIndex *to, float prob_basis) {
+      assert(prob_basis != kBadProb);
       for (unsigned char i = begin; i < end; ++i) {
         messages_[i - 1].Add(to, values_.size());
       }
-      values_.resize(values_.size() + 1);
+      values_.push_back(prob_basis);
+    }
+
+    void ObtainBackoffs(unsigned char total_order, FILE *unigram_file, RecordReader *reader) {
+      messages_[0].Apply(&*values_.begin(), unigram_file);
+      BackoffMessages *messages = messages_ + 1;
+      const RecordReader *end = reader + total_order - 2 /* exclude unigrams and longest order */;
+      for (; reader != end; ++messages, ++reader) {
+        messages->Apply(&*values_.begin(), *reader);
+      }
     }
 
   private:
@@ -89,17 +168,19 @@ class SRISucks {
 
 class FindBlanks {
   public:
-    FindBlanks(uint64_t *counts, unsigned char order, SRISucks &messages)
-      : counts_(counts), longest_counts_(counts + order - 1), sri_(messages) {}
+    FindBlanks(uint64_t *counts, unsigned char order, const ProbBackoff *unigrams, SRISucks &messages)
+      : counts_(counts), longest_counts_(counts + order - 1), unigrams_(unigrams), sri_(messages) {}
 
-    float UnigramProb(WordIndex /*index*/) { return 0.0; }
+    float UnigramProb(WordIndex index) const {
+      return unigrams_[index].prob;
+    }
 
     void Unigram(WordIndex /*index*/) {
       ++counts_[0];
     }
 
-    void MiddleBlank(const unsigned char order, const WordIndex *indices, unsigned char lower, float /* prob_base */) {
-      sri_.Send(lower, order, indices + 1);
+    void MiddleBlank(const unsigned char order, const WordIndex *indices, unsigned char lower, float prob_basis) {
+      sri_.Send(lower, order, indices + 1, prob_basis);
       ++counts_[order - 1];
     }
 
@@ -118,6 +199,8 @@ class FindBlanks {
 
   private:
     uint64_t *const counts_, *const longest_counts_;
+
+    const ProbBackoff *unigrams_;
 
     SRISucks &sri_;
 };
@@ -180,8 +263,6 @@ struct Gram {
   }
 };
 
-const float kBadProb = std::numeric_limits<float>::infinity();
-
 template <class Doing> class BlankManager {
   public:
     BlankManager(unsigned char total_order, Doing &doing) : total_order_(total_order), been_length_(0), doing_(doing) {
@@ -205,9 +286,10 @@ template <class Doing> class BlankManager {
       unsigned char blank = cur - to + 1;
       UTIL_THROW_IF(blank == 1, FormatLoadException, "Missing a unigram that appears as context.");
       const float *lower_basis;
-      for (lower_basis = basis_ + blank - 1; (lower_basis > basis_) && *lower_basis == kBadProb; --lower_basis) {}
+      for (lower_basis = basis_ + blank - 2; *lower_basis == kBadProb; --lower_basis) {}
       unsigned char based_on = lower_basis - basis_ + 1;
       for (; cur != to + length - 1; ++blank, ++cur, ++pre) {
+        assert(*lower_basis != kBadProb);
         doing_.MiddleBlank(blank, to, based_on, *lower_basis);
         *pre = *cur;
         // Mark that the probability is a blank so it shouldn't be used as the basis for a later n-gram.  
@@ -297,23 +379,17 @@ template <class Quant> void TrainProbQuantizer(uint8_t order, uint64_t count, Re
   quant.TrainProb(order, probs);
 }
 
-void ReadOrThrow(FILE *from, void *data, size_t size) {
-  UTIL_THROW_IF(1 != std::fread(data, size, 1, from), util::ErrnoException, "Short read");
-}
-
-void PopulateUnigramWeights(const std::string &file_prefix, WordIndex unigram_count, RecordReader &contexts, UnigramValue *unigrams) {
+void PopulateUnigramWeights(FILE *file, WordIndex unigram_count, RecordReader &contexts, UnigramValue *unigrams) {
   // Fill unigram probabilities.  
   try {
-    std::string name(file_prefix + "unigrams");
-    util::scoped_FILE file(OpenOrThrow(name.c_str(), "r"));
+    rewind(file);
     for (WordIndex i = 0; i < unigram_count; ++i) {
-      ReadOrThrow(file.get(), &unigrams[i].weights, sizeof(ProbBackoff));
+      ReadOrThrow(file, &unigrams[i].weights, sizeof(ProbBackoff));
       if (contexts && *reinterpret_cast<const WordIndex*>(contexts.Data()) == i) {
         SetExtension(unigrams[i].weights.backoff);
         ++contexts;
       }
     }
-    util::RemoveOrThrow(name.c_str());
   } catch (util::Exception &e) {
     e << " while re-reading unigram probabilities";
     throw;
@@ -339,7 +415,11 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
   SRISucks sri;
   std::vector<uint64_t> fixed_counts(counts.size());
   {
-    FindBlanks finder(&*fixed_counts.begin(), counts.size(), sri);
+    std::string temp(file_prefix); temp += "unigrams";
+    util::scoped_fd unigram_file(util::OpenReadOrThrow(temp.c_str()));
+    util::scoped_memory unigrams;
+    MapRead(util::POPULATE_OR_READ, unigram_file.get(), 0, counts[0] * sizeof(ProbBackoff), unigrams);
+    FindBlanks finder(&*fixed_counts.begin(), counts.size(), reinterpret_cast<const ProbBackoff*>(unigrams.get()), sri);
     RecursiveInsert(counts.size(), counts[0], inputs, config.messages, "Identifying n-grams omitted by SRI", finder);
   }
   for (const RecordReader *i = inputs; i != inputs + counts.size() - 2; ++i) {
@@ -348,8 +428,19 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
   SanityCheckCounts(counts, fixed_counts);
   counts = fixed_counts;
 
+  util::scoped_FILE unigram_file;
+  {
+    std::string name(file_prefix + "unigrams");
+    unigram_file.reset(OpenOrThrow(name.c_str(), "r"));
+    util::RemoveOrThrow(name.c_str());
+  }
+  sri.ObtainBackoffs(counts.size(), unigram_file.get(), inputs);
+
   out.SetupMemory(GrowForSearch(config, vocab.UnkCountChangePadding(), TrieSearch<Quant, Bhiksha>::Size(fixed_counts, config), backing), fixed_counts, config);
 
+  for (unsigned char i = 2; i <= counts.size(); ++i) {
+    inputs[i-2].Rewind();
+  }
   if (Quant::kTrain) {
     util::ErsatzProgress progress(config.messages, "Quantizing", std::accumulate(counts.begin() + 1, counts.end(), 0));
     for (unsigned char i = 2; i < counts.size(); ++i) {
@@ -359,13 +450,13 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
     quant.FinishedLoading(config);
   }
 
+  UnigramValue *unigrams = out.unigram.Raw();
+  PopulateUnigramWeights(unigram_file.get(), counts[0], contexts[0], unigrams);
+  unigram_file.reset();
+
   for (unsigned char i = 2; i <= counts.size(); ++i) {
     inputs[i-2].Rewind();
   }
-
-  UnigramValue *unigrams = out.unigram.Raw();
-  PopulateUnigramWeights(file_prefix, counts[0], contexts[0], unigrams);
-
   // Fill entries except unigram probabilities.  
   {
     WriteEntries<Quant, Bhiksha> writer(contexts, unigrams, out.middle_begin_, out.longest, counts.size());
