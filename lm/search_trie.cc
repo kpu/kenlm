@@ -277,7 +277,7 @@ template <class Quant, class Bhiksha> class WriteEntries {
       unigrams_[word].next = bigram_pack_.InsertIndex();
     }
 
-    void MiddleBlank(const unsigned char order, const WordIndex *indices, unsigned char lower, float prob_base) {
+    void MiddleBlank(const unsigned char order, const WordIndex *indices, unsigned char /*lower*/, float /*prob_base*/) {
       ProbBackoff weights = sri_.GetBlank(order_, order, indices);
       middle_[order - 2].Insert(indices[order - 1], weights.prob, weights.backoff);
     }
