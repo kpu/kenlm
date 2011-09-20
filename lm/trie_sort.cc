@@ -78,7 +78,7 @@ class PartialViewProxy {
 
 typedef util::ProxyIterator<PartialViewProxy> PartialIter;
 
-std::string DiskFlush(const void *mem_begin, const void *mem_end, const std::string &file_prefix, std::size_t batch, unsigned char order, std::size_t weights_size) {
+std::string DiskFlush(const void *mem_begin, const void *mem_end, const std::string &file_prefix, std::size_t batch, unsigned char order) {
   std::stringstream assembled;
   assembled << file_prefix << static_cast<unsigned int>(order) << '_' << batch;
   std::string ret(assembled.str());
@@ -113,14 +113,14 @@ void WriteContextFile(uint8_t *begin, uint8_t *end, const std::string &ngram_fil
 }
 
 struct ThrowCombine {
-  void operator()(std::size_t entry_size, const void *first, const void *second, FILE *out) const {
+  void operator()(std::size_t /*entry_size*/, const void * /*first*/, const void * /*second*/, FILE * /*out*/) const {
     UTIL_THROW(FormatLoadException, "Duplicate n-gram detected.");
   }
 };
 
 // Useful for context files that just contain records with no value.  
 struct FirstCombine {
-  void operator()(std::size_t entry_size, const void *first, const void *second, FILE *out) const {
+  void operator()(std::size_t entry_size, const void *first, const void * /*second*/, FILE *out) const {
     WriteOrThrow(out, first, entry_size);
   }
 };
@@ -177,7 +177,7 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
     util::SizedProxy proxy_begin(begin, entry_size), proxy_end(out_end, entry_size);
     // parallel_sort uses too much RAM
     std::sort(NGramIter(proxy_begin), NGramIter(proxy_end), util::SizedCompare<EntryCompare>(EntryCompare(order)));
-    files.push_back(DiskFlush(begin, out_end, file_prefix, batch, order, weights_size));
+    files.push_back(DiskFlush(begin, out_end, file_prefix, batch, order));
     WriteContextFile(begin, out_end, files.back(), entry_size, order);
 
     done += (out_end - begin) / entry_size;
