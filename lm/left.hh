@@ -26,6 +26,11 @@ struct Left {
     return 0;
   }
 
+  void ZeroRemaining() {
+    for (uint64_t * i = pointers + length; i < pointers + kMaxOrder - 1; ++i)
+      *i = 0;
+  }
+
   uint64_t pointers[kMaxOrder - 1];
   unsigned char length;
 };
@@ -41,6 +46,11 @@ struct ChartState {
     int rres = right.Compare(other.right);
     if (rres) return rres;
     return (int)full - (int)other.full;
+  }
+
+  void ZeroRemaining() {
+    left.ZeroRemaining();
+    right.ZeroRemaining();
   }
 
   Left left;
