@@ -14,11 +14,6 @@
 
 namespace lm {
 namespace ngram {
-
-size_t hash_value(const State &state) {
-  return util::MurmurHashNative(state.words, sizeof(WordIndex) * state.length);
-}
-
 namespace detail {
 
 template <class Search, class VocabularyT> const ModelType GenericModel<Search, VocabularyT>::kModelType = Search::kModelType;

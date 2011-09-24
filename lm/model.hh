@@ -12,6 +12,8 @@
 #include "lm/vocab.hh"
 #include "lm/weights.hh"
 
+#include "util/murmur_hash.hh"
+
 #include <algorithm>
 #include <vector>
 
@@ -28,21 +30,18 @@ class State {
   public:
     bool operator==(const State &other) const {
       if (length != other.length) return false;
-      const WordIndex *end = words + length;
-      for (const WordIndex *first = words, *second = other.words;
-          first != end; ++first, ++second) {
-        if (*first != *second) return false;
-      }
-      // If the histories are equal, so are the backoffs.  
-      return true;
+      return !memcmp(words, other.words, length * sizeof(WordIndex));
     }
 
     // Three way comparison function.  
     int Compare(const State &other) const {
-      if (length == other.length) {
-        return memcmp(words, other.words, length * sizeof(WordIndex));
-      }
-      return (length < other.length) ? -1 : 1;
+      if (length != other.length) return length < other.length ? -1 : 1;
+      return memcmp(words, other.words, length * sizeof(WordIndex));
+    }
+
+    bool operator<(const State &other) const {
+      if (length != other.length) return length < other.length;
+      return memcmp(words, other.words, length * sizeof(WordIndex)) < 0;
     }
 
     // Call this before using raw memcmp.  
@@ -62,7 +61,9 @@ class State {
     unsigned char length;
 };
 
-size_t hash_value(const State &state);
+inline size_t hash_value(const State &state) {
+  return util::MurmurHashNative(state.words, sizeof(WordIndex) * state.length);
+}
 
 namespace detail {
 
