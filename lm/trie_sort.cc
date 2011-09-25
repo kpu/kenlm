@@ -146,7 +146,7 @@ template <class Combine> void MergeSortedFiles(const std::string &first_name, co
       ++first; ++second;
     }
   }
-  for (RecordReader &remains = (first ? second : first); remains; ++remains) {
+  for (RecordReader &remains = (first ? first : second); remains; ++remains) {
     WriteOrThrow(out_file.get(), remains.Data(), entry_size);
   }
 }
