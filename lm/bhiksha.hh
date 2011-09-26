@@ -11,6 +11,7 @@
  */
 
 #include <inttypes.h>
+#include <assert.h>
 
 #include "lm/model_type.hh"
 #include "lm/trie.hh"
@@ -78,6 +79,7 @@ class ArrayBhiksha {
         util::ReadInt57(base, bit_offset, next_inline_.bits, next_inline_.mask);
       out.end = ((end_it - offset_begin_) << next_inline_.bits) | 
         util::ReadInt57(base, bit_offset + total_bits, next_inline_.bits, next_inline_.mask);
+      //assert(out.end >= out.begin);
     }
 
     void WriteNext(void *base, uint64_t bit_offset, uint64_t index, uint64_t value) {

@@ -91,16 +91,14 @@ template <class Quant, class Bhiksha> bool BitPackedMiddle<Quant, Bhiksha>::Find
   if (!FindBitPacked(base_, word_mask_, word_bits_, total_bits_, range.begin, range.end, max_vocab_, word, at_pointer)) {
     return false;
   }
-  uint64_t index = at_pointer;
+  pointer = at_pointer;
   at_pointer *= total_bits_;
   at_pointer += word_bits_;
-
-  pointer = at_pointer;
 
   quant_.Read(base_, at_pointer, prob, backoff);
   at_pointer += quant_.TotalBits();
 
-  bhiksha_.ReadNext(base_, at_pointer, index, total_bits_, range);
+  bhiksha_.ReadNext(base_, at_pointer, pointer, total_bits_, range);
 
   return true;
 }
