@@ -15,7 +15,7 @@ namespace util {
 
 scoped_mmap::~scoped_mmap() {
   if (data_ != (void*)-1) {
-    // Thanks Denis Filimonov for pointing on NFS likes msync first.  
+    // Thanks Denis Filimonov for pointing out NFS likes msync first.  
     if (msync(data_, size_, MS_SYNC) || munmap(data_, size_)) {
       std::cerr << "msync or mmap failed for " << size_ << " bytes." << std::endl;
       abort();
