@@ -50,7 +50,7 @@ class scoped_malloc {
 
     void call_realloc(std::size_t to) {
       void *ret;
-      UTIL_THROW_IF(!(ret = std::realloc(p_, to)), util::ErrnoException, "realloc to " << to << " bytes failed.");
+      UTIL_THROW_IF(!(ret = std::realloc(p_, to)) && to, util::ErrnoException, "realloc to " << to << " bytes failed.");
       p_ = ret;
     }
 
