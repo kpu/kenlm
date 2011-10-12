@@ -8,9 +8,11 @@
 
 /* Configuration for ngram model.  Separate header to reduce pollution. */
 
-namespace lm { namespace ngram {
-
+namespace lm {
+  
 class EnumerateVocab;
+
+namespace ngram {
 
 struct Config {
   // EFFECTIVE FOR BOTH ARPA AND BINARY READS 

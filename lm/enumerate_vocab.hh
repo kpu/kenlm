@@ -5,7 +5,6 @@
 #include "util/string_piece.hh"
 
 namespace lm {
-namespace ngram {
 
 /* If you need the actual strings in the vocabulary, inherit from this class
  * and implement Add.  Then put a pointer in Config.enumerate_vocab; it does
@@ -23,7 +22,6 @@ class EnumerateVocab {
     EnumerateVocab() {}
 };
 
-} // namespace ngram
 } // namespace lm
 
 #endif // LM_ENUMERATE_VOCAB__
