@@ -117,13 +117,18 @@ uint64_t MurmurHash64B ( const void * key, std::size_t len, unsigned int seed )
 
   return h;
 }
+// Trick to test for 64-bit architecture at compile time.  
+namespace {
+template <unsigned L> uint64_t MurmurHashNativeBackend(const void * key, std::size_t len, unsigned int seed) {
+  return MurmurHash64A(key, len, seed);
+}
+template <> uint64_t MurmurHashNativeBackend<4>(const void * key, std::size_t len, unsigned int seed) {
+  return MurmurHash64B(key, len, seed);
+}
+} // namespace
 
 uint64_t MurmurHashNative(const void * key, std::size_t len, unsigned int seed) {
-  if (sizeof(int) == 4) {
-    return MurmurHash64B(key, len, seed);
-  } else {
-    return MurmurHash64A(key, len, seed);
-  }
+  return MurmurHashNativeBackend<sizeof(void*)>(key, len, seed);
 }
 
 } // namespace util
