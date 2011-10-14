@@ -6,6 +6,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 
 #include <algorithm>
+#include <iostream>
 
 /* Usage:
  *
@@ -66,11 +67,35 @@ template <char d> class PieceIterator : public boost::iterator_facade<PieceItera
     StringPiece after_;
 };
 
-class MultiTokenIterator : public boost::iterator_facade<MultiTokenIterator, const StringPiece, boost::forward_traversal_tag> {
+class MultiCharacter {
   public:
-    MultiTokenIterator() {}
+    explicit MultiCharacter(const StringPiece &delimiter) : delimiter_(delimiter) {}
 
-    MultiTokenIterator(const StringPiece &str, const StringPiece &delim) : after_(str), delimiter_(delim) {
+    StringPiece Find(const StringPiece &in) const {
+      return StringPiece(std::search(in.data(), in.data() + in.size(), delimiter_.data(), delimiter_.data() + delimiter_.size()), delimiter_.size());
+    }
+
+  private:
+    StringPiece delimiter_;
+};
+
+class AnyCharacter {
+  public:
+    explicit AnyCharacter(const StringPiece &chars) : chars_(chars) {}
+
+    StringPiece Find(const StringPiece &in) const {
+      return StringPiece(std::find_first_of(in.data(), in.data() + in.size(), chars_.data(), chars_.data() + chars_.size()), 1);
+    }
+
+  private:
+    StringPiece chars_;
+};
+
+template <class Find, bool SkipEmpty = false> class TokenIter : public boost::iterator_facade<TokenIter<Find, SkipEmpty>, const StringPiece, boost::forward_traversal_tag> {
+  public:
+    TokenIter() {}
+
+    TokenIter(const StringPiece &str, const Find &finder) : after_(str), finder_(finder) {
       increment();
     }
 
@@ -81,24 +106,26 @@ class MultiTokenIterator : public boost::iterator_facade<MultiTokenIterator, con
       return current_.data() != 0;
     }
 
-    static MultiTokenIterator end() {
-      return MultiTokenIterator();
+    static TokenIter<Find> end() {
+      return TokenIter<Find>();
     }
 
   private:
     friend class boost::iterator_core_access;
 
     void increment() {
-      const char *found = std::search(after_.data(), after_.data() + after_.size(), delimiter_.data(), delimiter_.data() + delimiter_.size());
-      current_ = StringPiece(after_.data(), found - after_.data());
-      if (found == after_.data() + after_.size()) {
-        after_ = StringPiece(NULL, 0);
-      } else {
-        after_ = StringPiece(found + delimiter_.size(), after_.data() - found + after_.size() - delimiter_.size());
-      }
+      do {
+        StringPiece found(finder_.Find(after_));
+        current_ = StringPiece(after_.data(), found.data() - after_.data());
+        if (found.data() == after_.data() + after_.size()) {
+          after_ = StringPiece(NULL, 0);
+        } else {
+          after_ = StringPiece(found.data() + found.size(), after_.data() - found.data() + after_.size() - found.size());
+        }
+      } while (SkipEmpty && current_.data() && current_.empty()); // Compiler should optimize this away if SkipEmpty is false.  
     }
 
-    bool equal(const MultiTokenIterator &other) const {
+    bool equal(const TokenIter<Find> &other) const {
       return after_.data() == other.after_.data();
     }
 
@@ -109,7 +136,7 @@ class MultiTokenIterator : public boost::iterator_facade<MultiTokenIterator, con
     StringPiece current_;
     StringPiece after_;
 
-    StringPiece delimiter_;
+    Find finder_;
 };
 
 } // namespace util
