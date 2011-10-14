@@ -4,6 +4,8 @@
 #define BOOST_TEST_MODULE TokenIteratorTest
 #include <boost/test/unit_test.hpp>
 
+#include <iostream>
+
 namespace util {
 namespace {
 
@@ -49,6 +51,26 @@ BOOST_AUTO_TEST_CASE(null_entries) {
   BOOST_REQUIRE(it);
   const char second[] = "\0me\0";
   BOOST_CHECK_EQUAL(StringPiece(second, sizeof(second) - 1), *it);
+  ++it;
+  BOOST_CHECK(!it);
+}
+
+BOOST_AUTO_TEST_CASE(pipe_pipe_none) {
+  const char str[] = "nodelimit at all";
+  MultiTokenIterator it(str, "|||");
+  BOOST_REQUIRE(it);
+  BOOST_CHECK_EQUAL(StringPiece(str), *it);
+  ++it;
+  BOOST_CHECK(!it);
+}
+BOOST_AUTO_TEST_CASE(pipe_pipe_two) {
+  const char str[] = "|||";
+  MultiTokenIterator it(str, "|||");
+  BOOST_REQUIRE(it);
+  BOOST_CHECK_EQUAL(StringPiece(), *it);
+  ++it;
+  BOOST_REQUIRE(it);
+  BOOST_CHECK_EQUAL(StringPiece(), *it);
   ++it;
   BOOST_CHECK(!it);
 }
