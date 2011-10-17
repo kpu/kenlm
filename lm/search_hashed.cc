@@ -87,14 +87,14 @@ template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(
   ReadNGramHeader(f, n);
 
   // vocab ids of words in reverse order
-  WordIndex vocab_ids[n];
-  uint64_t keys[n - 1];
+  std::vector<WordIndex> vocab_ids(n);
+  std::vector<uint64_t> keys(n-1);
   typename Store::Packing::Value value;
   typename Middle::MutableIterator found;
   for (size_t i = 0; i < count; ++i) {
-    ReadNGram(f, n, vocab, vocab_ids, value, warn);
+    ReadNGram(f, n, vocab, &*vocab_ids.begin(), value, warn);
 
-    keys[0] = detail::CombineWordHash(static_cast<uint64_t>(*vocab_ids), vocab_ids[1]);
+    keys[0] = detail::CombineWordHash(static_cast<uint64_t>(vocab_ids.front()), vocab_ids[1]);
     for (unsigned int h = 1; h < n - 1; ++h) {
       keys[h] = detail::CombineWordHash(keys[h-1], vocab_ids[h+1]);
     }
@@ -106,9 +106,9 @@ template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(
     util::FloatEnc fix_prob;
     for (lower = n - 3; ; --lower) {
       if (lower == -1) {
-        fix_prob.f = unigrams[vocab_ids[0]].prob;
+        fix_prob.f = unigrams[vocab_ids.front()].prob;
         fix_prob.i &= ~util::kSignBit;
-        unigrams[vocab_ids[0]].prob = fix_prob.f;
+        unigrams[vocab_ids.front()].prob = fix_prob.f;
         break;
       }
       if (middle[lower].UnsafeMutableFind(keys[lower], found)) {
@@ -120,8 +120,8 @@ template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(
         break;
       }
     }
-    if (lower != static_cast<int>(n) - 3) FixSRI(lower, fix_prob.f, n, keys, vocab_ids, unigrams, middle);
-    activate(vocab_ids, n);
+    if (lower != static_cast<int>(n) - 3) FixSRI(lower, fix_prob.f, n, &*keys.begin(), &*vocab_ids.begin(), unigrams, middle);
+    activate(&*vocab_ids.begin(), n);
   }
 
   store.FinishedInserting();
