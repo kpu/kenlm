@@ -38,6 +38,8 @@ void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number) {
     }
     if (static_cast<size_t>(line.size()) >= strlen(kBinaryMagic) && StringPiece(line.data(), strlen(kBinaryMagic)) == kBinaryMagic) 
       UTIL_THROW(FormatLoadException, "This looks like a binary file but got sent to the ARPA parser.  Did you compress the binary file or pass a binary file where only ARPA files are accepted?");
+    UTIL_THROW_IF(line.size() >= 4 && StringPiece(line.data(), 4) == "blmt", FormatLoadException, "This looks like an IRSTLM binary file.  Did you forget to pass --text yes to compile-lm?");
+    UTIL_THROW_IF(line == "iARPA", FormatLoadException, "This looks like an IRSTLM iARPA file.  You need an ARPA file.  Run\n  compile-lm --text yes " << in.FileName() << " " << in.FileName() << ".arpa\nfirst.");
     UTIL_THROW(FormatLoadException, "first non-empty line was \"" << line << "\" not \\data\\.");
   }
   while (!IsEntirelyWhiteSpace(line = in.ReadLine())) {
