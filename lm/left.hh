@@ -176,16 +176,18 @@ template <class M> class RuleScore {
       float backoffs[kMaxOrder - 1], backoffs2[kMaxOrder - 1];
       float *back = backoffs, *back2 = backoffs2;
       unsigned char next_use;
-      FullScoreReturn ret;
-      ProcessRet(ret = model_.ExtendLeft(out_.right.words, out_.right.words + out_.right.length, out_.right.backoff, in.left.pointers[0], 1, back, next_use));
+
+      // First word
+      ProcessRet(model_.ExtendLeft(out_.right.words, out_.right.words + out_.right.length, out_.right.backoff, in.left.pointers[0], 1, back, next_use));
       if (!next_use) {
         left_done_ = true;
         out_.right = in.right;
         return;
       }
+      // Words after the first, so extending a bigram to begin with
       unsigned char extend_length = 2;
       for (const uint64_t *i = in.left.pointers + 1; i < in.left.pointers + in.left.length; ++i, ++extend_length) {
-        ProcessRet(ret = model_.ExtendLeft(out_.right.words, out_.right.words + next_use, back, *i, extend_length, back2, next_use));
+        ProcessRet(model_.ExtendLeft(out_.right.words, out_.right.words + next_use, back, *i, extend_length, back2, next_use));
         if (!next_use) {
           left_done_ = true;
           out_.right = in.right;
