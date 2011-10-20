@@ -91,8 +91,8 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
 
 template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::FullScore(const State &in_state, const WordIndex new_word, State &out_state) const {
   FullScoreReturn ret = ScoreExceptBackoff(in_state.words, in_state.words + in_state.length, new_word, out_state);
-  if (ret.ngram_length - 1 < in_state.length) {
-    ret.prob = std::accumulate(in_state.backoff + ret.ngram_length - 1, in_state.backoff + in_state.length, ret.prob);
+  for (const float *i = in_state.backoff + ret.ngram_length - 1; i < in_state.backoff + in_state.length; ++i) {
+    ret.prob += *i;
   }
   return ret;
 }
