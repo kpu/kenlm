@@ -135,6 +135,7 @@ void SortedVocabulary::LoadedBinary(int fd, EnumerateVocab *to) {
   end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
   ReadWords(fd, to);
   SetSpecial(Index("<s>"), Index("</s>"), 0);
+  bound_ = end_ - begin_ + 1;
 }
 
 namespace {
