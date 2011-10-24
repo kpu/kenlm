@@ -493,7 +493,7 @@ template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_pre
   util::scoped_FILE unigram_file;
   {
     std::string name(file_prefix + "unigrams");
-    unigram_file.reset(OpenOrThrow(name.c_str(), "r"));
+    unigram_file.reset(OpenOrThrow(name.c_str(), "r+"));
     util::RemoveOrThrow(name.c_str());
   }
   sri.ObtainBackoffs(counts.size(), unigram_file.get(), inputs);
