@@ -61,14 +61,14 @@ template <class PackingT, class HashT, class EqualT = std::equal_to<typename Pac
 #endif
     {}
 
-    template <class T> void Insert(const T &t) {
+    template <class T> MutableIterator Insert(const T &t) {
       if (++entries_ >= buckets_)
         UTIL_THROW(ProbingSizeException, "Hash table with " << buckets_ << " buckets is full.");
 #ifdef DEBUG
       assert(initialized_);
 #endif
       for (MutableIterator i(begin_ + (hash_(t.GetKey()) % buckets_));;) {
-        if (equal_(i->GetKey(), invalid_)) { *i = t; return; }
+        if (equal_(i->GetKey(), invalid_)) { *i = t; return i; }
         if (++i == end_) { i = begin_; }
       }
     }
