@@ -24,8 +24,10 @@
 #include <limits>
 #include <numeric>
 #include <vector>
-#include "util/portability.hh"
 
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 namespace lm {
 namespace ngram {
@@ -269,7 +271,7 @@ template <class Quant, class Bhiksha> class WriteEntries {
       contexts_(contexts),
       unigrams_(unigrams),
       middle_(middle),
-      longest_(longest),
+      longest_(longest), 
       bigram_pack_((order == 2) ? static_cast<BitPacked&>(longest_) : static_cast<BitPacked&>(*middle_)),
       order_(order),
       sri_(sri) {}
@@ -332,7 +334,6 @@ template <class Doing> class BlankManager {
 
     void Visit(const WordIndex *to, unsigned char length, float prob) {
       basis_[length - 1] = prob;
-      // Try to match everything except the last word, which is expected to be different.  
       unsigned char overlap = std::min<unsigned char>(length - 1, been_length_);
       const WordIndex *cur;
       WordIndex *pre;
@@ -349,9 +350,9 @@ template <class Doing> class BlankManager {
       UTIL_THROW_IF(blank == 1, FormatLoadException, "Missing a unigram that appears as context.");
       const float *lower_basis;
       for (lower_basis = basis_ + blank - 2; *lower_basis == kBadProb; --lower_basis) {}
-      assert(*lower_basis != kBadProb);
       unsigned char based_on = lower_basis - basis_ + 1;
       for (; cur != to + length - 1; ++blank, ++cur, ++pre) {
+        assert(*lower_basis != kBadProb);
         doing_.MiddleBlank(blank, to, based_on, *lower_basis);
         *pre = *cur;
         // Mark that the probability is a blank so it shouldn't be used as the basis for a later n-gram.  
