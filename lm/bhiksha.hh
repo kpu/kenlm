@@ -10,6 +10,9 @@
  *  Currently only used for next pointers.  
  */
 
+#ifndef LM_BHIKSHA__
+#define LM_BHIKSHA__
+
 #include <inttypes.h>
 #include <assert.h>
 
@@ -108,3 +111,5 @@ class ArrayBhiksha {
 } // namespace trie
 } // namespace ngram
 } // namespace lm
+
+#endif // LM_BHIKSHA__
