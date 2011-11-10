@@ -73,8 +73,16 @@ template <class KeyT, class ValueT> class ByteAlignedPacking {
 #pragma pack(push)
 #pragma pack(1)
     struct RawEntry {
-      Key key;
-      Value value;
+      Key key
+#ifdef __GNUC__
+        __attribute__((packed))
+#endif
+        ;
+      Value value
+#ifdef __GNUC__
+        __attribute__((packed))
+#endif
+        ;
 
       const Key &GetKey() const { return key; }
       const Value &GetValue() const { return value; }
