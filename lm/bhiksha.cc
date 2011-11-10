@@ -1,5 +1,6 @@
 #include "lm/bhiksha.hh"
 #include "lm/config.hh"
+#include "util/file.hh"
 
 #include <limits>
 
@@ -12,12 +13,12 @@ DontBhiksha::DontBhiksha(const void * /*base*/, uint64_t /*max_offset*/, uint64_
 
 const uint8_t kArrayBhikshaVersion = 0;
 
+// TODO: put this in binary file header instead when I change the binary file format again.  
 void ArrayBhiksha::UpdateConfigFromBinary(int fd, Config &config) {
   uint8_t version;
   uint8_t configured_bits;
-  if (read(fd, &version, 1) != 1 || read(fd, &configured_bits, 1) != 1) {
-    UTIL_THROW(util::ErrnoException, "Could not read from binary file");
-  }
+  util::ReadOrThrow(fd, &version, 1);
+  util::ReadOrThrow(fd, &configured_bits, 1);
   if (version != kArrayBhikshaVersion) UTIL_THROW(FormatLoadException, "This file has sorted array compression version " << (unsigned) version << " but the code expects version " << (unsigned)kArrayBhikshaVersion);
   config.pointer_bhiksha_bits = configured_bits;
 }

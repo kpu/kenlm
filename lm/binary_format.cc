@@ -102,7 +102,7 @@ uint8_t *GrowForSearch(const Config &config, std::size_t vocab_pad, std::size_t 
       UTIL_THROW(util::ErrnoException, "ftruncate on " << config.write_mmap << " to " << (adjusted_vocab + memory_size) << " failed");
 
     // We're skipping over the header and vocab for the search space mmap.  mmap likes page aligned offsets, so some arithmetic to round the offset down.  
-    off_t page_size = sysconf(_SC_PAGE_SIZE);
+    off_t page_size = util::SizePage();
     off_t alignment_cruft = adjusted_vocab % page_size;
     backing.search.reset(util::MapOrThrow(alignment_cruft + memory_size, true, util::kFileFlags, false, backing.file.get(), adjusted_vocab - alignment_cruft), alignment_cruft + memory_size, util::scoped_memory::MMAP_ALLOCATED);
 
@@ -115,8 +115,8 @@ uint8_t *GrowForSearch(const Config &config, std::size_t vocab_pad, std::size_t 
 
 void FinishFile(const Config &config, ModelType model_type, unsigned int search_version, const std::vector<uint64_t> &counts, Backing &backing) {
   if (config.write_mmap) {
-    if (msync(backing.search.get(), backing.search.size(), MS_SYNC) || msync(backing.vocab.get(), backing.vocab.size(), MS_SYNC)) 
-      UTIL_THROW(util::ErrnoException, "msync failed for " << config.write_mmap);
+    util::SyncOrThrow(backing.search.get(), backing.search.size());
+    util::SyncOrThrow(backing.vocab.get(), backing.vocab.size());
     // header and vocab share the same mmap.  The header is written here because we know the counts.  
     Parameters params;
     params.counts = counts;
