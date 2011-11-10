@@ -28,6 +28,7 @@ struct Sanity {
   uint64_t one_uint64;
 
   void SetToReference() {
+    std::memset(this, 0, sizeof(Sanity));
     std::memcpy(magic, kMagicBytes, sizeof(magic));
     zero_f = 0.0; one_f = 1.0; minus_half_f = -0.5;
     one_word_index = 1;

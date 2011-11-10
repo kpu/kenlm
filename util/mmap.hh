@@ -103,6 +103,7 @@ void MapRead(LoadMethod method, int fd, uint64_t offset, std::size_t size, scope
 void *MapAnonymous(std::size_t size);
 
 // Open file name with mmap of size bytes, all of which are initially zero.  
+void *MapZeroedWrite(int fd, std::size_t size);
 void *MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file);
 
 // msync wrapper 

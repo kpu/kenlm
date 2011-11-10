@@ -54,6 +54,12 @@ class scoped_FILE {
       file_ = to;
     }
 
+    std::FILE *release() {
+      std::FILE *ret = file_;
+      file_ = NULL;
+      return ret;
+    }
+
   private:
     std::FILE *file_;
 };

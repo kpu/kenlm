@@ -158,12 +158,16 @@ void *MapAnonymous(std::size_t size) {
       , false, -1, 0);
 }
 
+void *MapZeroedWrite(int fd, std::size_t size) {
+  UTIL_THROW_IF(-1 == ftruncate(fd, 0), ErrnoException, "ftruncate on fd " << fd << " to 0 failed");
+  UTIL_THROW_IF(-1 == ftruncate(fd, size), ErrnoException, "ftruncate on fd " << fd << " to " << size << " failed");
+  return MapOrThrow(size, true, kFileFlags, false, fd, 0);
+}
+
 void *MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file) {
   file.reset(CreateOrThrow(name));
-  if (-1 == ftruncate(file.get(), size))
-    UTIL_THROW(ErrnoException, "ftruncate on " << name << " to " << size << " failed");
   try {
-    return MapOrThrow(size, true, kFileFlags, false, file.get(), 0);
+    return MapZeroedWrite(file.get(), size);
   } catch (ErrnoException &e) {
     e << " in file " << name;
     throw;

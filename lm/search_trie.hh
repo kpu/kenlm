@@ -21,7 +21,8 @@ class SortedVocabulary;
 namespace trie {
 
 template <class Quant, class Bhiksha> class TrieSearch;
-template <class Quant, class Bhiksha> void BuildTrie(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing);
+class SortedFiles;
+template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing);
 
 template <class Quant, class Bhiksha> class TrieSearch {
   public:
@@ -109,7 +110,7 @@ template <class Quant, class Bhiksha> class TrieSearch {
     }
 
   private:
-    friend void BuildTrie<Quant, Bhiksha>(const std::string &file_prefix, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing);
+    friend void BuildTrie<Quant, Bhiksha>(SortedFiles &files, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing);
 
     // Middles are managed manually so we can delay construction and they don't have to be copyable.  
     void FreeMiddles() {
