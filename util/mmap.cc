@@ -15,10 +15,6 @@
 #include <sys/stat.h>
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
-#define MAP_ANON    0
-#define MAP_PRIVATE 1
-#define MAP_SHARED  2
-#define MAP_FAILED  ((void*)-1)
 #else
 #include <sys/mman.h>
 #endif
@@ -104,25 +100,23 @@ void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int
 #if defined(_WIN32) || defined(_WIN64)
   int protectC = for_write ? PAGE_READWRITE : PAGE_READONLY;
   int protectM = for_write ? FILE_MAP_WRITE : FILE_MAP_READ;
-  void *ret = MAP_FAILED;
   HANDLE hMapping = CreateFileMapping((HANDLE)_get_osfhandle(fd), NULL, protectC, 0, size + offset, NULL);
-  if (hMapping) {
-    ret = MapViewOfFile(hMapping, protectM, 0, offset, size);
-    if (!ret) ret = MAP_FAILED;
-    CloseHandle(hMapping);
-  }
+  UTIL_THROW_IF(!hMapping, ErrnoException, "CreateFileMapping failed");
+  ret = MapViewOfFile(hMapping, protectM, 0, offset, size);
+  CloseHandle(hMapping);
+  UTIL_THROW_IF(!ret, ErrnoException, "MapViewOfFile failed");
 #else
   int protect = for_write ? (PROT_READ | PROT_WRITE) : PROT_READ;
   void *ret = mmap(NULL, size, protect, flags, fd, offset);
+  UTIL_THROW_IF(ret == MAP_FAILED, ErrnoException, "mmap failed for size " << size << " at offset " << offset);
 #endif
-  if (ret == MAP_FAILED) {
-    UTIL_THROW(ErrnoException, "mmap failed for size " << size << " at offset " << offset);
-  }
   return ret;
 }
 
 const int kFileFlags =
-#ifdef MAP_FILE
+#if defined(_WIN32) || defined(_WIN64)
+  0 // MapOrThrow ignores flags on windows
+#elif defined(MAP_FILE)
   MAP_FILE | MAP_SHARED
 #else
   MAP_SHARED
@@ -154,12 +148,14 @@ void MapRead(LoadMethod method, int fd, off_t offset, std::size_t size, scoped_m
 
 void *MapAnonymous(std::size_t size) {
   return MapOrThrow(size, true,
-#ifdef MAP_ANONYMOUS
-      MAP_ANONYMOUS // Linux
+#if defined(_WIN32) || defined(_WIN64)
+      0 // MapOrThrow ignores the flags anyway.
+#elif define(MAP_ANONYMOUS)
+      MAP_ANONYMOUS | MAP_PRIVATE // Linux
 #else
-      MAP_ANON // BSD
+      MAP_ANON | MAP_PRIVATE // BSD
 #endif
-      | MAP_PRIVATE, false, -1, 0);
+      , false, -1, 0);
 }
 
 void *MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file) {
