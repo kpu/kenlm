@@ -39,15 +39,30 @@ long SizePage() {
 #endif
 }
 
+void SyncOrThrow(void *start, size_t length) {
+#if defined(_WIN32) || defined(_WIN64)
+  UTIL_THROW_IF(!::FlushViewOfFile(start, length), ErrnoException, "Failed to sync mmap");
+#else
+  UTIL_THROW_IF(msync(start, length, MS_SYNC), ErrnoException, "Failed to sync mmap");
+#endif
+}
+
+void UnmapOrThrow(void *start, size_t length) {
+#if defined(_WIN32) || defined(_WIN64)
+  UTIL_THROW_IF(!::UnmapViewOfFile(start), ErrnoException, "Failed to unmap a file");
+#else
+  UTIL_THROW_IF(munmap(start, length), ErrnoException, "munmap failed");
+#endif
+}
+
 scoped_mmap::~scoped_mmap() {
   if (data_ != (void*)-1) {
-    // Thanks Denis Filimonov for pointing out NFS likes msync first.  
-#if defined(_WIN32) || defined(_WIN64)
-    if (!::FlushViewOfFile(data_, size_) || !::UnmapViewOfFile(data_)) {
-#else
-    if (msync(data_, size_, MS_SYNC) || munmap(data_, size_)) {
-#endif
-      std::cerr << "msync or mmap failed for " << size_ << " bytes." << std::endl;
+    try {
+      // Thanks Denis Filimonov for pointing out NFS likes msync first.  
+      SyncOrThrow(data_, size_);
+      UnmapOrThrow(data_, size_);
+    } catch (const util::ErrnoException &e) {
+      std::cerr << e.what();
       abort();
     }
   }

@@ -12,6 +12,10 @@
 #include <unistd.h>
 #include <inttypes.h>
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#endif
+
 namespace util {
 
 scoped_fd::~scoped_fd() {

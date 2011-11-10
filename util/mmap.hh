@@ -105,6 +105,9 @@ void *MapAnonymous(std::size_t size);
 // Open file name with mmap of size bytes, all of which are initially zero.  
 void *MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file);
 
+// msync wrapper 
+void SyncOrThrow(void *start, size_t length);
+
 } // namespace util
 
 #endif // UTIL_MMAP__
