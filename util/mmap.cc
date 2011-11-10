@@ -91,7 +91,7 @@ void scoped_memory::call_realloc(std::size_t size) {
   }
 }
 
-void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int fd, off_t offset) {
+void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int fd, uint64_t offset) {
 #ifdef MAP_POPULATE // Linux specific
   if (prefault) {
     flags |= MAP_POPULATE;
@@ -123,7 +123,7 @@ const int kFileFlags =
 #endif
   ;
 
-void MapRead(LoadMethod method, int fd, off_t offset, std::size_t size, scoped_memory &out) {
+void MapRead(LoadMethod method, int fd, uint64_t offset, std::size_t size, scoped_memory &out) {
   switch (method) {
     case LAZY:
       out.reset(MapOrThrow(size, false, kFileFlags, false, fd, offset), size, scoped_memory::MMAP_ALLOCATED);

@@ -74,8 +74,8 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size);
 void RemoveOrThrow(const char *name);
 
 // Seeking
-void SeekOrThrow(int fd, off_t off);
-void AdvanceOrThrow(int fd, off_t off);
+void SeekOrThrow(int fd, uint64_t off);
+void AdvanceOrThrow(int fd, int64_t off);
 void SeekEnd(int fd);
 
 } // namespace util

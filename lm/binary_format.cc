@@ -79,8 +79,8 @@ uint8_t *GrowForSearch(const Config &config, std::size_t vocab_pad, std::size_t 
       UTIL_THROW(util::ErrnoException, "ftruncate on " << config.write_mmap << " to " << (adjusted_vocab + memory_size) << " failed");
 
     // We're skipping over the header and vocab for the search space mmap.  mmap likes page aligned offsets, so some arithmetic to round the offset down.  
-    off_t page_size = util::SizePage();
-    off_t alignment_cruft = adjusted_vocab % page_size;
+    std::size_t page_size = util::SizePage();
+    std::size_t alignment_cruft = adjusted_vocab % page_size;
     backing.search.reset(util::MapOrThrow(alignment_cruft + memory_size, true, util::kFileFlags, false, backing.file.get(), adjusted_vocab - alignment_cruft), alignment_cruft + memory_size, util::scoped_memory::MMAP_ALLOCATED);
 
     return reinterpret_cast<uint8_t*>(backing.search.get()) + alignment_cruft;
@@ -160,7 +160,7 @@ void SeekPastHeader(int fd, const Parameters &params) {
 }
 
 uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t memory_size, Backing &backing) {
-  const off_t file_size = util::SizeFile(backing.file.get());
+  const uint64_t file_size = util::SizeFile(backing.file.get());
   // The header is smaller than a page, so we have to map the whole header as well.  
   std::size_t total_map = TotalHeaderSize(params.counts.size()) + memory_size;
   if (file_size != util::kBadSize && static_cast<uint64_t>(file_size) < total_map)

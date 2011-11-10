@@ -8,9 +8,10 @@
 #include "util/mmap.hh"
 #include "util/string_piece.hh"
 
+#include <cstddef>
 #include <string>
 
-#include <cstddef>
+#include <inttypes.h>
 
 namespace util {
 
@@ -33,9 +34,9 @@ extern const bool kSpaces[256];
 class FilePiece {
   public:
     // 32 MB default.
-    explicit FilePiece(const char *file, std::ostream *show_progress = NULL, off_t min_buffer = 33554432);
+    explicit FilePiece(const char *file, std::ostream *show_progress = NULL, std::size_t min_buffer = 33554432);
     // Takes ownership of fd.  name is used for messages.  
-    explicit FilePiece(int fd, const char *name, std::ostream *show_progress = NULL, off_t min_buffer = 33554432);
+    explicit FilePiece(int fd, const char *name, std::ostream *show_progress = NULL, std::size_t min_buffer = 33554432);
 
     ~FilePiece();
      
@@ -70,14 +71,14 @@ class FilePiece {
       }
     }
 
-    off_t Offset() const {
+    uint64_t Offset() const {
       return position_ - data_.begin() + mapped_offset_;
     }
 
     const std::string &FileName() const { return file_name_; }
     
   private:
-    void Initialize(const char *name, std::ostream *show_progress, off_t min_buffer);
+    void Initialize(const char *name, std::ostream *show_progress, std::size_t min_buffer);
 
     template <class T> T ReadNumber();
 
@@ -91,7 +92,7 @@ class FilePiece {
 
     void Shift();
     // Backends to Shift().
-    void MMapShift(off_t desired_begin);
+    void MMapShift(uint64_t desired_begin);
 
     void TransitionToRead();
     void ReadShift();
@@ -99,11 +100,11 @@ class FilePiece {
     const char *position_, *last_space_, *position_end_;
 
     scoped_fd file_;
-    const off_t total_size_;
-    const off_t page_;
+    const uint64_t total_size_;
+    const uint64_t page_;
 
-    size_t default_map_size_;
-    off_t mapped_offset_;
+    std::size_t default_map_size_;
+    uint64_t mapped_offset_;
 
     // Order matters: file_ should always be destroyed after this.
     scoped_memory data_;

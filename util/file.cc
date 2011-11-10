@@ -102,11 +102,11 @@ void InternalSeek(int fd, off_t off, int whence) {
 }
 } // namespace
 
-void SeekOrThrow(int fd, off_t off) {
+void SeekOrThrow(int fd, uint64_t off) {
   InternalSeek(fd, off, SEEK_SET);
 }
 
-void AdvanceOrThrow(int fd, off_t off) {
+void AdvanceOrThrow(int fd, int64_t off) {
   InternalSeek(fd, off, SEEK_CUR);
 }
 
