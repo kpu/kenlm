@@ -150,7 +150,7 @@ void *MapAnonymous(std::size_t size) {
   return MapOrThrow(size, true,
 #if defined(_WIN32) || defined(_WIN64)
       0 // MapOrThrow ignores the flags anyway.
-#elif define(MAP_ANONYMOUS)
+#elif defined(MAP_ANONYMOUS)
       MAP_ANONYMOUS | MAP_PRIVATE // Linux
 #else
       MAP_ANON | MAP_PRIVATE // BSD
