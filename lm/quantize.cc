@@ -1,16 +1,3 @@
-#include "lm/quantize.hh"
-
-#include "lm/binary_format.hh"
-#include "lm/lm_exception.hh"
-
-#include <algorithm>
-#include <numeric>
-
-#include <unistd.h>
-
-namespace lm {
-namespace ngram {
-
 /* Quantize into bins of equal size as described in
  * M. Federico and N. Bertoldi. 2006. How many bits are needed
  * to store probabilities for phrase-based translation? In Proc.
@@ -18,6 +5,18 @@ namespace ngram {
  * 94–101, New York City, June. Association for Computa-
  * tional Linguistics.
  */
+
+#include "lm/quantize.hh"
+
+#include "lm/binary_format.hh"
+#include "lm/lm_exception.hh"
+#include "util/file.hh"
+
+#include <algorithm>
+#include <numeric>
+
+namespace lm {
+namespace ngram {
 
 namespace {
 
@@ -41,8 +40,9 @@ const char kSeparatelyQuantizeVersion = 2;
 
 void SeparatelyQuantize::UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &/*counts*/, Config &config) {
   char version;
-  if (read(fd, &version, 1) != 1 || read(fd, &config.prob_bits, 1) != 1 || read(fd, &config.backoff_bits, 1) != 1) 
-    UTIL_THROW(util::ErrnoException, "Failed to read header for quantization.");
+  util::ReadOrThrow(fd, &version, 1);
+  util::ReadOrThrow(fd, &config.prob_bits, 1);
+  util::ReadOrThrow(fd, &config.backoff_bits, 1);
   if (version != kSeparatelyQuantizeVersion) UTIL_THROW(FormatLoadException, "This file has quantization version " << (unsigned)version << " but the code expects version " << (unsigned)kSeparatelyQuantizeVersion);
   AdvanceOrThrow(fd, -3);
 }

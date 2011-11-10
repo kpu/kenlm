@@ -6,6 +6,7 @@
 #include "lm/config.hh"
 #include "lm/weights.hh"
 #include "util/exception.hh"
+#include "util/file.hh"
 #include "util/joint_sort.hh"
 #include "util/murmur_hash.hh"
 #include "util/probing_hash_table.hh"
@@ -37,15 +38,12 @@ WordIndex ReadWords(int fd, EnumerateVocab *enumerate) {
   buf.resize(kInitialRead);
   WordIndex index = 0;
   while (true) {
-    ssize_t got = read(fd, &buf[0], kInitialRead);
-    UTIL_THROW_IF(got == -1, util::ErrnoException, "Reading vocabulary words");
+    std::size_t got = util::ReadOrEOF(fd, &buf[0], kInitialRead);
     if (got == 0) return index;
     buf.resize(got);
     while (buf[buf.size() - 1]) {
       char next_char;
-      ssize_t ret = read(fd, &next_char, 1);
-      UTIL_THROW_IF(ret == -1, util::ErrnoException, "Reading vocabulary words");
-      UTIL_THROW_IF(ret == 0, FormatLoadException, "Missing null terminator on a vocab word.");
+      util::ReadOrThrow(fd, &next_char, 1);
       buf.push_back(next_char);
     }
     // Ok now we have null terminated strings.  
@@ -153,12 +151,12 @@ struct ProbingVocabularyHeader {
 ProbingVocabulary::ProbingVocabulary() : enumerate_(NULL) {}
 
 std::size_t ProbingVocabulary::Size(std::size_t entries, const Config &config) {
-  return Align8(sizeof(detail::ProbingVocabularyHeader)) + Lookup::Size(entries, config.probing_multiplier);
+  return ALIGN8(sizeof(detail::ProbingVocabularyHeader)) + Lookup::Size(entries, config.probing_multiplier);
 }
 
 void ProbingVocabulary::SetupMemory(void *start, std::size_t allocated, std::size_t /*entries*/, const Config &/*config*/) {
   header_ = static_cast<detail::ProbingVocabularyHeader*>(start);
-  lookup_ = Lookup(static_cast<uint8_t*>(start) + Align8(sizeof(detail::ProbingVocabularyHeader)), allocated);
+  lookup_ = Lookup(static_cast<uint8_t*>(start) + ALIGN8(sizeof(detail::ProbingVocabularyHeader)), allocated);
   bound_ = 1;
   saw_unk_ = false;
 }

@@ -65,6 +65,8 @@ const off_t kBadSize = -1;
 off_t SizeFile(int fd);
 
 void ReadOrThrow(int fd, void *to, std::size_t size);
+std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount);
+
 void WriteOrThrow(int fd, const void *data_void, std::size_t size);
 
 void RemoveOrThrow(const char *name);

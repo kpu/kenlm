@@ -62,11 +62,24 @@ void ReadOrThrow(int fd, void *to_void, std::size_t amount) {
   uint8_t *to = static_cast<uint8_t*>(to_void);
   while (amount) {
     ssize_t ret = read(fd, to, amount);
-    if (ret == -1) UTIL_THROW(ErrnoException, "Reading " << amount << " from fd " << fd << " failed.");
-    if (ret == 0) UTIL_THROW(Exception, "Hit EOF in fd " << fd << " but there should be " << amount << " more bytes to read.");
+    UTIL_THROW_IF(ret == -1, ErrnoException, "Reading " << amount << " from fd " << fd << " failed.");
+    UTIL_THROW_IF(ret == 0, EndOfFileException, "Hit EOF in fd " << fd << " but there should be " << amount << " more bytes to read.");
     amount -= ret;
     to += ret;
   }
+}
+
+std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount) {
+  uint8_t *to = static_cast<uint8_t*>(to_void);
+  std::size_t remaining = amount;
+  while (remaining) {
+    ssize_t ret = read(fd, to, remaining);
+    UTIL_THROW_IF(ret == -1, ErrnoException, "Reading " << remaining << " from fd " << fd << " failed.");
+    if (!ret) return amount - remaining;
+    remaining -= ret;
+    to += ret;
+  }
+  return amount;
 }
 
 void WriteOrThrow(int fd, const void *data_void, std::size_t size) {

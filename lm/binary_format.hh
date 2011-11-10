@@ -33,10 +33,8 @@ struct FixedWidthParameters {
   unsigned int search_version;
 };
 
-inline std::size_t Align8(std::size_t in) {
-  std::size_t off = in % 8;
-  return off ? (in + 8 - off) : in;
-}
+// This is a macro instead of an inline function so constants can be assigned using it.
+#define ALIGN8(a) ((std::ptrdiff_t(((a)-1)/8)+1)*8)
 
 // Parameters stored in the header of a binary file.  
 struct Parameters {

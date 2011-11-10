@@ -43,18 +43,7 @@ struct Sanity {
 const char *kModelNames[6] = {"hashed n-grams with probing", "hashed n-grams with sorted uniform find", "trie", "trie with quantization", "trie with array-compressed pointers", "trie with quantization and array-compressed pointers"};
 
 std::size_t TotalHeaderSize(unsigned char order) {
-  return Align8(sizeof(Sanity) + sizeof(FixedWidthParameters) + sizeof(uint64_t) * order);
-}
-
-void ReadLoop(int fd, void *to_void, std::size_t size) {
-  uint8_t *to = static_cast<uint8_t*>(to_void);
-  while (size) {
-    ssize_t ret = read(fd, to, size);
-    if (ret == -1) UTIL_THROW(util::ErrnoException, "Failed to read from binary file");
-    if (ret == 0) UTIL_THROW(util::ErrnoException, "Binary file too short");
-    to += ret;
-    size -= ret;
-  }
+  return ALIGN8(sizeof(Sanity) + sizeof(FixedWidthParameters) + sizeof(uint64_t) * order);
 }
 
 void WriteHeader(void *to, const Parameters &params) {
@@ -161,12 +150,12 @@ bool IsBinaryFormat(int fd) {
 
 void ReadHeader(int fd, Parameters &out) {
   SeekOrThrow(fd, sizeof(Sanity));
-  ReadLoop(fd, &out.fixed, sizeof(out.fixed));
+  util::ReadOrThrow(fd, &out.fixed, sizeof(out.fixed));
   if (out.fixed.probing_multiplier < 1.0)
     UTIL_THROW(FormatLoadException, "Binary format claims to have a probing multiplier of " << out.fixed.probing_multiplier << " which is < 1.0.");
 
   out.counts.resize(static_cast<std::size_t>(out.fixed.order));
-  ReadLoop(fd, &*out.counts.begin(), sizeof(uint64_t) * out.fixed.order);
+  util::ReadOrThrow(fd, &*out.counts.begin(), sizeof(uint64_t) * out.fixed.order);
 }
 
 void MatchCheck(ModelType model_type, unsigned int search_version, const Parameters &params) {
