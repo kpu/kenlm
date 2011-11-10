@@ -19,8 +19,6 @@
 #define MAP_PRIVATE 1
 #define MAP_SHARED  2
 #define MAP_FAILED  ((void*)-1)
-#define S_IRGRP 00040
-#define S_IROTH 00004
 #else
 #include <sys/mman.h>
 #endif
@@ -165,9 +163,7 @@ void *MapAnonymous(std::size_t size) {
 }
 
 void *MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file) {
-  file.reset(open(name, O_CREAT | O_RDWR | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH));
-  if (-1 == file.get())
-    UTIL_THROW(ErrnoException, "Failed to open " << name << " for writing");
+  file.reset(CreateOrThrow(name));
   if (-1 == ftruncate(file.get(), size))
     UTIL_THROW(ErrnoException, "ftruncate on " << name << " to " << size << " failed");
   try {
