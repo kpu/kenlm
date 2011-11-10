@@ -8,7 +8,6 @@
 
 #include <math.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 namespace lm {
 namespace ngram {

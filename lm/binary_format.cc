@@ -1,19 +1,15 @@
 #include "lm/binary_format.hh"
 
 #include "lm/lm_exception.hh"
+#include "util/file.hh"
 #include "util/file_piece.hh"
 
+#include <cstddef>
+#include <cstring>
 #include <limits>
 #include <string>
 
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <inttypes.h>
 
 namespace lm {
 namespace ngram {
@@ -49,7 +45,7 @@ std::size_t TotalHeaderSize(unsigned char order) {
 void WriteHeader(void *to, const Parameters &params) {
   Sanity header = Sanity();
   header.SetToReference();
-  memcpy(to, &header, sizeof(Sanity));
+  std::memcpy(to, &header, sizeof(Sanity));
   char *out = reinterpret_cast<char*>(to) + sizeof(Sanity);
 
   *reinterpret_cast<FixedWidthParameters*>(out) = params.fixed;
@@ -113,8 +109,8 @@ void FinishFile(const Config &config, ModelType model_type, unsigned int search_
 namespace detail {
 
 bool IsBinaryFormat(int fd) {
-  const off_t size = util::SizeFile(fd);
-  if (size == util::kBadSize || (size <= static_cast<off_t>(sizeof(Sanity)))) return false;
+  const uint64_t size = util::SizeFile(fd);
+  if (size == util::kBadSize || (size <= static_cast<uint64_t>(sizeof(Sanity)))) return false;
   // Try reading the header.  
   util::scoped_memory memory;
   try {

@@ -52,7 +52,7 @@ int CreateOrThrow(const char *name) {
   return ret;
 }
 
-off_t SizeFile(int fd) {
+uint64_t SizeFile(int fd) {
   struct stat sb;
   if (fstat(fd, &sb) == -1 || (!sb.st_size && !S_ISREG(sb.st_mode))) return kBadSize;
   return sb.st_size;

@@ -140,7 +140,7 @@ void MapRead(LoadMethod method, int fd, off_t offset, std::size_t size, scoped_m
     case READ:
       out.reset(malloc(size), size, scoped_memory::MALLOC_ALLOCATED);
       if (!out.get()) UTIL_THROW(util::ErrnoException, "Allocating " << size << " bytes with malloc");
-      if (-1 == lseek(fd, offset, SEEK_SET)) UTIL_THROW(ErrnoException, "lseek to " << offset << " in fd " << fd << " failed.");
+      SeekOrThrow(fd, offset);
       ReadOrThrow(fd, out.get(), size);
       break;
   }
