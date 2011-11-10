@@ -482,7 +482,7 @@ template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::ve
     FindBlanks finder(&*fixed_counts.begin(), counts.size(), reinterpret_cast<const ProbBackoff*>(unigrams.get()), sri);
     RecursiveInsert(counts.size(), counts[0], inputs, config.messages, "Identifying n-grams omitted by SRI", finder);
   }
-  unigram_file.reset(FDOpenOrThrow(unigram_fd));
+  unigram_file.reset(util::FDOpenOrThrow(unigram_fd));
   for (const RecordReader *i = inputs; i != inputs + counts.size() - 2; ++i) {
     if (*i) UTIL_THROW(FormatLoadException, "There's a bug in the trie implementation: the " << (i - inputs + 2) << "-gram table did not complete reading");
   }

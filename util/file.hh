@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdio>
+#include <string>
 
 #include <inttypes.h>
 
@@ -83,6 +84,20 @@ void RemoveOrThrow(const char *name);
 void SeekOrThrow(int fd, uint64_t off);
 void AdvanceOrThrow(int fd, int64_t off);
 void SeekEnd(int fd);
+
+std::FILE *FDOpenOrThrow(scoped_fd &file);
+
+class TempMaker {
+  public:
+    explicit TempMaker(const std::string &prefix);
+
+    int Make() const;
+
+    std::FILE *MakeFile() const;
+
+  private:
+    std::string base_;
+};
 
 } // namespace util
 

@@ -16,7 +16,10 @@
 
 #include <inttypes.h>
 
-namespace util { class FilePiece; }
+namespace util {
+class FilePiece;
+class TempMaker;
+} // namespace util
 
 namespace lm {
 class PositiveProbWarn;
@@ -26,10 +29,7 @@ class Config;
 
 namespace trie {
 
-FILE *FDOpenOrThrow(util::scoped_fd &file);
 void WriteOrThrow(FILE *to, const void *data, size_t size);
-
-class TempMaker;
 
 class EntryCompare : public std::binary_function<const void*, const void*, bool> {
   public:
@@ -103,7 +103,7 @@ class SortedFiles {
     }
 
   private:
-    void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, const TempMaker &maker, unsigned char order, PositiveProbWarn &warn, void *mem, std::size_t mem_size);
+    void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, const util::TempMaker &maker, unsigned char order, PositiveProbWarn &warn, void *mem, std::size_t mem_size);
     
     util::scoped_fd unigram_;
 

@@ -23,41 +23,10 @@ namespace lm {
 namespace ngram {
 namespace trie {
 
-FILE *FDOpenOrThrow(util::scoped_fd &file) {
-  FILE *ret = fdopen(file.get(), "r+b");
-  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen");
-  file.release();
-  return ret;
-}
-
 void WriteOrThrow(FILE *to, const void *data, size_t size) {
   assert(size);
   if (1 != std::fwrite(data, size, 1, to)) UTIL_THROW(util::ErrnoException, "Short write; requested size " << size);
 }
-
-class TempMaker {
-  public:
-    explicit TempMaker(const std::string &prefix) : base_(prefix) {
-      base_ += "XXXXXX";
-    }
-
-    int Make() const {
-      std::string copy(base_);
-      copy.push_back(0);
-      int ret;
-      UTIL_THROW_IF(-1 == (ret = mkstemp(&copy[0])), util::ErrnoException, "Failed to make a temporary based on " << base_);
-      UTIL_THROW_IF(unlink(copy.data()), util::ErrnoException, "Failed to delete " << copy.data());
-      return ret;
-    }
-
-    FILE *MakeFile() const {
-      util::scoped_fd file(Make());
-      return FDOpenOrThrow(file);
-    }
-
-  private:
-    std::string base_;
-};
 
 namespace {
 
@@ -102,13 +71,13 @@ class PartialViewProxy {
 
 typedef util::ProxyIterator<PartialViewProxy> PartialIter;
 
-FILE *DiskFlush(const void *mem_begin, const void *mem_end, const TempMaker &maker) {
+FILE *DiskFlush(const void *mem_begin, const void *mem_end, const util::TempMaker &maker) {
   util::scoped_fd file(maker.Make());
   util::WriteOrThrow(file.get(), mem_begin, (uint8_t*)mem_end - (uint8_t*)mem_begin);
-  return FDOpenOrThrow(file);
+  return util::FDOpenOrThrow(file);
 }
 
-FILE *WriteContextFile(uint8_t *begin, uint8_t *end, const TempMaker &maker, std::size_t entry_size, unsigned char order) {
+FILE *WriteContextFile(uint8_t *begin, uint8_t *end, const util::TempMaker &maker, std::size_t entry_size, unsigned char order) {
   const size_t context_size = sizeof(WordIndex) * (order - 1);
   // Sort just the contexts using the same memory.  
   PartialIter context_begin(PartialViewProxy(begin + sizeof(WordIndex), entry_size, context_size));
@@ -146,7 +115,7 @@ struct FirstCombine {
   }
 };
 
-template <class Combine> FILE *MergeSortedFiles(FILE *first_file, FILE *second_file, const TempMaker &maker, std::size_t weights_size, unsigned char order, const Combine &combine) {
+template <class Combine> FILE *MergeSortedFiles(FILE *first_file, FILE *second_file, const util::TempMaker &maker, std::size_t weights_size, unsigned char order, const Combine &combine) {
   std::size_t entry_size = sizeof(WordIndex) * order + weights_size;
   RecordReader first, second;
   first.Init(first_file, entry_size);
@@ -198,7 +167,7 @@ void RecordReader::Rewind() {
 }
 
 SortedFiles::SortedFiles(const Config &config, util::FilePiece &f, std::vector<uint64_t> &counts, size_t buffer, const std::string &file_prefix, SortedVocabulary &vocab) {
-  TempMaker maker(file_prefix);
+  util::TempMaker maker(file_prefix);
   PositiveProbWarn warn(config.positive_log_probability);
   unigram_.reset(maker.Make());
   {
@@ -248,7 +217,7 @@ class Closer {
 };
 } // namespace
 
-void SortedFiles::ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, const TempMaker &maker, unsigned char order, PositiveProbWarn &warn, void *mem, std::size_t mem_size) {
+void SortedFiles::ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, const util::TempMaker &maker, unsigned char order, PositiveProbWarn &warn, void *mem, std::size_t mem_size) {
   ReadNGramHeader(f, order);
   const size_t count = counts[order - 1];
   // Size of weights.  Does it include backoff?  
