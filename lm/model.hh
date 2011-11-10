@@ -139,12 +139,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
   private:
     friend void LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);
 
-    static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {
-      AdvanceOrThrow(fd, VocabularyT::Size(counts[0], config));
-      Search::UpdateConfigFromBinary(fd, counts, config);
-    }
-
-    float SlowBackoffLookup(const WordIndex *const context_rbegin, const WordIndex *const context_rend, unsigned char start) const;
+    static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config);
 
     FullScoreReturn ScoreExceptBackoff(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, State &out_state) const;
 

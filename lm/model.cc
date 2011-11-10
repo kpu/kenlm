@@ -89,6 +89,11 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   }
 }
 
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {
+  util::AdvanceOrThrow(fd, VocabularyT::Size(counts[0], config));
+  Search::UpdateConfigFromBinary(fd, counts, config);
+}
+
 template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, VocabularyT>::FullScore(const State &in_state, const WordIndex new_word, State &out_state) const {
   FullScoreReturn ret = ScoreExceptBackoff(in_state.words, in_state.words + in_state.length, new_word, out_state);
   for (const float *i = in_state.backoff + ret.ngram_length - 1; i < in_state.backoff + in_state.length; ++i) {

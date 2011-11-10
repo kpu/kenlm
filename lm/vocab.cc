@@ -67,8 +67,7 @@ void WriteWordsWrapper::Add(WordIndex index, const StringPiece &str) {
 }
 
 void WriteWordsWrapper::Write(int fd) {
-  if ((off_t)-1 == lseek(fd, 0, SEEK_END))
-    UTIL_THROW(util::ErrnoException, "Failed to seek in binary to vocab words");
+  util::SeekEnd(fd);
   util::WriteOrThrow(fd, buffer_.data(), buffer_.size());
 }
 

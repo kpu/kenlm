@@ -44,7 +44,7 @@ void SeparatelyQuantize::UpdateConfigFromBinary(int fd, const std::vector<uint64
   util::ReadOrThrow(fd, &config.prob_bits, 1);
   util::ReadOrThrow(fd, &config.backoff_bits, 1);
   if (version != kSeparatelyQuantizeVersion) UTIL_THROW(FormatLoadException, "This file has quantization version " << (unsigned)version << " but the code expects version " << (unsigned)kSeparatelyQuantizeVersion);
-  AdvanceOrThrow(fd, -3);
+  util::AdvanceOrThrow(fd, -3);
 }
 
 void SeparatelyQuantize::SetupMemory(void *start, const Config &config) {

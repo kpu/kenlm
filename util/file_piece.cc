@@ -225,7 +225,7 @@ void FilePiece::MMapShift(off_t desired_begin) {
     MapRead(POPULATE_OR_LAZY, *file_, mapped_offset, mapped_size, data_);
   } catch (const util::ErrnoException &e) {
     if (desired_begin) {
-      if (((off_t)-1) == lseek(*file_, desired_begin, SEEK_SET)) UTIL_THROW(ErrnoException, "mmap failed even though it worked before.  lseek failed too, so using read isn't an option either.");
+      SeekOrThrow(*file_, desired_begin);
     }
     // The mmap was scheduled to end the file, but now we're going to read it.  
     at_end_ = false;

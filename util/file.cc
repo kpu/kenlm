@@ -96,4 +96,22 @@ void RemoveOrThrow(const char *name) {
   UTIL_THROW_IF(std::remove(name), util::ErrnoException, "Could not remove " << name);
 }
 
+namespace {
+void InternalSeek(int fd, off_t off, int whence) {
+  UTIL_THROW_IF((off_t)-1 == lseek(fd, off, whence), ErrnoException, "Seek failed");
+}
+} // namespace
+
+void SeekOrThrow(int fd, off_t off) {
+  InternalSeek(fd, off, SEEK_SET);
+}
+
+void AdvanceOrThrow(int fd, off_t off) {
+  InternalSeek(fd, off, SEEK_CUR);
+}
+
+void SeekEnd(int fd) {
+  InternalSeek(fd, 0, SEEK_END);
+}
+
 } // namespace util
