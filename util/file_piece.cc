@@ -2,6 +2,7 @@
 
 #include "util/exception.hh"
 #include "util/file.hh"
+#include "util/mmap.hh"
 
 #include <iostream>
 #include <string>
@@ -11,7 +12,6 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <stdlib.h>
-#include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -221,13 +221,9 @@ void FilePiece::MMapShift(off_t desired_begin) {
 
   // Forcibly clear the existing mmap first.  
   data_.reset();
-  data_.reset(mmap(NULL, mapped_size, PROT_READ, MAP_SHARED
-  // Populate where available on linux
-#ifdef MAP_POPULATE
-        | MAP_POPULATE
-#endif
-        , *file_, mapped_offset), mapped_size, scoped_memory::MMAP_ALLOCATED);
-  if (data_.get() == MAP_FAILED) {
+  try {
+    MapRead(POPULATE_OR_LAZY, *file_, mapped_offset, mapped_size, data_);
+  } catch (const util::ErrnoException &e) {
     if (desired_begin) {
       if (((off_t)-1) == lseek(*file_, desired_begin, SEEK_SET)) UTIL_THROW(ErrnoException, "mmap failed even though it worked before.  lseek failed too, so using read isn't an option either.");
     }
