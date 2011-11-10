@@ -66,7 +66,7 @@ const char *HandleStrerror(const char *ret, const char * /*buf*/) {
 ErrnoException::ErrnoException() throw() : errno_(errno) {
   char buf[200];
   buf[0] = 0;
-#ifdef sun
+#if defined(sun) || defined(_WIN32) || defined(_WIN64)
   const char *add = strerror(errno);
 #else
   const char *add = HandleStrerror(strerror_r(errno, buf, 200), buf);

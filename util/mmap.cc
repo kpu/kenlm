@@ -1,22 +1,52 @@
+/* Memory mapping wrappers.
+ * ARM and MinGW ports contributed by Hideo Okuma and Tomoyuki Yoshimura at
+ * NICT.
+ */
+#include "util/mmap.hh"
+
 #include "util/exception.hh"
 #include "util/file.hh"
-#include "util/mmap.hh"
 
 #include <iostream>
 
 #include <assert.h>
 #include <fcntl.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#define MAP_ANON    0
+#define MAP_PRIVATE 1
+#define MAP_SHARED  2
+#define MAP_FAILED  ((void*)-1)
+#define S_IRGRP 00040
+#define S_IROTH 00004
+#else
 #include <sys/mman.h>
+#endif
 #include <stdlib.h>
 #include <unistd.h>
 
 namespace util {
 
+long SizePage() {
+#if defined(_WIN32) || defined(_WIN64)
+  SYSTEM_INFO si;
+  GetSystemInfo(&si);
+  return si.dwAllocationGranularity;
+#else
+  return sysconf(_SC_PAGE_SIZE);
+#endif
+}
+
 scoped_mmap::~scoped_mmap() {
   if (data_ != (void*)-1) {
     // Thanks Denis Filimonov for pointing out NFS likes msync first.  
+#if defined(_WIN32) || defined(_WIN64)
+    if (!::FlushViewOfFile(data_, size_) || !::UnmapViewOfFile(data_)) {
+#else
     if (msync(data_, size_, MS_SYNC) || munmap(data_, size_)) {
+#endif
       std::cerr << "msync or mmap failed for " << size_ << " bytes." << std::endl;
       abort();
     }
@@ -58,8 +88,20 @@ void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int
     flags |= MAP_POPULATE;
   }
 #endif
+#if defined(_WIN32) || defined(_WIN64)
+  int protectC = for_write ? PAGE_READWRITE : PAGE_READONLY;
+  int protectM = for_write ? FILE_MAP_WRITE : FILE_MAP_READ;
+  void *ret = MAP_FAILED;
+  HANDLE hMapping = CreateFileMapping((HANDLE)_get_osfhandle(fd), NULL, protectC, 0, size + offset, NULL);
+  if (hMapping) {
+    ret = MapViewOfFile(hMapping, protectM, 0, offset, size);
+    if (!ret) ret = MAP_FAILED;
+    CloseHandle(hMapping);
+  }
+#else
   int protect = for_write ? (PROT_READ | PROT_WRITE) : PROT_READ;
   void *ret = mmap(NULL, size, protect, flags, fd, offset);
+#endif
   if (ret == MAP_FAILED) {
     UTIL_THROW(ErrnoException, "mmap failed for size " << size << " at offset " << offset);
   }

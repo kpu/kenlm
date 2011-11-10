@@ -11,6 +11,8 @@ namespace util {
 
 class scoped_fd;
 
+long SizePage();
+
 // (void*)-1 is MAP_FAILED; this is done to avoid including the mmap header here.  
 class scoped_mmap {
   public:
