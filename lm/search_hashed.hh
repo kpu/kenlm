@@ -8,7 +8,6 @@
 #include "lm/weights.hh"
 
 #include "util/bit_packing.hh"
-#include "util/key_value_packing.hh"
 #include "util/probing_hash_table.hh"
 
 #include <algorithm>
@@ -105,7 +104,7 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
           std::cerr << "Extend pointer " << extend_pointer << " should have been found for length " << (unsigned) extend_length << std::endl;
           abort();
         }
-        val.f = found->GetValue().prob;
+        val.f = found->value.prob;
       }
       val.i |= util::kSignBit;
       prob = val.f;
@@ -117,12 +116,12 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
       typename Middle::ConstIterator found;
       if (!middle.Find(node, found)) return false;
       util::FloatEnc enc;
-      enc.f = found->GetValue().prob;
+      enc.f = found->value.prob;
       ret.independent_left = (enc.i & util::kSignBit);
       ret.extend_left = node;
       enc.i |= util::kSignBit;
       ret.prob = enc.f;
-      backoff = found->GetValue().backoff;
+      backoff = found->value.backoff;
       return true;
     }
 
@@ -132,7 +131,7 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
       node = CombineWordHash(node, word);
       typename Middle::ConstIterator found;
       if (!middle.Find(node, found)) return false;
-      backoff = found->GetValue().backoff;
+      backoff = found->value.backoff;
       return true;
     }
 
@@ -141,7 +140,7 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
       node = CombineWordHash(node, word);
       typename Longest::ConstIterator found;
       if (!longest.Find(node, found)) return false;
-      prob = found->GetValue().prob;
+      prob = found->value.prob;
       return true;
     }
 
@@ -160,14 +159,47 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
     std::vector<Middle> middle_;
 };
 
-// std::identity is an SGI extension :-(
-struct IdentityHash : public std::unary_function<uint64_t, size_t> {
-  size_t operator()(uint64_t arg) const { return static_cast<size_t>(arg); }
+#pragma pack(push)
+#pragma pack(4)
+/* These look like perfect candidates for a template, right?  Ancient gcc (4.1 on RedHat stale linux) doesn't pack templates correctly. */
+struct ProbBackoffEntry {
+  uint64_t key;
+  ProbBackoff value;
+  typedef uint64_t Key;
+  typedef ProbBackoff Value;
+  uint64_t GetKey() const {
+    return key;
+  }
+  static ProbBackoffEntry Make(uint64_t key, ProbBackoff value) {
+    ProbBackoffEntry ret;
+    ret.key = key;
+    ret.value = value;
+    return ret;
+  }
 };
 
+struct ProbEntry {
+  uint64_t key;
+  Prob value;
+  typedef uint64_t Key;
+  typedef Prob Value;
+  uint64_t GetKey() const {
+    return key;
+  }
+  static ProbEntry Make(uint64_t key, Prob value) {
+    ProbEntry ret;
+    ret.key = key;
+    ret.value = value;
+    return ret;
+  }
+};
+
+#pragma pack(pop)
+
+
 struct ProbingHashedSearch : public TemplateHashedSearch<
-  util::ProbingHashTable<util::ByteAlignedPacking<uint64_t, ProbBackoff>, IdentityHash>,
-  util::ProbingHashTable<util::ByteAlignedPacking<uint64_t, Prob>, IdentityHash> > {
+  util::ProbingHashTable<ProbBackoffEntry, util::IdentityHash>,
+  util::ProbingHashTable<ProbEntry, util::IdentityHash> > {
 
   static const ModelType kModelType = HASH_PROBING;
 };

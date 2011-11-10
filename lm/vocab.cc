@@ -175,7 +175,7 @@ WordIndex ProbingVocabulary::Insert(const StringPiece &str) {
     return 0;
   } else {
     if (enumerate_) enumerate_->Add(bound_, str);
-    lookup_.Insert(Lookup::Packing::Make(hashed, bound_));
+    lookup_.Insert(ProbingVocabuaryEntry::Make(hashed, bound_));
     return bound_++;
   }
 }
