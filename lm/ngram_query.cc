@@ -7,8 +7,9 @@
 #include <string>
 
 #include <ctype.h>
-
+#if !defined(_WIN32) && !defined(_WIN64)
 #include <sys/resource.h>
+#endif
 #include <sys/time.h>
 
 float FloatSec(const struct timeval &tv) {
@@ -16,6 +17,7 @@ float FloatSec(const struct timeval &tv) {
 }
 
 void PrintUsage(const char *message) {
+#if !defined(_WIN32) && !defined(_WIN64)
   struct rusage usage;
   if (getrusage(RUSAGE_SELF, &usage)) {
     perror("getrusage");
@@ -33,6 +35,7 @@ void PrintUsage(const char *message) {
       break;
     }
   }
+#endif
 }
 
 template <class Model> void Query(const Model &model, bool sentence_context) {
