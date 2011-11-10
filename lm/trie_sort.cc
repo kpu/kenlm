@@ -96,7 +96,7 @@ void WriteContextFile(uint8_t *begin, uint8_t *end, const std::string &ngram_fil
   std::sort(context_begin, context_end, util::SizedCompare<EntryCompare, PartialViewProxy>(EntryCompare(order - 1)));
 
   std::string name(ngram_file_name + kContextSuffix);
-  util::scoped_FILE out(OpenOrThrow(name.c_str(), "w"));
+  util::scoped_FILE out(OpenOrThrow(name.c_str(), "wb"));
 
   // Write out to file and uniqueify at the same time.  Could have used unique_copy if there was an appropriate OutputIterator.  
   if (context_begin == context_end) return;
@@ -132,7 +132,7 @@ template <class Combine> void MergeSortedFiles(const std::string &first_name, co
   util::RemoveOrThrow(first_name.c_str());
   second.Init(second_name.c_str(), entry_size);
   util::RemoveOrThrow(second_name.c_str());
-  util::scoped_FILE out_file(OpenOrThrow(out.c_str(), "w"));
+  util::scoped_FILE out_file(OpenOrThrow(out.c_str(), "wb"));
   EntryCompare less(order);
   while (first && second) {
     if (less(first.Data(), second.Data())) {
@@ -209,7 +209,7 @@ void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const st
 } // namespace
 
 void RecordReader::Init(const std::string &name, std::size_t entry_size) {
-  file_.reset(OpenOrThrow(name.c_str(), "r+"));
+  file_.reset(OpenOrThrow(name.c_str(), "r+b"));
   data_.reset(malloc(entry_size));
   UTIL_THROW_IF(!data_.get(), util::ErrnoException, "Failed to malloc read buffer");
   remains_ = true;
