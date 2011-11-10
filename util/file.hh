@@ -67,8 +67,6 @@ class scoped_FILE {
 
 int OpenReadOrThrow(const char *name);
 
-int CreateOrThrow(const char *name);
-
 // Return value for SizeFile when it can't size properly.  
 const uint64_t kBadSize = (uint64_t)-1;
 uint64_t SizeFile(int fd);
@@ -77,8 +75,6 @@ void ReadOrThrow(int fd, void *to, std::size_t size);
 std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount);
 
 void WriteOrThrow(int fd, const void *data_void, std::size_t size);
-
-void RemoveOrThrow(const char *name);
 
 // Seeking
 void SeekOrThrow(int fd, uint64_t off);
