@@ -19,8 +19,8 @@ class ProbingSizeException : public Exception {
 };
 
 // std::identity is an SGI extension :-(
-struct IdentityHash : public std::unary_function<uint64_t, std::size_t> {
-  std::size_t operator()(uint64_t arg) const { return static_cast<std::size_t>(arg); }
+struct IdentityHash : public std::unary_function<std::size_t, std::size_t> {
+  template <class T> std::size_t operator()(T arg) const { return static_cast<std::size_t>(arg); }
 };
 
 /* Non-standard hash table
