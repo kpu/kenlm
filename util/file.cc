@@ -1,6 +1,7 @@
 #include "util/file.hh"
 
 #include "util/exception.hh"
+#include "util/portability.hh"
 
 #include <cstdlib>
 #include <cstdio>
@@ -9,7 +10,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <stdint.h>
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -188,33 +188,33 @@ mkstemp_and_unlink(char *tmpl)
   value += random_time_bits ^ (unsigned long long)GetCurrentThreadId ();
 
   for (count = 0; count < attempts; value += 7777, ++count)
-    {
-      unsigned long long v = value;
+  {
+    unsigned long long v = value;
 
-      /* Fill in the random bits.  */
-      XXXXXX[0] = letters[v % 62];
-      v /= 62;
-      XXXXXX[1] = letters[v % 62];
-      v /= 62;
-      XXXXXX[2] = letters[v % 62];
-      v /= 62;
-      XXXXXX[3] = letters[v % 62];
-      v /= 62;
-      XXXXXX[4] = letters[v % 62];
-      v /= 62;
-      XXXXXX[5] = letters[v % 62];
+    /* Fill in the random bits.  */
+    XXXXXX[0] = letters[v % 62];
+    v /= 62;
+    XXXXXX[1] = letters[v % 62];
+    v /= 62;
+    XXXXXX[2] = letters[v % 62];
+    v /= 62;
+    XXXXXX[3] = letters[v % 62];
+    v /= 62;
+    XXXXXX[4] = letters[v % 62];
+    v /= 62;
+    XXXXXX[5] = letters[v % 62];
 
-      /* Modified to unlink */
-//      fd = open (tmpl, O_RDWR | O_CREAT | O_EXCL, _S_IREAD | _S_IWRITE);
-      fd = _open (tmpl, _O_RDWR | _O_CREAT | _O_TEMPORARY | _O_EXCL, _S_IREAD | _S_IWRITE);
-      if (fd >= 0)
+    /* Modified for windows and to unlink */
+    //      fd = open (tmpl, O_RDWR | O_CREAT | O_EXCL, _S_IREAD | _S_IWRITE);
+    fd = _open (tmpl, _O_RDWR | _O_CREAT | _O_TEMPORARY | _O_EXCL | _O_BINARY, _S_IREAD | _S_IWRITE);
+    if (fd >= 0)
     {
       errno = save_errno;
       return fd;
     }
-      else if (errno != EEXIST)
-    return -1;
-    }
+    else if (errno != EEXIST)
+      return -1;
+  }
 
   /* We got out of the loop because we ran out of combinations to try.  */
   errno = EEXIST;
