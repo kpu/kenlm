@@ -12,7 +12,7 @@
 #include <cstddef>
 #include <vector>
 
-#include <inttypes.h>
+#include <stdint.h>
 
 namespace lm {
 namespace ngram {

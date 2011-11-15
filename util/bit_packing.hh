@@ -27,7 +27,7 @@
 #include <arpa/nameser_compat.h>
 #endif 
 
-#include <inttypes.h>
+#include <stdint.h>
 
 #include <string.h>
 

@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <vector>
 
-#include <inttypes.h>
+#include <stdint.h>
 
 #include <iostream>
 

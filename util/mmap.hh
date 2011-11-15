@@ -4,7 +4,7 @@
 
 #include <cstddef>
 
-#include <inttypes.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 namespace util {

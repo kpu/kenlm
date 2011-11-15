@@ -3,7 +3,7 @@
 
 #include <limits>
 
-#include <inttypes.h>
+#include <stdint.h>
 #include <math.h>
 
 namespace lm {

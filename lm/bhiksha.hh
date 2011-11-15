@@ -13,7 +13,7 @@
 #ifndef LM_BHIKSHA__
 #define LM_BHIKSHA__
 
-#include <inttypes.h>
+#include <stdint.h>
 #include <assert.h>
 
 #include "lm/model_type.hh"

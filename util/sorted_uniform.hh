@@ -5,7 +5,7 @@
 #include <cstddef>
 
 #include <assert.h>
-#include <inttypes.h>
+#include <stdint.h>
 
 namespace util {
 

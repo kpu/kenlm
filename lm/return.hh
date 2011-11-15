@@ -1,7 +1,7 @@
 #ifndef LM_RETURN__
 #define LM_RETURN__
 
-#include <inttypes.h>
+#include <stdint.h>
 
 namespace lm {
 /* Structure returned by scoring routines. */

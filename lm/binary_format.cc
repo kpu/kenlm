@@ -9,7 +9,7 @@
 #include <limits>
 #include <string>
 
-#include <inttypes.h>
+#include <stdint.h>
 
 namespace lm {
 namespace ngram {

@@ -1,7 +1,7 @@
 #ifndef LM_TRIE__
 #define LM_TRIE__
 
-#include <inttypes.h>
+#include <stdint.h>
 
 #include <cstddef>
 

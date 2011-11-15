@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-#include <inttypes.h>
+#include <stdint.h>
 
 namespace util {
 class FilePiece;
