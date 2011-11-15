@@ -137,7 +137,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
         unsigned char &next_use) const;
 
   private:
-    friend void LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);
+    friend void lm::ngram::LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);
 
     static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config);
 
