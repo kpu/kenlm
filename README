@@ -1,0 +1,29 @@
+Language model inference code by Kenneth Heafield <kenlm at kheafield.com>
+The official website is http://kheafield.com/code/kenlm/.  If you're a decoder developer, please download the latest version from there instead of copying from another decoder.  
+
+Two data structures are supported: probing and trie.  Probing is a probing hash table with keys that ere 64-bit hashes of n-grams and floats as values.  Trie is a fairly standard trie but with bit-level packing so it uses the minimum number of bits to store word indices and pointers.  The trie node entries are sorted by word index.  Probing is the fastest and uses the most memory.  Trie uses the least memory and a bit slower.  
+
+With trie, resident memory is 58% of IRST's smallest version and 21% of SRI's compact version.  Simultaneously, trie CPU's use is 81% of IRST's fastest version and 84% of SRI's fast version.  KenLM's probing hash table implementation goes even faster at the expense of using more memory.  See http://kheafield.com/code/kenlm/benchmark/.  
+
+Binary format via mmap is supported.  Run ./build_binary to make one then pass the binary file name to the appropriate Model constructor.   
+
+Currently, it assumes POSIX APIs for errno, sterror_r, open, close, mmap, munmap, ftruncate, fstat, lseek, and read.  This is tested on Linux and the non-UNIX Mac OS X.  I welcome submissions porting (via #ifdef) to other systems (e.g. Windows) but proudly have no machine on which to test it.  
+
+A brief note to Mac OS X users: your gcc is too old to recognize the pack pragma.  The warning effectively means that, on 64-bit machines, the model will use 16 bytes instead of 12 bytes per n-gram of maximum order (those of lower order are already 16 bytes) in the probing and sorted models.  The trie is not impacted by this.  
+
+
+FOR DEVELOPERS
+Copy the code and distribute with your decoder.  
+- It does not depend on Boost or ICU.  If you use ICU, define HAVE_ICU in util/have.hh (uncomment the line) to avoid a name conflict.  Defining HAVE_BOOST will let you hash StringPiece.  
+
+- Most people have zlib.  If you don't want to depend on that, comment out #define HAVE_ZLIB in util/have.hh.  This will disable loading gzipped ARPA files.  
+
+- Look at compile.sh and reimplement using your build system.  
+
+- Use either the interface in lm/model.hh or lm/virtual_interface.hh.  Interface documentation is in comments of lm/virtual_interface.hh (including for lm/model.hh).  
+
+- See lm/config.hh for tuning options.  
+
+- I recommend copying the code and distributing it with your decoder.  However, please send improvements to me so that they can be integrated into the package.  
+
+The name was Hieu Hoang's idea, not mine.  
