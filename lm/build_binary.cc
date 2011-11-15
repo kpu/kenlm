@@ -1,5 +1,6 @@
 #include "lm/model.hh"
 #include "util/file_piece.hh"
+#include "util/portability.hh"
 
 #include <cstdlib>
 #include <exception>
@@ -8,6 +9,10 @@
 
 #include <math.h>
 #include <stdlib.h>
+
+#ifdef WIN32
+#include "util/getopt.hh"
+#endif
 
 namespace lm {
 namespace ngram {
@@ -86,7 +91,7 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
     prefix = 'G';
     divide = 1 << 30;
   }
-  long int length = std::max<long int>(2, lrint(ceil(log10(max_length / divide))));
+  long int length = std::max<long int>(2, lrint(ceil(log10((double) max_length / divide))));
   std::cout << "Memory estimate:\ntype    ";
   // right align bytes.  
   for (long int i = 0; i < length - 2; ++i) std::cout << ' ';
