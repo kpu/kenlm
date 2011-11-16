@@ -1,3 +1,4 @@
+// Tests might fail if you have creative characters in your path.  Sue me.  
 #include "util/file_piece.hh"
 
 #include "util/scoped.hh"
@@ -14,10 +15,18 @@
 namespace util {
 namespace {
 
+std::string FileLocation() {
+  if (boost::unit_test::framework::master_test_suite().argc < 2) {
+    return "file_piece.cc";
+  }
+  std::string ret(boost::unit_test::framework::master_test_suite().argv[1]);
+  return ret;
+}
+
 /* mmap implementation */
 BOOST_AUTO_TEST_CASE(MMapReadLine) {
-  std::fstream ref("file_piece.cc", std::ios::in);
-  FilePiece test("file_piece.cc", NULL, 1);
+  std::fstream ref(FileLocation().c_str(), std::ios::in);
+  FilePiece test(FileLocation().c_str(), NULL, 1);
   std::string ref_line;
   while (getline(ref, ref_line)) {
     StringPiece test_line(test.ReadLine());
@@ -35,9 +44,13 @@ BOOST_AUTO_TEST_CASE(MMapReadLine) {
  */
 /* read() implementation */
 BOOST_AUTO_TEST_CASE(StreamReadLine) {
-  std::fstream ref("file_piece.cc", std::ios::in);
+  std::fstream ref(FileLocation().c_str(), std::ios::in);
 
-  FILE *catter = popen("cat file_piece.cc", "r");
+  std::string popen_args = "cat \"";
+  popen_args += FileLocation();
+  popen_args += '"';
+
+  FILE *catter = popen(popen_args.c_str(), "r");
   BOOST_REQUIRE(catter);
   
   FilePiece test(dup(fileno(catter)), "file_piece.cc", NULL, 1);
@@ -58,10 +71,14 @@ BOOST_AUTO_TEST_CASE(StreamReadLine) {
 
 // gzip file
 BOOST_AUTO_TEST_CASE(PlainZipReadLine) {
-  std::fstream ref("file_piece.cc", std::ios::in);
+  std::string location(FileLocation());
+  std::fstream ref(location.c_str(), std::ios::in);
 
-  BOOST_REQUIRE_EQUAL(0, system("gzip <file_piece.cc >file_piece.cc.gz"));
-  FilePiece test("file_piece.cc.gz", NULL, 1);
+  std::string command("gzip <\"");
+  command += location + "\" >\"" + location + "\".gz";
+
+  BOOST_REQUIRE_EQUAL(0, system(command.c_str()));
+  FilePiece test((location + ".gz").c_str(), NULL, 1);
   std::string ref_line;
   while (getline(ref, ref_line)) {
     StringPiece test_line(test.ReadLine());
@@ -77,12 +94,15 @@ BOOST_AUTO_TEST_CASE(PlainZipReadLine) {
 // the test.  
 #ifndef __APPLE__
 BOOST_AUTO_TEST_CASE(StreamZipReadLine) {
-  std::fstream ref("file_piece.cc", std::ios::in);
+  std::fstream ref(FileLocation().c_str(), std::ios::in);
 
-  FILE * catter = popen("gzip <file_piece.cc", "r");
+  std::string command("gzip <\"");
+  command += FileLocation() + "\"";
+
+  FILE * catter = popen(command.c_str(), "r");
   BOOST_REQUIRE(catter);
   
-  FilePiece test(dup(fileno(catter)), "file_piece.cc", NULL, 1);
+  FilePiece test(dup(fileno(catter)), "file_piece.cc.gz", NULL, 1);
   std::string ref_line;
   while (getline(ref, ref_line)) {
     StringPiece test_line(test.ReadLine());

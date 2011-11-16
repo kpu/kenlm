@@ -1,4 +1,7 @@
-project : requirements <threading>multi <address-model>64 <warnings>on <include>. ;
+project : default-build <threading>multi <address-model>64 <warnings>on <variant>release ;
+project : requirements <include>. ;
+
+path-constant TOP : . ;
 
 build-project lm ;
 build-project util ;

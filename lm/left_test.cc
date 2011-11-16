@@ -326,10 +326,17 @@ template <class M> void FullGrow(const M &m) {
   }
 }
 
+const char *FileLocation() {
+  if (boost::unit_test::framework::master_test_suite().argc < 2) {
+    return "test.arpa";
+  }
+  return boost::unit_test::framework::master_test_suite().argv[1];
+}
+
 template <class M> void Everything() {
   Config config;
   config.messages = NULL;
-  M m("test.arpa", config);
+  M m(FileLocation(), config);
 
   Short(m);
   Charge(m);
