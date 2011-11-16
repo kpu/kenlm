@@ -142,7 +142,7 @@ template <class M> float TreeMiddle(const M &m, const std::vector<WordIndex> &wo
 
 template <class M> void LookupVocab(const M &m, const StringPiece &str, std::vector<WordIndex> &out) {
   out.clear();
-  for (util::PieceIterator<' '> i(str); i; ++i) {
+  for (util::TokenIter<util::SingleCharacter, true> i(str, ' '); i; ++i) {
     out.push_back(m.GetVocabulary().Index(*i));
   }
 }

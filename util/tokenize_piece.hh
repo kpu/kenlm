@@ -1,6 +1,7 @@
 #ifndef UTIL_TOKENIZE_PIECE__
 #define UTIL_TOKENIZE_PIECE__
 
+#include "util/exception.hh"
 #include "util/string_piece.hh"
 
 #include <boost/iterator/iterator_facade.hpp>
@@ -8,63 +9,25 @@
 #include <algorithm>
 #include <iostream>
 
-/* Usage:
- *
- * for (PieceIterator<' '> i(" foo \r\n bar "); i; ++i) {
- *   std::cout << *i << "\n";
- * }
- *
- */
-
 namespace util {
 
-// Tokenize a StringPiece using an iterator interface.  boost::tokenizer doesn't work with StringPiece.
-template <char d> class PieceIterator : public boost::iterator_facade<PieceIterator<d>, const StringPiece, boost::forward_traversal_tag> {
+// Thrown on dereference when out of tokens to parse
+class OutOfTokens : public Exception {
   public:
-    // Default construct is end, which is also accessed by kEndPieceIterator;
-    PieceIterator() {}
+    OutOfTokens() throw() {}
+    ~OutOfTokens() throw() {}
+};
 
-    explicit PieceIterator(const StringPiece &str)
-      : after_(str) {
-        increment();
-      }
+class SingleCharacter {
+  public:
+    explicit SingleCharacter(char delim) : delim_(delim) {}
 
-    bool operator!() const {
-      return after_.data() == 0;
-    }
-    operator bool() const {
-      return after_.data() != 0;
-    }
-
-    static PieceIterator<d> end() {
-      return PieceIterator<d>();
+    StringPiece Find(const StringPiece &in) const {
+      return StringPiece(std::find(in.data(), in.data() + in.size(), delim_), 1);
     }
 
   private:
-    friend class boost::iterator_core_access;
-
-    void increment() {
-      const char *start = after_.data();
-      for (; (start != after_.data() + after_.size()) && (d == *start); ++start) {}
-      if (start == after_.data() + after_.size()) {
-        // End condition.
-        after_.clear();
-        return;
-      }
-      const char *finish = start;
-      for (; (finish != after_.data() + after_.size()) && (d != *finish); ++finish) {}
-      current_ = StringPiece(start, finish - start);
-      after_ = StringPiece(finish, after_.data() + after_.size() - finish);
-    }
-
-    bool equal(const PieceIterator &other) const {
-      return after_.data() == other.after_.data();
-    }
-
-    const StringPiece &dereference() const { return current_; }
-
-    StringPiece current_;
-    StringPiece after_;
+    char delim_;
 };
 
 class MultiCharacter {
@@ -95,7 +58,7 @@ template <class Find, bool SkipEmpty = false> class TokenIter : public boost::it
   public:
     TokenIter() {}
 
-    TokenIter(const StringPiece &str, const Find &finder) : after_(str), finder_(finder) {
+    template <class Construct> TokenIter(const StringPiece &str, const Construct &construct) : after_(str), finder_(construct) {
       increment();
     }
 
@@ -130,6 +93,7 @@ template <class Find, bool SkipEmpty = false> class TokenIter : public boost::it
     }
 
     const StringPiece &dereference() const {
+      UTIL_THROW_IF(!current_.data(), OutOfTokens, "Ran out of tokens");
       return current_;
     }
 
