@@ -1,0 +1,4 @@
+project : requirements <threading>multi <address-model>64 <warnings>on <include>. ;
+
+build-project lm ;
+build-project util ;

@@ -1,0 +1,13 @@
+lib z ;
+
+lib util : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc mmap.cc murmur_hash.cc portability.cc z ;
+
+import testing ;
+lib boost_test_exec_monitor ;
+
+unit-test bit_packing_test : bit_packing_test.cc util boost_test_exec_monitor ;
+unit-test file_piece_test : file_piece_test.cc util boost_test_exec_monitor ;
+unit-test joint_sort_test : joint_sort_test.cc util boost_test_exec_monitor ;
+unit-test probing_hash_table_test : probing_hash_table_test.cc util boost_test_exec_monitor ;
+unit-test sorted_uniform_test : sorted_uniform_test.cc util boost_test_exec_monitor ;
+unit-test tokenize_piece_test : tokenize_piece_test.cc util boost_test_exec_monitor ;

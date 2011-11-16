@@ -1,0 +1,7 @@
+lib lm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quantize.cc read_arpa.cc search_hashed.cc search_trie.cc trie.cc trie_sort.cc virtual_interface.cc vocab.cc ../util//util ;
+
+import testing ;
+lib boost_test_exec_monitor ;
+
+unit-test left_test : left_test.cc lm boost_test_exec_monitor ;
+unit-test model_test : model_test.cc lm boost_test_exec_monitor ;
