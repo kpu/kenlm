@@ -159,9 +159,10 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
     std::vector<Middle> middle_;
 };
 
-#pragma pack(push)
-#pragma pack(4)
-/* These look like perfect candidates for a template, right?  Ancient gcc (4.1 on RedHat stale linux) doesn't pack templates correctly. */
+/* These look like perfect candidates for a template, right?  Ancient gcc (4.1
+ * on RedHat stale linux) doesn't pack templates correctly.  ProbBackoffEntry
+ * is a multiple of 8 bytes anyway.  ProbEntry is 12 bytes so it's set to pack.
+ */
 struct ProbBackoffEntry {
   uint64_t key;
   ProbBackoff value;
@@ -178,6 +179,8 @@ struct ProbBackoffEntry {
   }
 };
 
+#pragma pack(push)
+#pragma pack(4)
 struct ProbEntry {
   uint64_t key;
   Prob value;
