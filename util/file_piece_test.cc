@@ -79,6 +79,7 @@ BOOST_AUTO_TEST_CASE(PlainZipReadLine) {
 
   BOOST_REQUIRE_EQUAL(0, system(command.c_str()));
   FilePiece test((location + ".gz").c_str(), NULL, 1);
+  unlink((location + ".gz").c_str());
   std::string ref_line;
   while (getline(ref, ref_line)) {
     StringPiece test_line(test.ReadLine());
