@@ -20,11 +20,30 @@ const char kMagicBytes[] = "mmap lm http://kheafield.com/code format version 5\n
 const char kMagicIncomplete[] = "mmap lm http://kheafield.com/code incomplete\n";
 const long int kMagicVersion = 5;
 
-// Test values.  
-struct Sanity {
+// Old binary files built on 32-bit machines have this header.  
+// TODO: eliminate with next binary release.
+struct OldSanity {
   char magic[sizeof(kMagicBytes)];
   float zero_f, one_f, minus_half_f;
   WordIndex one_word_index, max_word_index;
+  uint64_t one_uint64;
+
+  void SetToReference() {
+    std::memset(this, 0, sizeof(OldSanity));
+    std::memcpy(magic, kMagicBytes, sizeof(magic));
+    zero_f = 0.0; one_f = 1.0; minus_half_f = -0.5;
+    one_word_index = 1;
+    max_word_index = std::numeric_limits<WordIndex>::max();
+    one_uint64 = 1;
+  }
+};
+
+
+// Test values aligned to 8 bytes.    
+struct Sanity {
+  char magic[ALIGN8(sizeof(kMagicBytes))];
+  float zero_f, one_f, minus_half_f;
+  WordIndex one_word_index, max_word_index, padding_to_8;
   uint64_t one_uint64;
 
   void SetToReference() {
@@ -33,6 +52,7 @@ struct Sanity {
     zero_f = 0.0; one_f = 1.0; minus_half_f = -0.5;
     one_word_index = 1;
     max_word_index = std::numeric_limits<WordIndex>::max();
+    padding_to_8 = 0;
     one_uint64 = 1;
   }
 };
@@ -136,6 +156,10 @@ bool IsBinaryFormat(int fd) {
     if ((end_ptr != begin_version) && version != kMagicVersion) {
       UTIL_THROW(FormatLoadException, "Binary file has version " << version << " but this implementation expects version " << kMagicVersion << " so you'll have to use the ARPA to rebuild your binary");
     }
+
+    OldSanity old_sanity = OldSanity();
+    old_sanity.SetToReference();
+    UTIL_THROW_IF(!memcmp(memory.get(), &old_sanity, sizeof(OldSanity)), FormatLoadException, "Looks like this is an old 32-bit format.  The old 32-bit format has been removed so that 64-bit and 32-bit files are exchangeable.");
     UTIL_THROW(FormatLoadException, "File looks like it should be loaded with mmap, but the test values don't match.  Try rebuilding the binary format LM using the same code revision, compiler, and architecture");
   }
   return false;
