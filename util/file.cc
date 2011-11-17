@@ -1,7 +1,6 @@
 #include "util/file.hh"
 
 #include "util/exception.hh"
-#include "util/portability.hh"
 
 #include <cstdlib>
 #include <cstdio>

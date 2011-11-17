@@ -129,7 +129,7 @@ void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::s
 
 namespace {
 void ParseNumber(const char *begin, char *&end, float &out) {
-#ifdef sun
+#if defined(sun) || defined(WIN32)
   out = static_cast<float>(strtod(begin, &end));
 #else
   out = strtof(begin, &end);
