@@ -120,7 +120,7 @@ void FinishFile(const Config &config, ModelType model_type, unsigned int search_
     util::SyncOrThrow(backing.search.get(), backing.search.size());
     util::SyncOrThrow(backing.vocab.get(), backing.vocab.size());
     // header and vocab share the same mmap.  The header is written here because we know the counts.  
-    Parameters params;
+    Parameters params = Parameters();
     params.counts = counts;
     params.fixed.order = counts.size();
     params.fixed.probing_multiplier = config.probing_multiplier;
