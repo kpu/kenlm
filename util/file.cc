@@ -44,9 +44,14 @@ int OpenReadOrThrow(const char *name) {
 }
 
 uint64_t SizeFile(int fd) {
+#if defined(_WIN32) || defined(_WIN64)
+  __int64 ret = _filelengthi64(fd);
+  return (ret == -1) ? kBadSize : ret;
+#else
   struct stat sb;
   if (fstat(fd, &sb) == -1 || (!sb.st_size && !S_ISREG(sb.st_mode))) return kBadSize;
   return sb.st_size;
+#endif
 }
 
 void ResizeOrThrow(int fd, uint64_t to) {

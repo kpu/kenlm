@@ -34,16 +34,6 @@ long lrint(float);
 //inline int getrusage(int, struct rusage*) { return 0; }
 //extern int RUSAGE_SELF;
 
-typedef __int64 OFF_T;
-//#define OFF_T __int64
-
-#ifndef S_ISDIR
-#define S_ISDIR(mode)  (((mode) & S_IFMT) == S_IFDIR)
-#endif
-
-#ifndef S_ISREG
-#define S_ISREG(mode)  (((mode) & S_IFMT) == S_IFREG)
-#endif
 
 int mkdtemp(const char*);
 int munmap(void *, int);
@@ -90,25 +80,3 @@ const FD kBadFD = -1;
 typedef off_t OFF_T;
 
 #endif
-
-#ifdef __GNUC__
-#define UTIL_FUNC_NAME __PRETTY_FUNCTION__
-#else
-#ifdef _WIN32
-#define UTIL_FUNC_NAME __FUNCTION__
-#else
-#define UTIL_FUNC_NAME NULL
-#endif
-#endif
-
-/* Bit-level packing routines */
-#ifdef __APPLE__
-	#include <architecture/byte_order.h>
-#elif __linux__
-	#include <endian.h>
-#elif WIN32
-	// nothing
-#else
-	#include <arpa/nameser_compat.h>
-#endif 
-
