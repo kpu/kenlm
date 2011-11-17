@@ -377,7 +377,7 @@ template <class Doing> class BlankManager {
 
 template <class Doing> void RecursiveInsert(const unsigned char total_order, const WordIndex unigram_count, RecordReader *input, std::ostream *progress_out, const char *message, Doing &doing) {
   util::ErsatzProgress progress(progress_out, message, unigram_count + 1);
-  unsigned int unigram = 0;
+  WordIndex unigram = 0;
   std::priority_queue<Gram> grams;
   grams.push(Gram(&unigram, 1));
   for (unsigned char i = 2; i <= total_order; ++i) {
