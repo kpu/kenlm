@@ -5,3 +5,5 @@ path-constant TOP : . ;
 
 build-project lm ;
 build-project util ;
+
+install dist : lm//query lm//build_binary : <location>dist <dll-path>$(TOP)/dist <install-dependencies>on <install-type>EXE <install-type>LIB  ;

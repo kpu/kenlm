@@ -5,3 +5,6 @@ lib boost_test_exec_monitor ;
 
 run left_test.cc lm boost_test_exec_monitor : : test.arpa ;
 run model_test.cc lm boost_test_exec_monitor : : test.arpa test_nounk.arpa ;
+
+exe query : ngram_query.cc lm ;
+exe build_binary : build_binary.cc lm ;
