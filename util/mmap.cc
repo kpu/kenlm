@@ -19,7 +19,6 @@
 #include <sys/mman.h>
 #endif
 #include <stdlib.h>
-#include <unistd.h>
 
 namespace util {
 
