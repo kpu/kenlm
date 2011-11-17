@@ -159,8 +159,8 @@ void *MapAnonymous(std::size_t size) {
 }
 
 void *MapZeroedWrite(int fd, std::size_t size) {
-  UTIL_THROW_IF(-1 == ftruncate(fd, 0), ErrnoException, "ftruncate on fd " << fd << " to 0 failed");
-  UTIL_THROW_IF(-1 == ftruncate(fd, size), ErrnoException, "ftruncate on fd " << fd << " to " << size << " failed");
+  ResizeOrThrow(fd, 0);
+  ResizeOrThrow(fd, size);
   return MapOrThrow(size, true, kFileFlags, false, fd, 0);
 }
 

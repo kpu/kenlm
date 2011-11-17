@@ -76,8 +76,12 @@ uint8_t *GrowForSearch(const Config &config, std::size_t vocab_pad, std::size_t 
   std::size_t adjusted_vocab = backing.vocab.size() + vocab_pad;
   if (config.write_mmap) {
     // Grow the file to accomodate the search, using zeros.  
-    if (-1 == ftruncate(backing.file.get(), adjusted_vocab + memory_size))
-      UTIL_THROW(util::ErrnoException, "ftruncate on " << config.write_mmap << " to " << (adjusted_vocab + memory_size) << " failed");
+    try {
+      util::ResizeOrThrow(backing.file.get(), adjusted_vocab + memory_size);
+    } catch (util::ErrnoException &e) {
+      e << " for file " << config.write_mmap;
+      throw e;
+    }
 
     // We're skipping over the header and vocab for the search space mmap.  mmap likes page aligned offsets, so some arithmetic to round the offset down.  
     std::size_t page_size = util::SizePage();

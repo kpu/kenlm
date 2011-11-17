@@ -71,6 +71,8 @@ int OpenReadOrThrow(const char *name);
 const uint64_t kBadSize = (uint64_t)-1;
 uint64_t SizeFile(int fd);
 
+void ResizeOrThrow(int fd, uint64_t to);
+
 void ReadOrThrow(int fd, void *to, std::size_t size);
 std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount);
 

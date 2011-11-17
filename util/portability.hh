@@ -28,7 +28,6 @@ typedef int ssize_t;
 
 int sysconf(int);
 int msync(void*, int, int);
-int ftruncate(FD, unsigned int);
 
 long lrint(float); 
 
