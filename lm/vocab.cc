@@ -13,6 +13,8 @@
 
 #include <string>
 
+#include <string.h>
+
 namespace lm {
 namespace ngram {
 
@@ -30,16 +32,26 @@ const uint64_t kUnknownHash = detail::HashForVocab("<unk>", 5);
 // Sadly some LMs have <UNK>.  
 const uint64_t kUnknownCapHash = detail::HashForVocab("<UNK>", 5);
 
-WordIndex ReadWords(int fd, EnumerateVocab *enumerate) {
-  if (!enumerate) return std::numeric_limits<WordIndex>::max();
+void ReadWords(int fd, EnumerateVocab *enumerate, WordIndex expected_count) {
+  // Check that we're at the right place by reading <unk> which is always first.
+  char check_unk[6];
+  util::ReadOrThrow(fd, check_unk, 6);
+  UTIL_THROW_IF(
+      memcmp(check_unk, "<unk>", 6),
+      FormatLoadException, 
+      "Vocabulary words are in the wrong place.  This could be because the binary file was built with stale gcc and old kenlm.  Stale gcc, including the gcc distributed with RedHat and OS X, has a bug that ignores pragma pack for template-dependent types.  New kenlm works around this, so you'll save memory but have to rebuild any binary files using the probing data structure.");
+  if (!enumerate) return;
+  enumerate->Add(0, "<unk>");
+
+  // Read all the words after unk.
   const std::size_t kInitialRead = 16384;
   std::string buf;
   buf.reserve(kInitialRead + 100);
   buf.resize(kInitialRead);
-  WordIndex index = 0;
+  WordIndex index = 1; // Read <unk> already.
   while (true) {
     std::size_t got = util::ReadOrEOF(fd, &buf[0], kInitialRead);
-    if (got == 0) return index;
+    if (got == 0) break;
     buf.resize(got);
     while (buf[buf.size() - 1]) {
       char next_char;
@@ -53,6 +65,8 @@ WordIndex ReadWords(int fd, EnumerateVocab *enumerate) {
       i += length + 1 /* null byte */;
     }
   }
+
+  UTIL_THROW_IF(expected_count != index, FormatLoadException, "The binary file has the wrong number of words at the end.  This could be caused by a truncated binary file.");
 }
 
 } // namespace
@@ -130,9 +144,9 @@ void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
 
 void SortedVocabulary::LoadedBinary(int fd, EnumerateVocab *to) {
   end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
-  ReadWords(fd, to);
   SetSpecial(Index("<s>"), Index("</s>"), 0);
   bound_ = end_ - begin_ + 1;
+  ReadWords(fd, to, bound_);
 }
 
 namespace {
@@ -190,9 +204,9 @@ void ProbingVocabulary::FinishedLoading(ProbBackoff * /*reorder_vocab*/) {
 void ProbingVocabulary::LoadedBinary(int fd, EnumerateVocab *to) {
   UTIL_THROW_IF(header_->version != kProbingVocabularyVersion, FormatLoadException, "The binary file has probing version " << header_->version << " but the code expects version " << kProbingVocabularyVersion << ".  Please rerun build_binary using the same version of the code.");
   lookup_.LoadedBinary();
-  ReadWords(fd, to);
   bound_ = header_->bound;
   SetSpecial(Index("<s>"), Index("</s>"), 0);
+  ReadWords(fd, to, bound_);
 }
 
 void MissingUnknown(const Config &config) throw(SpecialWordMissingException) {

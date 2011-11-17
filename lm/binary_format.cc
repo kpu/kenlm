@@ -176,9 +176,8 @@ uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t
   if (config.enumerate_vocab && !params.fixed.has_vocabulary)
     UTIL_THROW(FormatLoadException, "The decoder requested all the vocabulary strings, but this binary file does not have them.  You may need to rebuild the binary file with an updated version of build_binary.");
 
-  if (config.enumerate_vocab) {
-    util::SeekOrThrow(backing.file.get(), total_map);
-  }
+  // Seek to vocabulary words
+  util::SeekOrThrow(backing.file.get(), total_map);
   return reinterpret_cast<uint8_t*>(backing.search.get()) + TotalHeaderSize(params.counts.size());
 }
 
