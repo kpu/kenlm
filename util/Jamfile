@@ -3,11 +3,11 @@ lib z ;
 lib util : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc mmap.cc murmur_hash.cc z : <include>.. : : <include>.. ;
 
 import testing ;
-lib boost_test_exec_monitor ;
+lib boost_unit_test_framework ;
 
-unit-test bit_packing_test : bit_packing_test.cc util boost_test_exec_monitor ;
-run file_piece_test.cc util boost_test_exec_monitor : : file_piece.cc ;
-unit-test joint_sort_test : joint_sort_test.cc util boost_test_exec_monitor ;
-unit-test probing_hash_table_test : probing_hash_table_test.cc util boost_test_exec_monitor ;
-unit-test sorted_uniform_test : sorted_uniform_test.cc util boost_test_exec_monitor ;
-unit-test tokenize_piece_test : tokenize_piece_test.cc util boost_test_exec_monitor ;
+unit-test bit_packing_test : bit_packing_test.cc util boost_unit_test_framework ;
+run file_piece_test.cc util boost_unit_test_framework : : file_piece.cc ;
+unit-test joint_sort_test : joint_sort_test.cc util boost_unit_test_framework ;
+unit-test probing_hash_table_test : probing_hash_table_test.cc util boost_unit_test_framework ;
+unit-test sorted_uniform_test : sorted_uniform_test.cc util boost_unit_test_framework ;
+unit-test tokenize_piece_test : tokenize_piece_test.cc util boost_unit_test_framework ;
