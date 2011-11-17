@@ -1,4 +1,4 @@
-lib lm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quantize.cc read_arpa.cc search_hashed.cc search_trie.cc trie.cc trie_sort.cc virtual_interface.cc vocab.cc ../util//util ;
+lib lm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quantize.cc read_arpa.cc search_hashed.cc search_trie.cc trie.cc trie_sort.cc virtual_interface.cc vocab.cc ../util//util : <include>.. : : <include>.. ;
 
 import testing ;
 lib boost_test_exec_monitor ;

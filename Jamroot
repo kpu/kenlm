@@ -1,5 +1,4 @@
 project : default-build <threading>multi <warnings>on <variant>release ;
-project : requirements <include>. ;
 
 path-constant TOP : . ;
 
