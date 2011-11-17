@@ -1,7 +1,8 @@
 Most of the code here is licensed under the LGPL.  There are exceptions which have their own licenses, listed below.  See comments in those files for more details.  
 
 util/murmur_hash.cc is under the MIT license.  
-util/string_piece.hh and util/string_piece.cc are Google code and contains its own license.  
+util/string_piece.hh and util/string_piece.cc are Google code.  
+util/file.cc contains a modified implementation of mkstemp under the LGPL. 
 
 For the rest:
 
