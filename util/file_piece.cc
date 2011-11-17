@@ -4,6 +4,7 @@
 #include "util/file.hh"
 #include "util/mmap.hh"
 
+#include <io.h>
 #include <iostream>
 #include <string>
 #include <limits>
@@ -253,6 +254,10 @@ void FilePiece::TransitionToRead() {
   UTIL_THROW_IF(!gz_file_, GZException, "zlib failed to open " << file_name_);
 #endif
 }
+
+#ifdef WIN32
+typedef int ssize_t;
+#endif
 
 void FilePiece::ReadShift() {
   assert(fallback_to_read_);

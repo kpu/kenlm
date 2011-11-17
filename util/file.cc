@@ -61,6 +61,10 @@ void ResizeOrThrow(int fd, uint64_t to) {
 #endif
 }
 
+#ifdef WIN32
+typedef int ssize_t;
+#endif
+
 void ReadOrThrow(int fd, void *to_void, std::size_t amount) {
   uint8_t *to = static_cast<uint8_t*>(to_void);
   while (amount) {
