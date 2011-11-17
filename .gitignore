@@ -2,4 +2,15 @@ bin/
 lm/bin/
 util/bin/
 util/file_piece.cc.gz
+dist
 *.swp
+*.o
+query
+build_binary
+lm/left_test
+lm/model_test
+util/bit_packing_test
+util/file_piece_test
+util/joint_sort_test
+util/probing_hash_table_test
+util/sorted_uniform_test
