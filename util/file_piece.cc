@@ -3,8 +3,10 @@
 #include "util/exception.hh"
 #include "util/file.hh"
 #include "util/mmap.hh"
-
+#ifdef WIN32
 #include <io.h>
+#endif // WIN32
+
 #include <iostream>
 #include <string>
 #include <limits>
