@@ -5,9 +5,9 @@ lib util : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc 
 import testing ;
 lib boost_unit_test_framework ;
 
-unit-test bit_packing_test : bit_packing_test.cc util boost_unit_test_framework ;
-run file_piece_test.cc util boost_unit_test_framework : : file_piece.cc ;
-unit-test joint_sort_test : joint_sort_test.cc util boost_unit_test_framework ;
-unit-test probing_hash_table_test : probing_hash_table_test.cc util boost_unit_test_framework ;
-unit-test sorted_uniform_test : sorted_uniform_test.cc util boost_unit_test_framework ;
-unit-test tokenize_piece_test : tokenize_piece_test.cc util boost_unit_test_framework ;
+unit-test bit_packing_test : bit_packing_test.cc util boost_unit_test_framework : <link>shared:<define>BOOST_TEST_DYN_LINK ;
+run file_piece_test.cc util boost_unit_test_framework : : file_piece.cc : <link>shared:<define>BOOST_TEST_DYN_LINK ;
+unit-test joint_sort_test : joint_sort_test.cc util boost_unit_test_framework : <link>shared:<define>BOOST_TEST_DYN_LINK ;
+unit-test probing_hash_table_test : probing_hash_table_test.cc util boost_unit_test_framework : <link>shared:<define>BOOST_TEST_DYN_LINK ;
+unit-test sorted_uniform_test : sorted_uniform_test.cc util boost_unit_test_framework : <link>shared:<define>BOOST_TEST_DYN_LINK ;
+unit-test tokenize_piece_test : tokenize_piece_test.cc util boost_unit_test_framework : <link>shared:<define>BOOST_TEST_DYN_LINK ;

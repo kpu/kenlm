@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 
-#define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE ProbingHashTableTest
 #include <boost/test/unit_test.hpp>
 #include <boost/functional/hash.hpp>

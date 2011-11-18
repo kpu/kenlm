@@ -1,6 +1,5 @@
 #include "util/joint_sort.hh"
 
-#define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE JointSortTest
 #include <boost/test/unit_test.hpp>
 

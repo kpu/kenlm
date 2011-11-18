@@ -6,7 +6,6 @@
 #include <boost/scoped_array.hpp>
 #include <boost/unordered_map.hpp>
 
-#define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE SortedUniformTest
 #include <boost/test/unit_test.hpp>
 

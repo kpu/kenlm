@@ -3,8 +3,8 @@ lib lm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quantize
 import testing ;
 lib boost_unit_test_framework ;
 
-run left_test.cc lm boost_unit_test_framework : : test.arpa ;
-run model_test.cc lm boost_unit_test_framework : : test.arpa test_nounk.arpa ;
+run left_test.cc lm boost_unit_test_framework : : test.arpa : <link>shared:<define>BOOST_TEST_DYN_LINK ;
+run model_test.cc lm boost_unit_test_framework : : test.arpa test_nounk.arpa : <link>shared:<define>BOOST_TEST_DYN_LINK ;
 
 exe query : ngram_query.cc lm ;
 exe build_binary : build_binary.cc lm ;
