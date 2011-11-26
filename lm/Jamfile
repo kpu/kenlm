@@ -1,10 +1,12 @@
 lib lm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quantize.cc read_arpa.cc search_hashed.cc search_trie.cc trie.cc trie_sort.cc virtual_interface.cc vocab.cc ../util//util : <include>.. : : <include>.. ;
 
 import testing ;
-lib boost_unit_test_framework : : : : <link>shared:<define>BOOST_TEST_DYN_LINK ;
 
-run left_test.cc lm boost_unit_test_framework : : test.arpa ;
-run model_test.cc lm boost_unit_test_framework : : test.arpa test_nounk.arpa ;
+run left_test.cc lm ..//boost_unit_test_framework : : test.arpa ;
+run model_test.cc lm ..//boost_unit_test_framework : : test.arpa test_nounk.arpa ;
 
 exe query : ngram_query.cc lm ;
 exe build_binary : build_binary.cc lm ;
+
+install legacy : build_binary query 
+  : <location>$(TOP)/lm <install-type>EXE <install-dependencies>on <link>shared:<dll-path>$(TOP)/lm <link>shared:<install-type>LIB ;
