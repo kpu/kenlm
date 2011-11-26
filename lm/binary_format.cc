@@ -48,7 +48,7 @@ struct Sanity {
 
   void SetToReference() {
     std::memset(this, 0, sizeof(Sanity));
-    std::memcpy(magic, kMagicBytes, sizeof(magic));
+    std::memcpy(magic, kMagicBytes, sizeof(kMagicBytes));
     zero_f = 0.0; one_f = 1.0; minus_half_f = -0.5;
     one_word_index = 1;
     max_word_index = std::numeric_limits<WordIndex>::max();
