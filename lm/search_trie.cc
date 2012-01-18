@@ -197,7 +197,7 @@ class SRISucks {
 
     void ObtainBackoffs(unsigned char total_order, FILE *unigram_file, RecordReader *reader) {
       for (unsigned char i = 0; i < kMaxOrder - 1; ++i) {
-        it_[i] = &*values_[i].begin();
+        it_[i] = values_[i].empty() ? NULL : &*values_[i].begin();
       }
       messages_[0].Apply(it_, unigram_file);
       BackoffMessages *messages = messages_ + 1;
@@ -229,8 +229,8 @@ class SRISucks {
 
 class FindBlanks {
   public:
-    FindBlanks(uint64_t *counts, unsigned char order, const ProbBackoff *unigrams, SRISucks &messages)
-      : counts_(counts), longest_counts_(counts + order - 1), unigrams_(unigrams), sri_(messages) {}
+    FindBlanks(unsigned char order, const ProbBackoff *unigrams, SRISucks &messages)
+      : counts_(order), unigrams_(unigrams), sri_(messages) {}
 
     float UnigramProb(WordIndex index) const {
       return unigrams_[index].prob;
@@ -250,7 +250,7 @@ class FindBlanks {
     }
 
     void Longest(const void * /*data*/) {
-      ++*longest_counts_;
+      ++counts_.back();
     }
 
     // Unigrams wrote one past.  
@@ -258,8 +258,12 @@ class FindBlanks {
       --counts_[0];
     }
 
+    const std::vector<uint64_t> &Counts() const {
+      return counts_;
+    }
+
   private:
-    uint64_t *const counts_, *const longest_counts_;
+    std::vector<uint64_t> counts_;
 
     const ProbBackoff *unigrams_;
 
@@ -473,14 +477,15 @@ template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::ve
   }
 
   SRISucks sri;
-  std::vector<uint64_t> fixed_counts(counts.size());
+  std::vector<uint64_t> fixed_counts;
   util::scoped_FILE unigram_file;
   util::scoped_fd unigram_fd(files.StealUnigram());
   {
     util::scoped_memory unigrams;
     MapRead(util::POPULATE_OR_READ, unigram_fd.get(), 0, counts[0] * sizeof(ProbBackoff), unigrams);
-    FindBlanks finder(&*fixed_counts.begin(), counts.size(), reinterpret_cast<const ProbBackoff*>(unigrams.get()), sri);
+    FindBlanks finder(counts.size(), reinterpret_cast<const ProbBackoff*>(unigrams.get()), sri);
     RecursiveInsert(counts.size(), counts[0], inputs, config.messages, "Identifying n-grams omitted by SRI", finder);
+    fixed_counts = finder.Counts();
   }
   unigram_file.reset(util::FDOpenOrThrow(unigram_fd));
   for (const RecordReader *i = inputs; i != inputs + counts.size() - 2; ++i) {

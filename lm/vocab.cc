@@ -125,8 +125,10 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
 
 void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   if (enumerate_) {
-    util::PairedIterator<ProbBackoff*, std::string*> values(reorder_vocab + 1, &*strings_to_enumerate_.begin());
-    util::JointSort(begin_, end_, values);
+    if (!strings_to_enumerate_.empty()) {
+      util::PairedIterator<ProbBackoff*, std::string*> values(reorder_vocab + 1, &*strings_to_enumerate_.begin());
+      util::JointSort(begin_, end_, values);
+    }
     for (WordIndex i = 0; i < static_cast<WordIndex>(end_ - begin_); ++i) {
       // <unk> strikes again: +1 here.  
       enumerate_->Add(i + 1, strings_to_enumerate_[i]);
