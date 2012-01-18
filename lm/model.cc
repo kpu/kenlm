@@ -119,7 +119,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   }
   float backoff;
   // i is the order of the backoff we're looking for.
-  const Middle *mid_iter = search_.MiddleBegin() + start - 2;
+  typename Search::MiddleIter mid_iter = search_.MiddleBegin() + start - 2;
   for (const WordIndex *i = context_rbegin + start - 1; i < context_rend; ++i, ++mid_iter) {
     if (!search_.LookupMiddleNoProb(*mid_iter, *i, backoff, node)) break;
     ret.prob += backoff;
@@ -139,7 +139,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   search_.LookupUnigram(*context_rbegin, out_state.backoff[0], node, ignored);
   out_state.length = HasExtension(out_state.backoff[0]) ? 1 : 0;
   float *backoff_out = out_state.backoff + 1;
-  const typename Search::Middle *mid = search_.MiddleBegin();
+  typename Search::MiddleIter mid(search_.MiddleBegin());
   for (const WordIndex *i = context_rbegin + 1; i < context_rend; ++i, ++backoff_out, ++mid) {
     if (!search_.LookupMiddleNoProb(*mid, *i, *backoff_out, node)) {
       std::copy(context_rbegin, context_rbegin + out_state.length, out_state.words);
@@ -166,7 +166,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
   // If this function is called, then it does depend on left words.   
   ret.independent_left = false;
   ret.extend_left = extend_pointer;
-  const typename Search::Middle *mid_iter = search_.MiddleBegin() + extend_length - 1;
+  typename Search::MiddleIter mid_iter(search_.MiddleBegin() + extend_length - 1);
   const WordIndex *i = add_rbegin;
   for (; ; ++i, ++backoff_out, ++mid_iter) {
     if (i == add_rend) {
@@ -235,7 +235,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 
   // Ok start by looking up the bigram.
   const WordIndex *hist_iter = context_rbegin;
-  const typename Search::Middle *mid_iter = search_.MiddleBegin();
+  typename Search::MiddleIter mid_iter(search_.MiddleBegin());
   for (; ; ++mid_iter, ++hist_iter, ++backoff_out) {
     if (hist_iter == context_rend) {
       // Ran out of history.  Typically no backoff, but this could be a blank.  

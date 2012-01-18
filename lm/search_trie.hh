@@ -62,6 +62,8 @@ template <class Quant, class Bhiksha> class TrieSearch {
 
     void LoadedBinary();
 
+    typedef const Middle *MiddleIter;
+
     const Middle *MiddleBegin() const { return middle_begin_; }
     const Middle *MiddleEnd() const { return middle_end_; }
 

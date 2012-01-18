@@ -91,8 +91,10 @@ template <class MiddleT, class LongestT> class TemplateHashedSearch : public Has
 
     template <class Voc> void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing);
 
-    const Middle *MiddleBegin() const { return &*middle_.begin(); }
-    const Middle *MiddleEnd() const { return &*middle_.end(); }
+    typedef typename std::vector<Middle>::const_iterator MiddleIter;
+
+    MiddleIter MiddleBegin() const { return middle_.begin(); }
+    MiddleIter MiddleEnd() const { return middle_.end(); }
 
     Node Unpack(uint64_t extend_pointer, unsigned char extend_length, float &prob) const {
       util::FloatEnc val;
