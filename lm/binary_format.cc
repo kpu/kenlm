@@ -172,7 +172,7 @@ void ReadHeader(int fd, Parameters &out) {
     UTIL_THROW(FormatLoadException, "Binary format claims to have a probing multiplier of " << out.fixed.probing_multiplier << " which is < 1.0.");
 
   out.counts.resize(static_cast<std::size_t>(out.fixed.order));
-  util::ReadOrThrow(fd, &*out.counts.begin(), sizeof(uint64_t) * out.fixed.order);
+  if (out.fixed.order) util::ReadOrThrow(fd, &*out.counts.begin(), sizeof(uint64_t) * out.fixed.order);
 }
 
 void MatchCheck(ModelType model_type, unsigned int search_version, const Parameters &params) {
