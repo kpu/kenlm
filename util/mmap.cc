@@ -101,9 +101,10 @@ void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int
 #if defined(_WIN32) || defined(_WIN64)
   int protectC = for_write ? PAGE_READWRITE : PAGE_READONLY;
   int protectM = for_write ? FILE_MAP_WRITE : FILE_MAP_READ;
-  HANDLE hMapping = CreateFileMapping((HANDLE)_get_osfhandle(fd), NULL, protectC, 0, size + offset, NULL);
+  uint64_t total_size = size + offset;
+  HANDLE hMapping = CreateFileMapping((HANDLE)_get_osfhandle(fd), NULL, protectC, total_size >> 32, static_cast<DWORD>(total_size), NULL);
   UTIL_THROW_IF(!hMapping, ErrnoException, "CreateFileMapping failed");
-  LPVOID ret = MapViewOfFile(hMapping, protectM, 0, offset, size);
+  LPVOID ret = MapViewOfFile(hMapping, protectM, offset >> 32, offset, size);
   CloseHandle(hMapping);
   UTIL_THROW_IF(!ret, ErrnoException, "MapViewOfFile failed");
 #else
@@ -148,10 +149,16 @@ void MapRead(LoadMethod method, int fd, uint64_t offset, std::size_t size, scope
 }
 
 void *MapAnonymous(std::size_t size) {
-  return MapOrThrow(size, true,
 #if defined(_WIN32) || defined(_WIN64)
-      0 // MapOrThrow ignores the flags anyway.
-#elif defined(MAP_ANONYMOUS)
+  HANDLE hMapping = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, size >> 32, static_cast<DWORD>(size), NULL);
+  UTIL_THROW_IF(!hMapping, ErrnoException, "Anonymous CreateFileMapping failed for size" << size);
+  LPVOID ret = MapViewOfFile(hMapping, FILE_MAP_WRITE, 0, 0, size);
+  CloseHandle(hMapping);
+  UTIL_THROW_IF(!ret, ErrnoException, "MapViewOfFile failed");
+  return ret;
+#endif
+  return MapOrThrow(size, true,
+#if defined(MAP_ANONYMOUS)
       MAP_ANONYMOUS | MAP_PRIVATE // Linux
 #else
       MAP_ANON | MAP_PRIVATE // BSD
