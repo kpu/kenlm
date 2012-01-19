@@ -157,7 +157,10 @@ void RecordReader::Overwrite(const void *start, std::size_t amount) {
   UTIL_THROW_IF(fseek(file_, internal - entry_size_, SEEK_CUR), util::ErrnoException, "Couldn't seek backwards for revision");
   WriteOrThrow(file_, start, amount);
   long forward = entry_size_ - internal - amount;
-  if (forward) UTIL_THROW_IF(fseek(file_, forward, SEEK_CUR), util::ErrnoException, "Couldn't seek forwards past revision");
+#if !defined(_WIN32) && !defined(_WIN64)
+  if (forward) 
+#endif
+    UTIL_THROW_IF(fseek(file_, forward, SEEK_CUR), util::ErrnoException, "Couldn't seek forwards past revision");
 }
 
 void RecordReader::Rewind() {
