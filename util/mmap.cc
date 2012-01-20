@@ -148,22 +148,19 @@ void MapRead(LoadMethod method, int fd, uint64_t offset, std::size_t size, scope
   }
 }
 
-void *MapAnonymous(std::size_t size) {
+// Allocates zeroed memory in to.
+void MapAnonymous(std::size_t size, util::scoped_memory &to) {
+  to.reset();
 #if defined(_WIN32) || defined(_WIN64)
-  HANDLE hMapping = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, size >> 32, static_cast<DWORD>(size), NULL);
-  UTIL_THROW_IF(!hMapping, ErrnoException, "Anonymous CreateFileMapping failed for size" << size);
-  LPVOID ret = MapViewOfFile(hMapping, FILE_MAP_WRITE, 0, 0, size);
-  CloseHandle(hMapping);
-  UTIL_THROW_IF(!ret, ErrnoException, "MapViewOfFile failed");
-  return ret;
+  to.reset(calloc(1, size), size, scoped_memory::MALLOC_ALLOCATED);
 #else
-  return MapOrThrow(size, true,
+  to.reset(MapOrThrow(size, true,
 #  if defined(MAP_ANONYMOUS)
       MAP_ANONYMOUS | MAP_PRIVATE // Linux
 #  else
       MAP_ANON | MAP_PRIVATE // BSD
 #  endif
-      , false, -1, 0);
+      , false, -1, 0), size, scoped_memory::MMAP_ALLOCATED);
 #endif
 }
 

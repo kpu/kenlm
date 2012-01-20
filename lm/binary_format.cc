@@ -87,7 +87,7 @@ uint8_t *SetupJustVocab(const Config &config, uint8_t order, std::size_t memory_
     strncpy(reinterpret_cast<char*>(backing.vocab.get()), kMagicIncomplete, TotalHeaderSize(order));
     return reinterpret_cast<uint8_t*>(backing.vocab.get()) + TotalHeaderSize(order);
   } else {
-    backing.vocab.reset(util::MapAnonymous(memory_size), memory_size, util::scoped_memory::MMAP_ALLOCATED);
+    util::MapAnonymous(memory_size, backing.vocab);
     return reinterpret_cast<uint8_t*>(backing.vocab.get());
   }
 }
@@ -110,7 +110,7 @@ uint8_t *GrowForSearch(const Config &config, std::size_t vocab_pad, std::size_t 
 
     return reinterpret_cast<uint8_t*>(backing.search.get()) + alignment_cruft;
   } else {
-    backing.search.reset(util::MapAnonymous(memory_size), memory_size, util::scoped_memory::MMAP_ALLOCATED);
+    util::MapAnonymous(memory_size, backing.search);
     return reinterpret_cast<uint8_t*>(backing.search.get());
   } 
 }
