@@ -156,14 +156,15 @@ void *MapAnonymous(std::size_t size) {
   CloseHandle(hMapping);
   UTIL_THROW_IF(!ret, ErrnoException, "MapViewOfFile failed");
   return ret;
-#endif
-  return MapOrThrow(size, true,
-#if defined(MAP_ANONYMOUS)
-      MAP_ANONYMOUS | MAP_PRIVATE // Linux
 #else
+  return MapOrThrow(size, true,
+#  if defined(MAP_ANONYMOUS)
+      MAP_ANONYMOUS | MAP_PRIVATE // Linux
+#  else
       MAP_ANON | MAP_PRIVATE // BSD
-#endif
+#  endif
       , false, -1, 0);
+#endif
 }
 
 void *MapZeroedWrite(int fd, std::size_t size) {
