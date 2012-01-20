@@ -3,7 +3,7 @@
 #define UTIL_HAVE__
 
 #ifndef HAVE_ZLIB
-#if !defined(_WIN32) || !defined(_WIN64)
+#if !defined(_WIN32) && !defined(_WIN64)
 #define HAVE_ZLIB
 #endif
 #endif
