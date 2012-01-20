@@ -90,7 +90,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
      * TrieModel.  To classify binary files, call RecognizeBinary in
      * lm/binary_format.hh.  
      */
-    GenericModel(const char *file, const Config &config = Config());
+    explicit GenericModel(const char *file, const Config &config = Config());
 
     /* Score p(new_word | in_state) and incorporate new_word into out_state.
      * Note that in_state and out_state must be different references:
