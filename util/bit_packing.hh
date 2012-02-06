@@ -47,7 +47,14 @@ inline uint8_t BitPackShift(uint8_t bit, uint8_t length) {
 #endif
 
 inline uint64_t ReadOff(const void *base, uint64_t bit_off) {
+#if defined(__arm) || defined(__arm__)
+  const uint8_t *base_off = reinterpret_cast<const uint8_t*>(base) + (bit_off >> 3);
+  uint64_t value64;
+  memcpy(&value64, base_off, sizeof(value64));
+  return value64;
+#else
   return *reinterpret_cast<const uint64_t*>(reinterpret_cast<const uint8_t*>(base) + (bit_off >> 3));
+#endif
 }
 
 /* Pack integers up to 57 bits using their least significant digits. 
@@ -75,7 +82,14 @@ inline void WriteInt57(void *base, uint64_t bit_off, uint8_t length, uint64_t va
 
 /* Same caveats as above, but for a 25 bit limit. */
 inline uint32_t ReadInt25(const void *base, uint64_t bit_off, uint8_t length, uint32_t mask) {
+#if defined(__arm) || defined(__arm__)
+  const uint8_t *base_off = reinterpret_cast<const uint8_t*>(base) + (bit_off >> 3);
+  uint32_t value32;
+  memcpy(&value32, base_off, sizeof(value32));
+  return (value32 >> BitPackShift(bit_off & 7, length)) & mask;
+#else
   return (*reinterpret_cast<const uint32_t*>(reinterpret_cast<const uint8_t*>(base) + (bit_off >> 3)) >> BitPackShift(bit_off & 7, length)) & mask;
+#endif
 }
 
 inline void WriteInt25(void *base, uint64_t bit_off, uint8_t length, uint32_t value) {
