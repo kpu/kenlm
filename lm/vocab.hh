@@ -82,7 +82,7 @@ class SortedVocabulary : public base::Vocabulary {
 
     bool SawUnk() const { return saw_unk_; }
 
-    void LoadedBinary(int fd, EnumerateVocab *to);
+    void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);
 
   private:
     uint64_t *begin_, *end_;
@@ -145,7 +145,7 @@ class ProbingVocabulary : public base::Vocabulary {
 
     bool SawUnk() const { return saw_unk_; }
 
-    void LoadedBinary(int fd, EnumerateVocab *to);
+    void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);
 
   private:
     typedef util::ProbingHashTable<ProbingVocabuaryEntry, util::IdentityHash> Lookup;

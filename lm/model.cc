@@ -46,7 +46,7 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(void *start, const Parameters &params, const Config &config, int fd) {
   SetupMemory(start, params.counts, config);
-  vocab_.LoadedBinary(fd, config.enumerate_vocab);
+  vocab_.LoadedBinary(params.fixed.has_vocabulary, fd, config.enumerate_vocab);
   search_.LoadedBinary();
 }
 

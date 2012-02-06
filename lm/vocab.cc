@@ -144,11 +144,11 @@ void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   bound_ = end_ - begin_ + 1;
 }
 
-void SortedVocabulary::LoadedBinary(int fd, EnumerateVocab *to) {
+void SortedVocabulary::LoadedBinary(bool have_words, int fd, EnumerateVocab *to) {
   end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
   SetSpecial(Index("<s>"), Index("</s>"), 0);
   bound_ = end_ - begin_ + 1;
-  ReadWords(fd, to, bound_);
+  if (have_words) ReadWords(fd, to, bound_);
 }
 
 namespace {
@@ -203,12 +203,12 @@ void ProbingVocabulary::FinishedLoading(ProbBackoff * /*reorder_vocab*/) {
   SetSpecial(Index("<s>"), Index("</s>"), 0);
 }
 
-void ProbingVocabulary::LoadedBinary(int fd, EnumerateVocab *to) {
+void ProbingVocabulary::LoadedBinary(bool have_words, int fd, EnumerateVocab *to) {
   UTIL_THROW_IF(header_->version != kProbingVocabularyVersion, FormatLoadException, "The binary file has probing version " << header_->version << " but the code expects version " << kProbingVocabularyVersion << ".  Please rerun build_binary using the same version of the code.");
   lookup_.LoadedBinary();
   bound_ = header_->bound;
   SetSpecial(Index("<s>"), Index("</s>"), 0);
-  ReadWords(fd, to, bound_);
+  if (have_words) ReadWords(fd, to, bound_);
 }
 
 void MissingUnknown(const Config &config) throw(SpecialWordMissingException) {
