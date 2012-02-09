@@ -18,11 +18,14 @@ namespace ngram {
 namespace {
 
 void Usage(const char *name) {
-  std::cerr << "Usage: " << name << " [-u log10_unknown_probability] [-s] [-i] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [-q bits] [-b bits] [-a bits] [type] input.arpa [output.mmap]\n\n"
+  std::cerr << "Usage: " << name << " [-u log10_unknown_probability] [-s] [-i] [-w mmap|after] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [-q bits] [-b bits] [-a bits] [type] input.arpa [output.mmap]\n\n"
 "-u sets the log10 probability for <unk> if the ARPA file does not have one.\n"
 "   Default is -100.  The ARPA file will always take precedence.\n"
 "-s allows models to be built even if they do not have <s> and </s>.\n"
-"-i allows buggy models from IRSTLM by mapping positive log probability to 0.\n\n"
+"-i allows buggy models from IRSTLM by mapping positive log probability to 0.\n"
+"-w mmap|after determines how writing is done.\n"
+"   mmap maps the binary file and writes to it.  Default for trie.\n"
+"   after allocates anonymous memory, builds, and writes.  Default for probing.\n\n"
 "type is either probing or trie.  Default is probing.\n\n"
 "probing uses a probing hash table.  It is the fastest but uses the most memory.\n"
 "-p sets the space multiplier and must be >1.0.  The default is 1.5.\n\n"
