@@ -84,9 +84,11 @@ template <class Middle> void FixSRI(int lower, float negative_lower_prob, unsign
 }
 
 template <class Voc, class Store, class Middle, class Activate> void ReadNGrams(util::FilePiece &f, const unsigned int n, const size_t count, const Voc &vocab, ProbBackoff *unigrams, std::vector<Middle> &middle, Activate activate, Store &store, PositiveProbWarn &warn) {
+  assert(n >= 2);
   ReadNGramHeader(f, n);
 
-  // vocab ids of words in reverse order
+  // Both vocab_ids and keys are non-empty because n >= 2.
+  // vocab ids of words in reverse order.
   std::vector<WordIndex> vocab_ids(n);
   std::vector<uint64_t> keys(n-1);
   typename Store::Entry::Value value;
@@ -147,7 +149,7 @@ template <class MiddleT, class LongestT> uint8_t *TemplateHashedSearch<MiddleT, 
 
 template <class MiddleT, class LongestT> template <class Voc> void TemplateHashedSearch<MiddleT, LongestT>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, Voc &vocab, Backing &backing) {
   // TODO: fix sorted.
-  SetupMemory(GrowForSearch(config, 0, Size(counts, config), backing), counts, config);
+  SetupMemory(GrowForSearch(config, vocab.UnkCountChangePadding(), Size(counts, config), backing), counts, config);
 
   PositiveProbWarn warn(config.positive_log_probability);
 

@@ -83,7 +83,12 @@ FILE *WriteContextFile(uint8_t *begin, uint8_t *end, const util::TempMaker &make
   PartialIter context_begin(PartialViewProxy(begin + sizeof(WordIndex), entry_size, context_size));
   PartialIter context_end(PartialViewProxy(end + sizeof(WordIndex), entry_size, context_size));
 
-  std::sort(context_begin, context_end, util::SizedCompare<EntryCompare, PartialViewProxy>(EntryCompare(order - 1)));
+#if defined(_WIN32) || defined(_WIN64)
+  std::stable_sort
+#else
+  std::sort
+#endif
+    (context_begin, context_end, util::SizedCompare<EntryCompare, PartialViewProxy>(EntryCompare(order - 1)));
 
   util::scoped_FILE out(maker.MakeFile());
 
@@ -157,7 +162,10 @@ void RecordReader::Overwrite(const void *start, std::size_t amount) {
   UTIL_THROW_IF(fseek(file_, internal - entry_size_, SEEK_CUR), util::ErrnoException, "Couldn't seek backwards for revision");
   WriteOrThrow(file_, start, amount);
   long forward = entry_size_ - internal - amount;
-  if (forward) UTIL_THROW_IF(fseek(file_, forward, SEEK_CUR), util::ErrnoException, "Couldn't seek forwards past revision");
+#if !defined(_WIN32) && !defined(_WIN64)
+  if (forward) 
+#endif
+    UTIL_THROW_IF(fseek(file_, forward, SEEK_CUR), util::ErrnoException, "Couldn't seek forwards past revision");
 }
 
 void RecordReader::Rewind() {
@@ -244,8 +252,13 @@ void SortedFiles::ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vo
     }
     // Sort full records by full n-gram.  
     util::SizedProxy proxy_begin(begin, entry_size), proxy_end(out_end, entry_size);
-    // parallel_sort uses too much RAM
-    std::sort(NGramIter(proxy_begin), NGramIter(proxy_end), util::SizedCompare<EntryCompare>(EntryCompare(order)));
+    // parallel_sort uses too much RAM.  TODO: figure out why windows sort doesn't like my proxies.  
+#if defined(_WIN32) || defined(_WIN64)
+    std::stable_sort
+#else
+    std::sort
+#endif
+        (NGramIter(proxy_begin), NGramIter(proxy_end), util::SizedCompare<EntryCompare>(EntryCompare(order)));
     files.push_back(DiskFlush(begin, out_end, maker));
     contexts.push_back(WriteContextFile(begin, out_end, maker, entry_size, order));
 

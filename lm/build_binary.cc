@@ -58,7 +58,7 @@ uint8_t ParseBitCount(const char *from) {
   unsigned long val = ParseUInt(from);
   if (val > 25) {
     util::ParseNumberException e(from);
-    e << " bit counts are limited to 256.";
+    e << " bit counts are limited to 25.";
   }
   return val;
 }

@@ -10,6 +10,7 @@ Code given out at the 1985 UNIFORUM conference in Dallas.
 
 #include "getopt.hh"
 #include <stdio.h>
+#include <string.h>
 
 #define NULL	0
 #define EOF	(-1)

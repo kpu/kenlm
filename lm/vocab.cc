@@ -125,8 +125,10 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
 
 void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   if (enumerate_) {
-    util::PairedIterator<ProbBackoff*, std::string*> values(reorder_vocab + 1, &*strings_to_enumerate_.begin());
-    util::JointSort(begin_, end_, values);
+    if (!strings_to_enumerate_.empty()) {
+      util::PairedIterator<ProbBackoff*, std::string*> values(reorder_vocab + 1, &*strings_to_enumerate_.begin());
+      util::JointSort(begin_, end_, values);
+    }
     for (WordIndex i = 0; i < static_cast<WordIndex>(end_ - begin_); ++i) {
       // <unk> strikes again: +1 here.  
       enumerate_->Add(i + 1, strings_to_enumerate_[i]);
@@ -142,11 +144,11 @@ void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   bound_ = end_ - begin_ + 1;
 }
 
-void SortedVocabulary::LoadedBinary(int fd, EnumerateVocab *to) {
+void SortedVocabulary::LoadedBinary(bool have_words, int fd, EnumerateVocab *to) {
   end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
   SetSpecial(Index("<s>"), Index("</s>"), 0);
   bound_ = end_ - begin_ + 1;
-  ReadWords(fd, to, bound_);
+  if (have_words) ReadWords(fd, to, bound_);
 }
 
 namespace {
@@ -201,12 +203,12 @@ void ProbingVocabulary::FinishedLoading(ProbBackoff * /*reorder_vocab*/) {
   SetSpecial(Index("<s>"), Index("</s>"), 0);
 }
 
-void ProbingVocabulary::LoadedBinary(int fd, EnumerateVocab *to) {
+void ProbingVocabulary::LoadedBinary(bool have_words, int fd, EnumerateVocab *to) {
   UTIL_THROW_IF(header_->version != kProbingVocabularyVersion, FormatLoadException, "The binary file has probing version " << header_->version << " but the code expects version " << kProbingVocabularyVersion << ".  Please rerun build_binary using the same version of the code.");
   lookup_.LoadedBinary();
   bound_ = header_->bound;
   SetSpecial(Index("<s>"), Index("</s>"), 0);
-  ReadWords(fd, to, bound_);
+  if (have_words) ReadWords(fd, to, bound_);
 }
 
 void MissingUnknown(const Config &config) throw(SpecialWordMissingException) {

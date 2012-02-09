@@ -7,9 +7,11 @@
  * placed in namespace util
  * add MurmurHashNative
  * default option = 0 for seed
+ * ARM port from NICT
  */
 
 #include "util/murmur_hash.hh"
+#include <string.h>
 
 namespace util {
 
@@ -28,12 +30,24 @@ uint64_t MurmurHash64A ( const void * key, std::size_t len, unsigned int seed )
 
   uint64_t h = seed ^ (len * m);
 
+#if defined(__arm) || defined(__arm__)
+  const size_t ksize = sizeof(uint64_t);
+  const unsigned char * data = (const unsigned char *)key;
+  const unsigned char * end = data + (std::size_t)(len/8) * ksize;
+#else
   const uint64_t * data = (const uint64_t *)key;
   const uint64_t * end = data + (len/8);
+#endif
 
   while(data != end)
   {
+#if defined(__arm) || defined(__arm__)
+    uint64_t k;
+    memcpy(&k, data, ksize);
+    data += ksize;
+#else
     uint64_t k = *data++;
+#endif
 
     k *= m; 
     k ^= k >> r; 
@@ -75,16 +89,30 @@ uint64_t MurmurHash64B ( const void * key, std::size_t len, unsigned int seed )
   unsigned int h1 = seed ^ len;
   unsigned int h2 = 0;
 
+#if defined(__arm) || defined(__arm__)
+  size_t ksize = sizeof(unsigned int);
+  const unsigned char * data = (const unsigned char *)key;
+#else
   const unsigned int * data = (const unsigned int *)key;
+#endif
 
+  unsigned int k1, k2;
   while(len >= 8)
   {
-    unsigned int k1 = *data++;
+#if defined(__arm) || defined(__arm__)
+    memcpy(&k1, data, ksize);
+    data += ksize;
+    memcpy(&k2, data, ksize);
+    data += ksize;
+#else
+    k1 = *data++;
+    k2 = *data++;
+#endif
+
     k1 *= m; k1 ^= k1 >> r; k1 *= m;
     h1 *= m; h1 ^= k1;
     len -= 4;
 
-    unsigned int k2 = *data++;
     k2 *= m; k2 ^= k2 >> r; k2 *= m;
     h2 *= m; h2 ^= k2;
     len -= 4;
@@ -92,7 +120,12 @@ uint64_t MurmurHash64B ( const void * key, std::size_t len, unsigned int seed )
 
   if(len >= 4)
   {
-    unsigned int k1 = *data++;
+#if defined(__arm) || defined(__arm__)
+    memcpy(&k1, data, ksize);
+    data += ksize;
+#else
+    k1 = *data++;
+#endif
     k1 *= m; k1 ^= k1 >> r; k1 *= m;
     h1 *= m; h1 ^= k1;
     len -= 4;

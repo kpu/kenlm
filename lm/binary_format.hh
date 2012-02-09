@@ -58,7 +58,7 @@ uint8_t *GrowForSearch(const Config &config, std::size_t vocab_pad, std::size_t 
 
 // Write header to binary file.  This is done last to prevent incomplete files
 // from loading.   
-void FinishFile(const Config &config, ModelType model_type, unsigned int search_version, const std::vector<uint64_t> &counts, Backing &backing);
+void FinishFile(const Config &config, ModelType model_type, unsigned int search_version, const std::vector<uint64_t> &counts,  std::size_t vocab_pad, Backing &backing);
 
 namespace detail {
 

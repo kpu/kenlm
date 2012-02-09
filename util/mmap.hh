@@ -100,7 +100,7 @@ void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int
 
 void MapRead(LoadMethod method, int fd, uint64_t offset, std::size_t size, scoped_memory &out);
 
-void *MapAnonymous(std::size_t size);
+void MapAnonymous(std::size_t size, scoped_memory &to);
 
 // Open file name with mmap of size bytes, all of which are initially zero.  
 void *MapZeroedWrite(int fd, std::size_t size);

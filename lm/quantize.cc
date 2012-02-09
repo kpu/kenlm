@@ -20,11 +20,11 @@ namespace ngram {
 
 namespace {
 
-void MakeBins(float *values, float *values_end, float *centers, uint32_t bins) {
-  std::sort(values, values_end);
-  const float *start = values, *finish;
+void MakeBins(std::vector<float> &values, float *centers, uint32_t bins) {
+  std::sort(values.begin(), values.end());
+  std::vector<float>::const_iterator start = values.begin(), finish;
   for (uint32_t i = 0; i < bins; ++i, ++centers, start = finish) {
-    finish = values + (((values_end - values) * static_cast<uint64_t>(i + 1)) / bins);
+    finish = values.begin() + ((values.size() * static_cast<uint64_t>(i + 1)) / bins);
     if (finish == start) {
       // zero length bucket.
       *centers = i ? *(centers - 1) : -std::numeric_limits<float>::infinity();
@@ -66,12 +66,12 @@ void SeparatelyQuantize::Train(uint8_t order, std::vector<float> &prob, std::vec
   float *centers = start_ + TableStart(order) + ProbTableLength();
   *(centers++) = kNoExtensionBackoff;
   *(centers++) = kExtensionBackoff;
-  MakeBins(&*backoff.begin(), &*backoff.end(), centers, (1ULL << backoff_bits_) - 2);
+  MakeBins(backoff, centers, (1ULL << backoff_bits_) - 2);
 }
 
 void SeparatelyQuantize::TrainProb(uint8_t order, std::vector<float> &prob) {
   float *centers = start_ + TableStart(order);
-  MakeBins(&*prob.begin(), &*prob.end(), centers, (1ULL << prob_bits_));
+  MakeBins(prob, centers, (1ULL << prob_bits_));
 }
 
 void SeparatelyQuantize::FinishedLoading(const Config &config) {

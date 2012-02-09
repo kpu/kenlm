@@ -78,6 +78,8 @@ std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount);
 
 void WriteOrThrow(int fd, const void *data_void, std::size_t size);
 
+void FSyncOrThrow(int fd);
+
 // Seeking
 void SeekOrThrow(int fd, uint64_t off);
 void AdvanceOrThrow(int fd, int64_t off);
