@@ -100,7 +100,10 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
 }
 
 void FSyncOrThrow(int fd) {
+// Apparently windows doesn't have fsync?  
+#if !defined(_WIN32) && !defined(_WIN64)
   UTIL_THROW_IF(-1 == fsync(fd), ErrnoException, "Sync of " << fd << " failed.");
+#endif
 }
 
 namespace {
