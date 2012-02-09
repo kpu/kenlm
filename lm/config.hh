@@ -73,6 +73,12 @@ struct Config {
   // Include the vocab in the binary file?  Only effective if write_mmap != NULL.  
   bool include_vocab;
 
+  typedef enum {
+    WRITE_MMAP, // Map the file directly.  
+    WRITE_AFTER // Write after we're done.  
+  } WriteMethod;
+  WriteMethod write_method;
+
   // Quantization options.  Only effective for QuantTrieModel.  One value is
   // reserved for each of prob and backoff, so 2^bits - 1 buckets will be used
   // to quantize (and one of the remaining backoffs will be 0).  

@@ -103,11 +103,15 @@ uint8_t *GrowForSearch(const Config &config, std::size_t vocab_pad, std::size_t 
       throw e;
     }
 
+    if (config.write_method == Config::WRITE_AFTER) {
+      util::MapAnonymous(memory_size, backing.search);
+      return reinterpret_cast<uint8_t*>(backing.search.get());
+    }
+    // mmap it now.
     // We're skipping over the header and vocab for the search space mmap.  mmap likes page aligned offsets, so some arithmetic to round the offset down.  
     std::size_t page_size = util::SizePage();
     std::size_t alignment_cruft = adjusted_vocab % page_size;
     backing.search.reset(util::MapOrThrow(alignment_cruft + memory_size, true, util::kFileFlags, false, backing.file.get(), adjusted_vocab - alignment_cruft), alignment_cruft + memory_size, util::scoped_memory::MMAP_ALLOCATED);
-
     return reinterpret_cast<uint8_t*>(backing.search.get()) + alignment_cruft;
   } else {
     util::MapAnonymous(memory_size, backing.search);
@@ -115,20 +119,28 @@ uint8_t *GrowForSearch(const Config &config, std::size_t vocab_pad, std::size_t 
   } 
 }
 
-void FinishFile(const Config &config, ModelType model_type, unsigned int search_version, const std::vector<uint64_t> &counts, Backing &backing) {
-  if (config.write_mmap) {
-    util::SyncOrThrow(backing.search.get(), backing.search.size());
-    util::SyncOrThrow(backing.vocab.get(), backing.vocab.size());
-    // header and vocab share the same mmap.  The header is written here because we know the counts.  
-    Parameters params = Parameters();
-    params.counts = counts;
-    params.fixed.order = counts.size();
-    params.fixed.probing_multiplier = config.probing_multiplier;
-    params.fixed.model_type = model_type;
-    params.fixed.has_vocabulary = config.include_vocab;
-    params.fixed.search_version = search_version;
-    WriteHeader(backing.vocab.get(), params);
+void FinishFile(const Config &config, ModelType model_type, unsigned int search_version, const std::vector<uint64_t> &counts, std::size_t vocab_pad, Backing &backing) {
+  if (!config.write_mmap) return;
+  util::SyncOrThrow(backing.vocab.get(), backing.vocab.size());
+  switch (config.write_method) {
+    case Config::WRITE_MMAP:
+      util::SyncOrThrow(backing.search.get(), backing.search.size());
+      break;
+    case Config::WRITE_AFTER:
+      util::SeekOrThrow(backing.file.get(), backing.vocab.size() + vocab_pad);
+      util::WriteOrThrow(backing.file.get(), backing.search.get(), backing.search.size());
+      util::FSyncOrThrow(backing.file.get());
+      break;
   }
+  // header and vocab share the same mmap.  The header is written here because we know the counts.  
+  Parameters params = Parameters();
+  params.counts = counts;
+  params.fixed.order = counts.size();
+  params.fixed.probing_multiplier = config.probing_multiplier;
+  params.fixed.model_type = model_type;
+  params.fixed.has_vocabulary = config.include_vocab;
+  params.fixed.search_version = search_version;
+  WriteHeader(backing.vocab.get(), params);
 }
 
 namespace detail {

@@ -82,7 +82,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
       search_.unigram.Unknown().backoff = 0.0;
       search_.unigram.Unknown().prob = config.unknown_missing_logprob;
     }
-    FinishFile(config, kModelType, kVersion, counts, backing_);
+    FinishFile(config, kModelType, kVersion, counts, vocab_.UnkCountChangePadding(), backing_);
   } catch (util::Exception &e) {
     e << " Byte: " << f.Offset();
     throw;

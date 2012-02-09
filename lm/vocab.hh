@@ -143,6 +143,8 @@ class ProbingVocabulary : public base::Vocabulary {
 
     void FinishedLoading(ProbBackoff *reorder_vocab);
 
+    std::size_t UnkCountChangePadding() const { return 0; }
+
     bool SawUnk() const { return saw_unk_; }
 
     void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);

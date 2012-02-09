@@ -17,6 +17,7 @@ Config::Config() :
   temporary_directory_prefix(NULL),
   arpa_complain(ALL),
   write_mmap(NULL),
+  write_method(WRITE_AFTER),
   include_vocab(true),
   prob_bits(8),
   backoff_bits(8),

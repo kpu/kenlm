@@ -99,6 +99,10 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
   }
 }
 
+void FSyncOrThrow(int fd) {
+  UTIL_THROW_IF(-1 == fsync(fd), ErrnoException, "Sync of " << fd << " failed.");
+}
+
 namespace {
 void InternalSeek(int fd, off_t off, int whence) {
   UTIL_THROW_IF((off_t)-1 == lseek(fd, off, whence), ErrnoException, "Seek failed");
