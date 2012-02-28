@@ -18,20 +18,16 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef HAVE_ZLIB
-#include <zlib.h>
-#endif
-
 namespace util {
 
 ParseNumberException::ParseNumberException(StringPiece value) throw() {
   *this << "Could not parse \"" << value << "\" into a number";
 }
 
-GZException::GZException(void *file) {
+GZException::GZException(gzFile file) {
 #ifdef HAVE_ZLIB
   int num;
-  *this << gzerror(file, &num) << " from zlib";
+  *this << gzerror( file, &num) << " from zlib";
 #endif // HAVE_ZLIB
 }
 
