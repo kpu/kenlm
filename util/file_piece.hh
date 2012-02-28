@@ -27,7 +27,9 @@ class ParseNumberException : public Exception {
 
 class GZException : public Exception {
   public:
+#ifdef HAVE_ZLIB
     explicit GZException(gzFile file);
+#endif
     GZException() throw() {}
     ~GZException() throw() {}
 };
