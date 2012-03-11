@@ -10,6 +10,8 @@
 #include <iosfwd>
 #include <vector>
 
+#include <math.h>
+
 namespace lm {
 
 void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number);
@@ -29,20 +31,26 @@ class PositiveProbWarn {
 
     explicit PositiveProbWarn(WarningAction action) : action_(action) {}
 
-    void Warn(float prob);
+    float ReadProb(util::FilePiece &f) {
+      float prob = f.ReadFloat();
+      UTIL_THROW_IF(f.get() != '\t', FormatLoadException, "Expected tab after probability");
+      UTIL_THROW_IF(isnan(prob), FormatLoadException, "NaN probability");
+      if (prob > 0.0) {
+        Warn(prob);
+        prob = 0.0;
+      }
+      return prob;
+    }
 
   private:
+    void Warn(float prob);
+
     WarningAction action_;
 };
 
 template <class Voc> void Read1Gram(util::FilePiece &f, Voc &vocab, ProbBackoff *unigrams, PositiveProbWarn &warn) {
   try {
-    float prob = f.ReadFloat();
-    if (prob > 0.0) {
-      warn.Warn(prob);
-      prob = 0.0;
-    }
-    if (f.get() != '\t') UTIL_THROW(FormatLoadException, "Expected tab after probability");
+    float prob = warn.ReadProb(f);
     ProbBackoff &value = unigrams[vocab.Insert(f.ReadDelimited(kARPASpaces))];
     value.prob = prob;
     ReadBackoff(f, value);
@@ -64,11 +72,7 @@ template <class Voc> void Read1Grams(util::FilePiece &f, std::size_t count, Voc 
 // Return true if a positive log probability came out.
 template <class Voc, class Weights> void ReadNGram(util::FilePiece &f, const unsigned char n, const Voc &vocab, WordIndex *const reverse_indices, Weights &weights, PositiveProbWarn &warn) {
   try {
-    weights.prob = f.ReadFloat();
-    if (weights.prob > 0.0) {
-      warn.Warn(weights.prob);
-      weights.prob = 0.0;
-    }
+    weights.prob = warn.ReadProb(f);
     for (WordIndex *vocab_out = reverse_indices + n - 1; vocab_out >= reverse_indices; --vocab_out) {
       *vocab_out = vocab.Index(f.ReadDelimited(kARPASpaces));
     }

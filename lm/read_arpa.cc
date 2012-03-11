@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <ctype.h>
+#include <math.h>
 #include <string.h>
 #include <stdint.h>
 
@@ -93,7 +94,11 @@ void ReadBackoff(util::FilePiece &in, ProbBackoff &weights) {
     case '\t':
       weights.backoff = in.ReadFloat();
       if (weights.backoff == ngram::kExtensionBackoff) weights.backoff = ngram::kNoExtensionBackoff;
-      if ((in.get() != '\n')) UTIL_THROW(FormatLoadException, "Expected newline after backoff");
+      {
+        int float_class = fpclassify(weights.backoff);
+        UTIL_THROW_IF(float_class == FP_NAN || float_class == FP_INFINITE, FormatLoadException, "Bad backoff " << weights.backoff);
+      }
+      UTIL_THROW_IF((in.get() != '\n'), FormatLoadException, "Expected newline after backoff");
       break;
     case '\n':
       weights.backoff = ngram::kNoExtensionBackoff;
