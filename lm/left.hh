@@ -78,7 +78,7 @@ struct Left {
 };
 
 inline size_t hash_value(const Left &left) {
-  return util::MurmurHashNative(&left.length, 1, left.pointers[left.length - 1]);
+  return util::MurmurHashNative(&left.length, 1, left.length ? left.pointers[left.length - 1] : 0);
 }
 
 struct ChartState {
