@@ -23,7 +23,7 @@
 
 namespace lm {
 namespace ngram {
-class Config;
+struct Config;
 
 namespace trie {
 
