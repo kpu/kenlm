@@ -1,0 +1,6 @@
+If you have boost build installed,
+   bjam
+   bjam install --prefix=/usr
+
+Otherwise,
+  ./compile.sh

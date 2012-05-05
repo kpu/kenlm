@@ -1,12 +1,15 @@
+import sanity ;
+sanity.boost 103600 ;
+project : requirements [ sanity.reqs ] ;
 project : default-build <threading>multi <warnings>on <variant>release ;
 
-path-constant TOP : . ;
+sanity.external-lib z ;
 
 build-project lm ;
 build-project util ;
 
-lib boost_unit_test_framework : : : : <link>shared:<define>BOOST_TEST_DYN_LINK ;
-
-lib z ;
-
-install dist : lm//query lm//build_binary : <location>dist <dll-path>$(TOP)/dist <install-dependencies>on <install-type>EXE <install-type>LIB  ;
+sanity.install-bin-libs lm//query lm//build_binary ;
+sanity.install-headers [ glob-tree *.hh : dist ] : . ;
+alias install : prefix-bin prefix-lib prefix-include ; 
+explicit prefix-include ;
+explicit install ;

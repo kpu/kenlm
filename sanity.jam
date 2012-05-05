@@ -1,0 +1,161 @@
+import modules ;
+import option ;
+import os ;
+import path ;
+import project ;
+
+local prj = [ project.current ] ; 
+mod = [ $(prj).project-module ] ;
+
+module $(mod) {
+  path-constant TOP : . ;
+}
+
+rule get-top {
+  module $(mod) {
+    return $(TOP) ;
+  }
+}
+TOP = [ get-top ] ;
+
+#Shell with trailing line removed http://lists.boost.org/boost-build/2007/08/17051.php
+rule trim-nl ( str extras * ) {
+return [ MATCH "([^
+]*)" : $(str) ] $(extras) ;
+}
+rule _shell ( cmd : extras * ) {
+  return [ trim-nl [ SHELL $(cmd) : $(extras) ] ] ;
+}
+
+#Run g++ with empty main and these arguments to see if it passes.  
+rule test_flags ( flags * ) {
+  local ret = [ SHELL "g++ "$(flags:J=" ")" -x c++ - <<<'int main() {}' -o /dev/null >/dev/null 2>/dev/null" : exit-status ] ;
+  if $(ret[2]) = 0 {
+    return true ;
+  } else {
+    return ;
+  }
+}
+
+#Determine if a library can be compiled statically.  
+rule auto_shared ( name : additional * ) {
+  additional ?= "" ;
+  if [ test_flags $(additional)" -static -l"$(name) ] {
+    return ;
+  } else {
+    return "<link>shared" ;
+  }
+}
+
+with-boost = [ option.get "with-boost" ] ;
+if $(with-boost) {
+  L-boost-search = -L$(with-boost)/lib" "-L$(with-boost)/lib64 ;
+  boost-search = <search>$(with-boost)/lib <search>$(with-boost)/lib64 ;
+  I-boost-include = -I$(with-boost)/include ;
+  boost-include = <include>$(with-boost)/include ;
+} else {
+  L-boost-search = "" ;
+  boost-search = ;
+  I-boost-include = "" ;
+  boost-include = ;
+}
+
+local cleaning = [ option.get "clean" : : yes ] ;
+cleaning ?= [ option.get "clean-all" : no : yes ] ;
+if "clean" in [ modules.peek : ARGV ] {
+  cleaning = yes ;
+}
+ 
+#Are we linking static binaries against shared boost?
+boost-auto-shared = [ auto_shared "boost_program_options" : $(L-boost-search) ] ;
+#Convenience rule for boost libraries.  Defines library boost_$(name).  
+rule boost_lib ( name macro ) {
+  #Link multi-threaded programs against the -mt version if available.  Old 
+  #versions of boost do not have -mt tagged versions of all libraries.   Sadly,
+  #boost.jam does not handle this correctly.  
+  if [ test_flags $(L-boost-search)" -lboost_"$(name)"-mt" ] {
+    lib inner_boost_$(name) : : <threading>single $(boost-search) <name>boost_$(name) ;
+    lib inner_boost_$(name) : : <threading>multi $(boost-search) <name>boost_$(name)-mt ;
+  } else {
+    lib inner_boost_$(name) : : $(boost-search) <name>boost_$(name) ;
+  }
+
+  alias boost_$(name) : inner_boost_$(name) : $(boost-auto-shared) : : <link>shared:<define>BOOST_$(macro) $(boost-include) ;
+}
+
+#Argument is e.g. 103600
+rule boost ( min-version ) {
+  local boost-shell = [ SHELL "g++ "$(I-boost-include)" -dM -x c++ -E /dev/null -include boost/version.hpp 2>/dev/null |grep '#define BOOST_VERSION '" : exit-status ] ;
+  if $(boost-shell[2]) != 0 && $(cleaning) = no {
+    exit Boost does not seem to be installed or g++ is confused. : 1 ;
+  }
+  boost-version = [ MATCH "#define BOOST_VERSION ([0-9]*)" : $(boost-shell[1]) ] ;
+  if $(boost-version) < $(min-version) && $(cleaning) = no {
+    exit You have Boost $(boost-version).  This package requires Boost at least $(min-version) (and preferably newer). : 1 ;
+  }
+  module $(mod) {
+    #See tools/build/v2/contrib/boost.jam in a boost distribution for a table of macros to define.   
+    sanity.boost_lib thread THREAD_DYN_DLL ;
+    sanity.boost_lib program_options PROGRAM_OPTIONS_DYN_LINK ;
+    sanity.boost_lib unit_test_framework TEST_DYN_LINK ;
+  }
+}
+ 
+#Link normally to a library, but sometimes static isn't installed so fall back to dynamic.
+rule external-lib ( name ) {
+  lib $(name) : : [ auto_shared $(name) ] ;
+}
+
+#Write the current command line to previous.sh.  This does not do shell escaping.  
+{
+  local build-log = [ get-top ] ;
+  local build-log = $(build-log)/previous.sh ;
+  if ! [ path.exists $(build-log) ] {
+    SHELL "touch $(build-log) && chmod +x $(build-log)" ;
+  }
+  local script = [ modules.peek : ARGV ] ;
+  if $(script[1]) = "./jam-files/bjam" {
+    #The ./bjam shell script calls ./jam-files/bjam so that appears in argv but
+    #we want ./bjam to appear so the environment variables are set correctly.  
+    script = "./bjam "$(script[2-]:J=" ") ;
+  } else {
+    script = $(script:J=" ") ;
+  }
+  script = "#!/bin/sh\n$(script)\n" ;
+  local ignored = @($(build-log):E=$(script)) ;
+}
+
+rule reqs ( ) {
+  local cxxflags = [ os.environ "CXXFLAGS" ] ;
+  local cflags = [ os.environ "CFLAGS" ] ;
+  local ldflags = [ os.environ "LDFLAGS" ] ;
+
+  local ret = <cxxflags>$(cxxflags) <cflags>$(cflags) <linkflags>$(ldflags) <link>static,<toolset>clang:<linkflags>-static ;
+
+  #libSegFault prints a stack trace on segfault.  Link against it if available.  
+  if [ test_flags "-lSegfault" ] {
+    external_lib SegFault ;
+    ret += <library>SegFault ;
+  }
+  return $(ret) ;
+}
+
+if [ option.get "git" : : "yes" ] {
+  local revision = [ _shell "git rev-parse --verify HEAD |head -c 7" ] ;
+  GITTAG = "/"$(revision) ;
+} else {
+  GITTAG = "" ;
+}
+
+prefix = [ option.get "prefix" : $(TOP)/dist$(GITTAG) ] ;
+rule install-bin-libs ( deps * ) {
+  local bindir = [ option.get "bindir" : $(prefix)/bin ] ;
+  local libdir = [ option.get "libdir" : $(prefix)/lib ] ;
+  install prefix-bin : $(deps) : <location>$(bindir) <install-dependencies>on <install-type>EXE <link>shared:<dll-path>$(libdir) ;
+  install prefix-lib : $(deps) : <location>$(libdir) <install-dependencies>on <install-type>LIB <link>shared:<dll-path>$(libdir) ;
+}
+rule install-headers ( list * : source-root ? ) {
+  local includedir = [ option.get "includedir" : $(prefix)/include ] ;
+  source-root ?= "." ;
+  install prefix-include : $(list) : <location>$(includedir) <install-source-root>$(source-root) ;
+}
