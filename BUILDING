@@ -1,6 +1,9 @@
-If you have boost build installed,
+If you have boost build installed:
    bjam
    bjam install --prefix=/usr
 
-Otherwise,
+UNIX-like without boost build:
   ./compile.sh
+
+Windows:
+  See the .vcxproj files
