@@ -130,7 +130,7 @@ rule reqs ( ) {
   local cflags = [ os.environ "CFLAGS" ] ;
   local ldflags = [ os.environ "LDFLAGS" ] ;
 
-  local ret = <cxxflags>$(cxxflags) <cflags>$(cflags) <linkflags>$(ldflags) <link>static,<toolset>clang:<linkflags>-static ;
+  local ret = <cxxflags>$(cxxflags) <cflags>$(cflags) <linkflags>$(ldflags) <os>LINUX,<link>static,<toolset>clang:<linkflags>-static ;
 
   #libSegFault prints a stack trace on segfault.  Link against it if available.  
   if [ test_flags "-lSegfault" ] {
