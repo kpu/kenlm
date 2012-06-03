@@ -12,17 +12,17 @@ namespace { const unsigned char kWidth = 100; }
 ErsatzProgress::ErsatzProgress() : current_(0), next_(std::numeric_limits<std::size_t>::max()), complete_(next_), out_(NULL) {}
 
 ErsatzProgress::~ErsatzProgress() {
-  if (!out_) return;
-  Finished();
+  if (out_) Finished();
 }
 
-ErsatzProgress::ErsatzProgress(std::ostream *to, const std::string &message, std::size_t complete) 
+ErsatzProgress::ErsatzProgress(std::size_t complete, std::ostream *to, const std::string &message) 
   : current_(0), next_(complete / kWidth), complete_(complete), stones_written_(0), out_(to) {
   if (!out_) {
     next_ = std::numeric_limits<std::size_t>::max();
     return;
   }
-  *out_ << message << "\n----5---10---15---20---25---30---35---40---45---50---55---60---65---70---75---80---85---90---95--100\n";
+  if (!message.empty()) *out_ << message << '\n';
+  *out_ << "----5---10---15---20---25---30---35---40---45---50---55---60---65---70---75---80---85---90---95--100\n";
 }
 
 void ErsatzProgress::Milestone() {

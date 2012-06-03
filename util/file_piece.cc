@@ -36,13 +36,13 @@ const bool kSpaces[256] = {0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 FilePiece::FilePiece(const char *name, std::ostream *show_progress, std::size_t min_buffer) : 
   file_(OpenReadOrThrow(name)), total_size_(SizeFile(file_.get())), page_(SizePage()),
-  progress_(total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + name, total_size_) {
+  progress_(total_size_, total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + name) {
   Initialize(name, show_progress, min_buffer);
 }
 
 FilePiece::FilePiece(int fd, const char *name, std::ostream *show_progress, std::size_t min_buffer)  : 
   file_(fd), total_size_(SizeFile(file_.get())), page_(SizePage()),
-  progress_(total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + name, total_size_) {
+  progress_(total_size_, total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + name) {
   Initialize(name, show_progress, min_buffer);
 }
 

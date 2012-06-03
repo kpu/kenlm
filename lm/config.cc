@@ -19,6 +19,7 @@ Config::Config() :
   write_mmap(NULL),
   write_method(WRITE_AFTER),
   include_vocab(true),
+  rest_function(REST_MAX),
   prob_bits(8),
   backoff_bits(8),
   pointer_bhiksha_bits(22),

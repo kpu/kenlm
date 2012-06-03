@@ -1,7 +1,7 @@
 #ifndef UTIL_ERSATZ_PROGRESS__
 #define UTIL_ERSATZ_PROGRESS__
 
-#include <iosfwd>
+#include <iostream>
 #include <string>
 
 // Ersatz version of boost::progress so core language model doesn't depend on
@@ -14,7 +14,7 @@ class ErsatzProgress {
     ErsatzProgress();
 
     // Null means no output.  The null value is useful for passing along the ostream pointer from another caller.   
-    ErsatzProgress(std::ostream *to, const std::string &message, std::size_t complete);
+    explicit ErsatzProgress(std::size_t complete, std::ostream *to = &std::cerr, const std::string &message = "");
 
     ~ErsatzProgress();
 

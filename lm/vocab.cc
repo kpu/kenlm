@@ -196,7 +196,7 @@ WordIndex ProbingVocabulary::Insert(const StringPiece &str) {
   }
 }
 
-void ProbingVocabulary::FinishedLoading(ProbBackoff * /*reorder_vocab*/) {
+void ProbingVocabulary::InternalFinishedLoading() {
   lookup_.FinishedInserting();
   header_->bound = bound_;
   header_->version = kProbingVocabularyVersion;

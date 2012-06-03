@@ -10,15 +10,19 @@
 #include <iosfwd>
 #include <vector>
 
-#include <math.h>
-
 namespace lm {
 
 void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number);
 void ReadNGramHeader(util::FilePiece &in, unsigned int length);
 
 void ReadBackoff(util::FilePiece &in, Prob &weights);
-void ReadBackoff(util::FilePiece &in, ProbBackoff &weights);
+void ReadBackoff(util::FilePiece &in, float &backoff);
+inline void ReadBackoff(util::FilePiece &in, ProbBackoff &weights) {
+  ReadBackoff(in, weights.backoff);
+}
+inline void ReadBackoff(util::FilePiece &in, RestWeights &weights) {
+  ReadBackoff(in, weights.backoff);
+}
 
 void ReadEnd(util::FilePiece &in);
 
@@ -31,27 +35,21 @@ class PositiveProbWarn {
 
     explicit PositiveProbWarn(WarningAction action) : action_(action) {}
 
-    float ReadProb(util::FilePiece &f) {
-      float prob = f.ReadFloat();
-      UTIL_THROW_IF(f.get() != '\t', FormatLoadException, "Expected tab after probability");
-      UTIL_THROW_IF(isnan(prob), FormatLoadException, "NaN probability");
-      if (prob > 0.0) {
-        Warn(prob);
-        prob = 0.0;
-      }
-      return prob;
-    }
-
-  private:
     void Warn(float prob);
 
+  private:
     WarningAction action_;
 };
 
-template <class Voc> void Read1Gram(util::FilePiece &f, Voc &vocab, ProbBackoff *unigrams, PositiveProbWarn &warn) {
+template <class Voc, class Weights> void Read1Gram(util::FilePiece &f, Voc &vocab, Weights *unigrams, PositiveProbWarn &warn) {
   try {
-    float prob = warn.ReadProb(f);
-    ProbBackoff &value = unigrams[vocab.Insert(f.ReadDelimited(kARPASpaces))];
+    float prob = f.ReadFloat();
+    if (prob > 0.0) {
+      warn.Warn(prob);
+      prob = 0.0;
+    }
+    if (f.get() != '\t') UTIL_THROW(FormatLoadException, "Expected tab after probability");
+    Weights &value = unigrams[vocab.Insert(f.ReadDelimited(kARPASpaces))];
     value.prob = prob;
     ReadBackoff(f, value);
   } catch(util::Exception &e) {
@@ -61,7 +59,7 @@ template <class Voc> void Read1Gram(util::FilePiece &f, Voc &vocab, ProbBackoff 
 }
 
 // Return true if a positive log probability came out.
-template <class Voc> void Read1Grams(util::FilePiece &f, std::size_t count, Voc &vocab, ProbBackoff *unigrams, PositiveProbWarn &warn) {
+template <class Voc, class Weights> void Read1Grams(util::FilePiece &f, std::size_t count, Voc &vocab, Weights *unigrams, PositiveProbWarn &warn) {
   ReadNGramHeader(f, 1);
   for (std::size_t i = 0; i < count; ++i) {
     Read1Gram(f, vocab, unigrams, warn);
@@ -72,7 +70,11 @@ template <class Voc> void Read1Grams(util::FilePiece &f, std::size_t count, Voc 
 // Return true if a positive log probability came out.
 template <class Voc, class Weights> void ReadNGram(util::FilePiece &f, const unsigned char n, const Voc &vocab, WordIndex *const reverse_indices, Weights &weights, PositiveProbWarn &warn) {
   try {
-    weights.prob = warn.ReadProb(f);
+    weights.prob = f.ReadFloat();
+    if (weights.prob > 0.0) {
+      warn.Warn(weights.prob);
+      weights.prob = 0.0;
+    }
     for (WordIndex *vocab_out = reverse_indices + n - 1; vocab_out >= reverse_indices; --vocab_out) {
       *vocab_out = vocab.Index(f.ReadDelimited(kARPASpaces));
     }

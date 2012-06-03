@@ -23,7 +23,7 @@ namespace util {
 
 // 64-bit hash for 64-bit platforms
 
-uint64_t MurmurHash64A ( const void * key, std::size_t len, unsigned int seed )
+uint64_t MurmurHash64A ( const void * key, std::size_t len, uint64_t seed )
 {
   const uint64_t m = 0xc6a4a7935bd1e995ULL;
   const int r = 47;
@@ -81,7 +81,7 @@ uint64_t MurmurHash64A ( const void * key, std::size_t len, unsigned int seed )
 
 // 64-bit hash for 32-bit platforms
 
-uint64_t MurmurHash64B ( const void * key, std::size_t len, unsigned int seed )
+uint64_t MurmurHash64B ( const void * key, std::size_t len, uint64_t seed )
 {
   const unsigned int m = 0x5bd1e995;
   const int r = 24;
@@ -150,17 +150,18 @@ uint64_t MurmurHash64B ( const void * key, std::size_t len, unsigned int seed )
 
   return h;
 }
+
 // Trick to test for 64-bit architecture at compile time.  
 namespace {
-template <unsigned L> uint64_t MurmurHashNativeBackend(const void * key, std::size_t len, unsigned int seed) {
+template <unsigned L> inline uint64_t MurmurHashNativeBackend(const void * key, std::size_t len, uint64_t seed) {
   return MurmurHash64A(key, len, seed);
 }
-template <> uint64_t MurmurHashNativeBackend<4>(const void * key, std::size_t len, unsigned int seed) {
+template <> inline uint64_t MurmurHashNativeBackend<4>(const void * key, std::size_t len, uint64_t seed) {
   return MurmurHash64B(key, len, seed);
 }
 } // namespace
 
-uint64_t MurmurHashNative(const void * key, std::size_t len, unsigned int seed) {
+uint64_t MurmurHashNative(const void * key, std::size_t len, uint64_t seed) {
   return MurmurHashNativeBackend<sizeof(void*)>(key, len, seed);
 }
 

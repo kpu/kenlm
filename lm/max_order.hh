@@ -6,7 +6,7 @@ namespace ngram {
 // Having this limit means that State can be
 // (kMaxOrder - 1) * sizeof(float) bytes instead of
 // sizeof(float*) + (kMaxOrder - 1) * sizeof(float) + malloc overhead
-const unsigned char kMaxOrder = 6;
+const unsigned char kMaxOrder = 5;
 
 } // namespace ngram
 } // namespace lm

@@ -12,22 +12,24 @@ int main(int argc, char *argv[]) {
     ModelType model_type;
     if (RecognizeBinary(argv[1], model_type)) {
       switch(model_type) {
-        case HASH_PROBING:
+        case PROBING:
           Query<lm::ngram::ProbingModel>(argv[1], sentence_context, std::cin, std::cout);
           break;
-        case TRIE_SORTED:
+        case REST_PROBING:
+          Query<lm::ngram::RestProbingModel>(argv[1], sentence_context, std::cin, std::cout);
+          break;
+        case TRIE:
           Query<TrieModel>(argv[1], sentence_context, std::cin, std::cout);
           break;
-        case QUANT_TRIE_SORTED:
+        case QUANT_TRIE:
           Query<QuantTrieModel>(argv[1], sentence_context, std::cin, std::cout);
           break;
-        case ARRAY_TRIE_SORTED:
+        case ARRAY_TRIE:
           Query<ArrayTrieModel>(argv[1], sentence_context, std::cin, std::cout);
           break;
-        case QUANT_ARRAY_TRIE_SORTED:
+        case QUANT_ARRAY_TRIE:
           Query<QuantArrayTrieModel>(argv[1], sentence_context, std::cin, std::cout);
           break;
-        case HASH_SORTED:
         default:
           std::cerr << "Unrecognized kenlm model type " << model_type << std::endl;
           abort();
@@ -35,8 +37,8 @@ int main(int argc, char *argv[]) {
     } else {
       Query<ProbingModel>(argv[1], sentence_context, std::cin, std::cout);
     }
-
-    PrintUsage("Total time including destruction:\n");
+    std::cerr << "Total time including destruction:\n";
+    util::PrintUsage(std::cerr);
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;
     return 1;

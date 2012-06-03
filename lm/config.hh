@@ -1,10 +1,12 @@
 #ifndef LM_CONFIG__
 #define LM_CONFIG__
 
-#include <iosfwd>
-
 #include "lm/lm_exception.hh"
 #include "util/mmap.hh"
+
+#include <iosfwd>
+#include <string>
+#include <vector>
 
 /* Configuration for ngram model.  Separate header to reduce pollution. */
 
@@ -63,21 +65,31 @@ struct Config {
   const char *temporary_directory_prefix;
 
   // Level of complaining to do when loading from ARPA instead of binary format.
-  typedef enum {ALL, EXPENSIVE, NONE} ARPALoadComplain;
+  enum ARPALoadComplain {ALL, EXPENSIVE, NONE};
   ARPALoadComplain arpa_complain;
 
   // While loading an ARPA file, also write out this binary format file.  Set
   // to NULL to disable.  
   const char *write_mmap;
 
-  typedef enum {
+  enum WriteMethod {
     WRITE_MMAP, // Map the file directly.  
     WRITE_AFTER // Write after we're done.  
-  } WriteMethod;
+  };
   WriteMethod write_method;
 
   // Include the vocab in the binary file?  Only effective if write_mmap != NULL.  
   bool include_vocab;
+
+
+  // Left rest options.  Only used when the model includes rest costs.  
+  enum RestFunction {
+    REST_MAX,   // Maximum of any score to the left
+    REST_LOWER, // Use lower-order files given below.  
+  };
+  RestFunction rest_function;
+  // Only used for REST_LOWER.  
+  std::vector<std::string> rest_lower_files;
 
 
 

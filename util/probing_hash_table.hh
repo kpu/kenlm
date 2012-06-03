@@ -78,12 +78,33 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
       }
     }
 
+    // Return true if the value was found (and not inserted).  This is consistent with Find but the opposite if hash_map!
+    template <class T> bool FindOrInsert(const T &t, MutableIterator &out) {
+#ifdef DEBUG
+      assert(initialized_);
+#endif
+      for (MutableIterator i(begin_ + (hash_(t.GetKey()) % buckets_));;) {
+        Key got(i->GetKey());
+        if (equal_(got, t.GetKey())) { out = i; return true; }
+        if (equal_(got, invalid_)) {
+          UTIL_THROW_IF(++entries_ >= buckets_, ProbingSizeException, "Hash table with " << buckets_ << " buckets is full.");
+          *i = t;
+          out = i;
+          return false;
+        }
+        if (++i == end_) i = begin_;
+      }   
+    }
+
     void FinishedInserting() {}
 
     void LoadedBinary() {}
 
     // Don't change anything related to GetKey,  
     template <class Key> bool UnsafeMutableFind(const Key key, MutableIterator &out) {
+#ifdef DEBUG
+      assert(initialized_);
+#endif
       for (MutableIterator i(begin_ + (hash_(key) % buckets_));;) {
         Key got(i->GetKey());
         if (equal_(got, key)) { out = i; return true; }

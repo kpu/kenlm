@@ -12,6 +12,11 @@ struct ProbBackoff {
   float prob;
   float backoff;
 };
+struct RestWeights {
+  float prob;
+  float backoff;
+  float rest;
+};
 
 } // namespace lm
 #endif // LM_WEIGHTS__

@@ -25,7 +25,11 @@ void Usage(const char *name) {
 "-i allows buggy models from IRSTLM by mapping positive log probability to 0.\n"
 "-w mmap|after determines how writing is done.\n"
 "   mmap maps the binary file and writes to it.  Default for trie.\n"
-"   after allocates anonymous memory, builds, and writes.  Default for probing.\n\n"
+"   after allocates anonymous memory, builds, and writes.  Default for probing.\n"
+"-r \"order1.arpa order2 order3 order4\" adds lower-order rest costs from these\n"
+"   model files.  order1.arpa must be an ARPA file.  All others may be ARPA or\n"
+"   the same data structure as being built.  All files must have the same\n"
+"   vocabulary.  For probing, the unigrams must be in the same order.\n\n"
 "type is either probing or trie.  Default is probing.\n\n"
 "probing uses a probing hash table.  It is the fastest but uses the most memory.\n"
 "-p sets the space multiplier and must be >1.0.  The default is 1.5.\n\n"
@@ -66,16 +70,28 @@ uint8_t ParseBitCount(const char *from) {
   return val;
 }
 
+void ParseFileList(const char *from, std::vector<std::string> &to) {
+  to.clear();
+  while (true) {
+    const char *i;
+    for (i = from; *i && *i != ' '; ++i) {}
+    to.push_back(std::string(from, i - from));
+    if (!*i) break;
+    from = i + 1;
+  }
+}
+
 void ShowSizes(const char *file, const lm::ngram::Config &config) {
   std::vector<uint64_t> counts;
   util::FilePiece f(file);
   lm::ReadARPACounts(f, counts);
-  std::size_t sizes[5];
+  std::size_t sizes[6];
   sizes[0] = ProbingModel::Size(counts, config);
-  sizes[1] = TrieModel::Size(counts, config);
-  sizes[2] = QuantTrieModel::Size(counts, config);
-  sizes[3] = ArrayTrieModel::Size(counts, config);
-  sizes[4] = QuantArrayTrieModel::Size(counts, config);
+  sizes[1] = RestProbingModel::Size(counts, config);
+  sizes[2] = TrieModel::Size(counts, config);
+  sizes[3] = QuantTrieModel::Size(counts, config);
+  sizes[4] = ArrayTrieModel::Size(counts, config);
+  sizes[5] = QuantArrayTrieModel::Size(counts, config);
   std::size_t max_length = *std::max_element(sizes, sizes + sizeof(sizes) / sizeof(size_t));
   std::size_t min_length = *std::min_element(sizes, sizes + sizeof(sizes) / sizeof(size_t));
   std::size_t divide;
@@ -99,10 +115,11 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
   for (long int i = 0; i < length - 2; ++i) std::cout << ' ';
   std::cout << prefix << "B\n"
     "probing " << std::setw(length) << (sizes[0] / divide) << " assuming -p " << config.probing_multiplier << "\n"
-    "trie    " << std::setw(length) << (sizes[1] / divide) << " without quantization\n"
-    "trie    " << std::setw(length) << (sizes[2] / divide) << " assuming -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits << " quantization \n"
-    "trie    " << std::setw(length) << (sizes[3] / divide) << " assuming -a " << (unsigned)config.pointer_bhiksha_bits << " array pointer compression\n"
-    "trie    " << std::setw(length) << (sizes[4] / divide) << " assuming -a " << (unsigned)config.pointer_bhiksha_bits << " -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits<< " array pointer compression and quantization\n";
+    "probing " << std::setw(length) << (sizes[1] / divide) << " assuming -r models -p " << config.probing_multiplier << "\n"
+    "trie    " << std::setw(length) << (sizes[2] / divide) << " without quantization\n"
+    "trie    " << std::setw(length) << (sizes[3] / divide) << " assuming -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits << " quantization \n"
+    "trie    " << std::setw(length) << (sizes[4] / divide) << " assuming -a " << (unsigned)config.pointer_bhiksha_bits << " array pointer compression\n"
+    "trie    " << std::setw(length) << (sizes[5] / divide) << " assuming -a " << (unsigned)config.pointer_bhiksha_bits << " -q " << (unsigned)config.prob_bits << " -b " << (unsigned)config.backoff_bits<< " array pointer compression and quantization\n";
 }
 
 void ProbingQuantizationUnsupported() {
@@ -118,10 +135,10 @@ int main(int argc, char *argv[]) {
   using namespace lm::ngram;
 
   try {
-    bool quantize = false, set_backoff_bits = false, bhiksha = false, set_write_method = false;
+    bool quantize = false, set_backoff_bits = false, bhiksha = false, set_write_method = false, rest = false;
     lm::ngram::Config config;
     int opt;
-    while ((opt = getopt(argc, argv, "q:b:a:u:p:t:m:w:si")) != -1) {
+    while ((opt = getopt(argc, argv, "q:b:a:u:p:t:m:w:sir:")) != -1) {
       switch(opt) {
         case 'q':
           config.prob_bits = ParseBitCount(optarg);
@@ -164,6 +181,11 @@ int main(int argc, char *argv[]) {
         case 'i':
           config.positive_log_probability = lm::SILENT;
           break;
+        case 'r':
+          rest = true;
+          ParseFileList(optarg, config.rest_lower_files);
+          config.rest_function = Config::REST_LOWER;
+          break;
         default:
           Usage(argv[0]);
       }
@@ -174,35 +196,48 @@ int main(int argc, char *argv[]) {
     }
     if (optind + 1 == argc) {
       ShowSizes(argv[optind], config);
-    } else if (optind + 2 == argc) {
+      return 0;
+    }
+    const char *model_type;
+    const char *from_file;
+
+    if (optind + 2 == argc) {
+      model_type = "probing";
+      from_file = argv[optind];
       config.write_mmap = argv[optind + 1];
-      if (quantize || set_backoff_bits) ProbingQuantizationUnsupported();
-      ProbingModel(argv[optind], config);
     } else if (optind + 3 == argc) {
-      const char *model_type = argv[optind];
-      const char *from_file = argv[optind + 1];
+      model_type = argv[optind];
+      from_file = argv[optind + 1];
       config.write_mmap = argv[optind + 2];
-      if (!strcmp(model_type, "probing")) {
-        if (!set_write_method) config.write_method = Config::WRITE_AFTER;
-        if (quantize || set_backoff_bits) ProbingQuantizationUnsupported();
+    } else {
+      Usage(argv[0]);
+    }
+    if (!strcmp(model_type, "probing")) {
+      if (!set_write_method) config.write_method = Config::WRITE_AFTER;
+      if (quantize || set_backoff_bits) ProbingQuantizationUnsupported();
+      if (rest) {
+        RestProbingModel(from_file, config);
+      } else {
         ProbingModel(from_file, config);
-      } else if (!strcmp(model_type, "trie")) {
-        if (!set_write_method) config.write_method = Config::WRITE_MMAP;
-        if (quantize) {
-          if (bhiksha) {
-            QuantArrayTrieModel(from_file, config);
-          } else {
-            QuantTrieModel(from_file, config);
-          }
+      }
+    } else if (!strcmp(model_type, "trie")) {
+      if (rest) {
+        std::cerr << "Rest + trie is not supported yet." << std::endl;
+        return 1;
+      }
+      if (!set_write_method) config.write_method = Config::WRITE_MMAP;
+      if (quantize) {
+        if (bhiksha) {
+          QuantArrayTrieModel(from_file, config);
         } else {
-          if (bhiksha) {
-            ArrayTrieModel(from_file, config);
-          } else {
-            TrieModel(from_file, config);
-          }
+          QuantTrieModel(from_file, config);
         }
       } else {
-        Usage(argv[0]);
+        if (bhiksha) {
+          ArrayTrieModel(from_file, config);
+        } else {
+          TrieModel(from_file, config);
+        }
       }
     } else {
       Usage(argv[0]);

@@ -33,6 +33,9 @@ struct FullScoreReturn {
    */
   bool independent_left;
   uint64_t extend_left; // Defined only if independent_left
+
+  // Rest cost for extension to the left.
+  float rest;
 };
 
 } // namespace lm

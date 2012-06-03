@@ -65,10 +65,7 @@ class scoped_FILE {
     std::FILE *file_;
 };
 
-// Open for read only.  
 int OpenReadOrThrow(const char *name);
-// Create file if it doesn't exist, truncate if it does.  Opened for write.   
-int CreateOrThrow(const char *name);
 
 // Return value for SizeFile when it can't size properly.  
 const uint64_t kBadSize = (uint64_t)-1;

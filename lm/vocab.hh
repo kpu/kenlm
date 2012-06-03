@@ -13,18 +13,18 @@
 #include <vector>
 
 namespace lm {
-struct ProbBackoff;
+class ProbBackoff;
 class EnumerateVocab;
 
 namespace ngram {
-struct Config;
+class Config;
 
 namespace detail {
 uint64_t HashForVocab(const char *str, std::size_t len);
 inline uint64_t HashForVocab(const StringPiece &str) {
   return HashForVocab(str.data(), str.length());
 }
-struct ProbingVocabularyHeader;
+class ProbingVocabularyHeader;
 } // namespace detail
 
 class WriteWordsWrapper : public EnumerateVocab {
@@ -141,7 +141,9 @@ class ProbingVocabulary : public base::Vocabulary {
 
     WordIndex Insert(const StringPiece &str);
 
-    void FinishedLoading(ProbBackoff *reorder_vocab);
+    template <class Weights> void FinishedLoading(Weights * /*reorder_vocab*/) {
+      InternalFinishedLoading();
+    }
 
     std::size_t UnkCountChangePadding() const { return 0; }
 
@@ -150,6 +152,8 @@ class ProbingVocabulary : public base::Vocabulary {
     void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);
 
   private:
+    void InternalFinishedLoading();
+
     typedef util::ProbingHashTable<ProbingVocabuaryEntry, util::IdentityHash> Lookup;
 
     Lookup lookup_;
