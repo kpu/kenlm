@@ -25,7 +25,7 @@ namespace lm {
 class PositiveProbWarn;
 namespace ngram {
 class SortedVocabulary;
-class Config;
+struct Config;
 
 namespace trie {
 

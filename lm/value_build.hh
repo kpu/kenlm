@@ -10,7 +10,7 @@
 namespace lm {
 namespace ngram {
 
-class Config;
+struct Config;
 class BackoffValue;
 class RestValue;
 

@@ -17,7 +17,7 @@
 namespace lm {
 namespace ngram {
 
-class Config;
+struct Config;
 
 /* Store values directly and don't quantize. */
 class DontQuantize {

@@ -17,7 +17,7 @@ class ProbBackoff;
 class EnumerateVocab;
 
 namespace ngram {
-class Config;
+struct Config;
 
 namespace detail {
 uint64_t HashForVocab(const char *str, std::size_t len);
