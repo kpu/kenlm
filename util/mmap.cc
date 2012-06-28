@@ -19,8 +19,8 @@
 #include <windows.h>
 #include <io.h>
 #else
-#include <unistd.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #endif
 
 namespace util {
@@ -170,20 +170,6 @@ void *MapZeroedWrite(int fd, std::size_t size) {
   ResizeOrThrow(fd, size);
   return MapOrThrow(size, true, kFileFlags, false, fd, 0);
 }
-
-namespace {
-
-int CreateOrThrow(const char *name) {
-  int ret;
-#if defined(_WIN32) || defined(_WIN64)
-  UTIL_THROW_IF(-1 == (ret = _open(name, _O_CREAT | _O_TRUNC | _O_RDWR, _S_IREAD | _S_IWRITE)), ErrnoException, "while creating " << name);
-#else
-  UTIL_THROW_IF(-1 == (ret = open(name, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)), ErrnoException, "while creating " << name);
-#endif
-  return ret;
-}
-
-} // namespace
 
 void *MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file) {
   file.reset(CreateOrThrow(name));

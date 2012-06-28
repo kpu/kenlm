@@ -27,7 +27,7 @@ ParseNumberException::ParseNumberException(StringPiece value) throw() {
 #ifdef HAVE_ZLIB
 GZException::GZException(gzFile file) {
   int num;
-  *this << gzerror( file, &num) << " from zlib";
+  *this << gzerror(file, &num) << " from zlib";
 }
 #endif // HAVE_ZLIB
 

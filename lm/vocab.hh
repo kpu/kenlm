@@ -13,7 +13,7 @@
 #include <vector>
 
 namespace lm {
-class ProbBackoff;
+struct ProbBackoff;
 class EnumerateVocab;
 
 namespace ngram {
