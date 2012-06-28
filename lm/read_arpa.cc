@@ -95,7 +95,7 @@ void ReadBackoff(util::FilePiece &in, float &backoff) {
       backoff = in.ReadFloat();
       if (backoff == ngram::kExtensionBackoff) backoff = ngram::kNoExtensionBackoff;
       {
-        int float_class = fpclassify(weights.backoff);
+        int float_class = fpclassify(backoff);
         UTIL_THROW_IF(float_class == FP_NAN || float_class == FP_INFINITE, FormatLoadException, "Bad backoff " << backoff);
       }
       UTIL_THROW_IF(in.get() != '\n', FormatLoadException, "Expected newline after backoff");
