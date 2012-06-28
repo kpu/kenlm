@@ -53,9 +53,6 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   search_.LoadedBinary();
 }
 
-namespace {
-} // namespace
-
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromARPA(const char *file, const Config &config) {
   // Backing file is the ARPA.  Steal it so we can make the backing file the mmap output if any.  
   util::FilePiece f(backing_.file.release(), file, config.messages);
