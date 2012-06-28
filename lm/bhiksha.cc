@@ -1,6 +1,7 @@
 #include "lm/bhiksha.hh"
 #include "lm/config.hh"
 #include "util/file.hh"
+#include "util/exception.hh"
 
 #include <limits>
 
