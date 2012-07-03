@@ -9,8 +9,9 @@ cdef class LanguageModel:
     cdef Model* model
     cdef Vocabulary* vocab
 
-    def __cinit__(self, char* path):
-        self.model = new Model(path)
+    def __cinit__(self, path):
+        cdef bytes path_str = as_str(path)
+        self.model = new Model(path_str)
         self.vocab = &self.model.BaseVocabulary()
 
     def __dealloc__(self):

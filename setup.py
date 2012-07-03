@@ -14,7 +14,7 @@ ext_modules = [
         sources=FILES + ['python/kenlm.cpp'],
         language='C++', 
         include_dirs=['.'],
-        libraries=['z'], 
+        libraries=['z', 'stdc++'], 
         extra_compile_args=['-O3', '-DNDEBUG'])
 ]
 

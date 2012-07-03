@@ -3,10 +3,11 @@ import kenlm
 
 LM = os.path.join(os.path.dirname(__file__), 'mini.klm')
 model = kenlm.LanguageModel(LM)
-print '%d-gram model' % model.order
+print('{0}-gram model'.format(model.order))
 
-sentence = u'language modeling is fun .'
-print sentence, model.score(sentence)
+sentence = 'language modeling is fun .'
+print(sentence)
+print(model.score(sentence))
 
 # Check that total full score = direct score
 def score(s):
@@ -17,9 +18,9 @@ assert (abs(score(sentence) - model.score(sentence)) < 1e-3)
 # Show scores and n-gram matches
 words = ['<s>'] + sentence.split() + ['</s>']
 for i, (prob, length) in enumerate(model.full_scores(sentence)):
-    print prob, length, ':', ' '.join(words[i+2-length:i+2])
+    print('{0} {1} : {2}'.format(prob, length, ' '.join(words[i+2-length:i+2])))
 
 # Find out-of-vocabulary words
 for w in words:
     if not w in model:
-        print '"%s" is an OOV' % w
+        print('"{0}" is an OOV'.format(w))
