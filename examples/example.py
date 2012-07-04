@@ -1,7 +1,7 @@
 import os
 import kenlm
 
-LM = os.path.join(os.path.dirname(__file__), 'mini.klm')
+LM = os.path.join(os.path.dirname(__file__), '..', 'lm', 'test.arpa')
 model = kenlm.LanguageModel(LM)
 print('{0}-gram model'.format(model.order))
 

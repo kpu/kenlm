@@ -19,7 +19,7 @@ cdef extern from "lm/model.hh" namespace "lm::ngram":
         State(State& state)
 
     cdef cppclass Model:
-        Model(char*)
+        Model(char*) except +
         State &BeginSentenceState()
         State &NullContextState()
         unsigned int Order()

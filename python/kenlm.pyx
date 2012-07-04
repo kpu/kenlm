@@ -11,7 +11,10 @@ cdef class LanguageModel:
 
     def __cinit__(self, path):
         cdef bytes path_str = as_str(path)
-        self.model = new Model(path_str)
+        try:
+            self.model = new Model(path_str)
+        except RuntimeError as exception:
+            raise IOError('Cannot read model \'%s\'' % path) from exception
         self.vocab = &self.model.BaseVocabulary()
 
     def __dealloc__(self):
