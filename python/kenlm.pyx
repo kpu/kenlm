@@ -7,7 +7,7 @@ cdef bytes as_str(data):
 
 cdef class LanguageModel:
     cdef Model* model
-    cdef Vocabulary* vocab
+    cdef const_Vocabulary* vocab
 
     def __cinit__(self, path):
         cdef bytes path_str = as_str(path)
@@ -15,7 +15,7 @@ cdef class LanguageModel:
             self.model = new Model(path_str)
         except RuntimeError as exception:
             raise IOError('Cannot read model \'%s\'' % path) from exception
-        self.vocab = &self.model.BaseVocabulary()
+        self.vocab = &self.model.GetVocabulary()
 
     def __dealloc__(self):
         del self.model

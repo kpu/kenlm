@@ -8,21 +8,23 @@ cdef extern from "lm/model.hh" namespace "lm":
         unsigned char ngram_length
 
 cdef extern from "lm/model.hh" namespace "lm::ngram":
-    cdef cppclass Vocabulary "const lm::base::Vocabulary":
+    cdef cppclass State:
+        State()
+        State(State& state)
+
+    cdef cppclass Vocabulary:
         WordIndex Index(char*)
         WordIndex BeginSentence() 
         WordIndex EndSentence()
         WordIndex NotFound()
 
-    cdef cppclass State:
-        State()
-        State(State& state)
+    ctypedef Vocabulary const_Vocabulary "const lm::ngram::Vocabulary"
 
     cdef cppclass Model:
         Model(char*) except +
         State &BeginSentenceState()
         State &NullContextState()
         unsigned int Order()
-        Vocabulary& BaseVocabulary()
+        const_Vocabulary& GetVocabulary()
         float Score(State &in_state, WordIndex new_word, State &out_state)
         FullScoreReturn FullScore(State &in_state, WordIndex new_word, State &out_state)
