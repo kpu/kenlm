@@ -16,13 +16,16 @@ namespace {
 #define Term(word) score.Terminal(m.GetVocabulary().Index(word));
 #define VCheck(word, value) BOOST_CHECK_EQUAL(m.GetVocabulary().Index(word), value);
 
+// Apparently some Boost versions use templates and are pretty strict about types matching.  
+#define SLOPPY_CHECK_CLOSE(ref, value, tol) BOOST_CHECK_CLOSE(static_cast<double>(ref), static_cast<double>(value), static_cast<double>(tol));
+
 template <class M> void Short(const M &m) {
   ChartState base;
   {
     RuleScore<M> score(m, base);
     Term("more");
     Term("loin");
-    BOOST_CHECK_CLOSE(-1.206319 - 0.3561665, score.Finish(), 0.001);
+    SLOPPY_CHECK_CLOSE(-1.206319 - 0.3561665, score.Finish(), 0.001);
   }
   BOOST_CHECK(base.left.full);
   BOOST_CHECK_EQUAL(2, base.left.length);
@@ -35,7 +38,7 @@ template <class M> void Short(const M &m) {
     Term("little");
     score.NonTerminal(base, -1.206319 - 0.3561665);
     // p(little more loin | null context)
-    BOOST_CHECK_CLOSE(-1.56538, score.Finish(), 0.001);
+    SLOPPY_CHECK_CLOSE(-1.56538, score.Finish(), 0.001);
   }
   BOOST_CHECK_EQUAL(3, more_left.left.length);
   BOOST_CHECK_EQUAL(1, more_left.right.length);
@@ -47,7 +50,7 @@ template <class M> void Short(const M &m) {
     RuleScore<M> score(m, shorter);
     Term("to");
     score.NonTerminal(base, -1.206319 - 0.3561665);
-    BOOST_CHECK_CLOSE(-0.30103 - 1.687872 - 1.206319 - 0.3561665, score.Finish(), 0.01);
+    SLOPPY_CHECK_CLOSE(-0.30103 - 1.687872 - 1.206319 - 0.3561665, score.Finish(), 0.01);
   }
   BOOST_CHECK_EQUAL(1, shorter.left.length);
   BOOST_CHECK_EQUAL(1, shorter.right.length);
@@ -61,7 +64,7 @@ template <class M> void Charge(const M &m) {
     RuleScore<M> score(m, base);
     Term("on");
     Term("more");
-    BOOST_CHECK_CLOSE(-1.509559 -0.4771212 -1.206319, score.Finish(), 0.001);
+    SLOPPY_CHECK_CLOSE(-1.509559 -0.4771212 -1.206319, score.Finish(), 0.001);
   }
   BOOST_CHECK_EQUAL(1, base.left.length);
   BOOST_CHECK_EQUAL(1, base.right.length);
@@ -73,7 +76,7 @@ template <class M> void Charge(const M &m) {
     RuleScore<M> score(m, extend);
     Term("looking");
     score.NonTerminal(base, -1.509559 -0.4771212 -1.206319);
-    BOOST_CHECK_CLOSE(-3.91039, score.Finish(), 0.001);
+    SLOPPY_CHECK_CLOSE(-3.91039, score.Finish(), 0.001);
   }
   BOOST_CHECK_EQUAL(2, extend.left.length);
   BOOST_CHECK_EQUAL(1, extend.right.length);
@@ -85,7 +88,7 @@ template <class M> void Charge(const M &m) {
     RuleScore<M> score(m, tobos);
     score.BeginSentence();
     score.NonTerminal(extend, -3.91039);
-    BOOST_CHECK_CLOSE(-3.471169, score.Finish(), 0.001);
+    SLOPPY_CHECK_CLOSE(-3.471169, score.Finish(), 0.001);
   }
   BOOST_CHECK_EQUAL(0, tobos.left.length);
   BOOST_CHECK_EQUAL(1, tobos.right.length);
@@ -169,8 +172,8 @@ template <class M> void LookupVocab(const M &m, const StringPiece &str, std::vec
 #define TEXT_TEST(str) \
   LookupVocab(m, str, words); \
   expect = LeftToRight(m, words, rest); \
-  BOOST_CHECK_CLOSE(expect, RightToLeft(m, words, rest), 0.001); \
-  BOOST_CHECK_CLOSE(expect, TreeMiddle(m, words, rest), 0.001); \
+  SLOPPY_CHECK_CLOSE(expect, RightToLeft(m, words, rest), 0.001); \
+  SLOPPY_CHECK_CLOSE(expect, TreeMiddle(m, words, rest), 0.001); \
 
 // Build sentences, or parts thereof, from right to left.  
 template <class M> void GrowBig(const M &m, bool rest = false) {
@@ -202,20 +205,20 @@ template <class M> void AlsoWouldConsiderHigher(const M &m) {
   {
     RuleScore<M> score(m, also);
     score.Terminal(m.GetVocabulary().Index("also"));
-    BOOST_CHECK_CLOSE(-1.687872, score.Finish(), 0.001);
+    SLOPPY_CHECK_CLOSE(-1.687872, score.Finish(), 0.001);
   }
   ChartState would;
   {
     RuleScore<M> score(m, would);
     score.Terminal(m.GetVocabulary().Index("would"));
-    BOOST_CHECK_CLOSE(-1.687872, score.Finish(), 0.001);
+    SLOPPY_CHECK_CLOSE(-1.687872, score.Finish(), 0.001);
   }
   ChartState combine_also_would;
   {
     RuleScore<M> score(m, combine_also_would);
     score.NonTerminal(also, -1.687872);
     score.NonTerminal(would, -1.687872);
-    BOOST_CHECK_CLOSE(-1.687872 - 2.0, score.Finish(), 0.001);
+    SLOPPY_CHECK_CLOSE(-1.687872 - 2.0, score.Finish(), 0.001);
   }
   BOOST_CHECK_EQUAL(2, combine_also_would.right.length);
 
@@ -224,7 +227,7 @@ template <class M> void AlsoWouldConsiderHigher(const M &m) {
     RuleScore<M> score(m, also_would);
     score.Terminal(m.GetVocabulary().Index("also"));
     score.Terminal(m.GetVocabulary().Index("would"));
-    BOOST_CHECK_CLOSE(-1.687872 - 2.0, score.Finish(), 0.001);
+    SLOPPY_CHECK_CLOSE(-1.687872 - 2.0, score.Finish(), 0.001);
   }
   BOOST_CHECK_EQUAL(2, also_would.right.length);
 
@@ -232,7 +235,7 @@ template <class M> void AlsoWouldConsiderHigher(const M &m) {
   {
     RuleScore<M> score(m, consider);
     score.Terminal(m.GetVocabulary().Index("consider"));
-    BOOST_CHECK_CLOSE(-1.687872, score.Finish(), 0.001);
+    SLOPPY_CHECK_CLOSE(-1.687872, score.Finish(), 0.001);
   }
   BOOST_CHECK_EQUAL(1, consider.left.length);
   BOOST_CHECK_EQUAL(1, consider.right.length);
@@ -245,19 +248,19 @@ template <class M> void AlsoWouldConsiderHigher(const M &m) {
     score.Terminal(m.GetVocabulary().Index("higher"));
     higher_score = score.Finish();
   }
-  BOOST_CHECK_CLOSE(-1.509559, higher_score, 0.001);
+  SLOPPY_CHECK_CLOSE(-1.509559, higher_score, 0.001);
   BOOST_CHECK_EQUAL(1, higher.left.length);
   BOOST_CHECK_EQUAL(1, higher.right.length);
   BOOST_CHECK(!higher.left.full);
   VCheck("higher", higher.right.words[0]);
-  BOOST_CHECK_CLOSE(-0.30103, higher.right.backoff[0], 0.001);
+  SLOPPY_CHECK_CLOSE(-0.30103, higher.right.backoff[0], 0.001);
 
   ChartState consider_higher;
   {
     RuleScore<M> score(m, consider_higher);
     score.NonTerminal(consider, -1.687872);
     score.NonTerminal(higher, higher_score);
-    BOOST_CHECK_CLOSE(-1.509559 - 1.687872 - 0.30103, score.Finish(), 0.001);
+    SLOPPY_CHECK_CLOSE(-1.509559 - 1.687872 - 0.30103, score.Finish(), 0.001);
   }
   BOOST_CHECK_EQUAL(2, consider_higher.left.length);
   BOOST_CHECK(!consider_higher.left.full);
@@ -267,7 +270,7 @@ template <class M> void AlsoWouldConsiderHigher(const M &m) {
     RuleScore<M> score(m, full);
     score.NonTerminal(combine_also_would, -1.687872 - 2.0);
     score.NonTerminal(consider_higher, -1.509559 - 1.687872 - 0.30103);
-    BOOST_CHECK_CLOSE(-10.6879, score.Finish(), 0.001);
+    SLOPPY_CHECK_CLOSE(-10.6879, score.Finish(), 0.001);
   }
   BOOST_CHECK_EQUAL(4, full.right.length);
 }
@@ -277,7 +280,7 @@ template <class M> void AlsoWouldConsiderHigher(const M &m) {
   float got = val; \
   std::vector<WordIndex> indices; \
   LookupVocab(m, str, indices); \
-  BOOST_CHECK_CLOSE(LeftToRight(m, indices), got, 0.001); \
+  SLOPPY_CHECK_CLOSE(LeftToRight(m, indices), got, 0.001); \
 }
 
 template <class M> void FullGrow(const M &m) {
