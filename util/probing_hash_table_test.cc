@@ -4,7 +4,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/functional/hash.hpp>
-
+#include <stdio.h>
+#include <string.h>
 #include <stdint.h>
 
 namespace util {
