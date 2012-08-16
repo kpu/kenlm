@@ -107,7 +107,7 @@ class SortedFiles {
     
     util::scoped_fd unigram_;
 
-    util::scoped_FILE full_[kMaxOrder - 1], context_[kMaxOrder - 1];
+    util::scoped_FILE full_[KENLM_MAX_ORDER - 1], context_[KENLM_MAX_ORDER - 1];
 };
 
 } // namespace trie

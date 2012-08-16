@@ -7,6 +7,7 @@ dist
 *.o
 query
 build_binary
+kenlm_max_order
 lm/left_test
 lm/model_test
 util/bit_packing_test

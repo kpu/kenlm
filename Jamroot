@@ -1,6 +1,7 @@
 import sanity ;
 sanity.boost 103600 ;
-project : requirements [ sanity.reqs ] ;
+max-order = [ option.get "max-kenlm-order" : 6 : 6 ] ;
+project : requirements [ sanity.reqs ] <define>KENLM_MAX_ORDER=$(max-order) ;
 project : default-build <threading>multi <warnings>on <variant>release ;
 
 sanity.external-lib z ;

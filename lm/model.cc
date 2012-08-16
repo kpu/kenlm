@@ -5,6 +5,7 @@
 #include "lm/search_hashed.hh"
 #include "lm/search_trie.hh"
 #include "lm/read_arpa.hh"
+#include "util/have.hh"
 #include "util/murmur_hash.hh"
 
 #include <algorithm>
@@ -47,7 +48,14 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   P::Init(begin_sentence, null_context, vocab_, search_.Order());
 }
 
+namespace {
+void CheckMaxOrder(size_t order) {
+  UTIL_THROW_IF(order > KENLM_MAX_ORDER, FormatLoadException, "This model has order " << order << " but KenLM was compiled to support up to " << KENLM_MAX_ORDER << ".  " << KENLM_ORDER_MESSAGE);
+}
+} // namespace
+
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(void *start, const Parameters &params, const Config &config, int fd) {
+  CheckMaxOrder(params.counts.size());
   SetupMemory(start, params.counts, config);
   vocab_.LoadedBinary(params.fixed.has_vocabulary, fd, config.enumerate_vocab);
   search_.LoadedBinary();
@@ -60,8 +68,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     std::vector<uint64_t> counts;
     // File counts do not include pruned trigrams that extend to quadgrams etc.   These will be fixed by search_.
     ReadARPACounts(f, counts);
-
-    if (counts.size() > kMaxOrder) UTIL_THROW(FormatLoadException, "This model has order " << counts.size() << ".  Edit lm/max_order.hh, set kMaxOrder to at least this value, and recompile.");
+    CheckMaxOrder(counts.size());
     if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
     if (config.probing_multiplier <= 1.0) UTIL_THROW(ConfigException, "probing multiplier must be > 1.0");
 

@@ -111,7 +111,7 @@ template <class M> class RuleScore {
         return;
       }
 
-      float backoffs[kMaxOrder - 1], backoffs2[kMaxOrder - 1];
+      float backoffs[KENLM_MAX_ORDER - 1], backoffs2[KENLM_MAX_ORDER - 1];
       float *back = backoffs, *back2 = backoffs2;
       unsigned char next_use = out_.right.length;
 

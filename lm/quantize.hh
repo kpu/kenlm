@@ -217,7 +217,7 @@ class SeparatelyQuantize {
     const Bins &LongestTable() const { return longest_; }
 
   private:
-    Bins tables_[kMaxOrder - 1][2];
+    Bins tables_[KENLM_MAX_ORDER - 1][2];
 
     Bins longest_;
 

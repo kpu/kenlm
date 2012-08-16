@@ -5,7 +5,6 @@
 #include "lm/binary_format.hh"
 #include "lm/config.hh"
 #include "lm/facade.hh"
-#include "lm/max_order.hh"
 #include "lm/quantize.hh"
 #include "lm/search_hashed.hh"
 #include "lm/search_trie.hh"

@@ -180,7 +180,7 @@ const float kBadProb = std::numeric_limits<float>::infinity();
 class SRISucks {
   public:
     SRISucks() {
-      for (BackoffMessages *i = messages_; i != messages_ + kMaxOrder - 1; ++i)
+      for (BackoffMessages *i = messages_; i != messages_ + KENLM_MAX_ORDER - 1; ++i)
         i->Init(sizeof(ProbPointer) + sizeof(WordIndex) * (i - messages_ + 1));
     }
 
@@ -196,7 +196,7 @@ class SRISucks {
     }
 
     void ObtainBackoffs(unsigned char total_order, FILE *unigram_file, RecordReader *reader) {
-      for (unsigned char i = 0; i < kMaxOrder - 1; ++i) {
+      for (unsigned char i = 0; i < KENLM_MAX_ORDER - 1; ++i) {
         it_[i] = values_[i].empty() ? NULL : &*values_[i].begin();
       }
       messages_[0].Apply(it_, unigram_file);
@@ -221,10 +221,10 @@ class SRISucks {
 
   private:
     // This used to be one array.  Then I needed to separate it by order for quantization to work.  
-    std::vector<float> values_[kMaxOrder - 1];
-    BackoffMessages messages_[kMaxOrder - 1];
+    std::vector<float> values_[KENLM_MAX_ORDER - 1];
+    BackoffMessages messages_[KENLM_MAX_ORDER - 1];
 
-    float *it_[kMaxOrder - 1];
+    float *it_[KENLM_MAX_ORDER - 1];
 };
 
 class FindBlanks {
@@ -337,7 +337,7 @@ struct Gram {
 template <class Doing> class BlankManager {
   public:
     BlankManager(unsigned char total_order, Doing &doing) : total_order_(total_order), been_length_(0), doing_(doing) {
-      for (float *i = basis_; i != basis_ + kMaxOrder - 1; ++i) *i = kBadProb;
+      for (float *i = basis_; i != basis_ + KENLM_MAX_ORDER - 1; ++i) *i = kBadProb;
     }
 
     void Visit(const WordIndex *to, unsigned char length, float prob) {
@@ -373,10 +373,10 @@ template <class Doing> class BlankManager {
   private:
     const unsigned char total_order_;
 
-    WordIndex been_[kMaxOrder];
+    WordIndex been_[KENLM_MAX_ORDER];
     unsigned char been_length_;
 
-    float basis_[kMaxOrder];
+    float basis_[KENLM_MAX_ORDER];
     
     Doing &doing_;
 };
@@ -470,8 +470,8 @@ void PopulateUnigramWeights(FILE *file, WordIndex unigram_count, RecordReader &c
 } // namespace
 
 template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing) {
-  RecordReader inputs[kMaxOrder - 1];
-  RecordReader contexts[kMaxOrder - 1];
+  RecordReader inputs[KENLM_MAX_ORDER - 1];
+  RecordReader contexts[KENLM_MAX_ORDER - 1];
 
   for (unsigned char i = 2; i <= counts.size(); ++i) {
     inputs[i-2].Init(files.Full(i), i * sizeof(WordIndex) + (i == counts.size() ? sizeof(Prob) : sizeof(ProbBackoff)));
