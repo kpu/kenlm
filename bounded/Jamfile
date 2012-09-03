@@ -1,0 +1,4 @@
+project : usage-requirements <include>../ ;
+project : requirements <include>../ ;
+
+lib bounded : manager.cc client.cc scroll.cc sort.cc file.cc ;
