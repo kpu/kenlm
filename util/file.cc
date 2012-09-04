@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <iostream>
 
+#include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -109,6 +110,11 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
     data += ret;
     size -= ret;
   }
+}
+
+void WriteOrThrow(FILE *to, const void *data, std::size_t size) {
+  assert(size);
+  if (1 != std::fwrite(data, size, 1, to)) UTIL_THROW(util::ErrnoException, "Short write; requested size " << size);
 }
 
 void FSyncOrThrow(int fd) {

@@ -29,8 +29,6 @@ struct Config;
 
 namespace trie {
 
-void WriteOrThrow(FILE *to, const void *data, size_t size);
-
 class EntryCompare : public std::binary_function<const void*, const void*, bool> {
   public:
     explicit EntryCompare(unsigned char order) : order_(order) {}

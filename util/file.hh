@@ -80,6 +80,7 @@ void ReadOrThrow(int fd, void *to, std::size_t size);
 std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount);
 
 void WriteOrThrow(int fd, const void *data_void, std::size_t size);
+void WriteOrThrow(FILE *to, const void *data, std::size_t size);
 
 void FSyncOrThrow(int fd);
 

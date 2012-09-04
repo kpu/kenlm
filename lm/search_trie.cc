@@ -89,7 +89,7 @@ class BackoffMessages {
         if (!HasExtension(weights.backoff)) {
           weights.backoff = kExtensionBackoff;
           UTIL_THROW_IF(fseek(unigrams, -sizeof(weights), SEEK_CUR), util::ErrnoException, "Seeking backwards to denote unigram extension failed.");
-          WriteOrThrow(unigrams, &weights, sizeof(weights));
+          util::WriteOrThrow(unigrams, &weights, sizeof(weights));
         }
         const ProbPointer &write_to = *reinterpret_cast<const ProbPointer*>(current_ + sizeof(WordIndex));
         base[write_to.array][write_to.index] += weights.backoff;
