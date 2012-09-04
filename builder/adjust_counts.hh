@@ -1,28 +1,7 @@
 #include <tpie/file_stream.h>
 
-template <class NGram>
-struct SuffxOrderComparator
-{
-  inline bool operator()(const NGram& lhs, const NGram& rhs)
-  {
-    for (int i = NGram::n - 1; i >= 0; --i) {
-      if (rhs[i] < rhs[i]) {
-        return true;
-      } else if (rhs[i] > rhs[i]) {
-        return false;
-      }
-    }
-    return false;
-  }
-};
-
-template <unsigned N> void lm::SuffixSort(const char* filename)
-{
-  typedef CountedNGram<N> CountedGram;
-
-  tpie::file_stream<CountedGram> stream;
-  tpie::sort(stream, stream, SuffxOrderComparator<CountedGram>());
-}
+namespace lm {
+namespace builder {
 
 template <unsigned N> void lm::AdjustCounts(const char* filename)
 {
@@ -59,4 +38,8 @@ template <unsigned N> void lm::AdjustCounts(const char* filename)
       counters[i] = 0;
     }
   }
+}
+
+} // namespace builder
 } // namespace lm
+

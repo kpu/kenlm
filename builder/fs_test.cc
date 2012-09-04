@@ -3,6 +3,7 @@
 #include <tpie/sort.h>
 
 #include "builder/ngram.hh"
+#include "builder/sort.hh"
 
 using namespace lm;
 using namespace lm::builder;
@@ -85,6 +86,13 @@ int main(int argc, char** argv)
   if (strcmp(routine, "gen") == 0) {
     switch (order) {
 #define CASE(i) case i: GenerateFileStream< CountedNGram< i > >(filename); break;
+      CASES()
+#undef CASE
+    }
+  }
+  if (strcmp(routine, "suffix_sort") == 0) {
+    switch (order) {
+#define CASE(i) case i: SuffixSort< i >(filename); break;
       CASES()
 #undef CASE
     }
