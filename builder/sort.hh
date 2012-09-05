@@ -1,3 +1,5 @@
+#include <tpie/progress_indicator_null.h>
+#include <tpie/sort.h>
 #include <tpie/file_stream.h>
 
 #include <functional>
