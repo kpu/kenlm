@@ -7,6 +7,7 @@
 #include <boost/unordered_map.hpp>
 #include <tpie/file_stream.h>
 
+#include <iostream>
 #include <string>
 
 #include <assert.h>
@@ -36,11 +37,11 @@ template <unsigned N> inline uint64_t hash_value(const NGram<N> &gram, uint64_t 
 // TODO: use different hash table here with controlled memory and sortable.  
 template <unsigned N> class HashCombiner {
   public:
-    explicit HashCombiner(tpie::temp_file &out) {
-      out_.open(out, tpie::access_write);
+    explicit HashCombiner(const char *name) {
+      out_.open(name, tpie::access_write);
     }
 
-    void Add(const NGram<N> &gram) const {
+    void Add(const NGram<N> &gram) {
       ++cache_[gram];
       if (cache_.size() == limit_) {
         Flush();
@@ -66,10 +67,14 @@ template <unsigned N> class HashCombiner {
     tpie::file_stream<NGram<N> > out_;
 };
 
-template <unsigned N> void ReadInput(const char *from_name, const char *vocab_write, tpie::temp_file &out) {
-  util::FilePiece from(from_name);
-  VocabHandout vocab(vocab_write);
-  HashCombiner<N> combiner(out);
+template <unsigned N> void CorpusCount(const char *base_name) {
+  util::FilePiece from(0, "stdin", &std::cerr);
+  std::string vocab_name(base_name);
+  vocab_name += "_vocab";
+  VocabHandout vocab(vocab_name.c_str());
+  std::string combiner_name(base);
+  combiner_name += "_counts";
+  HashCombiner<N> combiner(combiner_name.c_str());
   NGram<N> gram;
   for (unsigned int i = 0; i < N; ++i) gram.w[i] = kBOS;
   try {

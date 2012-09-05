@@ -1,4 +1,4 @@
-#include "builder/input_count.hh"
+#include "builder/corpus_count.hh"
 #include "builder/ngram.hh"
 #include "lm/lm_exception.hh"
 #include "lm/word_index.hh"

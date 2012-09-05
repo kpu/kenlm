@@ -4,6 +4,7 @@
 #include "lm/word_index.hh"
 
 #include <inttypes.h>
+#include <string.h>
 
 namespace lm {
 namespace builder {
@@ -11,6 +12,9 @@ namespace builder {
 template <unsigned N> struct NGram {
   static const unsigned n = N;
   WordIndex w[N];
+  bool operator==(const NGram<N> &gram) const {
+    return !memcmp(w, gram.w, N * sizeof(WordIndex));
+  }
 };
 
 template <unsigned N> struct CountedNGram : NGram<N> {

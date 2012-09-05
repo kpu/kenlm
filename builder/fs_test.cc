@@ -1,10 +1,11 @@
+#include "builder/adjust_counts.hh"
+#include "builder/corpus_count.hh"
+#include "builder/ngram.hh"
+#include "builder/sort.hh"
+
 #include <tpie/tpie.h>
 #include <tpie/file_stream.h>
 #include <tpie/sort.h>
-
-#include "builder/ngram.hh"
-#include "builder/sort.hh"
-#include "builder/adjust_counts.hh"
 
 using namespace lm;
 using namespace lm::builder;
@@ -88,6 +89,10 @@ int main(int argc, char** argv)
 #undef CASE
   } else if (strcmp(routine, "gen") == 0) {
 #define CASE(i) GenerateFileStream< CountedNGram< i > >(filename)
+    INVOKE_PROPER_CASE(order)
+#undef CASE
+  } else if (!strcmp(routine, "count")) {
+#define CASE(i) CorpusCount< i >(filename)
     INVOKE_PROPER_CASE(order)
 #undef CASE
   } else if (strcmp(routine, "sort") == 0) {
