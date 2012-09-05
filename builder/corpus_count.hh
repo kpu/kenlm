@@ -67,11 +67,18 @@ template <unsigned N> class HashCombiner {
     tpie::file_stream<NGram<N> > out_;
 };
 
+template <unsigned N> inline void AppendWord(NGram<N> &gram, WordIndex word, HashCombiner<N> &to) {
+  for (unsigned int i = 1; i < N; ++i) gram.w[i-1] = gram.w[i];
+  gram.w[N-1] = word;
+  to.Add(gram);
+}
+
 template <unsigned N> void CorpusCount(const char *base_name) {
   util::FilePiece from(0, "stdin", &std::cerr);
   std::string vocab_name(base_name);
   vocab_name += "_vocab";
   VocabHandout vocab(vocab_name.c_str());
+  const WordIndex end_sentence = vocab.Lookup("</s>");
   std::string combiner_name(base_name);
   combiner_name += "_counts";
   HashCombiner<N> combiner(combiner_name.c_str(), 100);
@@ -81,10 +88,9 @@ template <unsigned N> void CorpusCount(const char *base_name) {
     while(true) {
       StringPiece line(from.ReadLine());
       for (util::TokenIter<util::SingleCharacter, true> w(line, ' '); w; ++w) {
-        for (unsigned int i = 1; i < N; ++i) gram.w[i-1] = gram.w[i];
-        gram.w[N-1] = vocab.Lookup(*w);
-        combiner.Add(gram);
+        AppendWord(gram, vocab.Lookup(*w), combiner);
       }
+      AppendWord(gram, end_sentence, combiner);
     }
   } catch (const util::EndOfFileException &e) {}
   combiner.Flush();
