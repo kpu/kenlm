@@ -4,3 +4,4 @@ lib tpie ;
 
 exe fs_test : fs_test.cc ../util//kenutil ..//boost_system ..//boost_thread ..//boost_filesystem tpie ;
 
+lib pipeline : input_count.cc ../util//kenutil tpie ;
