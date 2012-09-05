@@ -64,7 +64,7 @@ template <unsigned N> class HashCombiner {
 
     const std::size_t limit_;
 
-    tpie::file_stream<NGram<N> > out_;
+    tpie::file_stream<CountedNGram<N> > out_;
 };
 
 template <unsigned N> inline void AppendWord(NGram<N> &gram, WordIndex word, HashCombiner<N> &to) {
