@@ -1,3 +1,4 @@
+#include "builder/ngram.hh"
 #include <tpie/file_stream.h>
 
 namespace lm {

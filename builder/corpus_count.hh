@@ -37,7 +37,7 @@ template <unsigned N> inline uint64_t hash_value(const NGram<N> &gram, uint64_t 
 // TODO: use different hash table here with controlled memory and sortable.  
 template <unsigned N> class HashCombiner {
   public:
-    explicit HashCombiner(const char *name) {
+    explicit HashCombiner(const char *name, std::size_t limit) : limit_(limit) {
       out_.open(name, tpie::access_write);
     }
 
@@ -72,9 +72,9 @@ template <unsigned N> void CorpusCount(const char *base_name) {
   std::string vocab_name(base_name);
   vocab_name += "_vocab";
   VocabHandout vocab(vocab_name.c_str());
-  std::string combiner_name(base);
+  std::string combiner_name(base_name);
   combiner_name += "_counts";
-  HashCombiner<N> combiner(combiner_name.c_str());
+  HashCombiner<N> combiner(combiner_name.c_str(), 100);
   NGram<N> gram;
   for (unsigned int i = 0; i < N; ++i) gram.w[i] = kBOS;
   try {
