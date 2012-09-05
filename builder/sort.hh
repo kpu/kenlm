@@ -1,10 +1,12 @@
 #include <tpie/file_stream.h>
 
+#include <functional>
+
 namespace lm {
 namespace builder {
 
 template <class Gram>
-struct SuffixOrderComparator
+struct SuffixOrderComparator : public std::binary_function<const Gram &, const Gram &, bool>
 {
   inline bool operator()(const Gram& lhs, const Gram& rhs)
   {
