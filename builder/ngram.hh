@@ -17,6 +17,8 @@ template <unsigned N> struct CountedNGram : NGram<N> {
   uint64_t count;
 };
 
+const WordIndex kBOS = 1;
+
 } // namespace builder
 } // namespace lm
 

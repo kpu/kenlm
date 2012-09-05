@@ -15,8 +15,6 @@
 namespace lm {
 namespace builder {
 
-const WordIndex kBOS = 1;
-
 class VocabHandout {
   public:
     explicit VocabHandout(const char *name);
