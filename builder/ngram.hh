@@ -3,6 +3,8 @@
 
 #include "lm/word_index.hh"
 
+#include <inttypes.h>
+
 namespace lm {
 namespace builder {
 
