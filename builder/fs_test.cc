@@ -41,7 +41,7 @@ template <unsigned N>
 void Fill(CountedNGram<N>* gram)
 {
   for (unsigned i = 0; i < N; ++i) {
-    gram->w[i] = rand() % kWordIdRange;
+    gram->w[i] = 1 + rand() % kWordIdRange;
   }
   gram->count = rand() % kCountRange;
 }
