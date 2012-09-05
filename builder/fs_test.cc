@@ -4,6 +4,7 @@
 
 #include "builder/ngram.hh"
 #include "builder/sort.hh"
+#include "builder/adjust_counts.hh"
 
 using namespace lm;
 using namespace lm::builder;
@@ -60,7 +61,7 @@ void GenerateFileStream(const char* filename)
 int main(int argc, char** argv)
 {
   if (argc < 4) {
-    std::cerr << "Usage: " << argv[0] << " dump|gen|sort <n-gram-order> <filename>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " dump|gen|sort|adjust <n-gram-order> <filename>" << std::endl;
     return 1;
   }
 
@@ -68,35 +69,35 @@ int main(int argc, char** argv)
   int order = atoi(argv[2]);
   const char* filename = argv[3];
 
-#define CASES() \
-  case 1: CASE(1); break; \
-  case 2: CASE(2); break; \
-  case 3: CASE(3); break; \
-  case 4: CASE(4); break; \
-  case 5: CASE(5); break; \
-  default: \
-    std::cerr << "Unsupported n-gram order" << std::endl; \
-    break; \
+#define INVOKE_PROPER_CASE(k) \
+  switch (k) { \
+    case 1: CASE(1); break; \
+    case 2: CASE(2); break; \
+    case 3: CASE(3); break; \
+    case 4: CASE(4); break; \
+    case 5: CASE(5); break; \
+    default: \
+      std::cerr << "Unsupported n-gram order" << std::endl; \
+      break; \
+  }
 
   tpie::tpie_init();
   /****/ if (strcmp(routine, "dump") == 0) {
-    switch (order) {
 #define CASE(i) DumpFileStream< CountedNGram< i > >(filename)
-      CASES()
+    INVOKE_PROPER_CASE(order)
 #undef CASE
-    }
   } else if (strcmp(routine, "gen") == 0) {
-    switch (order) {
 #define CASE(i) GenerateFileStream< CountedNGram< i > >(filename)
-      CASES()
+    INVOKE_PROPER_CASE(order)
 #undef CASE
-    }
   } else if (strcmp(routine, "sort") == 0) {
-    switch (order) {
 #define CASE(i) SuffixSort< i >(filename)
-      CASES()
+    INVOKE_PROPER_CASE(order)
 #undef CASE
-    }
+  } else if (strcmp(routine, "adjust") == 0) {
+#define CASE(i) AdjustCounts< i >(filename)
+    INVOKE_PROPER_CASE(order)
+#undef CASE
   } else {
     std::cerr << "Unknown command '" << routine << "'" << std::endl;
   }
