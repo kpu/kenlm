@@ -13,38 +13,55 @@ template <unsigned N> void AdjustCounts(const char* filename)
   Gram gram;
 
   tpie::file_stream<CountedGram> stream;
-  stream.open(filename);
+  stream.open(filename, tpie::access_read);
+
+  {
+    const CountedGram& firstGram = stream.read();
+    ::memcpy(&gram.w, &firstGram.w, sizeof(gram.w));
+    for (unsigned i = 0; i < N; ++i) {
+      counters[i] = (i == 0 ? firstGram.count : 1);
+    }
+  }
 
   while (stream.can_read()) {
     const CountedGram& currentGram = stream.read();
 
-    // XXX(sandello): Remove me, please.
-    for (unsigned i = 0; i < N; ++i) {
-      std::cout << currentGram.w[i] << "\t";
-    }
-    std::cout << currentGram.count << std::endl;
-
-    // This decreases from (N - 1) to zero. Resulting value of this variable
-    // equals to a number of changed words.
+    // Resulting value of this variable equals to the number of changed words.
     int changedAt;
-    for (changedAt = N - 1; changedAt >= 0; --changedAt) {
-      if (gram.w[changedAt] != currentGram.w[changedAt]) {
+    for (changedAt = N; changedAt > 0; --changedAt) {
+      if (gram.w[changedAt - 1] != currentGram.w[changedAt - 1]) {
         break;
       }
     }
 
     // XXX(sandello): Remove me, please.
-    std::cout << "Changed at: " << changedAt << std::endl;
+    for (unsigned i = 0; i < N; ++i) {
+      std::cout << gram.w[i] << "\t";
+    }
+    std::cout << counters[0] << "\t|\t";
+    for (unsigned i = 0; i < N; ++i) {
+      std::cout << currentGram.w[i] << "\t";
+    }
+    std::cout << currentGram.count << "\t|\t";
+    std::cout << "@ " << changedAt << std::endl;
+    // XXX(sandello): Till here.
 
-    // This is a tiny hack to compute raw and adjusted counts simultaneously.
-    // When |changedAt| is zero we sum up raw counts.
-    uint64_t currentCount = (changedAt == 0 ? currentGram.count : 1);
-    counters[changedAt] += currentCount;
+    // changedAt could equal to N; in that case counters are irrelevant.
+    if (changedAt < (int)N) {
+      counters[changedAt] += (changedAt == 0 ? currentGram.count : 1);
+    }
+
     for (int i = changedAt - 1; i >= 0; --i) {
-      // Flush counters[i] for k-gram (w[i + 1] .. w[n]) for k = n - i + 1.
-      // This function is to be implemented.
-      //yield(counters[i], Gram, i + 1);
-      counters[i] = 0;
+      // Flush counters[i] for k-gram (w[i] .. w[n]) for k = n - i + 1.
+      // yield(counters[i], Gram, i + 1);
+      std::cout << "Emitting n-gram: ";
+      for (unsigned k = i; k < N; ++k) { std::cout << gram.w[k] << " "; }
+      std::cout << " ; Count = " << counters[i] << std::endl;
+    }
+    for (int i = changedAt - 1; i >= 0; --i) {
+      // Reset the appropriate words and counters.
+      gram.w[i] = currentGram.w[i];
+      counters[i] = (i == 0 ? currentGram.count : 1);
     }
   }
 }
