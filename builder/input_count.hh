@@ -39,7 +39,7 @@ template <unsigned N> inline uint64_t hash_value(const NGram<N> &gram, uint64_t 
 template <unsigned N> class HashCombiner {
   public:
     explicit HashCombiner(tpie::temp_file &out) {
-      out_.open(out);
+      out_.open(out, tpie::access_write);
     }
 
     void Add(const NGram<N> &gram) const {
