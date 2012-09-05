@@ -32,7 +32,7 @@ void DumpFileStream(const char* filename)
 
 // |Fill|()s are family of overloaded functions which are called by |GenerateFileStream|.
 static const int kNumberOfRecords = 1000;
-static const int kWordIdRange = 100;
+static const int kWordIdRange = 10;
 static const int kCountRange = 30;
 
 template <unsigned N>
@@ -51,7 +51,7 @@ void GenerateFileStream(const char* filename)
   fs.open(filename, tpie::access_write);
 
   Gram gram;
-  for (int i = 0; i < 1000; ++i) {
+  for (int i = 0; i < kNumberOfRecords; ++i) {
     Fill(&gram);
     fs.write(gram);
   }
@@ -60,7 +60,7 @@ void GenerateFileStream(const char* filename)
 int main(int argc, char** argv)
 {
   if (argc < 4) {
-    std::cerr << "Usage: " << argv[0] << " dump|gen <n-gram-order> <filename>" << std::endl;
+    std::cerr << "Usage: " << argv[0] << " dump|gen|sort <n-gram-order> <filename>" << std::endl;
     return 1;
   }
 
@@ -69,33 +69,36 @@ int main(int argc, char** argv)
   const char* filename = argv[3];
 
 #define CASES() \
-  CASE(1) \
-  CASE(2) \
-  CASE(3) \
-  CASE(4) \
-  CASE(5)
+  case 1: CASE(1); break; \
+  case 2: CASE(2); break; \
+  case 3: CASE(3); break; \
+  case 4: CASE(4); break; \
+  case 5: CASE(5); break; \
+  default: \
+    std::cerr << "Unsupported n-gram order" << std::endl; \
+    break; \
 
   tpie::tpie_init();
-  if (strcmp(routine, "dump") == 0) {
+  /****/ if (strcmp(routine, "dump") == 0) {
     switch (order) {
-#define CASE(i) case i: DumpFileStream< CountedNGram< i > >(filename); break;
+#define CASE(i) DumpFileStream< CountedNGram< i > >(filename)
       CASES()
 #undef CASE
     }
-  }
-  if (strcmp(routine, "gen") == 0) {
+  } else if (strcmp(routine, "gen") == 0) {
     switch (order) {
-#define CASE(i) case i: GenerateFileStream< CountedNGram< i > >(filename); break;
+#define CASE(i) GenerateFileStream< CountedNGram< i > >(filename)
       CASES()
 #undef CASE
     }
-  }
-  if (strcmp(routine, "suffix_sort") == 0) {
+  } else if (strcmp(routine, "sort") == 0) {
     switch (order) {
-#define CASE(i) case i: SuffixSort< i >(filename); break;
+#define CASE(i) SuffixSort< i >(filename)
       CASES()
 #undef CASE
     }
+  } else {
+    std::cerr << "Unknown command '" << routine << "'" << std::endl;
   }
   tpie::tpie_finish();
 

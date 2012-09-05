@@ -4,18 +4,18 @@ namespace lm {
 namespace builder {
 
 template <class Gram>
-struct SuffxOrderComparator
+struct SuffixOrderComparator
 {
   inline bool operator()(const Gram& lhs, const Gram& rhs)
   {
     for (int i = Gram::n - 1; i >= 0; --i) {
-      if (rhs[i] < rhs[i]) {
-        return true;
-      } else if (rhs[i] > rhs[i]) {
+      if (rhs.w[i] < lhs.w[i]) {
         return false;
+      } else if (rhs.w[i] > lhs.w[i]) {
+        return true;
       }
     }
-    return false;
+    return true;
   }
 };
 
@@ -24,8 +24,9 @@ template <unsigned N> void SuffixSort(const char* filename)
   typedef CountedNGram<N> CountedGram;
 
   tpie::file_stream<CountedGram> stream;
+  tpie::progress_indicator_null indicator;
   stream.open(filename);
-  tpie::sort(stream, SuffxOrderComparator<CountedGram>());
+  tpie::sort(stream, SuffixOrderComparator<CountedGram>(), indicator);
 }
 
 } // namespace builder
