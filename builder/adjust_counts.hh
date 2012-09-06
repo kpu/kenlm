@@ -52,18 +52,28 @@ template <unsigned N> void AdjustCounts(const char* filename)
       counters[changedAt] += (changedAt == 0 ? currentGram.count : 1);
     }
 
-    for (int i = changedAt - 1; i >= 0; --i) {
+    for (int i = changedAt - 1, encounteredBOS = false; i >= 0 && !encounteredBOS; --i) {
       // Flush counters[i] for k-gram (w[i] .. w[n]) for k = n - i + 1.
       // yield(counters[i], Gram, i + 1);
       std::cout << "Emitting n-gram: ";
       for (unsigned k = i; k < N; ++k) { std::cout << gram.w[k] << " "; }
       std::cout << " ; Count = " << counters[i] << std::endl;
+      encounteredBOS = (gram.w[i] == kBOS);
     }
     for (int i = changedAt - 1; i >= 0; --i) {
       // Reset the appropriate words and counters.
       gram.w[i] = currentGram.w[i];
       counters[i] = (i == 0 ? currentGram.count : 1);
     }
+  }
+
+  for (int i = N - 1, encounteredBOS = false; i >= 0 && !encounteredBOS; --i) {
+    // Flush counters[i] for k-gram (w[i] .. w[n]) for k = n - i + 1.
+    // yield(counters[i], Gram, i + 1);
+    std::cout << "Emitting n-gram: ";
+    for (unsigned k = i; k < N; ++k) { std::cout << gram.w[k] << " "; }
+    std::cout << " ; Count = " << counters[i] << std::endl;
+    encounteredBOS = (gram.w[i] == kBOS);
   }
 }
 
