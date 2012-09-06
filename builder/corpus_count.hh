@@ -83,10 +83,10 @@ template <unsigned N> void CorpusCount(const char *base_name) {
   combiner_name += "_counts";
   HashCombiner<N> combiner(combiner_name.c_str(), 100);
   NGram<N> gram;
-  for (unsigned int i = 0; i < N; ++i) gram.w[i] = kBOS;
   try {
     while(true) {
       StringPiece line(from.ReadLine());
+      for (unsigned int i = 0; i < N; ++i) gram.w[i] = kBOS;
       for (util::TokenIter<util::SingleCharacter, true> w(line, ' '); w; ++w) {
         AppendWord(gram, vocab.Lookup(*w), combiner);
       }
