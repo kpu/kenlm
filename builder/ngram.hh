@@ -21,7 +21,7 @@ template <unsigned N> struct CountedNGram : NGram<N> {
   uint64_t count;
 };
 
-template <unsigned N> struct Uninterpolated : NGram<N> {
+template <unsigned N> struct UninterpNGram : NGram<N> {
   float prob;  // Uninterpolated probability.
   float gamma; // Interpolation weight for lower order.
 };
