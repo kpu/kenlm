@@ -26,6 +26,11 @@ template <unsigned N> struct UninterpNGram : NGram<N> {
   float gamma; // Interpolation weight for lower order.
 };
 
+template <unsigned N> struct InterpNGram : NGram<N> {
+  float prob;  // p(w_n | w_1^{n-1})
+  float lower; // p(w_n | w_2^{n-1})
+};
+
 const WordIndex kBOS = 1;
 
 #define STATICALLY_DISPATCH(i) do { \
