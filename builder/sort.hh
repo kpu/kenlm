@@ -7,30 +7,42 @@
 namespace lm {
 namespace builder {
 
-template <class Gram>
-struct SuffixOrderComparator : public std::binary_function<const Gram &, const Gram &, bool>
-{
-  inline bool operator()(const Gram& lhs, const Gram& rhs)
-  {
-    for (int i = Gram::n - 1; i >= 0; --i) {
-      if (rhs.w[i] < lhs.w[i]) {
-        return false;
-      } else if (rhs.w[i] > lhs.w[i]) {
-        return true;
+struct SuffixOrder {
+  template <class Gram> struct Comparator : public std::binary_function<const Gram &, const Gram &, bool> {
+    inline bool operator()(const Gram& lhs, const Gram& rhs) const {
+      for (int i = Gram::n - 1; i >= 0; --i) {
+        if (rhs.w[i] < lhs.w[i]) {
+          return false;
+        } else if (rhs.w[i] > lhs.w[i]) {
+          return true;
+        }
       }
+      return false;
     }
-    return true;
-  }
+  };
 };
 
-template <unsigned N> void SuffixSort(const char* filename)
-{
-  typedef CountedNGram<N> CountedGram;
+struct ContextOrder {
+  template <class Gram> struct Comparator : public std::binary_function<const Gram &, const Gram &, bool> {
+    inline bool operator()(const Gram &lhs, const Gram &rhs) const {
+      for (int i = Gram::n - 2; i >= 0; --i) {
+        if (rhs.w[i] < lhs.w[i]) {
+          return false;
+        } else if (rhs.w[i] > lhs.w[i]) {
+          return true;
+        }
+      }
+      return rhs.w[Gram::n - 1] > lhs.w[Gram::n - 1];
+    }
+  };
+};
 
-  tpie::file_stream<CountedGram> stream;
+template <class Gram, class Compare> void Sort(const char* filename) {
+  tpie::file_stream<Gram> stream;
   tpie::progress_indicator_null indicator;
   stream.open(filename);
-  tpie::sort(stream, SuffixOrderComparator<CountedGram>(), indicator);
+  typename Compare::template Comparator<Gram> compare;
+  tpie::sort(stream, compare, indicator);
 }
 
 } // namespace builder

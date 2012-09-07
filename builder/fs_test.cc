@@ -96,7 +96,7 @@ int main(int argc, char** argv)
     INVOKE_PROPER_CASE(order)
 #undef CASE
   } else if (strcmp(routine, "sort") == 0) {
-#define CASE(i) SuffixSort< i >(filename)
+#define CASE(i) Sort<CountedNGram< i >, SuffixOrder>(filename)
     INVOKE_PROPER_CASE(order)
 #undef CASE
   } else if (strcmp(routine, "adjust") == 0) {
