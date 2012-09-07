@@ -1,3 +1,6 @@
+#ifndef BUILDER_ADJUST_COUNTS__
+#define BUILDER_ADJUST_COUNTS__
+
 #include "builder/ngram.hh"
 #include "builder/multi_file_stream.hh"
 
@@ -5,6 +8,22 @@
 
 namespace lm {
 namespace builder {
+
+template <class MFS> void EmitNGram(MFS& mfs, WordIndex* w, int n, uint64_t count)
+{
+  std::cout << "Emitting n-gram: ";
+  for (unsigned i = 0; i < n; ++i) { std::cout << w[i] << " "; }
+  std::cout << " ; Count = " << count << std::endl;
+
+#define XX(i) \
+  CountedNGram<i> gram; \
+  ::memcpy(&gram.w, w, sizeof(gram.w)); \
+  gram.count = count; \
+  mfs.template get<i>()->write(gram);
+
+  STATICALLY_DISPATCH(n);
+#undef XX
+}
 
 template <unsigned N> void AdjustCounts(const char* filename)
 {
@@ -25,6 +44,15 @@ template <unsigned N> void AdjustCounts(const char* filename)
       counters[i] = (i == 0 ? firstGram.count : 1);
     }
   }
+
+  const char* files[] = {
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5"
+    };
+  MultiFileStream<N, CountedNGram> mfs(files);
 
   while (stream.can_read()) {
     const CountedGram& currentGram = stream.read();
@@ -64,39 +92,26 @@ template <unsigned N> void AdjustCounts(const char* filename)
     }
 
     for (int i = changedAt - 1, encounteredBOS = false; i >= 0 && !encounteredBOS; --i) {
-      // Flush counters[i] for k-gram (w[i] .. w[n]) for k = n - i + 1.
-      // yield(counters[i], Gram, i + 1);
-      std::cout << "Emitting n-gram: ";
-      for (unsigned k = i; k < N; ++k) { std::cout << gram.w[k] << " "; }
-      std::cout << " ; Count = " << counters[i] << std::endl;
+      EmitNGram(mfs, gram.w + i, N - i, counters[i]);
       encounteredBOS = (gram.w[i] == kBOS);
     }
     for (int i = changedAt - 1; i >= 0; --i) {
       // Reset the appropriate words and counters.
       gram.w[i] = currentGram.w[i];
+      // TODO(sandello): This is obviously wrong. Fallback to raw counts only if i-th word is BOS.
+      // TODO(sandello): Think about it.
       counters[i] = (shortened || i == 0 ? currentGram.count : 1);
     }
   }
 
   for (int i = N - 1, encounteredBOS = false; i >= 0 && !encounteredBOS; --i) {
-    // Flush counters[i] for k-gram (w[i] .. w[n]) for k = n - i + 1.
-    // yield(counters[i], Gram, i + 1);
-    std::cout << "Emitting n-gram: ";
-    for (unsigned k = i; k < N; ++k) { std::cout << gram.w[k] << " "; }
-    std::cout << " ; Count = " << counters[i] << std::endl;
+    EmitNGram(mfs, gram.w + i, N - i, counters[i]);
     encounteredBOS = (gram.w[i] == kBOS);
   }
-
-  const char* files[] = {
-    "f1",
-    "f2",
-    "f3",
-    "f4",
-    "f5"
-    };
-  MultiFileStream<N, CountedNGram> mfs(files);
 }
 
 } // namespace builder
 } // namespace lm
+
+#endif // BUILDER_ADJUST_COUNTS__
 

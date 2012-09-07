@@ -70,39 +70,27 @@ int main(int argc, char** argv)
   int order = atoi(argv[2]);
   const char* filename = argv[3];
 
-#define INVOKE_PROPER_CASE(k) \
-  switch (k) { \
-    case 1: CASE(1); break; \
-    case 2: CASE(2); break; \
-    case 3: CASE(3); break; \
-    case 4: CASE(4); break; \
-    case 5: CASE(5); break; \
-    default: \
-      std::cerr << "Unsupported n-gram order" << std::endl; \
-      break; \
-  }
-
   tpie::tpie_init();
   /****/ if (strcmp(routine, "dump") == 0) {
-#define CASE(i) DumpFileStream< CountedNGram< i > >(filename)
-    INVOKE_PROPER_CASE(order)
-#undef CASE
+#define XX(i) DumpFileStream< CountedNGram< i > >(filename)
+    STATICALLY_DISPATCH(order);
+#undef XX
   } else if (strcmp(routine, "gen") == 0) {
-#define CASE(i) GenerateFileStream< CountedNGram< i > >(filename)
-    INVOKE_PROPER_CASE(order)
-#undef CASE
+#define XX(i) GenerateFileStream< CountedNGram< i > >(filename)
+    STATICALLY_DISPATCH(order);
+#undef XX
   } else if (!strcmp(routine, "count")) {
-#define CASE(i) CorpusCount< i >(filename)
-    INVOKE_PROPER_CASE(order)
-#undef CASE
+#define XX(i) CorpusCount< i >(filename)
+    STATICALLY_DISPATCH(order);
+#undef XX
   } else if (strcmp(routine, "sort") == 0) {
-#define CASE(i) Sort<CountedNGram< i >, SuffixOrder>(filename)
-    INVOKE_PROPER_CASE(order)
-#undef CASE
+#define XX(i) Sort<CountedNGram< i >, SuffixOrder>(filename)
+    STATICALLY_DISPATCH(order);
+#undef XX
   } else if (strcmp(routine, "adjust") == 0) {
-#define CASE(i) AdjustCounts< i >(filename)
-    INVOKE_PROPER_CASE(order)
-#undef CASE
+#define XX(i) AdjustCounts< i >(filename)
+    STATICALLY_DISPATCH(order);
+#undef XX
   } else {
     std::cerr << "Unknown command '" << routine << "'" << std::endl;
   }
