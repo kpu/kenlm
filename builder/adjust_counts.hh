@@ -1,4 +1,6 @@
 #include "builder/ngram.hh"
+#include "builder/multi_file_stream.hh"
+
 #include <tpie/file_stream.h>
 
 namespace lm {
@@ -26,11 +28,20 @@ template <unsigned N> void AdjustCounts(const char* filename)
 
   while (stream.can_read()) {
     const CountedGram& currentGram = stream.read();
+    bool shortened = false;
 
     // Resulting value of this variable equals to the number of changed words.
     int changedAt;
     for (changedAt = N; changedAt > 0; --changedAt) {
       if (gram.w[changedAt - 1] != currentGram.w[changedAt - 1]) {
+        break;
+      }
+    }
+
+    // Check that we have BOS somewhere.
+    for (unsigned i = 0; i < N; ++i) {
+      if (gram.w[i] == kBOS) {
+        shortened = true;
         break;
       }
     }
@@ -49,7 +60,7 @@ template <unsigned N> void AdjustCounts(const char* filename)
 
     // changedAt could equal to N; in that case counters are irrelevant.
     if (changedAt < (int)N) {
-      counters[changedAt] += (changedAt == 0 ? currentGram.count : 1);
+      counters[changedAt] += (shortened || changedAt == 0 ? currentGram.count : 1);
     }
 
     for (int i = changedAt - 1, encounteredBOS = false; i >= 0 && !encounteredBOS; --i) {
@@ -63,7 +74,7 @@ template <unsigned N> void AdjustCounts(const char* filename)
     for (int i = changedAt - 1; i >= 0; --i) {
       // Reset the appropriate words and counters.
       gram.w[i] = currentGram.w[i];
-      counters[i] = (i == 0 ? currentGram.count : 1);
+      counters[i] = (shortened || i == 0 ? currentGram.count : 1);
     }
   }
 
@@ -75,6 +86,15 @@ template <unsigned N> void AdjustCounts(const char* filename)
     std::cout << " ; Count = " << counters[i] << std::endl;
     encounteredBOS = (gram.w[i] == kBOS);
   }
+
+  const char* files[] = {
+    "f1",
+    "f2",
+    "f3",
+    "f4",
+    "f5"
+    };
+  MultiFileStream<N, CountedNGram> mfs(files);
 }
 
 } // namespace builder
