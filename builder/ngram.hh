@@ -21,6 +21,11 @@ template <unsigned N> struct CountedNGram : NGram<N> {
   uint64_t count;
 };
 
+template <unsigned N> struct Uninterpolated : NGram<N> {
+  float prob;  // Uninterpolated probability.
+  float gamma; // Interpolation weight for lower order.
+};
+
 const WordIndex kBOS = 1;
 
 } // namespace builder
