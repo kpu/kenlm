@@ -9,7 +9,7 @@
 namespace lm {
 namespace builder {
 
-template <class MFS> void EmitNGram(MFS& mfs, WordIndex* w, int n, uint64_t count)
+template <class MFS> void EmitNGram(MFS& mfs, WordIndex* w, unsigned n, uint64_t count)
 {
   std::cout << "Emitting n-gram: ";
   for (unsigned i = 0; i < n; ++i) { std::cout << w[i] << " "; }

@@ -35,11 +35,11 @@ const WordIndex kBOS = 1;
 
 #define STATICALLY_DISPATCH(i) do { \
   switch (i) { \
-    case 1: do { XX(1); } while(0); break; \
-    case 2: do { XX(2); } while(0); break; \
-    case 3: do { XX(3); } while(0); break; \
-    case 4: do { XX(4); } while(0); break; \
-    case 5: do { XX(5); } while(0); break; \
+    case 1: { XX(1); } break; \
+    case 2: { XX(2); } break; \
+    case 3: { XX(3); } break; \
+    case 4: { XX(4); } break; \
+    case 5: { XX(5); } break; \
     default: \
       fprintf(stderr, "%d-grams are not supported; please, accomodate ngram.hh to your needs\n", i); \
       break; \
