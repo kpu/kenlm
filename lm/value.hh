@@ -6,7 +6,7 @@
 #include "lm/weights.hh"
 #include "util/bit_packing.hh"
 
-#include <inttypes.h>
+#include <stdint.h>
 
 namespace lm {
 namespace ngram {

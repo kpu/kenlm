@@ -11,6 +11,10 @@
 #include <string.h>
 #include <stdint.h>
 
+#ifdef WIN32
+#include <float.h>
+#endif
+
 namespace lm {
 
 // 1 for '\t', '\n', and ' '.  This is stricter than isspace.  
@@ -95,8 +99,13 @@ void ReadBackoff(util::FilePiece &in, float &backoff) {
       backoff = in.ReadFloat();
       if (backoff == ngram::kExtensionBackoff) backoff = ngram::kNoExtensionBackoff;
       {
+#ifdef WIN32
+		int float_class = _fpclass(backoff);
+        UTIL_THROW_IF(float_class == _FPCLASS_SNAN || float_class == _FPCLASS_QNAN || float_class == _FPCLASS_NINF || float_class == _FPCLASS_PINF, FormatLoadException, "Bad backoff " << backoff);
+#else
         int float_class = fpclassify(backoff);
         UTIL_THROW_IF(float_class == FP_NAN || float_class == FP_INFINITE, FormatLoadException, "Bad backoff " << backoff);
+#endif
       }
       UTIL_THROW_IF(in.get() != '\n', FormatLoadException, "Expected newline after backoff");
       break;

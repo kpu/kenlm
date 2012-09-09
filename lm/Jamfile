@@ -7,6 +7,7 @@ run model_test.cc ../util//kenutil kenlm ..//boost_unit_test_framework : : test.
 
 exe query : ngram_query.cc kenlm ../util//kenutil ;
 exe build_binary : build_binary.cc kenlm ../util//kenutil ;
+exe kenlm_max_order : max_order.cc : <include>.. ;
 
-install legacy : build_binary query 
+install legacy : build_binary query kenlm_max_order
   : <location>$(TOP)/lm <install-type>EXE <install-dependencies>on <link>shared:<dll-path>$(TOP)/lm <link>shared:<install-type>LIB ;
