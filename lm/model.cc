@@ -12,6 +12,7 @@
 #include <functional>
 #include <numeric>
 #include <cmath>
+#include <limits>
 
 namespace lm {
 namespace ngram {
@@ -19,8 +20,8 @@ namespace detail {
 
 template <class Search, class VocabularyT> const ModelType GenericModel<Search, VocabularyT>::kModelType = Search::kModelType;
 
-template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<uint64_t> &counts, const Config &config) {
-  return VocabularyT::Size(counts[0], config) + Search::Size(counts, config);
+template <class Search, class VocabularyT> std::size_t GenericModel<Search, VocabularyT>::Size(const std::vector<uint64_t> &counts, const Config &config) {
+  return util::CheckOverflow(VocabularyT::Size(counts[0], config) + Search::Size(counts, config));
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(void *base, const std::vector<uint64_t> &counts, const Config &config) {
@@ -49,13 +50,18 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
 }
 
 namespace {
-void CheckMaxOrder(size_t order) {
-  UTIL_THROW_IF(order > KENLM_MAX_ORDER, FormatLoadException, "This model has order " << order << " but KenLM was compiled to support up to " << KENLM_MAX_ORDER << ".  " << KENLM_ORDER_MESSAGE);
+void CheckCounts(const std::vector<uint64_t> &counts) {
+  UTIL_THROW_IF(counts.size() > KENLM_MAX_ORDER, FormatLoadException, "This model has order " << counts.size() << " but KenLM was compiled to support up to " << KENLM_MAX_ORDER << ".  " << KENLM_ORDER_MESSAGE);
+  if (sizeof(uint64_t) > sizeof(std::size_t)) {
+    for (std::vector<uint64_t>::const_iterator i = counts.begin(); i != counts.end(); ++i) {
+      UTIL_THROW_IF(*i > static_cast<uint64_t>(std::numeric_limits<size_t>::max()), util::OverflowException, "This model has " << *i << " " << (i - counts.begin() + 1) << "-grams which is too many for 32-bit machines.");
+    }
+  }
 }
 } // namespace
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(void *start, const Parameters &params, const Config &config, int fd) {
-  CheckMaxOrder(params.counts.size());
+  CheckCounts(params.counts);
   SetupMemory(start, params.counts, config);
   vocab_.LoadedBinary(params.fixed.has_vocabulary, fd, config.enumerate_vocab);
   search_.LoadedBinary();
@@ -68,7 +74,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     std::vector<uint64_t> counts;
     // File counts do not include pruned trigrams that extend to quadgrams etc.   These will be fixed by search_.
     ReadARPACounts(f, counts);
-    CheckMaxOrder(counts.size());
+    CheckCounts(counts);
     if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
     if (config.probing_multiplier <= 1.0) UTIL_THROW(ConfigException, "probing multiplier must be > 1.0");
 

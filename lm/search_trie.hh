@@ -44,8 +44,8 @@ template <class Quant, class Bhiksha> class TrieSearch {
       Bhiksha::UpdateConfigFromBinary(fd, config);
     }
 
-    static std::size_t Size(const std::vector<uint64_t> &counts, const Config &config) {
-      std::size_t ret = Quant::Size(counts.size(), config) + Unigram::Size(counts[0]);
+    static uint64_t Size(const std::vector<uint64_t> &counts, const Config &config) {
+      uint64_t ret = Quant::Size(counts.size(), config) + Unigram::Size(counts[0]);
       for (unsigned char i = 1; i < counts.size() - 1; ++i) {
         ret += Middle::Size(Quant::MiddleBits(config), counts[i], counts[0], counts[i+1], config);
       }

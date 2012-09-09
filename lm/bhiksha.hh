@@ -33,7 +33,7 @@ class DontBhiksha {
 
     static void UpdateConfigFromBinary(int /*fd*/, Config &/*config*/) {}
 
-    static std::size_t Size(uint64_t /*max_offset*/, uint64_t /*max_next*/, const Config &/*config*/) { return 0; }
+    static uint64_t Size(uint64_t /*max_offset*/, uint64_t /*max_next*/, const Config &/*config*/) { return 0; }
 
     static uint8_t InlineBits(uint64_t /*max_offset*/, uint64_t max_next, const Config &/*config*/) {
       return util::RequiredBits(max_next);
@@ -67,7 +67,7 @@ class ArrayBhiksha {
 
     static void UpdateConfigFromBinary(int fd, Config &config);
 
-    static std::size_t Size(uint64_t max_offset, uint64_t max_next, const Config &config);
+    static uint64_t Size(uint64_t max_offset, uint64_t max_next, const Config &config);
 
     static uint8_t InlineBits(uint64_t max_offset, uint64_t max_next, const Config &config);
 
