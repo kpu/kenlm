@@ -84,4 +84,7 @@ EndOfFileException::EndOfFileException() throw() {
 }
 EndOfFileException::~EndOfFileException() throw() {}
 
+OverflowException::OverflowException() throw() {}
+OverflowException::~OverflowException() throw() {}
+
 } // namespace util

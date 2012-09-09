@@ -41,7 +41,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
      * does not include small non-mapped control structures, such as this class
      * itself.  
      */
-    static size_t Size(const std::vector<uint64_t> &counts, const Config &config = Config());
+    static uint64_t Size(const std::vector<uint64_t> &counts, const Config &config = Config());
 
     /* Load the model from a file.  It may be an ARPA or binary file.  Binary
      * files must have the format expected by this class or you'll get an

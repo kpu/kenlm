@@ -12,6 +12,7 @@
 #include <functional>
 #include <numeric>
 #include <cmath>
+#include <limits>
 
 namespace lm {
 namespace ngram {
@@ -19,17 +20,18 @@ namespace detail {
 
 template <class Search, class VocabularyT> const ModelType GenericModel<Search, VocabularyT>::kModelType = Search::kModelType;
 
-template <class Search, class VocabularyT> size_t GenericModel<Search, VocabularyT>::Size(const std::vector<uint64_t> &counts, const Config &config) {
+template <class Search, class VocabularyT> uint64_t GenericModel<Search, VocabularyT>::Size(const std::vector<uint64_t> &counts, const Config &config) {
   return VocabularyT::Size(counts[0], config) + Search::Size(counts, config);
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(void *base, const std::vector<uint64_t> &counts, const Config &config) {
+  size_t goal_size = util::CheckOverflow(Size(counts, config));
   uint8_t *start = static_cast<uint8_t*>(base);
   size_t allocated = VocabularyT::Size(counts[0], config);
   vocab_.SetupMemory(start, allocated, counts[0], config);
   start += allocated;
   start = search_.SetupMemory(start, counts, config);
-  if (static_cast<std::size_t>(start - static_cast<uint8_t*>(base)) != Size(counts, config)) UTIL_THROW(FormatLoadException, "The data structures took " << (start - static_cast<uint8_t*>(base)) << " but Size says they should take " << Size(counts, config));
+  if (static_cast<std::size_t>(start - static_cast<uint8_t*>(base)) != goal_size) UTIL_THROW(FormatLoadException, "The data structures took " << (start - static_cast<uint8_t*>(base)) << " but Size says they should take " << goal_size);
 }
 
 template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) {
@@ -49,13 +51,18 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
 }
 
 namespace {
-void CheckMaxOrder(size_t order) {
-  UTIL_THROW_IF(order > KENLM_MAX_ORDER, FormatLoadException, "This model has order " << order << " but KenLM was compiled to support up to " << KENLM_MAX_ORDER << ".  " << KENLM_ORDER_MESSAGE);
+void CheckCounts(const std::vector<uint64_t> &counts) {
+  UTIL_THROW_IF(counts.size() > KENLM_MAX_ORDER, FormatLoadException, "This model has order " << counts.size() << " but KenLM was compiled to support up to " << KENLM_MAX_ORDER << ".  " << KENLM_ORDER_MESSAGE);
+  if (sizeof(uint64_t) > sizeof(std::size_t)) {
+    for (std::vector<uint64_t>::const_iterator i = counts.begin(); i != counts.end(); ++i) {
+      UTIL_THROW_IF(*i > static_cast<uint64_t>(std::numeric_limits<size_t>::max()), util::OverflowException, "This model has " << *i << " " << (i - counts.begin() + 1) << "-grams which is too many for 32-bit machines.");
+    }
+  }
 }
 } // namespace
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(void *start, const Parameters &params, const Config &config, int fd) {
-  CheckMaxOrder(params.counts.size());
+  CheckCounts(params.counts);
   SetupMemory(start, params.counts, config);
   vocab_.LoadedBinary(params.fixed.has_vocabulary, fd, config.enumerate_vocab);
   search_.LoadedBinary();
@@ -68,11 +75,11 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     std::vector<uint64_t> counts;
     // File counts do not include pruned trigrams that extend to quadgrams etc.   These will be fixed by search_.
     ReadARPACounts(f, counts);
-    CheckMaxOrder(counts.size());
+    CheckCounts(counts);
     if (counts.size() < 2) UTIL_THROW(FormatLoadException, "This ngram implementation assumes at least a bigram model.");
     if (config.probing_multiplier <= 1.0) UTIL_THROW(ConfigException, "probing multiplier must be > 1.0");
 
-    std::size_t vocab_size = VocabularyT::Size(counts[0], config);
+    std::size_t vocab_size = util::CheckOverflow(VocabularyT::Size(counts[0], config));
     // Setup the binary file for writing the vocab lookup table.  The search_ is responsible for growing the binary file to its needs.  
     vocab_.SetupMemory(SetupJustVocab(config, counts.size(), vocab_size, backing_), vocab_size, counts[0], config);
 

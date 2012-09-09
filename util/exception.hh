@@ -2,8 +2,11 @@
 #define UTIL_EXCEPTION__
 
 #include <exception>
+#include <limits>
 #include <sstream>
 #include <string>
+
+#include <inttypes.h>
 
 namespace util {
 
@@ -110,6 +113,25 @@ class EndOfFileException : public Exception {
     EndOfFileException() throw();
     ~EndOfFileException() throw();
 };
+
+class OverflowException : public Exception {
+  public:
+    OverflowException() throw();
+    ~OverflowException() throw();
+};
+
+template <unsigned len> inline std::size_t CheckOverflowInternal(uint64_t value) {
+  UTIL_THROW_IF(value > static_cast<uint64_t>(std::numeric_limits<std::size_t>::max()), OverflowException, "Integer overflow detected.  This model is too big for 32-bit code.");
+  return value;
+}
+
+template <> inline std::size_t CheckOverflowInternal<8>(uint64_t value) {
+  return value;
+}
+
+inline std::size_t CheckOverflow(uint64_t value) {
+  return CheckOverflowInternal<sizeof(std::size_t)>(value);
+}
 
 } // namespace util
 
