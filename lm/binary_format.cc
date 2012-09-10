@@ -200,10 +200,10 @@ void SeekPastHeader(int fd, const Parameters &params) {
   util::SeekOrThrow(fd, TotalHeaderSize(params.counts.size()));
 }
 
-uint8_t *SetupBinary(const Config &config, const Parameters &params, std::size_t memory_size, Backing &backing) {
+uint8_t *SetupBinary(const Config &config, const Parameters &params, uint64_t memory_size, Backing &backing) {
   const uint64_t file_size = util::SizeFile(backing.file.get());
   // The header is smaller than a page, so we have to map the whole header as well.  
-  std::size_t total_map = TotalHeaderSize(params.counts.size()) + memory_size;
+  std::size_t total_map = util::CheckOverflow(TotalHeaderSize(params.counts.size()) + memory_size);
   if (file_size != util::kBadSize && static_cast<uint64_t>(file_size) < total_map)
     UTIL_THROW(FormatLoadException, "Binary file has size " << file_size << " but the headers say it should be at least " << total_map);
 
