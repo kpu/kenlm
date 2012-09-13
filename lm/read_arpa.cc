@@ -38,7 +38,6 @@ uint64_t ReadCount(const std::string &from) {
   uint64_t ret;
   stream >> ret;
   UTIL_THROW_IF(!stream, FormatLoadException, "Bad count " << from);
-  UTIL_THROW_IF(static_cast<std::size_t>(stream.tellg()) != from.size(), FormatLoadException, "Extra content in count: '" << from << "'");
   return ret;
 }
 
