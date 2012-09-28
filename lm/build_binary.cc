@@ -11,6 +11,8 @@
 
 #ifdef WIN32
 #include "util/getopt.hh"
+#else
+#include <unistd.h>
 #endif
 
 namespace lm {

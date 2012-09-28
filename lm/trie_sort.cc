@@ -22,12 +22,6 @@
 namespace lm {
 namespace ngram {
 namespace trie {
-
-void WriteOrThrow(FILE *to, const void *data, size_t size) {
-  assert(size);
-  if (1 != std::fwrite(data, size, 1, to)) UTIL_THROW(util::ErrnoException, "Short write; requested size " << size);
-}
-
 namespace {
 
 typedef util::SizedIterator NGramIter;
@@ -95,12 +89,12 @@ FILE *WriteContextFile(uint8_t *begin, uint8_t *end, const util::TempMaker &make
   // Write out to file and uniqueify at the same time.  Could have used unique_copy if there was an appropriate OutputIterator.  
   if (context_begin == context_end) return out.release();
   PartialIter i(context_begin);
-  WriteOrThrow(out.get(), i->Data(), context_size);
+  util::WriteOrThrow(out.get(), i->Data(), context_size);
   const void *previous = i->Data();
   ++i;
   for (; i != context_end; ++i) {
     if (memcmp(previous, i->Data(), context_size)) {
-      WriteOrThrow(out.get(), i->Data(), context_size);
+      util::WriteOrThrow(out.get(), i->Data(), context_size);
       previous = i->Data();
     }
   }
@@ -116,7 +110,7 @@ struct ThrowCombine {
 // Useful for context files that just contain records with no value.  
 struct FirstCombine {
   void operator()(std::size_t entry_size, const void *first, const void * /*second*/, FILE *out) const {
-    WriteOrThrow(out, first, entry_size);
+    util::WriteOrThrow(out, first, entry_size);
   }
 };
 
@@ -129,10 +123,10 @@ template <class Combine> FILE *MergeSortedFiles(FILE *first_file, FILE *second_f
   EntryCompare less(order);
   while (first && second) {
     if (less(first.Data(), second.Data())) {
-      WriteOrThrow(out_file.get(), first.Data(), entry_size);
+      util::WriteOrThrow(out_file.get(), first.Data(), entry_size);
       ++first;
     } else if (less(second.Data(), first.Data())) {
-      WriteOrThrow(out_file.get(), second.Data(), entry_size);
+      util::WriteOrThrow(out_file.get(), second.Data(), entry_size);
       ++second;
     } else {
       combine(entry_size, first.Data(), second.Data(), out_file.get());
@@ -140,7 +134,7 @@ template <class Combine> FILE *MergeSortedFiles(FILE *first_file, FILE *second_f
     }
   }
   for (RecordReader &remains = (first ? first : second); remains; ++remains) {
-    WriteOrThrow(out_file.get(), remains.Data(), entry_size);
+    util::WriteOrThrow(out_file.get(), remains.Data(), entry_size);
   }
   return out_file.release();
 }
@@ -164,7 +158,7 @@ void RecordReader::Init(FILE *file, std::size_t entry_size) {
 void RecordReader::Overwrite(const void *start, std::size_t amount) {
   long internal = (uint8_t*)start - (uint8_t*)data_.get();
   UTIL_THROW_IF(fseek(file_, internal - entry_size_, SEEK_CUR), util::ErrnoException, "Couldn't seek backwards for revision");
-  WriteOrThrow(file_, start, amount);
+  util::WriteOrThrow(file_, start, amount);
   long forward = entry_size_ - internal - amount;
 #if !defined(_WIN32) && !defined(_WIN64)
   if (forward) 

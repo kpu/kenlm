@@ -3,20 +3,8 @@ import option ;
 import os ;
 import path ;
 import project ;
-
-local prj = [ project.current ] ; 
-mod = [ $(prj).project-module ] ;
-
-module $(mod) {
-  path-constant TOP : . ;
-}
-
-rule get-top {
-  module $(mod) {
-    return $(TOP) ;
-  }
-}
-TOP = [ get-top ] ;
+import build-system ;
+import version ;
 
 #Shell with trailing line removed http://lists.boost.org/boost-build/2007/08/17051.php
 rule trim-nl ( str extras * ) {
@@ -27,9 +15,19 @@ rule _shell ( cmd : extras * ) {
   return [ trim-nl [ SHELL $(cmd) : $(extras) ] ] ;
 }
 
+cxxflags = [ os.environ "CXXFLAGS" ] ;
+cflags = [ os.environ "CFLAGS" ] ;
+ldflags = [ os.environ "LDFLAGS" ] ;
+
 #Run g++ with empty main and these arguments to see if it passes.  
 rule test_flags ( flags * ) {
-  local ret = [ SHELL "g++ "$(flags:J=" ")" -x c++ - <<<'int main() {}' -o /dev/null >/dev/null 2>/dev/null" : exit-status ] ;
+  flags = $(cxxflags) $(ldflags) $(flags) ;
+  local cmd = "bash -c \"g++ "$(flags:J=" ")" -x c++ - <<<'int main() {}' -o /dev/null >/dev/null 2>/dev/null\"" ;
+  local ret = [ SHELL $(cmd) : exit-status ] ;
+  if --debug-configuration in [ modules.peek : ARGV ] {
+    echo $(cmd) ;
+    echo $(ret) ;
+  }
   if $(ret[2]) = 0 {
     return true ;
   } else {
@@ -37,47 +35,82 @@ rule test_flags ( flags * ) {
   }
 }
 
+rule test_header ( name ) {
+  return [ test_flags "-include $(name)" ] ;
+}
+
+rule test_library ( name ) {
+  return [ test_flags "-l$(name)" ] ;
+}
+
+{
+  local cleaning = [ option.get "clean" : : yes ] ;
+  cleaning ?= [ option.get "clean-all" : no : yes ] ;
+  if "clean" in [ modules.peek : ARGV ] {
+    cleaning = yes ;
+  }
+  constant CLEANING : $(cleaning) ;
+}
+
+requirements = ;
+
+FORCE-STATIC = [ option.get "static" : : "yes" ] ;
+if $(FORCE-STATIC) {
+  requirements += <runtime-link>static ;
+}
+
 #Determine if a library can be compiled statically.  
-rule auto_shared ( name : additional * ) {
+rule auto-shared ( name : additional * ) {
   additional ?= "" ;
   if [ test_flags $(additional)" -static -l"$(name) ] {
     return ;
   } else {
-    return "<link>shared" ;
+    if $(FORCE-STATIC) {
+      echo "Could not statically link against lib $(name).  Your build will probably fail." ;
+      return ;
+    } else {
+      return "<link>shared" ;
+    }
   }
 }
 
-with-boost = [ option.get "with-boost" ] ;
-if $(with-boost) {
-  L-boost-search = -L$(with-boost)/lib" "-L$(with-boost)/lib64 ;
-  boost-search = <search>$(with-boost)/lib <search>$(with-boost)/lib64 ;
-  I-boost-include = -I$(with-boost)/include ;
-  boost-include = <include>$(with-boost)/include ;
-} else {
-  L-boost-search = "" ;
-  boost-search = ;
-  I-boost-include = "" ;
-  boost-include = ;
-}
+# MacPorts' default location is /opt/local -- use this if no path is given.
+with-macports = [ option.get "with-macports" : : "/opt/local" ] ;
+if $(with-macports) {
+  using darwin ;
+  ECHO "Using --with-macports=$(with-macports), implying use of darwin GCC" ;
 
-local cleaning = [ option.get "clean" : : yes ] ;
-cleaning ?= [ option.get "clean-all" : no : yes ] ;
-if "clean" in [ modules.peek : ARGV ] {
-  cleaning = yes ;
+  L-boost-search = -L$(with-macports)/lib ;
+  boost-search = <search>$(with-macports)/lib ;
+  I-boost-include = -I$(with-macports)/include ;
+  boost-include = <include>$(with-macports)/include ;
+}
+else {
+  with-boost = [ option.get "with-boost" ] ;
+  with-boost ?= [ os.environ "BOOST_ROOT" ] ;
+  if $(with-boost) {
+    L-boost-search = -L$(with-boost)/lib" "-L$(with-boost)/lib64 ;
+    boost-search = <search>$(with-boost)/lib <search>$(with-boost)/lib64 ;
+    I-boost-include = -I$(with-boost)/include ;
+    boost-include = <include>$(with-boost)/include ;
+  } else {
+    L-boost-search = "" ;
+    boost-search = ;
+    I-boost-include = "" ;
+    boost-include = ;
+  }
 }
  
-#Are we linking static binaries against shared boost?
-boost-auto-shared = [ auto_shared "boost_program_options" : $(L-boost-search) ] ;
 #Convenience rule for boost libraries.  Defines library boost_$(name).  
-rule boost_lib ( name macro ) {
+rule boost-lib ( name macro : deps * ) {
   #Link multi-threaded programs against the -mt version if available.  Old 
   #versions of boost do not have -mt tagged versions of all libraries.   Sadly,
   #boost.jam does not handle this correctly.  
-  if [ test_flags $(L-boost-search)" -lboost_"$(name)"-mt" ] {
-    lib inner_boost_$(name) : : <threading>single $(boost-search) <name>boost_$(name) ;
-    lib inner_boost_$(name) : : <threading>multi $(boost-search) <name>boost_$(name)-mt ;
+  if [ test_flags $(L-boost-search)" -lboost_"$(name)"-mt$(boost-lib-version)" ] {
+    lib inner_boost_$(name) : : <threading>single $(boost-search) <name>boost_$(name)$(boost-lib-version) : : <library>$(deps) ;
+    lib inner_boost_$(name) : : <threading>multi $(boost-search) <name>boost_$(name)-mt$(boost-lib-version) : : <library>$(deps) ;
   } else {
-    lib inner_boost_$(name) : : $(boost-search) <name>boost_$(name) ;
+    lib inner_boost_$(name) : : $(boost-search) <name>boost_$(name)$(boost-lib-version) : : <library>$(deps) ;
   }
 
   alias boost_$(name) : inner_boost_$(name) : $(boost-auto-shared) : : <link>shared:<define>BOOST_$(macro) $(boost-include) ;
@@ -85,31 +118,44 @@ rule boost_lib ( name macro ) {
 
 #Argument is e.g. 103600
 rule boost ( min-version ) {
-  local boost-shell = [ SHELL "g++ "$(I-boost-include)" -dM -x c++ -E /dev/null -include boost/version.hpp 2>/dev/null |grep '#define BOOST_VERSION '" : exit-status ] ;
-  if $(boost-shell[2]) != 0 && $(cleaning) = no {
+  local cmd = "bash -c \"g++ "$(I-boost-include)" -dM -x c++ -E /dev/null -include boost/version.hpp 2>/dev/null |grep '#define BOOST_'\"" ;
+  local boost-shell = [ SHELL "$(cmd)" : exit-status ] ;
+  if $(boost-shell[2]) != 0 && $(CLEANING) = no {
+    echo Failed to run "$(cmd)" ;
     exit Boost does not seem to be installed or g++ is confused. : 1 ;
   }
   boost-version = [ MATCH "#define BOOST_VERSION ([0-9]*)" : $(boost-shell[1]) ] ;
-  if $(boost-version) < $(min-version) && $(cleaning) = no {
+  if $(boost-version) < $(min-version) && $(CLEANING) = no {
     exit You have Boost $(boost-version).  This package requires Boost at least $(min-version) (and preferably newer). : 1 ;
   }
-  module $(mod) {
-    #See tools/build/v2/contrib/boost.jam in a boost distribution for a table of macros to define.   
-    sanity.boost_lib thread THREAD_DYN_DLL ;
-    sanity.boost_lib program_options PROGRAM_OPTIONS_DYN_LINK ;
-    sanity.boost_lib unit_test_framework TEST_DYN_LINK ;
+  # If matching version tags exist, use them.  
+  boost-lib-version = [ MATCH "#define BOOST_LIB_VERSION \"([^\"]*)\"" : $(boost-shell[1]) ] ;
+  if [ test_flags $(L-boost-search)" -lboost_program_options-"$(boost-lib-version) ] {
+    boost-lib-version = "-"$(boost-lib-version) ;
+  } else {
+    boost-lib-version = "" ;
   }
+
+  #Are we linking static binaries against shared boost?
+  boost-auto-shared = [ auto-shared "boost_program_options"$(boost-lib-version) : $(L-boost-search) ] ;
+
+  #See tools/build/v2/contrib/boost.jam in a boost distribution for a table of macros to define.   
+  boost-lib system SYSTEM_DYN_LINK ;
+  boost-lib thread THREAD_DYN_DLL : boost_system ;
+  boost-lib program_options PROGRAM_OPTIONS_DYN_LINK ;
+  boost-lib unit_test_framework TEST_DYN_LINK ;
+  boost-lib iostreams IOSTREAMS_DYN_LINK ;
+  boost-lib filesystem FILE_SYSTEM_DYN_LINK ;
 }
  
 #Link normally to a library, but sometimes static isn't installed so fall back to dynamic.
-rule external-lib ( name ) {
-  lib $(name) : : [ auto_shared $(name) ] ;
+rule external-lib ( name : search-path * ) {
+  lib $(name) : : [ auto-shared $(name) : "-L"$(search-path) ] <search>$(search-path) ;
 }
 
 #Write the current command line to previous.sh.  This does not do shell escaping.  
 {
-  local build-log = [ get-top ] ;
-  local build-log = $(build-log)/previous.sh ;
+  local build-log = $(TOP)/previous.sh ;
   if ! [ path.exists $(build-log) ] {
     SHELL "touch $(build-log) && chmod +x $(build-log)" ;
   }
@@ -125,37 +171,107 @@ rule external-lib ( name ) {
   local ignored = @($(build-log):E=$(script)) ;
 }
 
-rule reqs ( ) {
-  local cxxflags = [ os.environ "CXXFLAGS" ] ;
-  local cflags = [ os.environ "CFLAGS" ] ;
-  local ldflags = [ os.environ "LDFLAGS" ] ;
+#Boost jam's static clang for Linux is buggy.
+requirements += <cxxflags>$(cxxflags) <cflags>$(cflags) <linkflags>$(ldflags) <os>LINUX,<toolset>clang:<link>shared ;
 
-  local ret = <cxxflags>$(cxxflags) <cflags>$(cflags) <linkflags>$(ldflags) <os>LINUX,<link>static,<toolset>clang:<linkflags>-static ;
-
+if ! [ option.get "without-libsegfault" : : "yes" ] && ! $(FORCE-STATIC) {
   #libSegFault prints a stack trace on segfault.  Link against it if available.  
-  if [ test_flags "-lSegfault" ] {
-    external_lib SegFault ;
-    ret += <library>SegFault ;
+  if [ test_flags "-lSegFault" ] {
+    external-lib SegFault ;
+    requirements += <library>SegFault ;
   }
-  return $(ret) ;
 }
 
 if [ option.get "git" : : "yes" ] {
   local revision = [ _shell "git rev-parse --verify HEAD |head -c 7" ] ;
-  GITTAG = "/"$(revision) ;
+  constant GITTAG : "/"$(revision) ;
 } else {
-  GITTAG = "" ;
+  constant GITTAG : "" ;
 }
 
-prefix = [ option.get "prefix" : $(TOP)/dist$(GITTAG) ] ;
+prefix = [ option.get "prefix" ] ;
+if $(prefix) {
+  prefix = [ path.root $(prefix) [ path.pwd ] ] ;
+  prefix = $(prefix)$(GITTAG) ;
+} else {
+  prefix = $(TOP)$(GITTAG) ;
+}
+
+bindir = [ option.get "bindir" : $(prefix)/bin ] ;
+libdir = [ option.get "libdir" : $(prefix)/lib ] ;
 rule install-bin-libs ( deps * ) {
-  local bindir = [ option.get "bindir" : $(prefix)/bin ] ;
-  local libdir = [ option.get "libdir" : $(prefix)/lib ] ;
   install prefix-bin : $(deps) : <location>$(bindir) <install-dependencies>on <install-type>EXE <link>shared:<dll-path>$(libdir) ;
   install prefix-lib : $(deps) : <location>$(libdir) <install-dependencies>on <install-type>LIB <link>shared:<dll-path>$(libdir) ;
 }
-rule install-headers ( list * : source-root ? ) {
+rule install-headers ( name : list * : source-root ? ) {
   local includedir = [ option.get "includedir" : $(prefix)/include ] ;
   source-root ?= "." ;
-  install prefix-include : $(list) : <location>$(includedir) <install-source-root>$(source-root) ;
+  install $(name) : $(list) : <location>$(includedir) <install-source-root>$(source-root) ;
+}
+
+rule build-projects ( projects * ) {
+  for local p in $(projects) {
+    build-project $(p) ;
+  }
+}
+
+#Only one post build hook is allowed.  Allow multiple.  
+post-hooks = ;
+rule post-build ( ok ? ) {
+  for local r in $(post-hooks) {
+    $(r) $(ok) ;
+  }
+}
+IMPORT $(__name__) : post-build : : $(__name__).post-build ;
+build-system.set-post-build-hook $(__name__).post-build ;
+rule add-post-hook ( names * ) {
+  post-hooks += $(names) ;
+}
+
+
+#Backend for writing content to files after build completes.
+post-files = ;
+post-contents = ;
+rule save-post-build ( ok ? ) {
+  if $(ok) {
+    while $(post-files) {
+      local ignored = @($(post-files[1]):E=$(post-contents[1])) ;
+      post-files = $(post-files[2-]) ;
+      post-contents = $(post-contents[2-]) ;
+    }
+  }
+}
+add-post-hook save-post-build ;
+
+#Queue content to be written to file when build completes successfully.  
+rule add-post-write ( name content ) {
+  post-files += $(name) ;
+  post-contents += $(content) ;
+}
+
+#Compare contents of file with current.  If they're different, force the targets to rebuild then overwrite the file.  
+rule always-if-changed ( file current : targets * ) {
+  local previous = inconsistent ;
+  if [ path.exists $(file) ] {
+    previous = [ _shell "cat $(file)" ] ;
+  }
+  if $(current) != $(previous) {
+    #Write inconsistent while the build is running
+    if [ path.exists $(file) ] {
+      local ignored = @($(file):E=inconsistent) ;
+    }
+    add-post-write $(file) $(current) ;
+    for local i in $(targets) {
+      always $(i) ;
+    }
+  }
+}
+
+if [ option.get "sanity-test" : : "yes" ] {
+  local current_version = [ modules.peek : JAM_VERSION ] ;
+  if ( $(current_version[0]) < 2000 && [ version.check-jam-version 3 1 16 ] ) || [ version.check-jam-version 2011 0 0 ] {
+    EXIT "Sane" : 0 ;
+  } else {
+    EXIT "Bad" : 1 ;
+  }
 }

@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <iostream>
 
+#include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -111,6 +112,11 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
   }
 }
 
+void WriteOrThrow(FILE *to, const void *data, std::size_t size) {
+  assert(size);
+  if (1 != std::fwrite(data, size, 1, to)) UTIL_THROW(util::ErrnoException, "Short write; requested size " << size);
+}
+
 void FSyncOrThrow(int fd) {
 // Apparently windows doesn't have fsync?  
 #if !defined(_WIN32) && !defined(_WIN64)
@@ -145,6 +151,12 @@ std::FILE *FDOpenOrThrow(scoped_fd &file) {
   std::FILE *ret = fdopen(file.get(), "r+b");
   if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen");
   file.release();
+  return ret;
+}
+
+std::FILE *FOpenOrThrow(const char *path, const char *mode) {
+  std::FILE *ret;
+  UTIL_THROW_IF(!(ret = fopen(path, mode)), util::ErrnoException, "Could not fopen " << path << " for " << mode);
   return ret;
 }
 

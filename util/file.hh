@@ -80,6 +80,7 @@ void ReadOrThrow(int fd, void *to, std::size_t size);
 std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount);
 
 void WriteOrThrow(int fd, const void *data_void, std::size_t size);
+void WriteOrThrow(FILE *to, const void *data, std::size_t size);
 
 void FSyncOrThrow(int fd);
 
@@ -89,6 +90,8 @@ void AdvanceOrThrow(int fd, int64_t off);
 void SeekEnd(int fd);
 
 std::FILE *FDOpenOrThrow(scoped_fd &file);
+
+std::FILE *FOpenOrThrow(const char *path, const char *mode);
 
 class TempMaker {
   public:

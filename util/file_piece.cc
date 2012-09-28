@@ -5,6 +5,8 @@
 #include "util/mmap.hh"
 #ifdef WIN32
 #include <io.h>
+#else
+#include <unistd.h>
 #endif // WIN32
 
 #include <iostream>
