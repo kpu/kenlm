@@ -125,8 +125,13 @@ void FSyncOrThrow(int fd) {
 }
 
 namespace {
-void InternalSeek(int fd, off_t off, int whence) {
+void InternalSeek(int fd, int64_t off, int whence) {
+#if defined(_WIN32) || defined(_WIN64)
+  UTIL_THROW_IF((__int64)-1 == _lseeki64(fd, off, whence), ErrnoException, "Windows seek failed");
+
+#else
   UTIL_THROW_IF((off_t)-1 == lseek(fd, off, whence), ErrnoException, "Seek failed");
+#endif
 }
 } // namespace
 
