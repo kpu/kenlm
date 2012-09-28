@@ -185,7 +185,7 @@ static const char letters[] =
    does not exist at the time of the call to mkstemp.  TMPL is
    overwritten with the result.  */
 int
-mkstemp_and_unlink(char *tmpl)
+mkstemp_and_unlink(char *tmpl, bool and_unlink)
 {
   int len;
   char *XXXXXX;
@@ -259,7 +259,9 @@ mkstemp_and_unlink(char *tmpl)
 
     /* Modified for windows and to unlink */
     //      fd = open (tmpl, O_RDWR | O_CREAT | O_EXCL, _S_IREAD | _S_IWRITE);
-    fd = _open (tmpl, _O_RDWR | _O_CREAT | _O_TEMPORARY | _O_EXCL | _O_BINARY, _S_IREAD | _S_IWRITE);
+    int flags = _O_RDWR | _O_CREAT | _O_EXCL | _O_BINARY;
+    if (and_unlink) flags |= _O_TEMPORARY;
+    fd = _open (tmpl, flags, _S_IREAD | _S_IWRITE);
     if (fd >= 0)
     {
       errno = save_errno;
@@ -275,25 +277,35 @@ mkstemp_and_unlink(char *tmpl)
 }
 #else
 int
-mkstemp_and_unlink(char *tmpl) {
+mkstemp_and_unlink(char *tmpl, bool and_unlink) {
   int ret = mkstemp(tmpl);
-  if (ret == -1) return -1;
-  UTIL_THROW_IF(unlink(tmpl), util::ErrnoException, "Failed to delete " << tmpl);
+  if (ret != -1 && and_unlink) {
+    UTIL_THROW_IF(unlink(tmpl), util::ErrnoException, "Failed to delete " << tmpl);
+  }
   return ret;
 }
 #endif
 
 int TempMaker::Make() const {
-  std::string copy(base_);
-  copy.push_back(0);
+  std::string name(base_);
+  name.push_back(0);
   int ret;
-  UTIL_THROW_IF(-1 == (ret = mkstemp_and_unlink(&copy[0])), util::ErrnoException, "Failed to make a temporary based on " << base_);
+  UTIL_THROW_IF(-1 == (ret = mkstemp_and_unlink(&name[0], true)), util::ErrnoException, "Failed to make a temporary based on " << base_);
   return ret;
 }
 
 std::FILE *TempMaker::MakeFile() const {
   util::scoped_fd file(Make());
   return FDOpenOrThrow(file);
+}
+
+std::string TempMaker::Name(scoped_fd &opened) const {
+  std::string name(base_);
+  name.push_back(0);
+  int fd;
+  UTIL_THROW_IF(-1 == (fd = mkstemp_and_unlink(&name[0], false)), util::ErrnoException, "Failed to make a temporary based on " << base_);
+  opened.reset(fd);
+  return name;
 }
 
 } // namespace util
