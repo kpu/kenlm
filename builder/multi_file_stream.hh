@@ -3,7 +3,10 @@
 
 #include "builder/ngram.hh"
 
+#include <boost/lexical_cast.hpp>
 #include <tpie/file_stream.h>
+
+#include <string>
 
 namespace lm {
 namespace builder {
@@ -11,62 +14,32 @@ namespace builder {
 template <unsigned N, template <unsigned> class Gram>
 class MultiFileStream;
 
-namespace {
-
-template < bool ScrewedUp, unsigned I, unsigned N, template <unsigned> class Gram >
-struct getter {
-  static inline tpie::file_stream< Gram<I> >* get(MultiFileStream<N, Gram>& mfs) {
-    return getter< (I > N), I, N - 1, Gram>::get(mfs.tail);
-  }
-};
-
-template < unsigned I, template <unsigned> class Gram >
-struct getter<false, I, I, Gram> {
-  static inline tpie::file_stream< Gram<I> >* get(MultiFileStream<I, Gram>& mfs) {
-    return &mfs.head;
-  }
-};
-
-template < unsigned I, unsigned N, template <unsigned> class Gram >
-struct getter<true, I, N, Gram> {
-  static inline tpie::file_stream< Gram<I> >* get(MultiFileStream<N, Gram>& mfs) {
-    std::terminate(); // Unreachable.
-    return NULL;
-  }
-};
-
-}
-
 template <unsigned N, template <unsigned> class Gram>
 class MultiFileStream {
-  typedef MultiFileStream< N, Gram > This;
-  typedef tpie::file_stream< Gram<N> > Head;
-  typedef MultiFileStream< N - 1, Gram > Tail;
+  public:
+    typedef tpie::file_stream<Gram<N> > Head;
+    typedef MultiFileStream<N - 1, Gram> Tail;
 
-  template <bool, unsigned, unsigned, template <unsigned> class> friend struct getter;
+    explicit MultiFileStream(const std::string &base, tpie::access_type accessType = tpie::access_read_write)
+      : tail(base, accessType) {
+        std::string name(base + boost::lexical_cast<std::string>(N));
+        head.open(name.c_str(), accessType);
+      }
 
-  Head head;
-  Tail tail;
+    Head &GetHead() { return head_; }
 
-public:
-  MultiFileStream(const char** filenames, tpie::access_type accessType = tpie::access_read_write)
-    : tail(filenames + 1, accessType)
-  {
-    head.open(*filenames, accessType);
-  }
+    Tail &GetTail() { return tail_; }
 
-  template <unsigned I>
-  tpie::file_stream< Gram<I> >* get() {
-    return lm::builder::getter< (I > N), I, N, Gram>::get(*this);
-  }
+  private:
+    Head head_;
+    Tail tail;
 };
 
-template <template <unsigned K> class Gram >
-struct MultiFileStream< 0, Gram > {
-  typedef MultiFileStream< 0, Gram > This;
+template <template <unsigned K> class Gram>
+struct MultiFileStream<0, Gram> {
 
   MultiFileStream(const char**, tpie::access_type)
-  { }
+  {}
 };
 
 }
