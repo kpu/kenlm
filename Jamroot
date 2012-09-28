@@ -2,8 +2,7 @@ path-constant TOP : . ;
 include $(TOP)/sanity.jam ;
 
 boost 103600 ;
-max-order = [ option.get "max-kenlm-order" : 6 : 6 ] ;
-project : requirements $(requirements) <define>KENLM_MAX_ORDER=$(max-order) ;
+project : requirements $(requirements) ;
 project : default-build <threading>multi <warnings>on <variant>release ;
 
 external-lib z ;
@@ -11,7 +10,7 @@ external-lib z ;
 build-project lm ;
 build-project util ;
 
-install-bin-libs lm//query lm//build_binary ;
+install-bin-libs lm//query lm//build_binary lm//kenlm_max_order ;
 install-headers headers : [ glob-tree *.hh : dist ] : . ;
 alias install : prefix-bin prefix-lib prefix-include ; 
 explicit prefix-include ;

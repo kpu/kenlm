@@ -1,4 +1,14 @@
-lib kenlm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quantize.cc read_arpa.cc search_hashed.cc search_trie.cc trie.cc trie_sort.cc value_build.cc virtual_interface.cc vocab.cc ../util//kenutil : <include>.. : : <include>.. <library>../util//kenutil ;
+# If you need higher order, change this option
+# Having this limit means that State can be
+# (KENLM_MAX_ORDER - 1) * sizeof(float) bytes instead of
+# sizeof(float*) + (KENLM_MAX_ORDER - 1) * sizeof(float) + malloc overhead
+max-order = [ option.get "max-kenlm-order" : 6 : 6 ] ;
+if ( $(max-order) != 6 ) {
+   echo "Setting KenLM maximum n-gram order to $(max-order)" ;
+}
+max-order = <define>KENLM_MAX_ORDER=$(max-order) ;
+
+lib kenlm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quantize.cc read_arpa.cc search_hashed.cc search_trie.cc trie.cc trie_sort.cc value_build.cc virtual_interface.cc vocab.cc ../util//kenutil : <include>.. $(max-order) : : <include>.. <library>../util//kenutil $(max-order) ;
 
 import testing ;
 
@@ -7,7 +17,4 @@ run model_test.cc ../util//kenutil kenlm ..//boost_unit_test_framework : : test.
 
 exe query : ngram_query.cc kenlm ../util//kenutil ;
 exe build_binary : build_binary.cc kenlm ../util//kenutil ;
-exe kenlm_max_order : max_order.cc : <include>.. ;
-
-install legacy : build_binary query kenlm_max_order
-  : <location>$(TOP)/lm <install-type>EXE <install-dependencies>on <link>shared:<dll-path>$(TOP)/lm <link>shared:<install-type>LIB ;
+exe kenlm_max_order : max_order.cc : <include>.. $(max-order) ;
