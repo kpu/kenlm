@@ -13,5 +13,5 @@ build-project util ;
 install-bin-libs lm//query lm//build_binary lm//kenlm_max_order ;
 install-headers headers : [ glob-tree *.hh : dist include ] : . ;
 alias install : prefix-bin prefix-lib prefix-include ; 
-explicit include ;
+explicit headers ;
 explicit install ;
