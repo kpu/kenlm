@@ -47,6 +47,8 @@ class State {
     unsigned char length;
 };
 
+typedef State Right;
+
 inline uint64_t hash_value(const State &state, uint64_t seed = 0) {
   return util::MurmurHashNative(state.words, sizeof(WordIndex) * state.length, seed);
 }
