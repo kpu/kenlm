@@ -18,3 +18,4 @@ run model_test.cc ../util//kenutil kenlm ..//boost_unit_test_framework : : test.
 exe query : ngram_query.cc kenlm ../util//kenutil ;
 exe build_binary : build_binary.cc kenlm ../util//kenutil ;
 exe kenlm_max_order : max_order.cc : <include>.. $(max-order) ;
+exe fragment : fragment.cc kenlm ;
