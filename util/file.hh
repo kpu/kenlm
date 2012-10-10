@@ -101,9 +101,6 @@ class TempMaker {
     int Make() const;
     std::FILE *MakeFile() const;
 
-    // This will force you to close the fd instead of leaving it open.  
-    std::string Name(scoped_fd &opened) const;
-
   private:
     std::string base_;
 };
