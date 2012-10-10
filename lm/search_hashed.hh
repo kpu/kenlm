@@ -161,7 +161,7 @@ template <class Value> class HashedSearch {
       {}
 
         static uint64_t Size(uint64_t count) {
-          return (count + 1) * sizeof(ProbBackoff); // +1 for hallucinate <unk>
+          return (count + 1) * sizeof(typename Value::Weights); // +1 for hallucinate <unk>
         }
 
         const typename Value::Weights &Lookup(WordIndex index) const {
