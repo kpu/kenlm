@@ -29,8 +29,6 @@ struct Config;
 
 namespace trie {
 
-void WriteOrThrow(FILE *to, const void *data, size_t size);
-
 class EntryCompare : public std::binary_function<const void*, const void*, bool> {
   public:
     explicit EntryCompare(unsigned char order) : order_(order) {}
@@ -107,7 +105,7 @@ class SortedFiles {
     
     util::scoped_fd unigram_;
 
-    util::scoped_FILE full_[kMaxOrder - 1], context_[kMaxOrder - 1];
+    util::scoped_FILE full_[KENLM_MAX_ORDER - 1], context_[KENLM_MAX_ORDER - 1];
 };
 
 } // namespace trie

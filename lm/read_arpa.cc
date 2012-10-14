@@ -2,14 +2,19 @@
 
 #include "lm/blank.hh"
 
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 #include <ctype.h>
-#include <math.h>
 #include <string.h>
 #include <stdint.h>
+
+#ifdef WIN32
+#include <float.h>
+#endif
 
 namespace lm {
 
@@ -26,6 +31,15 @@ bool IsEntirelyWhiteSpace(const StringPiece &line) {
 }
 
 const char kBinaryMagic[] = "mmap lm http://kheafield.com/code";
+
+// strtoull isn't portable enough :-(
+uint64_t ReadCount(const std::string &from) {
+  std::stringstream stream(from);
+  uint64_t ret;
+  stream >> ret;
+  UTIL_THROW_IF(!stream, FormatLoadException, "Bad count " << from);
+  return ret;
+}
 
 } // namespace
 
@@ -48,15 +62,11 @@ void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number) {
     // So strtol doesn't go off the end of line.  
     std::string remaining(line.data() + 6, line.size() - 6);
     char *end_ptr;
-    unsigned long int length = std::strtol(remaining.c_str(), &end_ptr, 10);
+    unsigned int length = std::strtol(remaining.c_str(), &end_ptr, 10);
     if ((end_ptr == remaining.c_str()) || (length - 1 != number.size())) UTIL_THROW(FormatLoadException, "ngram count lengths should be consecutive starting with 1: " << line);
     if (*end_ptr != '=') UTIL_THROW(FormatLoadException, "Expected = immediately following the first number in the count line " << line);
     ++end_ptr;
-    const char *start = end_ptr;
-    long int count = std::strtol(start, &end_ptr, 10);
-    if (count < 0) UTIL_THROW(FormatLoadException, "Negative n-gram count " << count);
-    if (start == end_ptr) UTIL_THROW(FormatLoadException, "Couldn't parse n-gram count from " << line);
-    number.push_back(count);
+    number.push_back(ReadCount(end_ptr));
   }
 }
 
@@ -95,8 +105,13 @@ void ReadBackoff(util::FilePiece &in, float &backoff) {
       backoff = in.ReadFloat();
       if (backoff == ngram::kExtensionBackoff) backoff = ngram::kNoExtensionBackoff;
       {
-        int float_class = fpclassify(backoff);
+#ifdef WIN32
+		int float_class = _fpclass(backoff);
+        UTIL_THROW_IF(float_class == _FPCLASS_SNAN || float_class == _FPCLASS_QNAN || float_class == _FPCLASS_NINF || float_class == _FPCLASS_PINF, FormatLoadException, "Bad backoff " << backoff);
+#else
+        int float_class = std::fpclassify(backoff);
         UTIL_THROW_IF(float_class == FP_NAN || float_class == FP_INFINITE, FormatLoadException, "Bad backoff " << backoff);
+#endif
       }
       UTIL_THROW_IF(in.get() != '\n', FormatLoadException, "Expected newline after backoff");
       break;

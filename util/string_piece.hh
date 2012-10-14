@@ -85,6 +85,11 @@ U_NAMESPACE_BEGIN
 #include <string>
 #include <string.h>
 
+#ifdef WIN32
+#undef max
+#undef min
+#endif
+
 class StringPiece {
  public:
   typedef size_t size_type;

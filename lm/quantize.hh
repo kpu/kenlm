@@ -24,7 +24,7 @@ class DontQuantize {
   public:
     static const ModelType kModelTypeAdd = static_cast<ModelType>(0);
     static void UpdateConfigFromBinary(int, const std::vector<uint64_t> &, Config &) {}
-    static std::size_t Size(uint8_t /*order*/, const Config &/*config*/) { return 0; }
+    static uint64_t Size(uint8_t /*order*/, const Config &/*config*/) { return 0; }
     static uint8_t MiddleBits(const Config &/*config*/) { return 63; }
     static uint8_t LongestBits(const Config &/*config*/) { return 31; }
 
@@ -138,9 +138,9 @@ class SeparatelyQuantize {
 
     static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config);
 
-    static std::size_t Size(uint8_t order, const Config &config) {
-      size_t longest_table = (static_cast<size_t>(1) << static_cast<size_t>(config.prob_bits)) * sizeof(float);
-      size_t middle_table = (static_cast<size_t>(1) << static_cast<size_t>(config.backoff_bits)) * sizeof(float) + longest_table;
+    static uint64_t Size(uint8_t order, const Config &config) {
+      uint64_t longest_table = (static_cast<uint64_t>(1) << static_cast<uint64_t>(config.prob_bits)) * sizeof(float);
+      uint64_t middle_table = (static_cast<uint64_t>(1) << static_cast<uint64_t>(config.backoff_bits)) * sizeof(float) + longest_table;
       // unigrams are currently not quantized so no need for a table.  
       return (order - 2) * middle_table + longest_table + /* for the bit counts and alignment padding) */ 8;
     }
@@ -217,7 +217,7 @@ class SeparatelyQuantize {
     const Bins &LongestTable() const { return longest_; }
 
   private:
-    Bins tables_[kMaxOrder - 1][2];
+    Bins tables_[KENLM_MAX_ORDER - 1][2];
 
     Bins longest_;
 

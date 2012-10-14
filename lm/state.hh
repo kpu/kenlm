@@ -32,7 +32,7 @@ class State {
 
     // Call this before using raw memcmp.  
     void ZeroRemaining() {
-      for (unsigned char i = length; i < kMaxOrder - 1; ++i) {
+      for (unsigned char i = length; i < KENLM_MAX_ORDER - 1; ++i) {
         words[i] = 0;
         backoff[i] = 0.0;
       }
@@ -42,10 +42,12 @@ class State {
 
     // You shouldn't need to touch anything below this line, but the members are public so FullState will qualify as a POD.  
     // This order minimizes total size of the struct if WordIndex is 64 bit, float is 32 bit, and alignment of 64 bit integers is 64 bit.  
-    WordIndex words[kMaxOrder - 1];
-    float backoff[kMaxOrder - 1];
+    WordIndex words[KENLM_MAX_ORDER - 1];
+    float backoff[KENLM_MAX_ORDER - 1];
     unsigned char length;
 };
+
+typedef State Right;
 
 inline uint64_t hash_value(const State &state, uint64_t seed = 0) {
   return util::MurmurHashNative(state.words, sizeof(WordIndex) * state.length, seed);
@@ -72,11 +74,11 @@ struct Left {
   }
 
   void ZeroRemaining() {
-    for (uint64_t * i = pointers + length; i < pointers + kMaxOrder - 1; ++i)
+    for (uint64_t * i = pointers + length; i < pointers + KENLM_MAX_ORDER - 1; ++i)
       *i = 0;
   }
 
-  uint64_t pointers[kMaxOrder - 1];
+  uint64_t pointers[KENLM_MAX_ORDER - 1];
   unsigned char length;
   bool full;
 };

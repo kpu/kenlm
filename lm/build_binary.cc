@@ -11,6 +11,8 @@
 
 #ifdef WIN32
 #include "util/getopt.hh"
+#else
+#include <unistd.h>
 #endif
 
 namespace lm {
@@ -85,16 +87,16 @@ void ShowSizes(const char *file, const lm::ngram::Config &config) {
   std::vector<uint64_t> counts;
   util::FilePiece f(file);
   lm::ReadARPACounts(f, counts);
-  std::size_t sizes[6];
+  uint64_t sizes[6];
   sizes[0] = ProbingModel::Size(counts, config);
   sizes[1] = RestProbingModel::Size(counts, config);
   sizes[2] = TrieModel::Size(counts, config);
   sizes[3] = QuantTrieModel::Size(counts, config);
   sizes[4] = ArrayTrieModel::Size(counts, config);
   sizes[5] = QuantArrayTrieModel::Size(counts, config);
-  std::size_t max_length = *std::max_element(sizes, sizes + sizeof(sizes) / sizeof(size_t));
-  std::size_t min_length = *std::min_element(sizes, sizes + sizeof(sizes) / sizeof(size_t));
-  std::size_t divide;
+  uint64_t max_length = *std::max_element(sizes, sizes + sizeof(sizes) / sizeof(uint64_t));
+  uint64_t min_length = *std::min_element(sizes, sizes + sizeof(sizes) / sizeof(uint64_t));
+  uint64_t divide;
   char prefix;
   if (min_length < (1 << 10) * 10) {
     prefix = ' ';

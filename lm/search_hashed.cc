@@ -234,7 +234,7 @@ template <> void HashedSearch<BackoffValue>::DispatchBuild(util::FilePiece &f, c
   ApplyBuild(f, counts, config, vocab, warn, build);
 }
 
-template <> void HashedSearch<RestValue>::DispatchBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, const      ProbingVocabulary &vocab, PositiveProbWarn &warn) {
+template <> void HashedSearch<RestValue>::DispatchBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, const ProbingVocabulary &vocab, PositiveProbWarn &warn) {
   switch (config.rest_function) {
     case Config::REST_MAX:
       {

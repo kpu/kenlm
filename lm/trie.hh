@@ -49,7 +49,7 @@ class Unigram {
       unigram_ = static_cast<UnigramValue*>(start);
     }
     
-    static std::size_t Size(uint64_t count) {
+    static uint64_t Size(uint64_t count) {
       // +1 in case unknown doesn't appear.  +1 for the final next.  
       return (count + 2) * sizeof(UnigramValue);
     }
@@ -84,7 +84,7 @@ class BitPacked {
     }
 
   protected:
-    static std::size_t BaseSize(uint64_t entries, uint64_t max_vocab, uint8_t remaining_bits);
+    static uint64_t BaseSize(uint64_t entries, uint64_t max_vocab, uint8_t remaining_bits);
 
     void BaseInit(void *base, uint64_t max_vocab, uint8_t remaining_bits);
 
@@ -99,7 +99,7 @@ class BitPacked {
 
 template <class Bhiksha> class BitPackedMiddle : public BitPacked {
   public:
-    static std::size_t Size(uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const Config &config);
+    static uint64_t Size(uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const Config &config);
 
     // next_source need not be initialized.  
     BitPackedMiddle(void *base, uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const BitPacked &next_source, const Config &config);
@@ -128,7 +128,7 @@ template <class Bhiksha> class BitPackedMiddle : public BitPacked {
 
 class BitPackedLongest : public BitPacked {
   public:
-    static std::size_t Size(uint8_t quant_bits, uint64_t entries, uint64_t max_vocab) {
+    static uint64_t Size(uint8_t quant_bits, uint64_t entries, uint64_t max_vocab) {
       return BaseSize(entries, max_vocab, quant_bits);
     }
 

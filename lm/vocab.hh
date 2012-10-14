@@ -62,7 +62,7 @@ class SortedVocabulary : public base::Vocabulary {
     }
 
     // Size for purposes of file writing
-    static size_t Size(std::size_t entries, const Config &config);
+    static uint64_t Size(uint64_t entries, const Config &config);
 
     // Vocab words are [0, Bound())  Only valid after FinishedLoading/LoadedBinary.  
     WordIndex Bound() const { return bound_; }
@@ -129,7 +129,7 @@ class ProbingVocabulary : public base::Vocabulary {
       return lookup_.Find(detail::HashForVocab(str), i) ? i->value : 0;
     }
 
-    static size_t Size(std::size_t entries, const Config &config);
+    static uint64_t Size(uint64_t entries, const Config &config);
 
     // Vocab words are [0, Bound()).  
     WordIndex Bound() const { return bound_; }

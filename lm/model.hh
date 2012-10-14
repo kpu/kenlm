@@ -5,7 +5,6 @@
 #include "lm/binary_format.hh"
 #include "lm/config.hh"
 #include "lm/facade.hh"
-#include "lm/max_order.hh"
 #include "lm/quantize.hh"
 #include "lm/search_hashed.hh"
 #include "lm/search_trie.hh"
@@ -42,7 +41,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
      * does not include small non-mapped control structures, such as this class
      * itself.  
      */
-    static size_t Size(const std::vector<uint64_t> &counts, const Config &config = Config());
+    static uint64_t Size(const std::vector<uint64_t> &counts, const Config &config = Config());
 
     /* Load the model from a file.  It may be an ARPA or binary file.  Binary
      * files must have the format expected by this class or you'll get an

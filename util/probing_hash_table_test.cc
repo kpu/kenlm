@@ -4,7 +4,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/functional/hash.hpp>
-
+#include <stdio.h>
+#include <string.h>
 #include <stdint.h>
 
 namespace util {
@@ -28,9 +29,11 @@ struct Entry {
 typedef ProbingHashTable<Entry, boost::hash<unsigned char> > Table;
 
 BOOST_AUTO_TEST_CASE(simple) {
-  boost::scoped_array<char> mem(new char[Table::Size(10, 1.2)]);
+  size_t size = Table::Size(10, 1.2);
+  boost::scoped_array<char> mem(new char[size]);
+  memset(mem.get(), 0, size);
 
-  Table table(mem.get(), Table::Size(10, 1.2));
+  Table table(mem.get(), size);
   const Entry *i = NULL;
   BOOST_CHECK(!table.Find(2, i));
   Entry to_ins;

@@ -74,8 +74,8 @@ template <class Value> class HashedSearch {
     // TODO: move probing_multiplier here with next binary file format update.  
     static void UpdateConfigFromBinary(int, const std::vector<uint64_t> &, Config &) {}
 
-    static std::size_t Size(const std::vector<uint64_t> &counts, const Config &config) {
-      std::size_t ret = Unigram::Size(counts[0]);
+    static uint64_t Size(const std::vector<uint64_t> &counts, const Config &config) {
+      uint64_t ret = Unigram::Size(counts[0]);
       for (unsigned char n = 1; n < counts.size() - 1; ++n) {
         ret += Middle::Size(counts[n], config.probing_multiplier);
       }
@@ -160,8 +160,8 @@ template <class Value> class HashedSearch {
 #endif
       {}
 
-        static std::size_t Size(uint64_t count) {
-          return (count + 1) * sizeof(ProbBackoff); // +1 for hallucinate <unk>
+        static uint64_t Size(uint64_t count) {
+          return (count + 1) * sizeof(typename Value::Weights); // +1 for hallucinate <unk>
         }
 
         const typename Value::Weights &Lookup(WordIndex index) const {
