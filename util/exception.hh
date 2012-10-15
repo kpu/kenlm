@@ -6,7 +6,7 @@
 #include <sstream>
 #include <string>
 
-#include <inttypes.h>
+#include <stdint.h>
 
 namespace util {
 
