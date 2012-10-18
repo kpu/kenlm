@@ -54,6 +54,18 @@ class AnyCharacter {
     StringPiece chars_;
 };
 
+class AnyCharacterLast {
+  public:
+    explicit AnyCharacterLast(const StringPiece &chars) : chars_(chars) {}
+
+    StringPiece Find(const StringPiece &in) const {
+      return StringPiece(std::find_end(in.data(), in.data() + in.size(), chars_.data(), chars_.data() + chars_.size()), 1);
+    }
+
+  private:
+    StringPiece chars_;
+};
+
 template <class Find, bool SkipEmpty = false> class TokenIter : public boost::iterator_facade<TokenIter<Find, SkipEmpty>, const StringPiece, boost::forward_traversal_tag> {
   public:
     TokenIter() {}
