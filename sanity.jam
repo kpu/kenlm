@@ -15,6 +15,13 @@ rule _shell ( cmd : extras * ) {
   return [ trim-nl [ SHELL $(cmd) : $(extras) ] ] ;
 }
 
+rule shell_or_fail ( cmd ) {
+  local ret = [ SHELL $(cmd) : exit-status ] ;
+  if $(ret[2]) != 0 {
+    exit $(cmd) failed : 1 ;
+  }
+}
+
 cxxflags = [ os.environ "CXXFLAGS" ] ;
 cflags = [ os.environ "CFLAGS" ] ;
 ldflags = [ os.environ "LDFLAGS" ] ;
@@ -22,7 +29,7 @@ ldflags = [ os.environ "LDFLAGS" ] ;
 #Run g++ with empty main and these arguments to see if it passes.  
 rule test_flags ( flags * ) {
   flags = $(cxxflags) $(ldflags) $(flags) ;
-  local cmd = "bash -c \"g++ "$(flags:J=" ")" -x c++ - <<<'int main() {}' -o /dev/null >/dev/null 2>/dev/null\"" ;
+  local cmd = "bash -c \"g++ "$(flags:J=" ")" -x c++ - <<<'int main() {}' -o $(TOP)/dummy >/dev/null 2>/dev/null && rm $(TOP)/dummy 2>/dev/null\"" ;
   local ret = [ SHELL $(cmd) : exit-status ] ;
   if --debug-configuration in [ modules.peek : ARGV ] {
     echo $(cmd) ;
@@ -56,7 +63,7 @@ requirements = ;
 
 FORCE-STATIC = [ option.get "static" : : "yes" ] ;
 if $(FORCE-STATIC) {
-  requirements += <runtime-link>static ;
+  requirements += <link>static <runtime-link>static ;
 }
 
 #Determine if a library can be compiled statically.  
@@ -145,7 +152,6 @@ rule boost ( min-version ) {
   boost-lib program_options PROGRAM_OPTIONS_DYN_LINK ;
   boost-lib unit_test_framework TEST_DYN_LINK ;
   boost-lib iostreams IOSTREAMS_DYN_LINK ;
-  boost-lib filesystem FILE_SYSTEM_DYN_LINK ;
 }
  
 #Link normally to a library, but sometimes static isn't installed so fall back to dynamic.
@@ -228,42 +234,21 @@ rule add-post-hook ( names * ) {
   post-hooks += $(names) ;
 }
 
-
-#Backend for writing content to files after build completes.
-post-files = ;
-post-contents = ;
-rule save-post-build ( ok ? ) {
-  if $(ok) {
-    while $(post-files) {
-      local ignored = @($(post-files[1]):E=$(post-contents[1])) ;
-      post-files = $(post-files[2-]) ;
-      post-contents = $(post-contents[2-]) ;
-    }
-  }
-}
-add-post-hook save-post-build ;
-
-#Queue content to be written to file when build completes successfully.  
-rule add-post-write ( name content ) {
-  post-files += $(name) ;
-  post-contents += $(content) ;
+import feature : feature ;
+feature options-to-write : : free ;
+import toolset : flags ;
+flags write-options OPTIONS-TO-WRITE <options-to-write> ;
+actions write-options {
+  echo "$(OPTIONS-TO-WRITE)" > $(<) ;
 }
 
-#Compare contents of file with current.  If they're different, force the targets to rebuild then overwrite the file.  
-rule always-if-changed ( file current : targets * ) {
-  local previous = inconsistent ;
-  if [ path.exists $(file) ] {
-    previous = [ _shell "cat $(file)" ] ;
-  }
-  if $(current) != $(previous) {
-    #Write inconsistent while the build is running
-    if [ path.exists $(file) ] {
-      local ignored = @($(file):E=inconsistent) ;
-    }
-    add-post-write $(file) $(current) ;
-    for local i in $(targets) {
-      always $(i) ;
-    }
+#Compare contents of file with current.  If they're different, write to the 
+#file.  This file can then be used with <dependency>$(file) to force
+#recompilation.
+rule update-if-changed ( file current ) {
+  if ( ! [ path.exists $(file) ] ) || ( [ _shell "cat $(file)" ] != $(current) ) {
+    make $(file) : : $(__name__).write-options : <options-to-write>$(current) ;
+    always $(file) ;
   }
 }
 
@@ -275,3 +260,5 @@ if [ option.get "sanity-test" : : "yes" ] {
     EXIT "Bad" : 1 ;
   }
 }
+
+use-project /top : . ;

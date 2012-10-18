@@ -1,10 +1,10 @@
-lib kenutil : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc mmap.cc murmur_hash.cc string_piece.cc usage.cc ..//z : <include>.. : : <include>.. ;
+lib kenutil : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc mmap.cc murmur_hash.cc string_piece.cc usage.cc /top//z : <include>.. : : <include>.. ;
 
 import testing ;
 
-unit-test bit_packing_test : bit_packing_test.cc kenutil ..//boost_unit_test_framework ;
-run file_piece_test.cc kenutil ..//boost_unit_test_framework : : file_piece.cc ;
-unit-test joint_sort_test : joint_sort_test.cc kenutil ..//boost_unit_test_framework ;
-unit-test probing_hash_table_test : probing_hash_table_test.cc kenutil ..//boost_unit_test_framework ;
-unit-test sorted_uniform_test : sorted_uniform_test.cc kenutil ..//boost_unit_test_framework ;
-unit-test tokenize_piece_test : tokenize_piece_test.cc kenutil ..//boost_unit_test_framework ;
+unit-test bit_packing_test : bit_packing_test.cc kenutil /top//boost_unit_test_framework ;
+run file_piece_test.cc kenutil /top//boost_unit_test_framework : : file_piece.cc ;
+unit-test joint_sort_test : joint_sort_test.cc kenutil /top//boost_unit_test_framework ;
+unit-test probing_hash_table_test : probing_hash_table_test.cc kenutil /top//boost_unit_test_framework ;
+unit-test sorted_uniform_test : sorted_uniform_test.cc kenutil /top//boost_unit_test_framework ;
+unit-test tokenize_piece_test : tokenize_piece_test.cc kenutil /top//boost_unit_test_framework ;
