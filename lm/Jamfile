@@ -12,8 +12,9 @@ lib kenlm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quant
 
 import testing ;
 
-run left_test.cc ../util//kenutil kenlm ..//boost_unit_test_framework : : test.arpa ;
-run model_test.cc ../util//kenutil kenlm ..//boost_unit_test_framework : : test.arpa test_nounk.arpa ;
+run left_test.cc ../util//kenutil kenlm /top//boost_unit_test_framework : : test.arpa ;
+run model_test.cc ../util//kenutil kenlm /top//boost_unit_test_framework : : test.arpa test_nounk.arpa ;
+run partial_test.cc ../util//kenutil kenlm /top//boost_unit_test_framework : : test.arpa ;
 
 exe query : ngram_query.cc kenlm ../util//kenutil ;
 exe build_binary : build_binary.cc kenlm ../util//kenutil ;
