@@ -35,7 +35,7 @@ class WriteWordsWrapper : public EnumerateVocab {
     
     void Add(WordIndex index, const StringPiece &str);
 
-    void Write(int fd);
+    void Write(int fd, uint64_t start);
 
   private:
     EnumerateVocab *inner_;

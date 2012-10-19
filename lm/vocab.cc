@@ -80,8 +80,8 @@ void WriteWordsWrapper::Add(WordIndex index, const StringPiece &str) {
   buffer_.push_back(0);
 }
 
-void WriteWordsWrapper::Write(int fd) {
-  util::SeekEnd(fd);
+void WriteWordsWrapper::Write(int fd, uint64_t start) {
+  util::SeekOrThrow(fd, start);
   util::WriteOrThrow(fd, buffer_.data(), buffer_.size());
 }
 

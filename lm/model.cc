@@ -87,7 +87,7 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
       WriteWordsWrapper wrap(config.enumerate_vocab);
       vocab_.ConfigureEnumerate(&wrap, counts[0]);
       search_.InitializeFromARPA(file, f, counts, config, vocab_, backing_);
-      wrap.Write(backing_.file.get());
+      wrap.Write(backing_.file.get(), backing_.vocab.size() + vocab_.UnkCountChangePadding() + backing_.search.size());
     } else {
       vocab_.ConfigureEnumerate(config.enumerate_vocab, counts[0]);
       search_.InitializeFromARPA(file, f, counts, config, vocab_, backing_);
