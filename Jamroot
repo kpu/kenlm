@@ -2,7 +2,7 @@ path-constant TOP : . ;
 include $(TOP)/sanity.jam ;
 
 boost 103600 ;
-project : requirements $(requirements) ;
+project : requirements $(requirements) <define>HAVE_BOOST ;
 project : default-build <threading>multi <warnings>on <variant>release ;
 
 external-lib z ;
@@ -10,7 +10,7 @@ external-lib z ;
 build-project lm ;
 build-project util ;
 
-install-bin-libs lm//programs ;
+install-bin-libs lm//programs lm/filter//FilterLM ;
 install-headers headers : [ glob-tree *.hh : dist include ] : . ;
 alias install : prefix-bin prefix-lib prefix-include ; 
 explicit headers ;

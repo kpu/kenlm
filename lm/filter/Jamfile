@@ -1,0 +1,11 @@
+lib lm_filter : phrase.cc vocab.cc arpa_io.cc ../../util//kenutil /top//boost_thread ;
+
+obj main : main.cc : <include>../.. ;
+obj main_nothread : main.cc : <threading>single <define>NTHREAD <include>../.. ;
+
+exe filter : main lm_filter ../../util//kenutil ..//kenlm ;
+#Same thing, old name.  
+exe FilterLM : main lm_filter ../../util//kenutil ..//kenlm ;
+
+exe filter_nothread : main_nothread lm_filter ../../util//kenutil ..//kenlm : <threading>single ;
+
