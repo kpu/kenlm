@@ -107,7 +107,7 @@ template <class Find, bool SkipEmpty = false> class TokenIter : public boost::it
     }
 
     bool equal(const TokenIter<Find, SkipEmpty> &other) const {
-      return after_.data() == other.after_.data();
+      return current_.data() == other.current_.data();
     }
 
     const StringPiece &dereference() const {
