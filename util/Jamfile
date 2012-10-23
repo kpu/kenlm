@@ -8,3 +8,4 @@ unit-test joint_sort_test : joint_sort_test.cc kenutil /top//boost_unit_test_fra
 unit-test probing_hash_table_test : probing_hash_table_test.cc kenutil /top//boost_unit_test_framework ;
 unit-test sorted_uniform_test : sorted_uniform_test.cc kenutil /top//boost_unit_test_framework ;
 unit-test tokenize_piece_test : tokenize_piece_test.cc kenutil /top//boost_unit_test_framework ;
+unit-test multi_intersection_test : multi_intersection_test.cc kenutil /top//boost_unit_test_framework ;
