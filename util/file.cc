@@ -15,6 +15,8 @@
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #include <io.h>
+#include <algorithm>
+#include <limits>
 #else
 #include <unistd.h>
 #endif
@@ -74,14 +76,28 @@ void ResizeOrThrow(int fd, uint64_t to) {
 #endif
 }
 
-#ifdef WIN32
-typedef int ssize_t;
+namespace {
+
+#if defined(_WIN32) || defined(_WIN64)
+typedef int ReadReturn;
+#else
+typedef ssize_t ReadReturn;
 #endif
+
+ReadReturn InternalRead(int fd, void *to, std::size_t amount) {
+#if defined(_WIN32) || defined(_WIN64)
+  return _read(fd, to, std::min<std::size_t>(std::numeric_limits<unsigned int>::max(), amount));
+#else
+  return read(fd, to, amount);
+#endif
+}
+
+} // namespace
 
 void ReadOrThrow(int fd, void *to_void, std::size_t amount) {
   uint8_t *to = static_cast<uint8_t*>(to_void);
   while (amount) {
-    ssize_t ret = read(fd, to, amount);
+    ReadReturn ret = InternalRead(fd, to, amount);
     UTIL_THROW_IF(ret == -1, ErrnoException, "Reading " << amount << " from fd " << fd << " failed.");
     UTIL_THROW_IF(ret == 0, EndOfFileException, "Hit EOF in fd " << fd << " but there should be " << amount << " more bytes to read.");
     amount -= ret;
@@ -93,7 +109,7 @@ std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount) {
   uint8_t *to = static_cast<uint8_t*>(to_void);
   std::size_t remaining = amount;
   while (remaining) {
-    ssize_t ret = read(fd, to, remaining);
+    ReadReturn ret = InternalRead(fd, to, remaining);
     UTIL_THROW_IF(ret == -1, ErrnoException, "Reading " << remaining << " from fd " << fd << " failed.");
     if (!ret) return amount - remaining;
     remaining -= ret;
@@ -105,7 +121,11 @@ std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount) {
 void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
   const uint8_t *data = static_cast<const uint8_t*>(data_void);
   while (size) {
+#if defined(_WIN32) || defined(_WIN64)
+    int ret = write(fd, data, std::min<std::size_t>(std::numeric_limits<unsigned int>::max(), size);
+#else
     ssize_t ret = write(fd, data, size);
+#endif
     if (ret < 1) UTIL_THROW(util::ErrnoException, "Write failed");
     data += ret;
     size -= ret;
@@ -114,7 +134,7 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
 
 void WriteOrThrow(FILE *to, const void *data, std::size_t size) {
   assert(size);
-  if (1 != std::fwrite(data, size, 1, to)) UTIL_THROW(util::ErrnoException, "Short write; requested size " << size);
+  UTIL_THROW_IF(1 != std::fwrite(data, size, 1, to), util::ErrnoException, "Short write; requested size " << size);
 }
 
 void FSyncOrThrow(int fd) {
