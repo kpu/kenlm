@@ -9,10 +9,10 @@ cdef bytes as_str(data):
 
 cdef class LanguageModel:
     cdef Model* model
-    cdef bytes path
+    cdef public bytes path
     cdef const_Vocabulary* vocab
 
-    def __cinit__(self, path):
+    def __init__(self, path):
         self.path = os.path.abspath(as_str(path))
         try:
             self.model = new Model(self.path)
