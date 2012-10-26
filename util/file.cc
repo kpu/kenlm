@@ -16,7 +16,7 @@
 #include <windows.h>
 #include <io.h>
 #include <algorithm>
-#include <limits>
+#include <limits.h>
 #else
 #include <unistd.h>
 #endif
@@ -86,7 +86,7 @@ typedef ssize_t ReadReturn;
 
 ReadReturn InternalRead(int fd, void *to, std::size_t amount) {
 #if defined(_WIN32) || defined(_WIN64)
-  return _read(fd, to, std::min<std::size_t>(std::numeric_limits<unsigned int>::max(), amount));
+  return _read(fd, to, std::min(static_cast<std::size_t>(INT_MAX), amount)); 
 #else
   return read(fd, to, amount);
 #endif
@@ -122,7 +122,7 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
   const uint8_t *data = static_cast<const uint8_t*>(data_void);
   while (size) {
 #if defined(_WIN32) || defined(_WIN64)
-    int ret = write(fd, data, std::min<std::size_t>(std::numeric_limits<unsigned int>::max(), size);
+    int ret = write(fd, data, std::min(static_cast<std::size_t>(INT_MAX), size));
 #else
     ssize_t ret = write(fd, data, size);
 #endif
