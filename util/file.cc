@@ -76,29 +76,21 @@ void ResizeOrThrow(int fd, uint64_t to) {
 #endif
 }
 
-namespace {
-
+std::size_t PartialRead(int fd, void *to, std::size_t amount) {
 #if defined(_WIN32) || defined(_WIN64)
-typedef int ReadReturn;
+  amount = min(static_cast<std::size_t>(INT_MAX), amount);
+  int ret = _read(fd, to, amount); 
 #else
-typedef ssize_t ReadReturn;
+  ssize_t ret = read(fd, to, amount);
 #endif
-
-ReadReturn InternalRead(int fd, void *to, std::size_t amount) {
-#if defined(_WIN32) || defined(_WIN64)
-  return _read(fd, to, min(static_cast<std::size_t>(INT_MAX), amount)); 
-#else
-  return read(fd, to, amount);
-#endif
+  UTIL_THROW_IF(ret < 0, ErrnoException, "Reading " << amount << " from fd " << fd << " failed.");
+  return static_cast<std::size_t>(ret);
 }
-
-} // namespace
 
 void ReadOrThrow(int fd, void *to_void, std::size_t amount) {
   uint8_t *to = static_cast<uint8_t*>(to_void);
   while (amount) {
-    ReadReturn ret = InternalRead(fd, to, amount);
-    UTIL_THROW_IF(ret == -1, ErrnoException, "Reading " << amount << " from fd " << fd << " failed.");
+    std::size_t ret = PartialRead(fd, to, amount);
     UTIL_THROW_IF(ret == 0, EndOfFileException, "Hit EOF in fd " << fd << " but there should be " << amount << " more bytes to read.");
     amount -= ret;
     to += ret;
@@ -109,8 +101,7 @@ std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount) {
   uint8_t *to = static_cast<uint8_t*>(to_void);
   std::size_t remaining = amount;
   while (remaining) {
-    ReadReturn ret = InternalRead(fd, to, remaining);
-    UTIL_THROW_IF(ret == -1, ErrnoException, "Reading " << remaining << " from fd " << fd << " failed.");
+    std::size_t ret = PartialRead(fd, to, remaining);
     if (!ret) return amount - remaining;
     remaining -= ret;
     to += ret;
