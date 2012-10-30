@@ -67,9 +67,9 @@ void TestRandom(const char *compressor) {
   }
 
   char ignored;
-  BOOST_CHECK_EQUAL(0, reader.Read(&ignored, 1));
+  BOOST_CHECK_EQUAL((std::size_t)0, reader.Read(&ignored, 1));
   // Test double EOF call.
-  BOOST_CHECK_EQUAL(0, reader.Read(&ignored, 1));
+  BOOST_CHECK_EQUAL((std::size_t)0, reader.Read(&ignored, 1));
 }
 
 BOOST_AUTO_TEST_CASE(Uncompressed) {
