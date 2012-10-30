@@ -116,7 +116,9 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
   }
   *end_ = hashed;
   if (enumerate_) {
-    strings_to_enumerate_[end_ - begin_].assign(str.data(), str.size());
+    void *copied = string_backing_.Allocate(str.size());
+    memcpy(copied, str.data(), str.size());
+    strings_to_enumerate_[end_ - begin_] = StringPiece(static_cast<const char*>(copied), str.size());
   }
   ++end_;
   // This is 1 + the offset where it was inserted to make room for unk.  
@@ -126,7 +128,7 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
 void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
   if (enumerate_) {
     if (!strings_to_enumerate_.empty()) {
-      util::PairedIterator<ProbBackoff*, std::string*> values(reorder_vocab + 1, &*strings_to_enumerate_.begin());
+      util::PairedIterator<ProbBackoff*, StringPiece*> values(reorder_vocab + 1, &*strings_to_enumerate_.begin());
       util::JointSort(begin_, end_, values);
     }
     for (WordIndex i = 0; i < static_cast<WordIndex>(end_ - begin_); ++i) {
@@ -134,6 +136,7 @@ void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
       enumerate_->Add(i + 1, strings_to_enumerate_[i]);
     }
     strings_to_enumerate_.clear();
+    string_backing_.FreeAll();
   } else {
     util::JointSort(begin_, end_, reorder_vocab + 1);
   }
