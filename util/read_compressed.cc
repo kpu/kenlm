@@ -35,10 +35,16 @@ class ReadBase {
   public:
     virtual ~ReadBase() {}
 
-    virtual std::size_t Read(void *to, std::size_t amount, scoped_ptr<ReadBase> &thunk) = 0;
+    virtual std::size_t Read(void *to, std::size_t amount, ReadCompressed &thunk) = 0;
 
   protected:
-    ReadBase() {}
+    static void ReplaceThis(ReadBase *with, ReadCompressed &thunk) {
+      thunk.internal_.reset(with);
+    }
+
+    static uint64_t &ReadCount(ReadCompressed &thunk) {
+      return thunk.raw_amount_;
+    }
 };
 
 namespace {
@@ -46,7 +52,7 @@ namespace {
 // Completed file that other classes can thunk to.  
 class Complete : public ReadBase {
   public:
-    std::size_t Read(void *, std::size_t, scoped_ptr<ReadBase> &) {
+    std::size_t Read(void *, std::size_t, ReadCompressed &) {
       return 0;
     }
 };
@@ -55,8 +61,10 @@ class Uncompressed : public ReadBase {
   public:
     explicit Uncompressed(int fd) : fd_(fd) {}
 
-    std::size_t Read(void *to, std::size_t amount, scoped_ptr<ReadBase> &) {
-      return PartialRead(fd_.get(), to, amount);
+    std::size_t Read(void *to, std::size_t amount, ReadCompressed &thunk) {
+      std::size_t got = PartialRead(fd_.get(), to, amount);
+      ReadCount(thunk) += got;
+      return got;
     }
 
   private:
@@ -74,13 +82,13 @@ class UncompressedWithHeader : public ReadBase {
       end_ = remain_ + already_size;
     }
 
-    std::size_t Read(void *to, std::size_t amount, scoped_ptr<ReadBase> &thunk) {
+    std::size_t Read(void *to, std::size_t amount, ReadCompressed &thunk) {
       assert(buf_.get());
       std::size_t sending = std::min<std::size_t>(amount, end_ - remain_);
       memcpy(to, remain_, sending);
       remain_ += sending;
       if (remain_ == end_) {
-        thunk.reset(new Uncompressed(fd_.release()));
+        ReplaceThis(new Uncompressed(fd_.release()), thunk);
       }
       return sending;
     }
@@ -126,12 +134,12 @@ class GZip : public ReadBase {
       }
     }
 
-    std::size_t Read(void *to, std::size_t amount, scoped_ptr<ReadBase> &thunk) {
+    std::size_t Read(void *to, std::size_t amount, ReadCompressed &thunk) {
       if (amount == 0) return 0;
       stream_.next_out = static_cast<Bytef*>(to);
-      stream_.avail_out = amount;
+      stream_.avail_out = std::min<std::size_t>(std::numeric_limits<uInt>::max(), amount);
       do {
-        if (!stream_.avail_in) ReadInput();
+        if (!stream_.avail_in) ReadInput(thunk);
         int result = inflate(&stream_, 0);
         switch (result) {
           case Z_OK:
@@ -139,7 +147,7 @@ class GZip : public ReadBase {
           case Z_STREAM_END:
             {
               std::size_t ret = static_cast<uint8_t*>(stream_.next_out) - static_cast<uint8_t*>(to);
-              thunk.reset(new Complete());
+              ReplaceThis(new Complete(), thunk);
               return ret;
             }
           case Z_ERRNO:
@@ -152,10 +160,11 @@ class GZip : public ReadBase {
     }
 
   private:
-    void ReadInput() {
+    void ReadInput(ReadCompressed &thunk) {
       assert(!stream_.avail_in);
       stream_.next_in = static_cast<z_const Bytef *>(in_buffer_.get());
       stream_.avail_in = ReadOrEOF(file_.get(), in_buffer_.get(), kInputBuffer);
+      ReadCount(thunk) += stream_.avail_in;
     }
 
     scoped_fd file_;
@@ -195,14 +204,19 @@ class BZip : public ReadBase {
       }
     }
 
-    std::size_t Read(void *to, std::size_t amount, scoped_ptr<ReadBase> &thunk) {
+    std::size_t Read(void *to, std::size_t amount, ReadCompressed &thunk) {
       int bzerror = BZ_OK;
       int ret = BZ2_bzRead(&bzerror, file_, to, std::min<std::size_t>(static_cast<std::size_t>(INT_MAX), amount));
+      long pos;
       switch (bzerror) {
         case BZ_STREAM_END:
-          thunk.reset(new Complete());
+          pos = ftell(closer_.get());
+          if (pos != -1) ReadCount(thunk) = pos;
+          ReplaceThis(new Complete(), thunk);
           return ret;
         case BZ_OK:
+          pos = ftell(closer_.get());
+          if (pos != -1) ReadCount(thunk) = pos;
           return ret;
         default:
           UTIL_THROW(BZException, "bzip2 error " << BZ2_bzerror(file_, &bzerror) << " code " << bzerror);
@@ -215,42 +229,60 @@ class BZip : public ReadBase {
 };
 #endif // HAVE_BZLIB
 
-ReadBase *ReadFactory(int fd) {
+ReadBase *ReadFactory(int fd, std::size_t &raw_amount) {
   scoped_fd hold(fd);
-  unsigned char header[2];
-  std::size_t got = ReadOrEOF(fd, header, 2);
-  if (got != 2)
-    return new UncompressedWithHeader(hold.release(), header, got);
+  unsigned char header[ReadCompressed::kMagicSize];
+  raw_amount = ReadOrEOF(fd, header, ReadCompressed::kMagicSize);
+  if (raw_amount != ReadCompressed::kMagicSize)
+    return new UncompressedWithHeader(hold.release(), header, raw_amount);
   if (header[0] == 0x1f && header[1] == 0x8b) {
 #ifdef HAVE_ZLIB
-    return new GZip(hold.release(), header, 2);
+    return new GZip(hold.release(), header, ReadCompressed::kMagicSize);
 #else
     UTIL_THROW(CompressedException, "This looks like a gzip file but gzip support was not compiled in.");
 #endif
   }
   if (header[0] == 'B' && header[1] == 'Z') {
 #ifdef HAVE_BZLIB
-    return new BZip(hold.release(), header, 2);
+    return new BZip(hold.release(), header, ReadCompressed::kMagicSize);
 #else
     UTIL_THROW(CompressedException, "This looks like a bzip file (it begins with BZ), but bzip support was not compiled in.");
 #endif
   }
   try {
-    AdvanceOrThrow(fd, -2);
+    AdvanceOrThrow(fd, -ReadCompressed::kMagicSize);
   } catch (const util::ErrnoException &e) {
-    return new UncompressedWithHeader(hold.release(), header, 2);
+    return new UncompressedWithHeader(hold.release(), header, ReadCompressed::kMagicSize);
   }
   return new Uncompressed(hold.release());
 }
 
 } // namespace
 
-ReadCompressed::ReadCompressed(int fd) : internal_(ReadFactory(fd)) {}
+bool ReadCompressed::DetectCompressedMagic(const void *from_void) {
+  const uint8_t *from = static_cast<const uint8_t*>(from_void);
+  // gzip
+  if (*from == 0x1f && *(from + 1) == 0x8b) return true;
+  // bzip2
+  if (*from == 'B' && *(from + 1) == 'Z') return true;
+  return false;
+}
+
+ReadCompressed::ReadCompressed(int fd) {
+  Reset(fd);
+}
+
+ReadCompressed::ReadCompressed() {}
 
 ReadCompressed::~ReadCompressed() {}
 
+void ReadCompressed::Reset(int fd) {
+  internal_.reset();
+  internal_.reset(ReadFactory(fd, raw_amount_));
+}
+
 std::size_t ReadCompressed::Read(void *to, std::size_t amount) {
-  return internal_->Read(to, amount, internal_);
+  return internal_->Read(to, amount, *this);
 }
 
 } // namespace util

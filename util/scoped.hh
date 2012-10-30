@@ -60,6 +60,9 @@ template <class T> class scoped_array {
 
   private:
     T *c_;
+
+    scoped_array(const scoped_array &);
+    void operator=(const scoped_array &);
 };
 
 template <class T> class scoped_ptr {
@@ -87,6 +90,9 @@ template <class T> class scoped_ptr {
 
   private:
     T *c_;
+
+    scoped_ptr(const scoped_ptr &);
+    void operator=(const scoped_ptr &);
 };
 
 } // namespace util

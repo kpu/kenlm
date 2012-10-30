@@ -4,18 +4,14 @@
 #include "util/ersatz_progress.hh"
 #include "util/exception.hh"
 #include "util/file.hh"
-#include "util/have.hh"
 #include "util/mmap.hh"
+#include "util/read_compressed.hh"
 #include "util/string_piece.hh"
 
 #include <cstddef>
 #include <string>
 
 #include <stdint.h>
-
-#ifdef HAVE_ZLIB
-#include <zlib.h>
-#endif
 
 namespace util {
 
@@ -25,24 +21,15 @@ class ParseNumberException : public Exception {
     ~ParseNumberException() throw() {}
 };
 
-class GZException : public Exception {
-  public:
-#ifdef HAVE_ZLIB
-    explicit GZException(gzFile file);
-#endif
-    GZException() throw() {}
-    ~GZException() throw() {}
-};
-
 extern const bool kSpaces[256];
 
 // Memory backing the returned StringPiece may vanish on the next call.  
 class FilePiece {
   public:
-    // 32 MB default.
-    explicit FilePiece(const char *file, std::ostream *show_progress = NULL, std::size_t min_buffer = 33554432);
+    // 1 MB default.
+    explicit FilePiece(const char *file, std::ostream *show_progress = NULL, std::size_t min_buffer = 1048576);
     // Takes ownership of fd.  name is used for messages.  
-    explicit FilePiece(int fd, const char *name, std::ostream *show_progress = NULL, std::size_t min_buffer = 33554432);
+    explicit FilePiece(int fd, const char *name, std::ostream *show_progress = NULL, std::size_t min_buffer = 1048576);
 
     ~FilePiece();
      
@@ -122,9 +109,7 @@ class FilePiece {
 
     std::string file_name_;
 
-#ifdef HAVE_ZLIB
-    gzFile gz_file_;
-#endif // HAVE_ZLIB
+    ReadCompressed fell_back_;
 };
 
 } // namespace util
