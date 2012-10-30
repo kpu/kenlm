@@ -46,8 +46,19 @@ rule test_header ( name ) {
   return [ test_flags "-include $(name)" ] ;
 }
 
+requirements = ;
+
+FORCE-STATIC = [ option.get "static" : : "yes" ] ;
+if $(FORCE-STATIC) {
+  requirements += <link>static <runtime-link>static ;
+}
+
 rule test_library ( name ) {
-  return [ test_flags "-l$(name)" ] ;
+  if $(FORCE-STATIC) {
+    return [ test_flags "-l$(name) -static" ] ;
+  } else {
+    return [ test_flags "-l$(name)" ] ;
+  }
 }
 
 {
@@ -57,13 +68,6 @@ rule test_library ( name ) {
     cleaning = yes ;
   }
   constant CLEANING : $(cleaning) ;
-}
-
-requirements = ;
-
-FORCE-STATIC = [ option.get "static" : : "yes" ] ;
-if $(FORCE-STATIC) {
-  requirements += <link>static <runtime-link>static ;
 }
 
 #Determine if a library can be compiled statically.  
