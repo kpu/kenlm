@@ -1,10 +1,21 @@
-lib kenutil : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc mmap.cc murmur_hash.cc read_compressed.cc string_piece.cc usage.cc /top//z : <include>.. : : <include>.. ;
+local compressed_flags = ;
+local compressed_deps = ;
+if [ test_flags "-lbz2" ] {
+  external-lib bz2 ;
+  compressed_flags += <define>HAVE_BZLIB ;
+  compressed_deps += bz2 ;
+}
+
+obj read_compressed.o : read_compressed.cc : <include>.. $(compressed_flags) ;
+alias read_compressed : read_compressed.o $(compressed_deps) ;
+
+lib kenutil : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc mmap.cc murmur_hash.cc read_compressed string_piece.cc usage.cc /top//z bz2 : <include>.. : : <include>.. ;
 
 import testing ;
 
 unit-test bit_packing_test : bit_packing_test.cc kenutil /top//boost_unit_test_framework ;
 run file_piece_test.cc kenutil /top//boost_unit_test_framework : : file_piece.cc ;
-run read_compressed_test.cc kenutil /top//boost_unit_test_framework : : file_piece.cc ;
+unit-test read_compressed_test : read_compressed_test.cc kenutil /top//boost_unit_test_framework : $(compressed_flags) ;
 unit-test joint_sort_test : joint_sort_test.cc kenutil /top//boost_unit_test_framework ;
 unit-test probing_hash_table_test : probing_hash_table_test.cc kenutil /top//boost_unit_test_framework ;
 unit-test sorted_uniform_test : sorted_uniform_test.cc kenutil /top//boost_unit_test_framework ;

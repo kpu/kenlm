@@ -2,6 +2,7 @@
 #define UTIL_READ_COMPRESSED__
 
 #include "util/exception.hh"
+#include "util/scoped.hh"
 
 #include <cstddef>
 
@@ -10,7 +11,7 @@ namespace util {
 class CompressedException : public Exception {
   public:
     CompressedException() throw();
-    ~CompressedException() throw();
+    virtual ~CompressedException() throw();
 };
 
 class GZException : public CompressedException {
@@ -19,17 +20,29 @@ class GZException : public CompressedException {
     ~GZException() throw();
 };
 
+class BZException : public CompressedException {
+  public:
+    BZException() throw();
+    ~BZException() throw();
+};
+
+class ReadBase;
+
 class ReadCompressed {
   public:
     // Takes ownership of fd.   
-    static ReadCompressed *Open(int fd);
+    explicit ReadCompressed(int fd);
 
-    virtual ~ReadCompressed();
+    ~ReadCompressed();
 
-    virtual std::size_t Read(void *to, std::size_t amount) = 0;
+    std::size_t Read(void *to, std::size_t amount);
 
-  protected:
-    ReadCompressed();
+  private:
+    scoped_ptr<ReadBase> internal_;
+
+    // No copying.  
+    ReadCompressed(const ReadCompressed &);
+    void operator=(const ReadCompressed &);
 };
 
 } // namespace util

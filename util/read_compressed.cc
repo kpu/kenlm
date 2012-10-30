@@ -8,11 +8,16 @@
 #include <iostream>
 
 #include <assert.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 
 #ifdef HAVE_ZLIB
 #include <zlib.h>
+#endif
+
+#ifdef HAVE_BZLIB
+#include <bzlib.h>
 #endif
 
 namespace util {
@@ -23,13 +28,34 @@ CompressedException::~CompressedException() throw() {}
 GZException::GZException() throw() {}
 GZException::~GZException() throw() {}
 
+BZException::BZException() throw() {}
+BZException::~BZException() throw() {}
+
+class ReadBase {
+  public:
+    virtual ~ReadBase() {}
+
+    virtual std::size_t Read(void *to, std::size_t amount, scoped_ptr<ReadBase> &thunk) = 0;
+
+  protected:
+    ReadBase() {}
+};
+
 namespace {
 
-class Uncompressed : public ReadCompressed {
+// Completed file that other classes can thunk to.  
+class Complete : public ReadBase {
+  public:
+    std::size_t Read(void *, std::size_t, scoped_ptr<ReadBase> &) {
+      return 0;
+    }
+};
+
+class Uncompressed : public ReadBase {
   public:
     explicit Uncompressed(int fd) : fd_(fd) {}
 
-    std::size_t Read(void *to, std::size_t amount) {
+    std::size_t Read(void *to, std::size_t amount, scoped_ptr<ReadBase> &) {
       return PartialRead(fd_.get(), to, amount);
     }
 
@@ -37,27 +63,26 @@ class Uncompressed : public ReadCompressed {
     scoped_fd fd_;
 };
 
-class UncompressedWithHeader : public ReadCompressed {
+class UncompressedWithHeader : public ReadBase {
   public:
-    explicit UncompressedWithHeader(int fd, void *already_data, std::size_t already_size) : fd_(fd) {
-      if (already_size) {
-        buf_.reset(malloc(already_size));
-        if (!buf_.get()) throw std::bad_alloc();
-        memcpy(buf_.get(), already_data, already_size);
-        remain_ = static_cast<uint8_t*>(buf_.get());
-        end_ = remain_ + already_size;
-      }
+    UncompressedWithHeader(int fd, void *already_data, std::size_t already_size) : fd_(fd) {
+      assert(already_size);
+      buf_.reset(malloc(already_size));
+      if (!buf_.get()) throw std::bad_alloc();
+      memcpy(buf_.get(), already_data, already_size);
+      remain_ = static_cast<uint8_t*>(buf_.get());
+      end_ = remain_ + already_size;
     }
 
-    std::size_t Read(void *to, std::size_t amount) {
-      if (buf_.get()) {
-        std::size_t sending = std::min<std::size_t>(amount, end_ - remain_);
-        memcpy(to, remain_, sending);
-        remain_ += sending;
-        if (remain_ == end_) buf_.reset();
-        return sending;
+    std::size_t Read(void *to, std::size_t amount, scoped_ptr<ReadBase> &thunk) {
+      assert(buf_.get());
+      std::size_t sending = std::min<std::size_t>(amount, end_ - remain_);
+      memcpy(to, remain_, sending);
+      remain_ += sending;
+      if (remain_ == end_) {
+        thunk.reset(new Uncompressed(fd_.release()));
       }
-      return PartialRead(fd_.get(), to, amount);
+      return sending;
     }
 
   private:
@@ -69,11 +94,11 @@ class UncompressedWithHeader : public ReadCompressed {
 };
 
 #ifdef HAVE_ZLIB
-class GZip : public ReadCompressed {
+class GZip : public ReadBase {
   private:
     static const std::size_t kInputBuffer = 16384;
   public:
-    explicit GZip(int fd, void *already_data, std::size_t already_size) 
+    GZip(int fd, void *already_data, std::size_t already_size) 
       : file_(fd), in_buffer_(malloc(kInputBuffer)) {
       UTIL_THROW_IF(!in_buffer_.get(), ErrnoException, "Malloc failure");
       assert(already_size < kInputBuffer);
@@ -101,21 +126,29 @@ class GZip : public ReadCompressed {
       }
     }
 
-    std::size_t Read(void *to, std::size_t amount) {
+    std::size_t Read(void *to, std::size_t amount, scoped_ptr<ReadBase> &thunk) {
       if (amount == 0) return 0;
-      if (!stream_.avail_in) ReadInput();
       stream_.next_out = static_cast<Bytef*>(to);
       stream_.avail_out = amount;
-      int result = inflate(&stream_, 0);
-      switch (result) {
-        case Z_OK:
-        case Z_STREAM_END:
-          return static_cast<uint8_t*>(stream_.next_out) - static_cast<uint8_t*>(to);
-        case Z_ERRNO:
-          UTIL_THROW(ErrnoException, "zlib error");
-        default:
-          UTIL_THROW(GZException, "zlib encountered " << (stream_.msg ? stream_.msg : "an error ") << " code " << result);
-      }
+      do {
+        if (!stream_.avail_in) ReadInput();
+        int result = inflate(&stream_, 0);
+        switch (result) {
+          case Z_OK:
+            break;
+          case Z_STREAM_END:
+            {
+              std::size_t ret = static_cast<uint8_t*>(stream_.next_out) - static_cast<uint8_t*>(to);
+              thunk.reset(new Complete());
+              return ret;
+            }
+          case Z_ERRNO:
+            UTIL_THROW(ErrnoException, "zlib error");
+          default:
+            UTIL_THROW(GZException, "zlib encountered " << (stream_.msg ? stream_.msg : "an error ") << " code " << result);
+        }
+      } while (stream_.next_out == to);
+      return static_cast<uint8_t*>(stream_.next_out) - static_cast<uint8_t*>(to);
     }
 
   private:
@@ -132,13 +165,48 @@ class GZip : public ReadCompressed {
 #endif // HAVE_ZLIB
 
 #ifdef HAVE_BZLIB
-class BZip : public ReadCompressed {
+class BZip : public ReadBase {
   public:
-    explicit BZip(int fd, ) {
+    explicit BZip(int fd, void *already_data, std::size_t already_size) {
       scoped_fd hold(fd);
       closer_.reset(FDOpenOrThrow(hold));
       int bzerror = BZ_OK;
-      file_ = BZ2_bzReadOpen(&bzerror, closer_.get(), 0, 0, "BZ", 2);
+      file_ = BZ2_bzReadOpen(&bzerror, closer_.get(), 0, 0, already_data, already_size);
+      switch (bzerror) {
+        case BZ_OK:
+          return;
+        case BZ_CONFIG_ERROR:
+          UTIL_THROW(BZException, "Looks like bzip2 was miscompiled.");
+        case BZ_PARAM_ERROR:
+          UTIL_THROW(BZException, "Parameter error");
+        case BZ_IO_ERROR:
+          UTIL_THROW(BZException, "IO error reading file");
+        case BZ_MEM_ERROR:
+          throw std::bad_alloc();
+      }
+    }
+
+    ~BZip() {
+      int bzerror = BZ_OK;
+      BZ2_bzReadClose(&bzerror, file_);
+      if (bzerror != BZ_OK) {
+        std::cerr << "bz2 readclose error" << std::endl;
+        abort();
+      }
+    }
+
+    std::size_t Read(void *to, std::size_t amount, scoped_ptr<ReadBase> &thunk) {
+      int bzerror = BZ_OK;
+      int ret = BZ2_bzRead(&bzerror, file_, to, std::min<std::size_t>(static_cast<std::size_t>(INT_MAX), amount));
+      switch (bzerror) {
+        case BZ_STREAM_END:
+          thunk.reset(new Complete());
+          return ret;
+        case BZ_OK:
+          return ret;
+        default:
+          UTIL_THROW(BZException, "bzip2 error " << BZ2_bzerror(file_, &bzerror) << " code " << bzerror);
+      }
     }
 
   private:
@@ -147,9 +215,7 @@ class BZip : public ReadCompressed {
 };
 #endif // HAVE_BZLIB
 
-} // namespace
-
-ReadCompressed *ReadCompressed::Open(int fd) {
+ReadBase *ReadFactory(int fd) {
   scoped_fd hold(fd);
   unsigned char header[2];
   std::size_t got = ReadOrEOF(fd, header, 2);
@@ -177,7 +243,14 @@ ReadCompressed *ReadCompressed::Open(int fd) {
   return new Uncompressed(hold.release());
 }
 
-ReadCompressed::ReadCompressed() {}
+} // namespace
+
+ReadCompressed::ReadCompressed(int fd) : internal_(ReadFactory(fd)) {}
+
 ReadCompressed::~ReadCompressed() {}
+
+std::size_t ReadCompressed::Read(void *to, std::size_t amount) {
+  return internal_->Read(to, amount, internal_);
+}
 
 } // namespace util
