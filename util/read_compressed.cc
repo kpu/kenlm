@@ -242,9 +242,7 @@ class XZip : public ReadBase {
     static const std::size_t kInputBuffer = 16384;
   public:
     XZip(int fd, void *already_data, std::size_t already_size) 
-      : file_(fd), in_buffer_(malloc(kInputBuffer)) {
-      stream_ = LZMA_STREAM_INIT;
-      action_ = LZMA_RUN;
+      : file_(fd), in_buffer_(malloc(kInputBuffer)), stream_(), action_(LZMA_RUN) {
       if (!in_buffer_.get()) throw std::bad_alloc();
       assert(already_size < kInputBuffer);
       if (already_size) {
