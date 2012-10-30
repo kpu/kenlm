@@ -1,13 +1,15 @@
-#ifndef UTIL_POOL__
-#define UTIL_POOL__
+#ifndef UTIL_THREAD_POOL__
+#define UTIL_THREAD_POOL__
+
+#include "util/pcqueue.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/optional.hpp>
 #include <boost/thread.hpp>
 
-#include <stdlib.h>
+#include <iostream>
 
-#include "util/pcqueue.hh"
+#include <stdlib.h>
 
 namespace util {
 
@@ -53,18 +55,18 @@ template <class HandlerT> class Worker : boost::noncopyable {
     Request poison_;
 };
 
-template <class HandlerT> class Pool : boost::noncopyable {
+template <class HandlerT> class ThreadPool : boost::noncopyable {
   public:
     typedef HandlerT Handler;
     typedef typename Handler::Request Request;
 
-    template <class Construct> Pool(size_t queue_length, size_t workers, Construct handler_construct, Request poison) : in_(queue_length), poison_(poison) {
+    template <class Construct> ThreadPool(size_t queue_length, size_t workers, Construct handler_construct, Request poison) : in_(queue_length), poison_(poison) {
       for (size_t i = 0; i < workers; ++i) {
         workers_.push_back(new Worker<Handler>(in_, handler_construct, poison));
       }
     }
 
-    ~Pool() {
+    ~ThreadPool() {
       for (size_t i = 0; i < workers_.size(); ++i) {
         Produce(poison_);
       }
@@ -90,4 +92,4 @@ template <class HandlerT> class Pool : boost::noncopyable {
 
 } // namespace util
 
-#endif // UTIL_POOL__
+#endif // UTIL_THREAD_POOL__
