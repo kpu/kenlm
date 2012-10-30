@@ -178,7 +178,7 @@ class BZip : public ReadBase {
   public:
     explicit BZip(int fd, void *already_data, std::size_t already_size) {
       scoped_fd hold(fd);
-      closer_.reset(FDOpenOrThrow(hold));
+      closer_.reset(FDOpenReadOrThrow(hold));
       int bzerror = BZ_OK;
       file_ = BZ2_bzReadOpen(&bzerror, closer_.get(), 0, 0, already_data, already_size);
       switch (bzerror) {

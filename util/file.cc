@@ -160,7 +160,14 @@ void SeekEnd(int fd) {
 
 std::FILE *FDOpenOrThrow(scoped_fd &file) {
   std::FILE *ret = fdopen(file.get(), "r+b");
-  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen");
+  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen descriptor " << file.get());
+  file.release();
+  return ret;
+}
+
+std::FILE *FDOpenReadOrThrow(scoped_fd &file) {
+  std::FILE *ret = fdopen(file.get(), "rb");
+  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen descriptor " << file.get());
   file.release();
   return ret;
 }
