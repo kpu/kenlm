@@ -1,11 +1,11 @@
 local compressed_flags = <include>.. <define>HAVE_ZLIB ;
 local compressed_deps = /top//z ;
-if [ test_library "bz2" ] {
+if [ test_library "bz2" ] && [ test_header "bzlib.h" ] {
   external-lib bz2 ;
   compressed_flags += <define>HAVE_BZLIB ;
   compressed_deps += bz2 ;
 }
-if [ test_library "lzma" ] {
+if [ test_library "lzma" ] && [ test_header "lzma.h" ] {
   external-lib lzma ;
   compressed_flags += <define>HAVE_XZLIB ;
   compressed_deps += lzma ;
