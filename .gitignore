@@ -2,6 +2,7 @@ bin/
 lm/bin/
 util/bin/
 util/file_piece.cc.gz
+lib/
 dist
 *.swp
 *.o
