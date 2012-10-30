@@ -28,11 +28,17 @@ class BZException : public CompressedException {
     ~BZException() throw();
 };
 
+class XZException : public CompressedException {
+  public:
+    XZException() throw();
+    ~XZException() throw();
+};
+
 class ReadBase;
 
 class ReadCompressed {
   public:
-    static const std::size_t kMagicSize = 2;
+    static const std::size_t kMagicSize = 6;
     // Must have at least kMagicSize bytes.  
     static bool DetectCompressedMagic(const void *from);
 

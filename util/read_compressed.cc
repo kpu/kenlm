@@ -20,6 +20,10 @@
 #include <bzlib.h>
 #endif
 
+#ifdef HAVE_XZLIB
+#include <lzma.h>
+#endif
+
 namespace util {
 
 CompressedException::CompressedException() throw() {}
@@ -30,6 +34,9 @@ GZException::~GZException() throw() {}
 
 BZException::BZException() throw() {}
 BZException::~BZException() throw() {}
+
+XZException::XZException() throw() {}
+XZException::~XZException() throw() {}
 
 class ReadBase {
   public:
@@ -108,7 +115,7 @@ class GZip : public ReadBase {
   public:
     GZip(int fd, void *already_data, std::size_t already_size) 
       : file_(fd), in_buffer_(malloc(kInputBuffer)) {
-      UTIL_THROW_IF(!in_buffer_.get(), ErrnoException, "Malloc failure");
+      if (!in_buffer_.get()) throw std::bad_alloc();
       assert(already_size < kInputBuffer);
       if (already_size) {
         memcpy(in_buffer_.get(), already_data, already_size);
@@ -229,25 +236,138 @@ class BZip : public ReadBase {
 };
 #endif // HAVE_BZLIB
 
+#ifdef HAVE_XZLIB
+class XZip : public ReadBase {
+  private:
+    static const std::size_t kInputBuffer = 16384;
+  public:
+    XZip(int fd, void *already_data, std::size_t already_size) 
+      : file_(fd), in_buffer_(malloc(kInputBuffer)) {
+      stream_ = LZMA_STREAM_INIT;
+      action_ = LZMA_RUN;
+      if (!in_buffer_.get()) throw std::bad_alloc();
+      assert(already_size < kInputBuffer);
+      if (already_size) {
+        memcpy(in_buffer_.get(), already_data, already_size);
+        stream_.next_in = static_cast<const uint8_t*>(in_buffer_.get());
+        stream_.avail_in = already_size;
+        stream_.avail_in += ReadOrEOF(file_.get(), static_cast<uint8_t*>(in_buffer_.get()) + already_size, kInputBuffer - already_size);
+      } else {
+        stream_.avail_in = 0;
+      }
+      stream_.allocator = NULL;
+      lzma_ret ret = lzma_stream_decoder(&stream_, UINT64_MAX, LZMA_CONCATENATED);
+      switch (ret) {
+        case LZMA_OK:
+          break;
+        case LZMA_MEM_ERROR:
+          UTIL_THROW(ErrnoException, "xz open error");
+        default:
+          UTIL_THROW(XZException, "xz error code " << ret);
+      }
+    }
+
+    ~XZip() {
+      lzma_end(&stream_);
+    }
+
+    std::size_t Read(void *to, std::size_t amount, ReadCompressed &thunk) {
+      if (amount == 0) return 0;
+      stream_.next_out = static_cast<uint8_t*>(to);
+      stream_.avail_out = amount;
+      do {
+        if (!stream_.avail_in) ReadInput(thunk);
+        lzma_ret status = lzma_code(&stream_, action_);
+        switch (status) {
+          case LZMA_OK:
+            break;
+          case LZMA_STREAM_END:
+            UTIL_THROW_IF(action_ != LZMA_FINISH, XZException, "Input not finished yet.");
+            {
+              std::size_t ret = static_cast<uint8_t*>(stream_.next_out) - static_cast<uint8_t*>(to);
+              ReplaceThis(new Complete(), thunk);
+              return ret;
+            }
+          case LZMA_MEM_ERROR:
+            throw std::bad_alloc();
+          case LZMA_FORMAT_ERROR:
+            UTIL_THROW(XZException, "xzlib says file format not recognized");
+          case LZMA_OPTIONS_ERROR:
+            UTIL_THROW(XZException, "xzlib says unsupported compression options");
+          case LZMA_DATA_ERROR:
+            UTIL_THROW(XZException, "xzlib says this file is corrupt");
+          case LZMA_BUF_ERROR:
+            UTIL_THROW(XZException, "xzlib says unexpected end of input");
+          default:
+            UTIL_THROW(XZException, "unrecognized xzlib error " << status);
+        }
+      } while (stream_.next_out == to);
+      return static_cast<uint8_t*>(stream_.next_out) - static_cast<uint8_t*>(to);
+    }
+
+  private:
+    void ReadInput(ReadCompressed &thunk) {
+      assert(!stream_.avail_in);
+      stream_.next_in = static_cast<const uint8_t*>(in_buffer_.get());
+      stream_.avail_in = ReadOrEOF(file_.get(), in_buffer_.get(), kInputBuffer);
+      if (!stream_.avail_in) action_ = LZMA_FINISH;
+      ReadCount(thunk) += stream_.avail_in;
+    }
+
+    scoped_fd file_;
+    scoped_malloc in_buffer_;
+    lzma_stream stream_;
+
+    lzma_action action_;
+};
+#endif // HAVE_XZLIB
+
+enum MagicResult {
+  UNKNOWN, GZIP, BZIP, XZIP
+};
+
+MagicResult DetectMagic(const void *from_void) {
+  const uint8_t *header = static_cast<const uint8_t*>(from_void);
+  if (header[0] == 0x1f && header[1] == 0x8b) {
+    return GZIP;
+  }
+  if (header[0] == 'B' && header[1] == 'Z') {
+    return BZIP;
+  }
+  const uint8_t xzmagic[6] = { 0xFD, '7', 'z', 'X', 'Z', 0x00 };
+  if (!memcmp(header, xzmagic, 6)) {
+    return XZIP;
+  }
+  return UNKNOWN;
+}
+
 ReadBase *ReadFactory(int fd, std::size_t &raw_amount) {
   scoped_fd hold(fd);
   unsigned char header[ReadCompressed::kMagicSize];
   raw_amount = ReadOrEOF(fd, header, ReadCompressed::kMagicSize);
   if (raw_amount != ReadCompressed::kMagicSize)
     return new UncompressedWithHeader(hold.release(), header, raw_amount);
-  if (header[0] == 0x1f && header[1] == 0x8b) {
+  switch (DetectMagic(header)) {
+    case GZIP:
 #ifdef HAVE_ZLIB
-    return new GZip(hold.release(), header, ReadCompressed::kMagicSize);
+      return new GZip(hold.release(), header, ReadCompressed::kMagicSize);
 #else
-    UTIL_THROW(CompressedException, "This looks like a gzip file but gzip support was not compiled in.");
+      UTIL_THROW(CompressedException, "This looks like a gzip file but gzip support was not compiled in.");
 #endif
-  }
-  if (header[0] == 'B' && header[1] == 'Z') {
+    case BZIP:
 #ifdef HAVE_BZLIB
-    return new BZip(hold.release(), header, ReadCompressed::kMagicSize);
+      return new BZip(hold.release(), header, ReadCompressed::kMagicSize);
 #else
-    UTIL_THROW(CompressedException, "This looks like a bzip file (it begins with BZ), but bzip support was not compiled in.");
+      UTIL_THROW(CompressedException, "This looks like a bzip file (it begins with BZ), but bzip support was not compiled in.");
 #endif
+    case XZIP:
+#ifdef HAVE_XZLIB
+      return new XZip(hold.release(), header, ReadCompressed::kMagicSize);
+#else
+      UTIL_THROW(CompressedException, "This looks like an xz file, but xz support was not compiled in.");
+#endif
+    case UNKNOWN:
+      break;
   }
   try {
     AdvanceOrThrow(fd, -ReadCompressed::kMagicSize);
@@ -260,12 +380,7 @@ ReadBase *ReadFactory(int fd, std::size_t &raw_amount) {
 } // namespace
 
 bool ReadCompressed::DetectCompressedMagic(const void *from_void) {
-  const uint8_t *from = static_cast<const uint8_t*>(from_void);
-  // gzip
-  if (*from == 0x1f && *(from + 1) == 0x8b) return true;
-  // bzip2
-  if (*from == 'B' && *(from + 1) == 'Z') return true;
-  return false;
+  return DetectMagic(from_void) != UNKNOWN;
 }
 
 ReadCompressed::ReadCompressed(int fd) {

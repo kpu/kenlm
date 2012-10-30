@@ -28,7 +28,7 @@ void ReadLoop(ReadCompressed &reader, void *to_void, std::size_t amount) {
 }
 
 void TestRandom(const char *compressor) {
-  const std::size_t kSize8 = 1000000 / 8;
+  const std::size_t kSize8 = 100000 / 8;
   char name[] = "tempXXXXXX";
 
   // Write test file.  
@@ -87,6 +87,12 @@ BOOST_AUTO_TEST_CASE(ReadBZ) {
   TestRandom("bzip2");
 }
 #endif // HAVE_BZLIB
+
+#ifdef HAVE_XZLIB
+BOOST_AUTO_TEST_CASE(ReadXZ) {
+  TestRandom("xz");
+}
+#endif
 
 } // namespace
 } // namespace util

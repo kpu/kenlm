@@ -5,6 +5,11 @@ if [ test_flags "-lbz2" ] {
   compressed_flags += <define>HAVE_BZLIB ;
   compressed_deps += bz2 ;
 }
+if [ test_flags "-llzma" ] {
+  external-lib lzma ;
+  compressed_flags += <define>HAVE_XZLIB ;
+  compressed_deps += lzma ;
+}
 
 obj read_compressed.o : read_compressed.cc : $(compressed_flags) ;
 alias read_compressed : read_compressed.o $(compressed_deps) ;
