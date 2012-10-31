@@ -11,7 +11,9 @@ max-order = <define>KENLM_MAX_ORDER=$(max-order) ;
 path-constant ORDER-LOG : bin/order.log ;
 update-if-changed $(ORDER-LOG) $(max-order) ;
 
-lib kenlm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quantize.cc read_arpa.cc search_hashed.cc search_trie.cc trie.cc trie_sort.cc value_build.cc virtual_interface.cc vocab.cc ../util//kenutil : <include>.. $(max-order) : : <include>.. <library>../util//kenutil $(max-order) <dependency>$(ORDER-LOG) ;
+max-order += <dependency>$(ORDER-LOG) ;
+
+lib kenlm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quantize.cc read_arpa.cc search_hashed.cc search_trie.cc trie.cc trie_sort.cc value_build.cc virtual_interface.cc vocab.cc ../util//kenutil : <include>.. $(max-order) : : <include>.. <library>../util//kenutil $(max-order) ;
 
 import testing ;
 
