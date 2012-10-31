@@ -119,7 +119,7 @@ class GZip : public ReadBase {
       assert(already_size < kInputBuffer);
       if (already_size) {
         memcpy(in_buffer_.get(), already_data, already_size);
-        stream_.next_in = static_cast<z_const Bytef *>(in_buffer_.get());
+        stream_.next_in = static_cast<Bytef *>(in_buffer_.get());
         stream_.avail_in = already_size;
         stream_.avail_in += ReadOrEOF(file_.get(), static_cast<uint8_t*>(in_buffer_.get()) + already_size, kInputBuffer - already_size);
       } else {
@@ -169,7 +169,7 @@ class GZip : public ReadBase {
   private:
     void ReadInput(ReadCompressed &thunk) {
       assert(!stream_.avail_in);
-      stream_.next_in = static_cast<z_const Bytef *>(in_buffer_.get());
+      stream_.next_in = static_cast<Bytef *>(in_buffer_.get());
       stream_.avail_in = ReadOrEOF(file_.get(), in_buffer_.get(), kInputBuffer);
       ReadCount(thunk) += stream_.avail_in;
     }
@@ -339,7 +339,7 @@ MagicResult DetectMagic(const void *from_void) {
   return UNKNOWN;
 }
 
-ReadBase *ReadFactory(int fd, std::size_t &raw_amount) {
+ReadBase *ReadFactory(int fd, uint64_t &raw_amount) {
   scoped_fd hold(fd);
   unsigned char header[ReadCompressed::kMagicSize];
   raw_amount = ReadOrEOF(fd, header, ReadCompressed::kMagicSize);

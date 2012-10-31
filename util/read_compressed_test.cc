@@ -6,8 +6,6 @@
 #define BOOST_TEST_MODULE ReadCompressedTest
 #include <boost/test/unit_test.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <boost/random/uniform_int_distribution.hpp>
-#include <boost/random/mersenne_twister.hpp>
 
 #include <fstream>
 #include <string>
@@ -28,18 +26,15 @@ void ReadLoop(ReadCompressed &reader, void *to_void, std::size_t amount) {
 }
 
 void TestRandom(const char *compressor) {
-  const std::size_t kSize8 = 100000 / 8;
+  const uint32_t kSize4 = 100000 / 4;
   char name[] = "tempXXXXXX";
 
   // Write test file.  
   {
     scoped_fd original(mkstemp(name));
     BOOST_REQUIRE(original.get() > 0);
-    boost::random::mt19937 rng;
-    boost::random::uniform_int_distribution<uint64_t> gen(0, std::numeric_limits<uint64_t>::max());
-    for (size_t i = 0; i < kSize8; ++i) {
-      uint64_t v = gen(rng);
-      WriteOrThrow(original.get(), &v, sizeof(uint64_t));
+    for (uint32_t i = 0; i < kSize4; ++i) {
+      WriteOrThrow(original.get(), &i, sizeof(uint32_t));
     }
   }
 
@@ -57,13 +52,11 @@ void TestRandom(const char *compressor) {
   BOOST_CHECK_EQUAL(0, unlink(name));
   BOOST_CHECK_EQUAL(0, unlink(gzname));
 
-  boost::random::mt19937 rng;
-  boost::random::uniform_int_distribution<uint64_t> gen(0, std::numeric_limits<uint64_t>::max());
   ReadCompressed reader(gzipped.release());
-  for (size_t i = 0; i < kSize8; ++i) {
-    uint64_t got;
-    ReadLoop(reader, &got, sizeof(uint64_t));
-    BOOST_CHECK_EQUAL(gen(rng), got);
+  for (uint32_t i = 0; i < kSize4; ++i) {
+    uint32_t got;
+    ReadLoop(reader, &got, sizeof(uint32_t));
+    BOOST_CHECK_EQUAL(i, got);
   }
 
   char ignored;
