@@ -93,8 +93,6 @@ void SeekEnd(int fd);
 std::FILE *FDOpenOrThrow(scoped_fd &file);
 std::FILE *FDOpenReadOrThrow(scoped_fd &file);
 
-std::FILE *FOpenOrThrow(const char *path, const char *mode);
-
 class TempMaker {
   public:
     explicit TempMaker(const std::string &prefix);

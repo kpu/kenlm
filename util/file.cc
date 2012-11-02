@@ -172,12 +172,6 @@ std::FILE *FDOpenReadOrThrow(scoped_fd &file) {
   return ret;
 }
 
-std::FILE *FOpenOrThrow(const char *path, const char *mode) {
-  std::FILE *ret;
-  UTIL_THROW_IF(!(ret = fopen(path, mode)), util::ErrnoException, "Could not fopen " << path << " for " << mode);
-  return ret;
-}
-
 TempMaker::TempMaker(const std::string &prefix) : base_(prefix) {
   base_ += "XXXXXX";
 }
