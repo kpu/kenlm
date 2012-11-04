@@ -19,9 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{826B8049-7E58-4415-BD64-9EDECDF1402B}</ProjectGuid>
+    <ProjectGuid>{726B8149-7F58-4415-BD64-9EDECDF3409A}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>ngram_query</RootNamespace>
+    <RootNamespace>build_binary</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -145,10 +145,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="..\lm\ngram_query.hh" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\lm\ngram_query.cc" />
+    <ClCompile Include="..\lm\build_binary.cc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
