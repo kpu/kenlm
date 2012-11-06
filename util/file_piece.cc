@@ -14,7 +14,6 @@
 #include <limits>
 
 #include <assert.h>
-#include <ctype.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -172,7 +171,7 @@ void FilePiece::Shift() {
   if (fallback_to_read_) ReadShift();
 
   for (last_space_ = position_end_ - 1; last_space_ >= position_; --last_space_) {
-    if (isspace(*last_space_))  break;
+    if (kSpaces[static_cast<unsigned char>(*last_space_)])  break;
   }
 }
 
