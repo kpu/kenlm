@@ -343,6 +343,8 @@ ReadBase *ReadFactory(int fd, uint64_t &raw_amount) {
   scoped_fd hold(fd);
   unsigned char header[ReadCompressed::kMagicSize];
   raw_amount = ReadOrEOF(fd, header, ReadCompressed::kMagicSize);
+  if (!raw_amount)
+    return new Uncompressed(hold.release());
   if (raw_amount != ReadCompressed::kMagicSize)
     return new UncompressedWithHeader(hold.release(), header, raw_amount);
   switch (DetectMagic(header)) {
