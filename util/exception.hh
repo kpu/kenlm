@@ -87,8 +87,14 @@ template <class Except, class Data> typename Except::template ExceptionTag<Excep
   throw UTIL_e; \
 } while (0)
 
+#if __GNUC__ >= 3
+#define UTIL_UNLIKELY(x) __builtin_expect (!!(x), 0)
+#else
+#define UTIL_UNLIKELY(x) (x)
+#endif
+
 #define UTIL_THROW_IF(Condition, Exception, Modify) do { \
-  if (Condition) { \
+  if (UTIL_UNLIKELY(Condition)) { \
     Exception UTIL_e; \
     UTIL_SET_LOCATION(UTIL_e, #Exception, #Condition); \
     UTIL_e << Modify; \

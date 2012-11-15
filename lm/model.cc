@@ -227,6 +227,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
     const WordIndex *const context_rend,
     const WordIndex new_word,
     State &out_state) const {
+  assert(new_word < vocab_.Bound());
   FullScoreReturn ret;
   // ret.ngram_length contains the last known non-blank ngram length.  
   ret.ngram_length = 1;

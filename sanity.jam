@@ -265,4 +265,22 @@ if [ option.get "sanity-test" : : "yes" ] {
   }
 }
 
+#Hack to act like alias in the sense that no lib is built, but only build cpp files once.  
+import type ;
+rule fakelib ( name : deps * : requirements * : default-build * : usage-requirements * ) {
+  local c-files = ;
+  local real-deps = ;
+  for local c in $(deps) {
+    if [ type.type $(c) ] = CPP {
+      c-files += $(c) ;
+    } else {
+      real-deps += $(c) ;
+    }
+  }
+  for local c in $(c-files) {
+    obj $(c:B).o : $(c) $(real-deps) : $(requirements) : $(default-build) : $(usage_requirements) ;
+  }
+  alias $(name) : $(c-files:B).o $(real-deps) : $(requirements) : $(default-build) : $(usage-requirements) ;
+}
+
 use-project /top : . ;

@@ -42,6 +42,9 @@ void TestRandom(const char *compressor) {
   scoped_fd gzipped(mkstemp(gzname));
 
   std::string command(compressor);
+#ifdef __CYGWIN__
+  command += ".exe";
+#endif
   command += " <\"";
   command += name;
   command += "\" >\"";
