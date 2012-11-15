@@ -80,7 +80,7 @@ template <class M> class RuleScore {
     // Faster version of NonTerminal for the case where the rule begins with a non-terminal.  
     void BeginNonTerminal(const ChartState &in, float prob = 0.0) {
       prob_ = prob;
-      out_ = in;
+      *out_ = in;
       left_done_ = in.left.full;
     }
 
