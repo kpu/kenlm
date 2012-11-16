@@ -55,12 +55,12 @@ template <> struct Ratchet<0> {
   WordIndex seen_;
 };
 
-template <unsigned N> void AdjustCounts(const char *in, const char *out_base) {
-  tpie::file_stream<NGram<N> > input(in, tpie::access_read);
-  MultiFileStream mfs<N, CountedNGram>(in, tpie::access_read_write);
+template <unsigned N> void AdjustCounts(const char *in) {
+/*  tpie::file_stream<NGram<N> > input(in, tpie::access_read);
+  MultiFileStream <N, CountedNGram> mfs(in, tpie::access_read_write);
   while (input.can_read()) {
 
-  }
+  }*/
 }
 
 } // namespace builder

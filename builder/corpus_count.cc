@@ -6,11 +6,18 @@
 #include "util/murmur_hash.hh"
 
 #include <stdint.h>
+#include <stdio.h>
 
 namespace lm {
 namespace builder {
 
-VocabHandout::VocabHandout(const char *name) : word_list_(util::FOpenOrThrow(name, "wb")) {
+FILE *FOpenOrThrow(const char *name, const char *mode) {
+  FILE *ret = fopen(name, "wb");
+  UTIL_THROW_IF(!ret, util::ErrnoException, "Failed to open " << name);
+  return ret;
+}
+
+VocabHandout::VocabHandout(const char *name) : word_list_(FOpenOrThrow(name, "wb")) {
   Lookup("<unk>"); // Force 0
   Lookup("<s>"); // Force 1
 }

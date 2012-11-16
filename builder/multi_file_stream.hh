@@ -21,9 +21,9 @@ class MultiFileStream {
     typedef MultiFileStream<N - 1, Gram> Tail;
 
     explicit MultiFileStream(const std::string &base, tpie::access_type accessType = tpie::access_read_write)
-      : tail(base, accessType) {
+      : tail_(base, accessType) {
         std::string name(base + boost::lexical_cast<std::string>(N));
-        head.open(name.c_str(), accessType);
+        head_.open(name.c_str(), accessType);
       }
 
     Head &GetHead() { return head_; }
@@ -32,7 +32,7 @@ class MultiFileStream {
 
   private:
     Head head_;
-    Tail tail;
+    Tail tail_;
 };
 
 template <template <unsigned K> class Gram>
