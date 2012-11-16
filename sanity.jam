@@ -156,6 +156,7 @@ rule boost ( min-version ) {
   boost-lib program_options PROGRAM_OPTIONS_DYN_LINK ;
   boost-lib unit_test_framework TEST_DYN_LINK ;
   boost-lib iostreams IOSTREAMS_DYN_LINK ;
+  boost-lib filesystem BOOST_FILE_SYSTEM_DYN_LINK ;
 }
  
 #Link normally to a library, but sometimes static isn't installed so fall back to dynamic.

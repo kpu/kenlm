@@ -2,4 +2,4 @@ import testing ;
 
 lib tpie ;
 
-exe fs_test : corpus_count.cc fs_test.cc ../util//kenutil ../lm//kenlm ..//boost_system ..//boost_thread ..//boost_filesystem tpie ;
+exe fs_test : corpus_count.cc fs_test.cc ../util//kenutil ../lm//kenlm /top//boost_system /top//boost_thread /top//boost_filesystem tpie ;
