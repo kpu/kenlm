@@ -83,7 +83,13 @@ void WriteHeader(void *to, const Parameters &params) {
 uint8_t *SetupJustVocab(const Config &config, uint8_t order, std::size_t memory_size, Backing &backing) {
   if (config.write_mmap) {
     std::size_t total = TotalHeaderSize(order) + memory_size;
-    backing.vocab.reset(util::MapZeroedWrite(config.write_mmap, total, backing.file), total, util::scoped_memory::MMAP_ALLOCATED);
+    backing.file.reset(util::CreateOrThrow(config.write_mmap));
+    if (config.write_method == Config::WRITE_MMAP) {
+      backing.vocab.reset(util::MapZeroedWrite(backing.file.get(), total), total, util::scoped_memory::MMAP_ALLOCATED);
+    } else {
+      util::ResizeOrThrow(backing.file.get(), 0);
+      util::MapAnonymous(total, backing.vocab);
+    }
     strncpy(reinterpret_cast<char*>(backing.vocab.get()), kMagicIncomplete, TotalHeaderSize(order));
     return reinterpret_cast<uint8_t*>(backing.vocab.get()) + TotalHeaderSize(order);
   } else {
@@ -121,12 +127,14 @@ uint8_t *GrowForSearch(const Config &config, std::size_t vocab_pad, std::size_t 
 
 void FinishFile(const Config &config, ModelType model_type, unsigned int search_version, const std::vector<uint64_t> &counts, std::size_t vocab_pad, Backing &backing) {
   if (!config.write_mmap) return;
-  util::SyncOrThrow(backing.vocab.get(), backing.vocab.size());
   switch (config.write_method) {
     case Config::WRITE_MMAP:
+      util::SyncOrThrow(backing.vocab.get(), backing.vocab.size());
       util::SyncOrThrow(backing.search.get(), backing.search.size());
       break;
     case Config::WRITE_AFTER:
+      util::SeekOrThrow(backing.file.get(), 0);
+      util::WriteOrThrow(backing.file.get(), backing.vocab.get(), backing.vocab.size());
       util::SeekOrThrow(backing.file.get(), backing.vocab.size() + vocab_pad);
       util::WriteOrThrow(backing.file.get(), backing.search.get(), backing.search.size());
       util::FSyncOrThrow(backing.file.get());
@@ -141,6 +149,10 @@ void FinishFile(const Config &config, ModelType model_type, unsigned int search_
   params.fixed.has_vocabulary = config.include_vocab;
   params.fixed.search_version = search_version;
   WriteHeader(backing.vocab.get(), params);
+  if (config.write_method == Config::WRITE_AFTER) {
+    util::SeekOrThrow(backing.file.get(), 0);
+    util::WriteOrThrow(backing.file.get(), backing.vocab.get(), TotalHeaderSize(counts.size()));
+  }
 }
 
 namespace detail {

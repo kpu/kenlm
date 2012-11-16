@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 
-#include <inttypes.h>
+#include <stdint.h>
 
 // Ersatz version of boost::progress so core language model doesn't depend on
 // boost.  Also adds option to print nothing.  

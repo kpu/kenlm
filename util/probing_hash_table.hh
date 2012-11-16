@@ -8,7 +8,7 @@
 #include <functional>
 
 #include <assert.h>
-#include <inttypes.h>
+#include <stdint.h>
 
 namespace util {
 

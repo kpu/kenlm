@@ -20,6 +20,7 @@ class OutOfTokens : public Exception {
 
 class SingleCharacter {
   public:
+    SingleCharacter() {}
     explicit SingleCharacter(char delim) : delim_(delim) {}
 
     StringPiece Find(const StringPiece &in) const {
@@ -32,6 +33,8 @@ class SingleCharacter {
 
 class MultiCharacter {
   public:
+    MultiCharacter() {}
+
     explicit MultiCharacter(const StringPiece &delimiter) : delimiter_(delimiter) {}
 
     StringPiece Find(const StringPiece &in) const {
@@ -44,10 +47,25 @@ class MultiCharacter {
 
 class AnyCharacter {
   public:
+    AnyCharacter() {}
     explicit AnyCharacter(const StringPiece &chars) : chars_(chars) {}
 
     StringPiece Find(const StringPiece &in) const {
       return StringPiece(std::find_first_of(in.data(), in.data() + in.size(), chars_.data(), chars_.data() + chars_.size()), 1);
+    }
+
+  private:
+    StringPiece chars_;
+};
+
+class AnyCharacterLast {
+  public:
+    AnyCharacterLast() {}
+
+    explicit AnyCharacterLast(const StringPiece &chars) : chars_(chars) {}
+
+    StringPiece Find(const StringPiece &in) const {
+      return StringPiece(std::find_end(in.data(), in.data() + in.size(), chars_.data(), chars_.data() + chars_.size()), 1);
     }
 
   private:
@@ -69,8 +87,8 @@ template <class Find, bool SkipEmpty = false> class TokenIter : public boost::it
       return current_.data() != 0;
     }
 
-    static TokenIter<Find> end() {
-      return TokenIter<Find>();
+    static TokenIter<Find, SkipEmpty> end() {
+      return TokenIter<Find, SkipEmpty>();
     }
 
   private:
@@ -88,8 +106,8 @@ template <class Find, bool SkipEmpty = false> class TokenIter : public boost::it
       } while (SkipEmpty && current_.data() && current_.empty()); // Compiler should optimize this away if SkipEmpty is false.  
     }
 
-    bool equal(const TokenIter<Find> &other) const {
-      return after_.data() == other.after_.data();
+    bool equal(const TokenIter<Find, SkipEmpty> &other) const {
+      return current_.data() == other.current_.data();
     }
 
     const StringPiece &dereference() const {

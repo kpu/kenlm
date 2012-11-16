@@ -14,7 +14,6 @@
 #include <limits>
 
 #include <assert.h>
-#include <ctype.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -25,13 +24,6 @@ namespace util {
 ParseNumberException::ParseNumberException(StringPiece value) throw() {
   *this << "Could not parse \"" << value << "\" into a number";
 }
-
-#ifdef HAVE_ZLIB
-GZException::GZException(gzFile file) {
-  int num;
-  *this << gzerror(file, &num) << " from zlib";
-}
-#endif // HAVE_ZLIB
 
 // Sigh this is the only way I could come up with to do a _const_ bool.  It has ' ', '\f', '\n', '\r', '\t', and '\v' (same as isspace on C locale). 
 const bool kSpaces[256] = {0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -48,19 +40,7 @@ FilePiece::FilePiece(int fd, const char *name, std::ostream *show_progress, std:
   Initialize(name, show_progress, min_buffer);
 }
 
-FilePiece::~FilePiece() {
-#ifdef HAVE_ZLIB
-  if (gz_file_) {
-    // zlib took ownership
-    file_.release();
-    int ret;
-    if (Z_OK != (ret = gzclose(gz_file_))) {
-      std::cerr << "could not close file " << file_name_ << " using zlib" << std::endl;
-      abort();
-    }
-  }
-#endif
-}
+FilePiece::~FilePiece() {}
 
 StringPiece FilePiece::ReadLine(char delim) {
   std::size_t skip = 0;
@@ -95,9 +75,6 @@ unsigned long int FilePiece::ReadULong() {
 }
 
 void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::size_t min_buffer)  {
-#ifdef HAVE_ZLIB
-  gz_file_ = NULL;
-#endif
   file_name_ = name;
 
   default_map_size_ = page_ * std::max<std::size_t>((min_buffer / page_ + 1), 2);
@@ -117,10 +94,7 @@ void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::s
   }
   Shift();
   // gzip detect.
-  if ((position_end_ - position_) > 2 && *position_ == 0x1f && static_cast<unsigned char>(*(position_ + 1)) == 0x8b) {
-#ifndef HAVE_ZLIB
-    UTIL_THROW(GZException, "Looks like a gzip file but support was not compiled in.");
-#endif
+  if ((position_end_ - position_) >= ReadCompressed::kMagicSize && ReadCompressed::DetectCompressedMagic(position_)) {
     if (!fallback_to_read_) {
       at_end_ = false;
       TransitionToRead();
@@ -197,7 +171,7 @@ void FilePiece::Shift() {
   if (fallback_to_read_) ReadShift();
 
   for (last_space_ = position_end_ - 1; last_space_ >= position_; --last_space_) {
-    if (isspace(*last_space_))  break;
+    if (kSpaces[static_cast<unsigned char>(*last_space_)])  break;
   }
 }
 
@@ -248,16 +222,13 @@ void FilePiece::TransitionToRead() {
   position_ = data_.begin();
   position_end_ = position_;
 
-#ifdef HAVE_ZLIB
-  assert(!gz_file_);
-  gz_file_ = gzdopen(file_.get(), "r");
-  UTIL_THROW_IF(!gz_file_, GZException, "zlib failed to open " << file_name_);
-#endif
+  try {
+    fell_back_.Reset(file_.release());
+  } catch (util::Exception &e) {
+    e << " in file " << file_name_;
+    throw;
+  }
 }
-
-#ifdef WIN32
-typedef int ssize_t;
-#endif
 
 void FilePiece::ReadShift() {
   assert(fallback_to_read_);
@@ -283,7 +254,7 @@ void FilePiece::ReadShift() {
       position_ = data_.begin();
       position_end_ = position_ + valid_length;
     } else {
-      size_t moving = position_end_ - position_;
+      std::size_t moving = position_end_ - position_;
       memmove(data_.get(), position_, moving);
       position_ = data_.begin();
       position_end_ = position_ + moving;
@@ -291,20 +262,9 @@ void FilePiece::ReadShift() {
     }
   }
 
-  ssize_t read_return;
-#ifdef HAVE_ZLIB
-  read_return = gzread(gz_file_, static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
-  if (read_return == -1) throw GZException(gz_file_);
-  if (total_size_ != kBadSize) {
-    // Just get the position, don't actually seek.  Apparently this is how you do it. . . 
-    off_t ret = lseek(file_.get(), 0, SEEK_CUR);
-    if (ret != -1) progress_.Set(ret);
-  }
-#else
-  read_return = read(file_.get(), static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
-  UTIL_THROW_IF(read_return == -1, ErrnoException, "read failed");
-  progress_.Set(mapped_offset_);
-#endif
+  std::size_t read_return = fell_back_.Read(static_cast<uint8_t*>(data_.get()) + already_read, default_map_size_ - already_read);
+  progress_.Set(fell_back_.RawAmount());
+
   if (read_return == 0) {
     at_end_ = true;
   }

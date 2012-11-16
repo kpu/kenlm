@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(MMapReadLine) {
   BOOST_CHECK_THROW(test.get(), EndOfFileException);
 }
 
-#ifndef __APPLE__
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 /* Apple isn't happy with the popen, fileno, dup.  And I don't want to
  * reimplement popen.  This is an issue with the test.  
  */
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(StreamReadLine) {
   BOOST_CHECK_THROW(test.get(), EndOfFileException);
   BOOST_REQUIRE(!pclose(catter));
 }
-#endif // __APPLE__
+#endif
 
 #ifdef HAVE_ZLIB
 

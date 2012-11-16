@@ -274,10 +274,21 @@ struct StringPieceCompatibleEquals : public std::binary_function<const StringPie
   }
 };
 template <class T> typename T::const_iterator FindStringPiece(const T &t, const StringPiece &key) {
+#if BOOST_VERSION < 104200
+  std::string temp(key.data(), key.size());
+  return t.find(temp);
+#else
   return t.find(key, StringPieceCompatibleHash(), StringPieceCompatibleEquals());
+#endif
 }
+
 template <class T> typename T::iterator FindStringPiece(T &t, const StringPiece &key) {
+#if BOOST_VERSION < 104200
+  std::string temp(key.data(), key.size());
+  return t.find(temp);
+#else
   return t.find(key, StringPieceCompatibleHash(), StringPieceCompatibleEquals());
+#endif
 }
 #endif
 

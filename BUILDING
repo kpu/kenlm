@@ -6,4 +6,5 @@ UNIX-like without boost build:
   ./compile.sh
 
 Windows:
-  See the .vcxproj files
+  The windows directory has visual studio files.  Note that you need to compile
+  the kenlm project before build_binary and ngram_query projects.  

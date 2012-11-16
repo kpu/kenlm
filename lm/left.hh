@@ -51,36 +51,36 @@ namespace ngram {
 
 template <class M> class RuleScore {
   public:
-    explicit RuleScore(const M &model, ChartState &out) : model_(model), out_(out), left_done_(false), prob_(0.0) {
+    explicit RuleScore(const M &model, ChartState &out) : model_(model), out_(&out), left_done_(false), prob_(0.0) {
       out.left.length = 0;
       out.right.length = 0;
     }
 
     void BeginSentence() {
-      out_.right = model_.BeginSentenceState();
-      // out_.left is empty.
+      out_->right = model_.BeginSentenceState();
+      // out_->left is empty.
       left_done_ = true;
     }
 
     void Terminal(WordIndex word) {
-      State copy(out_.right);
-      FullScoreReturn ret(model_.FullScore(copy, word, out_.right));
+      State copy(out_->right);
+      FullScoreReturn ret(model_.FullScore(copy, word, out_->right));
       if (left_done_) { prob_ += ret.prob; return; }
       if (ret.independent_left) {
         prob_ += ret.prob;
         left_done_ = true;
         return;
       }
-      out_.left.pointers[out_.left.length++] = ret.extend_left;
+      out_->left.pointers[out_->left.length++] = ret.extend_left;
       prob_ += ret.rest;
-      if (out_.right.length != copy.length + 1)
+      if (out_->right.length != copy.length + 1)
         left_done_ = true;
     }
 
     // Faster version of NonTerminal for the case where the rule begins with a non-terminal.  
     void BeginNonTerminal(const ChartState &in, float prob = 0.0) {
       prob_ = prob;
-      out_ = in;
+      *out_ = in;
       left_done_ = in.left.full;
     }
 
@@ -89,23 +89,23 @@ template <class M> class RuleScore {
       
       if (!in.left.length) {
         if (in.left.full) {
-          for (const float *i = out_.right.backoff; i < out_.right.backoff + out_.right.length; ++i) prob_ += *i;
+          for (const float *i = out_->right.backoff; i < out_->right.backoff + out_->right.length; ++i) prob_ += *i;
           left_done_ = true;
-          out_.right = in.right;
+          out_->right = in.right;
         }
         return;
       }
 
-      if (!out_.right.length) {
-        out_.right = in.right;
+      if (!out_->right.length) {
+        out_->right = in.right;
         if (left_done_) {
           prob_ += model_.UnRest(in.left.pointers, in.left.pointers + in.left.length, 1);
           return;
         }
-        if (out_.left.length) {
+        if (out_->left.length) {
           left_done_ = true;
         } else {
-          out_.left = in.left;
+          out_->left = in.left;
           left_done_ = in.left.full;
         }
         return;
@@ -113,10 +113,10 @@ template <class M> class RuleScore {
 
       float backoffs[KENLM_MAX_ORDER - 1], backoffs2[KENLM_MAX_ORDER - 1];
       float *back = backoffs, *back2 = backoffs2;
-      unsigned char next_use = out_.right.length;
+      unsigned char next_use = out_->right.length;
 
       // First word
-      if (ExtendLeft(in, next_use, 1, out_.right.backoff, back)) return;
+      if (ExtendLeft(in, next_use, 1, out_->right.backoff, back)) return;
 
       // Words after the first, so extending a bigram to begin with
       for (unsigned char extend_length = 2; extend_length <= in.left.length; ++extend_length) {
@@ -127,54 +127,58 @@ template <class M> class RuleScore {
       if (in.left.full) {
         for (const float *i = back; i != back + next_use; ++i) prob_ += *i;
         left_done_ = true;
-        out_.right = in.right;
+        out_->right = in.right;
         return;
       }
 
       // Right state was minimized, so it's already independent of the new words to the left.  
       if (in.right.length < in.left.length) {
-        out_.right = in.right;
+        out_->right = in.right;
         return;
       }
 
       // Shift exisiting words down.  
-      for (WordIndex *i = out_.right.words + next_use - 1; i >= out_.right.words; --i) {
+      for (WordIndex *i = out_->right.words + next_use - 1; i >= out_->right.words; --i) {
         *(i + in.right.length) = *i;
       }
       // Add words from in.right.  
-      std::copy(in.right.words, in.right.words + in.right.length, out_.right.words);
+      std::copy(in.right.words, in.right.words + in.right.length, out_->right.words);
       // Assemble backoff composed on the existing state's backoff followed by the new state's backoff.  
-      std::copy(in.right.backoff, in.right.backoff + in.right.length, out_.right.backoff);
-      std::copy(back, back + next_use, out_.right.backoff + in.right.length);
-      out_.right.length = in.right.length + next_use;
+      std::copy(in.right.backoff, in.right.backoff + in.right.length, out_->right.backoff);
+      std::copy(back, back + next_use, out_->right.backoff + in.right.length);
+      out_->right.length = in.right.length + next_use;
     }
 
     float Finish() {
       // A N-1-gram might extend left and right but we should still set full to true because it's an N-1-gram.  
-      out_.left.full = left_done_ || (out_.left.length == model_.Order() - 1);
+      out_->left.full = left_done_ || (out_->left.length == model_.Order() - 1);
       return prob_;
     }
 
     void Reset() {
       prob_ = 0.0;
       left_done_ = false;
-      out_.left.length = 0;
-      out_.right.length = 0;
+      out_->left.length = 0;
+      out_->right.length = 0;
+    }
+    void Reset(ChartState &replacement) {
+      out_ = &replacement;
+      Reset();
     }
 
   private:
     bool ExtendLeft(const ChartState &in, unsigned char &next_use, unsigned char extend_length, const float *back_in, float *back_out) {
       ProcessRet(model_.ExtendLeft(
-            out_.right.words, out_.right.words + next_use, // Words to extend into
+            out_->right.words, out_->right.words + next_use, // Words to extend into
             back_in, // Backoffs to use
             in.left.pointers[extend_length - 1], extend_length, // Words to be extended
             back_out, // Backoffs for the next score
             next_use)); // Length of n-gram to use in next scoring.  
-      if (next_use != out_.right.length) {
+      if (next_use != out_->right.length) {
         left_done_ = true;
         if (!next_use) {
           // Early exit.  
-          out_.right = in.right;
+          out_->right = in.right;
           prob_ += model_.UnRest(in.left.pointers + extend_length, in.left.pointers + in.left.length, extend_length + 1);
           return true;
         }
@@ -193,13 +197,13 @@ template <class M> class RuleScore {
         left_done_ = true;
         return;
       }
-      out_.left.pointers[out_.left.length++] = ret.extend_left;
+      out_->left.pointers[out_->left.length++] = ret.extend_left;
       prob_ += ret.rest;
     }
 
     const M &model_;
 
-    ChartState &out_;
+    ChartState *out_;
 
     bool left_done_;
 

@@ -76,8 +76,9 @@ uint64_t SizeFile(int fd);
 
 void ResizeOrThrow(int fd, uint64_t to);
 
+std::size_t PartialRead(int fd, void *to, std::size_t size);
 void ReadOrThrow(int fd, void *to, std::size_t size);
-std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount);
+std::size_t ReadOrEOF(int fd, void *to_void, std::size_t size);
 
 void WriteOrThrow(int fd, const void *data_void, std::size_t size);
 void WriteOrThrow(FILE *to, const void *data, std::size_t size);
@@ -90,8 +91,7 @@ void AdvanceOrThrow(int fd, int64_t off);
 void SeekEnd(int fd);
 
 std::FILE *FDOpenOrThrow(scoped_fd &file);
-
-std::FILE *FOpenOrThrow(const char *path, const char *mode);
+std::FILE *FDOpenReadOrThrow(scoped_fd &file);
 
 class TempMaker {
   public:
@@ -100,9 +100,6 @@ class TempMaker {
     // These will already be unlinked for you.  
     int Make() const;
     std::FILE *MakeFile() const;
-
-    // This will force you to close the fd instead of leaving it open.  
-    std::string Name(scoped_fd &opened) const;
 
   private:
     std::string base_;
