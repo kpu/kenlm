@@ -37,9 +37,6 @@ Testing
 =======
 
 ```bash
-# Create a test stream
-bin/gcc-4.6/release/threading-multi/fs_test gen 3 test.bin
-
-# Dump it to stdout
-bin/gcc-4.6/release/threading-multi/fs_test dump 3 test.bin
+# See script file for more comments
+./test.sh
 ```
