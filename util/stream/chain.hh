@@ -55,7 +55,7 @@ class ChainPosition {
   public:
     explicit ChainPosition(Chain &chain);
 
-    const Chain &GetChain() const { return *chain_; }
+    Chain &MutableChain() { return *chain_; }
 
   private:
     friend class Link;

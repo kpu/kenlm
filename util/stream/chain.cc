@@ -34,6 +34,7 @@ Chain::~Chain() {
 }
 
 void Chain::StartRunning() {
+  UTIL_THROW_IF(running_, util::Exception, "StartRunning called twice");
   queues_.pop_back();
   running_ = true;
 
