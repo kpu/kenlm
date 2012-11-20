@@ -19,8 +19,12 @@ class Block {
     void *Get() { return mem_; }
     const void *Get() const { return mem_; }
 
-    operator bool() const { return valid_size_ != 0; }
-    bool operator!() const { return !valid_size_; }
+    operator bool() const { return mem_ != NULL; }
+    bool operator!() const { return mem_ == NULL; }
+
+    void SetToPoison() {
+      mem_ = NULL;
+    }
 
   private:
     void *mem_;

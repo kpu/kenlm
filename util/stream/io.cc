@@ -8,11 +8,14 @@ namespace stream {
 ReadSizeException::ReadSizeException() throw() {}
 ReadSizeException::~ReadSizeException() throw() {}
 
-bool ReadThread::Process(Block &block) {
+void ReadThread::Process(Block &block) {
   std::size_t got = util::ReadOrEOF(file_, block.Get(), block_size_);
   UTIL_THROW_IF(got % entry_size_, ReadSizeException, "File ended with " << got << " bytes, not a multiple of " << entry_size_ << "."); 
-  block.SetValidSize(got);
-  return got != 0;
+  if (got == 0) {
+    block.SetToPoison();
+  } else {
+    block.SetValidSize(got);
+  }
 }
 
 } // namespace stream

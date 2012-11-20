@@ -27,7 +27,7 @@ class ReadThread : public LinkThread<ReadThread> {
         entry_size_(chain.EntrySize()),
         block_size_(chain.BlockSize()) {}
 
-    bool Process(Block &block);
+    void Process(Block &block);
 
   private:
     int file_;
@@ -40,9 +40,8 @@ class WriteThread : public LinkThread<WriteThread> {
         LinkThread<WriteThread>(chain),
         file_(fd) {}
 
-    bool Process(Block &block) {
+    void Process(Block &block) {
       util::WriteOrThrow(file_, block.Get(), block.ValidSize());
-      return true;
     }
 
   private:

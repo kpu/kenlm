@@ -61,10 +61,6 @@ Link::Link(ChainPosition &position) : in_(position.GetInQueue()) {
 }
 
 Link::~Link() {
-  if (!current_.Get()) {
-    // Never initialized, something probably went wrong during setup.
-    return;
-  }
   if (current_) {
     std::cerr << "Last input should have been poison." << std::endl;
     std::abort();
@@ -75,6 +71,7 @@ Link::~Link() {
 }
 
 Link &Link::operator++() {
+  assert(current_);
   out_->Produce(current_);
   in_->Consume(current_);
   return *this;

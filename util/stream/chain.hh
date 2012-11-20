@@ -55,6 +55,8 @@ class ChainPosition {
   public:
     explicit ChainPosition(Chain &chain);
 
+    const Chain &GetChain() const { return *chain_; }
+
   private:
     friend class Link;
     util::PCQueue<Block> *GetInQueue() {
@@ -96,10 +98,8 @@ template <class Child> class LinkThread {
 
     void operator()() {
       for (Link link(position_); link; ++link) {
-        if (!static_cast<Child*>(this)->Process(*link)) {
-          assert(!link);
-          return;
-        }
+        static_cast<Child*>(this)->Process(*link);
+        if (!link) break;
       }
     }
 

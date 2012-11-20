@@ -28,10 +28,11 @@ BOOST_AUTO_TEST_CASE(CopyFile) {
     {
       ReadThread read(chain, in.get());
       WriteThread write(chain, out.get());
-      std::cerr << "About to call run." << std::endl;
+      //std::cerr << "About to call run." << std::endl;
       chain.StartRunning();
+      //std::cerr << "Awaiting ReadThread and WriteThread destructors." << std::endl;
     }
-    std::cerr << "Awaiting destructors" << std::endl;
+    //std::cerr << "Awaiting Chain destructor" << std::endl;
   }
 
   SeekOrThrow(out.get(), 0);
