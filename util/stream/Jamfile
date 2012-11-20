@@ -1,0 +1,4 @@
+fakelib stream : io.cc chain.cc ..//kenutil /top//boost_thread : : : <library>/top//boost_thread ;
+
+import testing ;
+unit-test io_test : io_test.cc stream /top//boost_unit_test_framework ;
