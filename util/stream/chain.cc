@@ -33,7 +33,7 @@ Chain::~Chain() {
   }
 }
 
-void Chain::Run() {
+void Chain::StartRunning() {
   queues_.pop_back();
   running_ = true;
 

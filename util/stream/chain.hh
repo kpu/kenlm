@@ -36,7 +36,7 @@ class Chain {
       return config_.block_size;
     }
 
-    void Run();
+    void StartRunning();
 
   private:
     friend class ChainPosition;
