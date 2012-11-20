@@ -30,7 +30,7 @@ class ReadThread : public LinkThread<ReadThread> {
     bool Process(Block &block);
 
   private:
-    scoped_fd file_;
+    int file_;
     const std::size_t entry_size_, block_size_;
 };
 
@@ -41,12 +41,12 @@ class WriteThread : public LinkThread<WriteThread> {
         file_(fd) {}
 
     bool Process(Block &block) {
-      util::WriteOrThrow(file_.get(), block.Get(), block.ValidSize());
+      util::WriteOrThrow(file_, block.Get(), block.ValidSize());
       return true;
     }
 
   private:
-    scoped_fd file_;
+    int file_;
 };
 
 } // namespace stream

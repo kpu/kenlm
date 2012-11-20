@@ -14,6 +14,7 @@ BOOST_AUTO_TEST_CASE(CopyFile) {
   for (uint64_t i = 0; i < 100000; ++i) {
     WriteOrThrow(in.get(), &i, sizeof(uint64_t));
   }
+  SeekOrThrow(in.get(), 0);
   scoped_fd out(temps.Make());
 
   ChainConfig config;
@@ -25,15 +26,15 @@ BOOST_AUTO_TEST_CASE(CopyFile) {
   {
     Chain chain(config);
     {
-      ReadThread read(chain, in.release());
-      WriteThread write(chain, dup(out.get()));
+      ReadThread read(chain, in.get());
+      WriteThread write(chain, out.get());
       std::cerr << "About to call run." << std::endl;
       chain.Run();
     }
     std::cerr << "Awaiting destructors" << std::endl;
   }
-  std::cerr << lseek(out.get(), 0, SEEK_CUR) << std::endl;
 
+  SeekOrThrow(out.get(), 0);
   for (uint64_t i = 0; i < 100000; ++i) {
     uint64_t got;
     ReadOrThrow(out.get(), &got, sizeof(uint64_t));
