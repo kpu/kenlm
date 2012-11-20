@@ -44,6 +44,25 @@ class Stream : boost::noncopyable {
 
     Link block_it_;
 };
+
+// Same idea as LinkThread: a threaded worker that sees a stream.  
+class StreamThread {
+  public:
+    template <class Owner> StreamThread(const ChainPosition &position, Owner *owner) :
+        thread_(boost::ref(*this), position, owner) {}
+
+    ~StreamThread() {
+      thread_.join();
+    }
+
+    template <class Owner> void operator()(const ChainPosition &position, Owner *owner) {
+      Stream s(position);
+      owner->Process(s);
+    }
+
+  private:
+    boost::thread thread_;
+};
  
 } // namespace stream
 } // namespace util

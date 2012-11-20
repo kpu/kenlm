@@ -88,25 +88,24 @@ class Link {
     PCQueue<Block> *in_, *out_;
 };
 
-template <class Child> class LinkThread {
+// Intended usage: make this the last member variable of class Owner.   
+class LinkThread {
   public:
+    template <class Owner> LinkThread(const ChainPosition &position, Owner *owner)
+      : thread_(boost::ref(*this), position, owner) {}
+
     ~LinkThread() {
       thread_.join();
     }
 
-    void operator()() {
-      for (Link link(position_); link; ++link) {
-        static_cast<Child*>(this)->Process(*link);
+    template <class Owner> void operator()(const ChainPosition &position, Owner *owner) {
+      for (Link link(position); link; ++link) {
+        owner->Process(*link);
         if (!link) break;
       }
     }
 
-  protected:
-    // position_ is constructed in the main thread to preserve order.  
-    explicit LinkThread(const ChainPosition &position) : position_(position), thread_(boost::ref(*this)) {}
-
   private:
-    ChainPosition position_;
     boost::thread thread_;
 };
 
