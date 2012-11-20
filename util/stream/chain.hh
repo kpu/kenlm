@@ -23,6 +23,22 @@ struct ChainConfig {
   std::size_t queue_length;
 };
 
+class Chain;
+// Specifies position in chain for Link constructor.
+class ChainPosition {
+  public:
+    const Chain &GetChain() const { return *chain_; }
+  private:
+    friend class Chain;
+    friend class Link;
+    ChainPosition(PCQueue<Block> &in, PCQueue<Block> &out, Chain *chain) 
+      : in_(&in), out_(&out), chain_(chain) {}
+
+    PCQueue<Block> *in_, *out_;
+
+    Chain *chain_;
+};
+
 class Chain {
   public:
     explicit Chain(const ChainConfig &config);
@@ -36,42 +52,24 @@ class Chain {
       return config_.block_size;
     }
 
-    void StartRunning();
+    ChainPosition Between();
+
+    ChainPosition Last();
 
   private:
-    friend class ChainPosition;
-
     ChainConfig config_;
 
     scoped_malloc memory_;
 
     boost::ptr_vector<PCQueue<Block> > queues_;
 
-    bool running_;
-};
-
-// Create this in the main thread to properly synchronize position assignment.  
-class ChainPosition {
-  public:
-    explicit ChainPosition(Chain &chain);
-
-    Chain &MutableChain() { return *chain_; }
-
-  private:
-    friend class Link;
-    util::PCQueue<Block> *GetInQueue() {
-      return &chain_->queues_[index_];
-    }
-    util::PCQueue<Block> *RunningGetOutQueue();
-
-    Chain *chain_;
-    std::size_t index_;
+    bool last_called_;
 };
 
 // Create the link in the worker thread using the position token.
 class Link {
   public:
-    explicit Link(ChainPosition &position);
+    explicit Link(const ChainPosition &position);
 
     ~Link();
 
@@ -105,7 +103,7 @@ template <class Child> class LinkThread {
 
   protected:
     // position_ is constructed in the main thread to preserve order.  
-    explicit LinkThread(Chain &chain) : position_(chain), thread_(boost::ref(*this)) {}
+    explicit LinkThread(const ChainPosition &position) : position_(position), thread_(boost::ref(*this)) {}
 
   private:
     ChainPosition position_;

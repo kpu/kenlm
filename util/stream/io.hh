@@ -21,11 +21,11 @@ class ReadSizeException : public util::Exception {
 
 class ReadThread : public LinkThread<ReadThread> {
   public:
-    ReadThread(Chain &chain, int fd) :
-        LinkThread<ReadThread>(chain),
+    ReadThread(const ChainPosition &position, int fd) :
+        LinkThread<ReadThread>(position),
         file_(fd),
-        entry_size_(chain.EntrySize()),
-        block_size_(chain.BlockSize()) {}
+        entry_size_(position.GetChain().EntrySize()),
+        block_size_(position.GetChain().BlockSize()) {}
 
     void Process(Block &block);
 
@@ -36,8 +36,8 @@ class ReadThread : public LinkThread<ReadThread> {
 
 class WriteThread : public LinkThread<WriteThread> {
   public:
-    WriteThread(Chain &chain, int fd) :
-        LinkThread<WriteThread>(chain),
+    WriteThread(const ChainPosition &position, int fd) :
+        LinkThread<WriteThread>(position),
         file_(fd) {}
 
     void Process(Block &block) {

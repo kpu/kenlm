@@ -12,7 +12,7 @@
 namespace util {
 namespace stream {
 
-Chain::Chain(const ChainConfig &config) : config_(config), running_(false) {
+Chain::Chain(const ChainConfig &config) : config_(config), last_called_(false) {
   assert(config_.entry_size);
   // Round up to multiple of config_.entry_size.
   config_.block_size = config_.entry_size * ((config_.block_size + config_.entry_size - 1) / config_.entry_size);
@@ -21,23 +21,6 @@ Chain::Chain(const ChainConfig &config) : config_(config), running_(false) {
   UTIL_THROW_IF(!memory_.get(), util::ErrnoException, "Failed to allocate " << malloc_size << " bytes for " << config_.block_count << " blocks each of size " << config_.block_size);
   // This queue has special size to accomodate all blocks.  
   queues_.push_back(new PCQueue<Block>(std::max(config_.queue_length, config_.block_size)));
-}
-
-Chain::~Chain() {
-  if (running_) {
-    for (std::size_t i = 0; i < config_.block_count; ++i) {
-      if (!queues_.front().Consume()) return;
-    }
-    std::cerr << "Chain destructor called before posion was passed through." << std::endl;
-    std::abort();
-  }
-}
-
-void Chain::StartRunning() {
-  UTIL_THROW_IF(running_, util::Exception, "StartRunning called twice");
-  queues_.pop_back();
-  running_ = true;
-
   // Populate the lead queue with blocks.  
   uint8_t *base = static_cast<uint8_t*>(memory_.get());
   for (std::size_t i = 0; i < config_.block_count; ++i) {
@@ -46,19 +29,29 @@ void Chain::StartRunning() {
   }
 }
 
-util::PCQueue<Block> *ChainPosition::RunningGetOutQueue() {
-  assert(chain_->running_);
-  return &chain_->queues_[(chain_->queues_.size() == index_ + 1) ? 0 : (index_ + 1)];
+Chain::~Chain() {
+  if (!last_called_) return;
+  for (std::size_t i = 0; i < config_.block_count; ++i) {
+    if (!queues_.front().Consume()) return;
+  }
+  std::cerr << "Queue destructor without poison." << std::endl;
+  abort();
 }
 
-ChainPosition::ChainPosition(Chain &chain) : chain_(&chain), index_(chain.queues_.size() - 1) {
-  chain_->queues_.push_back(new PCQueue<Block>(chain_->config_.queue_length));
+ChainPosition Chain::Between() {
+  PCQueue<Block> &in = queues_.back();
+  queues_.push_back(new PCQueue<Block>(config_.queue_length));
+  return ChainPosition(in, queues_.back(), this);
 }
 
-Link::Link(ChainPosition &position) : in_(position.GetInQueue()) {
+ChainPosition Chain::Last() {
+  UTIL_THROW_IF(last_called_, util::Exception, "Last() called twice");
+  last_called_ = true;
+  return ChainPosition(queues_.back(), queues_.front(), this);
+}
+
+Link::Link(const ChainPosition &position) : in_(position.in_), out_(position.out_) {
   in_->Consume(current_);
-  // This has to be done after consuming, so that we know whether the queue is the beginning of the chain or not.  
-  out_ = position.RunningGetOutQueue();
 }
 
 Link::~Link() {
