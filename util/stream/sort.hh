@@ -122,8 +122,7 @@ template <class Compare> class MergingReader {
         // current is set relative to end by Read. 
         entry.buffer_end = buf + per_buffer;
         // entries has only non-empty streams, so this is always true.  
-        bool ret = entry.Read(in_, per_buffer);
-        assert(ret);
+        entry.Read(in_, per_buffer);
         assert(entry.current < entry.buffer_end);
         queue.push(entry);
       }
@@ -135,8 +134,6 @@ template <class Compare> class MergingReader {
         queue.pop();
         memcpy(str.Get(), top.current, entry_size);
         ++str;
-        assert(!((top.buffer_end - top.current) % entry_size));
-        assert(top.current < top.buffer_end);
         top.current += entry_size;
         assert(top.current <= top.buffer_end);
         if (top.current != top.buffer_end || top.Read(in_, per_buffer))
@@ -178,7 +175,6 @@ template <class Compare> class MergingReader {
         }
         PReadOrThrow(fd, current, amount, offset);
         offset += amount;
-        assert(amount <= remaining);
         assert(current <= buffer_end);
         remaining -= amount;
         return true;
