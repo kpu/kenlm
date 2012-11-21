@@ -86,13 +86,13 @@ template <class Compare> class MergingReader {
   public:
     void Run(const ChainPosition &position) {
       // Special case: nothing to read.  
-      if (!arity_) {
+      if (!in_offsets_->RemainingBlocks()) {
         Link l(position);
         l.Poison();
         return;
       }
       // If there's just one entry, just read.
-      if (arity_ == 1) {
+      if (in_offsets_->RemainingBlocks() == 1) {
         // Sequencing is important.
         uint64_t offset = in_offsets_->TotalOffset();
         uint64_t amount = in_offsets_->NextSize();
@@ -101,43 +101,46 @@ template <class Compare> class MergingReader {
         return;
       }
 
-      // Make buffer a multiple of the entry size and each read buffer equal size.
-      const std::size_t entry_size = position.GetChain().EntrySize();
-      const std::size_t be_multiple = arity_ * entry_size;
-      const std::size_t per_buffer = entry_size * ((buffer_size_ + be_multiple - 1) / be_multiple);
-      scoped_malloc buffer(malloc(per_buffer * arity_));
-      UTIL_THROW_IF(!buffer.get(), ErrnoException, " while trying to malloc " << (per_buffer * arity_) << " bytes");
-
-      // Populate queue.
-      uint8_t *buf = static_cast<uint8_t*>(buffer.get());
-      uint64_t total_to_write = 0;
-      Queue queue(compare_);
-      for (std::size_t i = 0; i < arity_; ++i, buf += per_buffer) {
-        QueueEntry entry;
-        entry.offset = in_offsets_->TotalOffset();
-        entry.remaining = in_offsets_->NextSize();
-        assert(entry.remaining);
-        assert(!(entry.remaining % entry_size));
-        total_to_write += entry.remaining;
-        // current is set relative to end by Read. 
-        entry.buffer_end = buf + per_buffer;
-        // entries has only non-empty streams, so this is always true.  
-        entry.Read(in_, per_buffer);
-        assert(entry.current < entry.buffer_end);
-        queue.push(entry);
-      }
-      out_offsets_->Append(total_to_write);
-      
       Stream str(position, true);
-      while (!queue.empty()) {
-        QueueEntry top(queue.top());
-        queue.pop();
-        memcpy(str.Get(), top.current, entry_size);
-        ++str;
-        top.current += entry_size;
-        assert(top.current <= top.buffer_end);
-        if (top.current != top.buffer_end || top.Read(in_, per_buffer))
-          queue.push(top);
+      while (in_offsets_->RemainingBlocks()) {
+        std::size_t arity = std::min<uint64_t>(static_cast<uint64_t>(arity), in_offsets_->RemainingBlocks());
+        // Make buffer a multiple of the entry size and each read buffer equal size.
+        const std::size_t entry_size = position.GetChain().EntrySize();
+        const std::size_t be_multiple = arity * entry_size;
+        const std::size_t per_buffer = entry_size * ((buffer_size_ + be_multiple - 1) / be_multiple);
+        scoped_malloc buffer(malloc(per_buffer * arity));
+        UTIL_THROW_IF(!buffer.get(), ErrnoException, " while trying to malloc " << (per_buffer * arity) << " bytes");
+
+        // Populate queue.
+        uint8_t *buf = static_cast<uint8_t*>(buffer.get());
+        uint64_t total_to_write = 0;
+        Queue queue(compare_);
+        for (std::size_t i = 0; i < arity; ++i, buf += per_buffer) {
+          QueueEntry entry;
+          entry.offset = in_offsets_->TotalOffset();
+          entry.remaining = in_offsets_->NextSize();
+          assert(entry.remaining);
+          assert(!(entry.remaining % entry_size));
+          total_to_write += entry.remaining;
+          // current is set relative to end by Read. 
+          entry.buffer_end = buf + per_buffer;
+          // entries has only non-empty streams, so this is always true.  
+          entry.Read(in_, per_buffer);
+          assert(entry.current < entry.buffer_end);
+          queue.push(entry);
+        }
+        out_offsets_->Append(total_to_write);
+
+        while (!queue.empty()) {
+          QueueEntry top(queue.top());
+          queue.pop();
+          memcpy(str.Get(), top.current, entry_size);
+          ++str;
+          top.current += entry_size;
+          assert(top.current <= top.buffer_end);
+          if (top.current != top.buffer_end || top.Read(in_, per_buffer))
+            queue.push(top);
+        }
       }
       str.Poison();
     }
@@ -244,14 +247,14 @@ template <class Compare> class Sort {
       Offsets *offsets_in = &offsets_, *offsets_out = &offsets2;
       while (offsets_in->RemainingBlocks() > 1) {
         SeekOrThrow(fd_in, 0);
-        while (offsets_in->RemainingBlocks()) {
+        {
           Chain chain(config.chain);
           Thread<MergingReader<Compare> > reader(
               chain.Between(), 
               MergingReader<Compare>(
                 fd_in,
                 *offsets_in, *offsets_out,
-                std::min(config.arity, offsets_in->RemainingBlocks()),
+                config.arity,
                 config.total_read_buffer,
                 compare_));
           Thread<Write> write(chain.Last(), fd_out);

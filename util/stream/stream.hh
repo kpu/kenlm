@@ -23,6 +23,10 @@ class Stream : boost::noncopyable {
       end_ = current_ + block_it_->ValidSize();
     }
 
+    ~Stream() {
+      if (generating_) Poison();
+    }
+
     operator bool() const { return current_ != NULL; }
     bool operator!() const { return current_ == NULL; }
 
@@ -30,6 +34,7 @@ class Stream : boost::noncopyable {
     void *Get() { return current_; }
 
     void Poison() {
+      generating_ = false;
       block_it_->SetValidSize(current_ - static_cast<uint8_t*>(block_it_->Get()));
       ++block_it_;
       block_it_.Poison();
