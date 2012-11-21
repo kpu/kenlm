@@ -77,6 +77,8 @@ void ResizeOrThrow(int fd, uint64_t to);
 std::size_t PartialRead(int fd, void *to, std::size_t size);
 void ReadOrThrow(int fd, void *to, std::size_t size);
 std::size_t ReadOrEOF(int fd, void *to_void, std::size_t size);
+// Positioned: unix only for now.  
+void PReadOrThrow(int fd, void *to, std::size_t size, uint64_t off);
 
 void WriteOrThrow(int fd, const void *data_void, std::size_t size);
 void WriteOrThrow(FILE *to, const void *data, std::size_t size);

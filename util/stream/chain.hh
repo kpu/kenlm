@@ -88,24 +88,21 @@ class Link {
     PCQueue<Block> *in_, *out_;
 };
 
-// Intended usage: make this the last member variable of class Owner.   
-class LinkThread {
+template <class Worker> class Thread {
   public:
-    template <class Owner> LinkThread(const ChainPosition &position, Owner *owner)
-      : thread_(boost::ref(*this), position, owner) {}
+    template <class Construct> Thread(const ChainPosition &position, const Construct &construct)
+      : worker_(construct), thread_(boost::ref(*this), position) {}
 
-    ~LinkThread() {
+    ~Thread() {
       thread_.join();
     }
 
-    template <class Owner> void operator()(const ChainPosition &position, Owner *owner) {
-      for (Link link(position); link; ++link) {
-        owner->Process(*link);
-        if (!link) break;
-      }
+    void operator()(const ChainPosition &position) {
+      worker_.Run(position);
     }
 
   private:
+    Worker worker_;
     boost::thread thread_;
 };
 

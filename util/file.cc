@@ -109,6 +109,22 @@ std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount) {
   return amount;
 }
 
+void PReadOrThrow(int fd, void *to, std::size_t size, uint64_t off) {
+#if defined(_WIN32) || defined(_WIN64)
+  UTIL_THROW(Exception, "TODO: PReadOrThrow for windows using ReadFile http://stackoverflow.com/questions/766477/are-there-equivalents-to-pread-on-different-platforms");
+#else
+  for (;size ;) {
+    ssize_t ret = pread(fd, to, size, off);
+    if (ret <= 0) {
+      UTIL_THROW_IF(ret == 0, EndOfFileException, " for offset " << off << " in fd " << fd);
+      UTIL_THROW(ErrnoException, " while reading " << size << " bytes at offset " << off);
+    }
+    size -= ret;
+    off += ret;
+  }
+#endif
+}
+
 void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
   const uint8_t *data = static_cast<const uint8_t*>(data_void);
   while (size) {

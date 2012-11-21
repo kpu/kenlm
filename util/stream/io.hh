@@ -19,34 +19,28 @@ class ReadSizeException : public util::Exception {
     ~ReadSizeException() throw();
 };
 
-class ReadThread {
+class Read {
   public:
-    ReadThread(const ChainPosition &position, int fd) :
-        file_(fd),
-        entry_size_(position.GetChain().EntrySize()),
-        block_size_(position.GetChain().BlockSize()),
-        thread_(position, this) {}
+    explicit Read(int fd) : file_(fd) {}
 
-    void Process(Block &block);
+    void Run(const ChainPosition &position); 
 
   private:
     int file_;
-    const std::size_t entry_size_, block_size_;
-    LinkThread thread_;
 };
 
-class WriteThread {
+class Write {
   public:
-    WriteThread(const ChainPosition &position, int fd) :
-        file_(fd), thread_(position, this) {}
+    explicit Write(int fd) : file_(fd) {}
 
-    void Process(Block &block) {
-      util::WriteOrThrow(file_, block.Get(), block.ValidSize());
+    void Run(const ChainPosition &position) {
+      for (Link link(position); link; ++link) {
+        util::WriteOrThrow(file_, link->Get(), link->ValidSize());
+      }
     }
 
   private:
     int file_;
-    LinkThread thread_;
 };
 
 } // namespace stream

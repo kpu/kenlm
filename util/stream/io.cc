@@ -8,13 +8,18 @@ namespace stream {
 ReadSizeException::ReadSizeException() throw() {}
 ReadSizeException::~ReadSizeException() throw() {}
 
-void ReadThread::Process(Block &block) {
-  std::size_t got = util::ReadOrEOF(file_, block.Get(), block_size_);
-  UTIL_THROW_IF(got % entry_size_, ReadSizeException, "File ended with " << got << " bytes, not a multiple of " << entry_size_ << "."); 
-  if (got == 0) {
-    block.SetToPoison();
-  } else {
-    block.SetValidSize(got);
+void Read::Run(const ChainPosition &position) {
+  const std::size_t block_size = position.GetChain().BlockSize();
+  const std::size_t entry_size = position.GetChain().EntrySize();
+  for (Link link(position); link; ++link) {
+    std::size_t got = util::ReadOrEOF(file_, link->Get(), block_size);
+    UTIL_THROW_IF(got % entry_size, ReadSizeException, "File ended with " << got << " bytes, not a multiple of " << entry_size << "."); 
+    if (got == 0) {
+      link->SetToPoison();
+      return;
+    } else {
+      link->SetValidSize(got);
+    }
   }
 }
 
