@@ -102,14 +102,18 @@ template <class Compare> class MergingReader {
       }
 
       Stream str(position, true);
+      const std::size_t entry_size = position.GetChain().EntrySize();
+      const std::size_t be_multiple = arity_ * entry_size;
+      const std::size_t total_buffer = be_multiple * ((buffer_size_ + be_multiple - 1) / be_multiple);
+      scoped_malloc buffer(malloc(total_buffer));
+      UTIL_THROW_IF(!buffer.get(), ErrnoException, " while trying to malloc " << total_buffer << " bytes");
+
       while (in_offsets_->RemainingBlocks()) {
-        std::size_t arity = std::min<uint64_t>(static_cast<uint64_t>(arity), in_offsets_->RemainingBlocks());
-        // Make buffer a multiple of the entry size and each read buffer equal size.
-        const std::size_t entry_size = position.GetChain().EntrySize();
-        const std::size_t be_multiple = arity * entry_size;
-        const std::size_t per_buffer = entry_size * ((buffer_size_ + be_multiple - 1) / be_multiple);
-        scoped_malloc buffer(malloc(per_buffer * arity));
-        UTIL_THROW_IF(!buffer.get(), ErrnoException, " while trying to malloc " << (per_buffer * arity) << " bytes");
+        std::size_t arity = std::min<uint64_t>(static_cast<uint64_t>(arity_), in_offsets_->RemainingBlocks());
+        //  The buffer size was calculated to support full arity, but the practical arity may be lower.  
+        std::size_t per_buffer = total_buffer / arity;
+        per_buffer -= per_buffer % entry_size;
+        assert(per_buffer);
 
         // Populate queue.
         uint8_t *buf = static_cast<uint8_t*>(buffer.get());
