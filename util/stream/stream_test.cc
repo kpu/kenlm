@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE(StreamTest) {
   Chain chain(config);
   Thread<Read> read(chain.Between(), in.get());
   uint64_t i = 0;
-  for (Stream s(chain.Last()); s; ++s, ++i) {
+  for (Stream s(chain.Last(), false); s; ++s, ++i) {
     BOOST_CHECK_EQUAL(i, *static_cast<const uint64_t*>(s.Get()));
   }
   BOOST_CHECK_EQUAL(100000, i);

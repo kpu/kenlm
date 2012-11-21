@@ -116,7 +116,7 @@ void PReadOrThrow(int fd, void *to, std::size_t size, uint64_t off) {
   for (;size ;) {
     ssize_t ret = pread(fd, to, size, off);
     if (ret <= 0) {
-      UTIL_THROW_IF(ret == 0, EndOfFileException, " for offset " << off << " in fd " << fd);
+      UTIL_THROW_IF(ret == 0, EndOfFileException, " for reading " << size << " bytes at " << off << " in fd " << fd);
       UTIL_THROW(ErrnoException, " while reading " << size << " bytes at offset " << off);
     }
     size -= ret;

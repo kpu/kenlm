@@ -3,3 +3,4 @@ fakelib stream : io.cc chain.cc ..//kenutil /top//boost_thread : : : <library>/t
 import testing ;
 unit-test io_test : io_test.cc stream /top//boost_unit_test_framework ;
 unit-test stream_test : stream_test.cc stream /top//boost_unit_test_framework ;
+unit-test sort_test : sort_test.cc stream /top//boost_unit_test_framework ;

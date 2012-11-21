@@ -21,12 +21,13 @@ class Block {
 
     operator bool() const { return mem_ != NULL; }
     bool operator!() const { return mem_ == NULL; }
-
+ 
+  private:
+    friend class Link;
     void SetToPoison() {
       mem_ = NULL;
     }
 
-  private:
     void *mem_;
     std::size_t valid_size_;
 };

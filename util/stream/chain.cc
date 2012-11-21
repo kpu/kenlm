@@ -12,8 +12,14 @@
 namespace util {
 namespace stream {
 
+ChainConfigException::ChainConfigException() throw() { *this << "Chain configured with "; }
+ChainConfigException::~ChainConfigException() throw() {}
+
 Chain::Chain(const ChainConfig &config) : config_(config), last_called_(false) {
-  assert(config_.entry_size);
+  UTIL_THROW_IF(!config.entry_size, ChainConfigException, "zero-size entries.");
+  UTIL_THROW_IF(!config.block_size, ChainConfigException, "block size zero");
+  UTIL_THROW_IF(!config.block_count, ChainConfigException, "block count zero");
+  UTIL_THROW_IF(!config.queue_length, ChainConfigException, "queue length 0");
   // Round up to multiple of config_.entry_size.
   config_.block_size = config_.entry_size * ((config_.block_size + config_.entry_size - 1) / config_.entry_size);
   std::size_t malloc_size = config_.block_size * config_.block_count;
@@ -50,7 +56,7 @@ ChainPosition Chain::Last() {
   return ChainPosition(queues_.back(), queues_.front(), this);
 }
 
-Link::Link(const ChainPosition &position) : in_(position.in_), out_(position.out_) {
+Link::Link(const ChainPosition &position) : in_(position.in_), out_(position.out_), poisoned_(false) {
   in_->Consume(current_);
 }
 
@@ -59,8 +65,10 @@ Link::~Link() {
     std::cerr << "Last input should have been poison." << std::endl;
     std::abort();
   } else {
-    // Pass the poison!
-    out_->Produce(current_);
+    if (!poisoned_) {
+      // Pass the poison!
+      out_->Produce(current_);
+    }
   }
 }
 
@@ -69,6 +77,13 @@ Link &Link::operator++() {
   out_->Produce(current_);
   in_->Consume(current_);
   return *this;
+}
+
+void Link::Poison() {
+  assert(!poisoned_);
+  current_.SetToPoison();
+  out_->Produce(current_);
+  poisoned_ = true;
 }
 
 } // namespace stream

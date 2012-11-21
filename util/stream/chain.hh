@@ -15,6 +15,12 @@ namespace util {
 template <class T> class PCQueue;
 namespace stream {
 
+class ChainConfigException : public Exception {
+  public:
+    ChainConfigException() throw();
+    ~ChainConfigException() throw();
+};
+
 struct ChainConfig {
   std::size_t entry_size;
   // Chain's constructor will make thisa multiple of entry_size. 
@@ -83,9 +89,12 @@ class Link {
 
     operator bool() const { return current_; }
 
+    void Poison();
+
   private:
     Block current_;
     PCQueue<Block> *in_, *out_;
+    bool poisoned_;
 };
 
 template <class Worker> class Thread {
