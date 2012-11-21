@@ -24,6 +24,12 @@ class Stream : boost::noncopyable {
 
     const void *Get() const { return current_; }
     void *Get() { return current_; }
+
+    void SetToPoison() {
+      block_it_->SetValidSize(current_ - static_cast<uint8_t*>(block_it_->Get()));
+      ++block_it_;
+      block_it_->SetToPoison();
+    }
     
     Stream &operator++() {
       assert(*this);

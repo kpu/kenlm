@@ -1,5 +1,7 @@
 #include "util/stream/io.hh"
+
 #include "util/stream/stream.hh"
+#include "util/file.hh"
 
 #define BOOST_TEST_MODULE StreamTest
 #include <boost/test/unit_test.hpp>

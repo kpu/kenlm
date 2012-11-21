@@ -1,6 +1,9 @@
 #include "util/stream/io.hh"
 
-#include <cstring>
+#include "util/file.hh"
+#include "util/stream/chain.hh"
+
+#include <cstddef>
 
 namespace util {
 namespace stream {
@@ -20,6 +23,12 @@ void Read::Run(const ChainPosition &position) {
     } else {
       link->SetValidSize(got);
     }
+  }
+}
+
+void Write::Run(const ChainPosition &position) {
+  for (Link link(position); link; ++link) {
+    util::WriteOrThrow(file_, link->Get(), link->ValidSize());
   }
 }
 

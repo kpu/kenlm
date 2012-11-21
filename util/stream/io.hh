@@ -2,16 +2,11 @@
 #define UTIL_STREAM_IO__
 
 #include "util/exception.hh"
-#include "util/file.hh"
-#include "util/stream/chain.hh"
-
-#include <cstddef>
-
-#include <assert.h>
-#include <stdint.h>
 
 namespace util {
 namespace stream {
+
+class ChainPosition;
 
 class ReadSizeException : public util::Exception {
   public:
@@ -33,11 +28,7 @@ class Write {
   public:
     explicit Write(int fd) : file_(fd) {}
 
-    void Run(const ChainPosition &position) {
-      for (Link link(position); link; ++link) {
-        util::WriteOrThrow(file_, link->Get(), link->ValidSize());
-      }
-    }
+    void Run(const ChainPosition &position);
 
   private:
     int file_;
