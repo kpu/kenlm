@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
   {
     Chain chain(config);
     Stream put_shuffled(chain.Add());
-    chain >> sorter.Write();
+    chain >> sorter.Unsorted();
     for (uint64_t i = 0; i < kSize; ++i, ++put_shuffled) {
       *static_cast<uint64_t*>(put_shuffled.Get()) = shuffled[i];
     }
@@ -48,13 +48,13 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
   merge_config.chain.block_size = 500;
   merge_config.chain.block_count = 6;
   merge_config.chain.queue_length = 3;
-  scoped_fd sorted(sorter.Merge(merge_config));
-  uint64_t got;
-  for (uint64_t i = 0; i < kSize; ++i) {
-    ReadOrThrow(sorted.get(), &got, sizeof(uint64_t));
-    BOOST_CHECK_EQUAL(i, got);
+  Stream sorted;
+  Chain chain(config);
+  chain >> sorter.Sorted(merge_config, merge_config) >> sorted >> kRecycle;
+  for (uint64_t i = 0; i < kSize; ++i, ++sorted) {
+    BOOST_CHECK_EQUAL(i, *static_cast<const uint64_t*>(sorted.Get()));
   }
-  BOOST_CHECK_THROW(ReadOrThrow(sorted.get(), &got, sizeof(uint64_t)), EndOfFileException);
+  BOOST_CHECK(!sorted);
 }
 
 }}} // namespaces
