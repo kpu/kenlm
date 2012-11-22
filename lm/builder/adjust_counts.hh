@@ -1,8 +1,8 @@
 #ifndef BUILDER_ADJUST_COUNTS__
 #define BUILDER_ADJUST_COUNTS__
 
-#include "builder/ngram.hh"
-#include "builder/multi_file_stream.hh"
+#include "lm/builder/ngram.hh"
+#include "lm/builder/multi_file_stream.hh"
 
 #include <tpie/file_stream.h>
 

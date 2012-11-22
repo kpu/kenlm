@@ -1,7 +1,7 @@
 #ifndef BUILDER_MULTI_FILE_STREAM__
 #define BUILDER_MULTI_FILE_STREAM__
 
-#include "builder/ngram.hh"
+#include "lm/builder/ngram.hh"
 
 #include <boost/lexical_cast.hpp>
 #include <tpie/file_stream.h>

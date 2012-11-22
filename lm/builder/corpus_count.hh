@@ -1,4 +1,4 @@
-#include "builder/ngram.hh"
+#include "lm/builder/ngram.hh"
 #include "lm/word_index.hh"
 #include "util/file_piece.hh"
 #include "util/murmur_hash.hh"

@@ -1,7 +1,7 @@
-#include "builder/adjust_counts.hh"
-#include "builder/corpus_count.hh"
-#include "builder/ngram.hh"
-#include "builder/sort.hh"
+#include "lm/builder/adjust_counts.hh"
+#include "lm/builder/corpus_count.hh"
+#include "lm/builder/ngram.hh"
+#include "lm/builder/sort.hh"
 
 #include <tpie/tpie.h>
 #include <tpie/file_stream.h>
