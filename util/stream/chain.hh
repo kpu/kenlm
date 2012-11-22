@@ -92,6 +92,7 @@ class Chain {
 
     // This is for adding threaded workers with a Run method.  
     template <class Worker> typename CheckForRun<Worker>::type &operator>>(const Worker &worker) {
+      assert(!complete_called_);
       threads_.push_back(new Thread(Add(), worker));
       return *this;
     }

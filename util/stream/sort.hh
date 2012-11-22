@@ -5,6 +5,14 @@
  * Chain chain(config) >> sorter.Sorted(internal_config, lazy_config) >> stream;
  * 
  * Note that sorter must outlive any threads that use Unsorted or Sorted.  
+ *
+ * Combiners take the form:
+ * bool operator()(void *into, const void *option, const Compare &compare) const
+ * which returns true iff a combination happened.  The sorting algorithm
+ * guarantees compare(into, option).  But it does guarantee 
+ * compare(option, into).  
+ * Currently, combining is only done in merge steps, not during on-the-fly
+ * sort.  Use a hash table for that.  
  */
 
 #ifndef UTIL_STREAM_SORT__
@@ -23,7 +31,7 @@
 namespace util {
 namespace stream {
 
-template <class Compare> class Sort;
+template <class Compare, class Combine> class Sort;
 template <class Compare> class UnsortedRet;
 template <class Compare> Chain &operator>>(Chain &chain, UnsortedRet<Compare> info);
 
@@ -100,7 +108,13 @@ class Offsets {
     uint64_t output_sum_;
 };
 
-template <class Compare> class MergingReader {
+/* A worker object that merges.  If the number of pieces to merge exceeds the
+ * arity, it outputs multiple sorted blocks, recording to out_offsets.  
+ * However, users will only every see a single sorted block out output because
+ * Sort::Sorted insures the arity is higher than the number of pieces before
+ * returning this.   
+ */
+template <class Compare, class Combine> class MergingReader {
   public:
     void Run(const ChainPosition &position) {
       // Special case: nothing to read.  
@@ -153,24 +167,38 @@ template <class Compare> class MergingReader {
         }
         if (out_offsets_) out_offsets_->Append(total_to_write);
 
-        while (!queue.empty()) {
+        assert(!queue.empty());
+        // Write the first one for the combiner.  
+        {
           QueueEntry top(queue.top());
           queue.pop();
           memcpy(str.Get(), top.current, entry_size);
-          ++str;
-          top.current += entry_size;
-          assert(top.current <= top.buffer_end);
-          if (top.current != top.buffer_end || top.Read(in_, per_buffer))
+          if (top.Increment(in_, per_buffer, entry_size))
             queue.push(top);
         }
+
+        while (!queue.empty()) {
+          QueueEntry top(queue.top());
+          queue.pop();
+          if (!combine_(str.Get(), top.current, compare_)) {
+            ++str;
+            memcpy(str.Get(), top.current, entry_size);
+          }
+          if (top.Increment(in_, per_buffer, entry_size))
+            queue.push(top);
+        }
+        ++str;
       }
       str.Poison();
     }
 
   private:
-    friend class Sort<Compare>;
-    MergingReader(int in, Offsets &in_offsets, Offsets *out_offsets, std::size_t arity, std::size_t buffer_size, const Compare &compare) :
-        compare_(compare), in_(in), in_offsets_(&in_offsets), out_offsets_(out_offsets), arity_(arity), buffer_size_(buffer_size) {}
+    friend class Sort<Compare, Combine>;
+    MergingReader(int in, Offsets &in_offsets, Offsets *out_offsets, std::size_t arity, std::size_t buffer_size, const Compare &compare, const Combine &combine) :
+        compare_(compare), combine_(combine),
+        in_(in),
+        in_offsets_(&in_offsets), out_offsets_(out_offsets),
+        arity_(arity), buffer_size_(buffer_size) {}
 
     void ReadSingle(uint64_t offset, const uint64_t size, const ChainPosition &position) {
       // Special case: only one to read.  
@@ -204,6 +232,13 @@ template <class Compare> class MergingReader {
         remaining -= amount;
         return true;
       }
+
+      bool Increment(int fd, std::size_t buf_size, std::size_t entry_size) {
+        current += entry_size;
+        if (current != buffer_end) return true;
+        return Read(fd, buf_size);
+      }
+
       // Buffer
       uint8_t *current, *buffer_end;
       // File
@@ -225,6 +260,7 @@ template <class Compare> class MergingReader {
     typedef std::priority_queue<QueueEntry, std::vector<QueueEntry>, QueueGreater> Queue;
     
     QueueGreater compare_;
+    Combine combine_;
 
     int in_;
 
@@ -250,8 +286,8 @@ struct MergeConfig {
 // chain >> sorter.Write();
 template <class Compare> class UnsortedRet {
   private:
-    friend class Sort<Compare>;
-    // Yep, that says >> <>
+    template <class A, class B> friend class Sort;
+    // Yep, that says >> <> since it's a template function.  
     friend Chain &operator>> <> (Chain &chain, UnsortedRet<Compare> info);
     UnsortedRet(int data, Offsets &offsets, const Compare &compare) 
       : data_(data), offsets_(&offsets), compare_(&compare) {}
@@ -261,6 +297,7 @@ template <class Compare> class UnsortedRet {
     const Compare *compare_;
 };
 
+// Don't use this directly.  Get it from Sort::Unsorted.
 template <class Compare> class UnsortedWorker {
   public:
     UnsortedWorker(Offsets &offsets, const Compare &compare) :
@@ -289,20 +326,25 @@ template <class Compare> Chain &operator>>(Chain &chain, UnsortedRet<Compare> in
   return chain >> UnsortedWorker<Compare>(*info.offsets_, *info.compare_) >> Write(info.data_) >> kRecycle;
 }
 
-template <class Compare> class Sort {
+struct NeverCombine {
+  template <class Compare> bool operator()(const void *, const void *, const Compare &) const { 
+    return false;
+  }
+};
+
+template <class Compare, class Combine = NeverCombine> class Sort {
   public:
-    explicit Sort(const TempMaker &temp, const Compare &compare) :
-        temp_(temp), data_(temp_.Make()), offsets_(temp), compare_(compare), written_(false) {}
+    explicit Sort(const TempMaker &temp, const Compare &compare = Compare(), const Combine &combine = Combine()) :
+        temp_(temp), data_(temp_.Make()), offsets_(temp), compare_(compare), combine_(combine), written_(false) {}
 
     UnsortedRet<Compare> Unsorted() {
       written_ = true;
       return UnsortedRet<Compare>(data_.get(), offsets_, compare_);
     }
 
-    MergingReader<Compare> Sorted(
+    MergingReader<Compare, Combine> Sorted(
         const MergeConfig &internal_loop, // Settings to use in the main merge loop
-        const MergeConfig &lazy           // Settings to use while lazily merging (may want lower arity, less memory).   
-        ) {
+        const MergeConfig &lazy) {        // Settings to use while lazily merging (may want lower arity, less memory).   
       UTIL_THROW_IF(!written_, Exception, "Sort::Sorted called before Sort::Unsorted.");
       UTIL_THROW_IF(internal_loop.arity < 2, Exception, "Cannot have an arity < 2.");
       UTIL_THROW_IF(lazy.arity == 0, Exception, "Cannot have lazy arity 0.");
@@ -313,12 +355,12 @@ template <class Compare> class Sort {
       while (offsets_in->RemainingBlocks() > lazy.arity) {
         SeekOrThrow(fd_in, 0);
         Chain(internal_loop.chain) >>
-          MergingReader<Compare>(
+          MergingReader<Compare, Combine>(
               fd_in,
               *offsets_in, offsets_out,
               internal_loop.arity,
               internal_loop.total_read_buffer,
-              compare_) >>
+              compare_, combine_) >>
           Write(fd_out);
         offsets_out->FinishedAppending();
         ResizeOrThrow(fd_in, 0);
@@ -331,7 +373,7 @@ template <class Compare> class Sort {
         data_.reset(data2.release());
         offsets_.MoveFrom(offsets2);
       }
-      return MergingReader<Compare>(fd_in, offsets_, NULL, lazy.arity, lazy.total_read_buffer, compare_);
+      return MergingReader<Compare, Combine>(fd_in, offsets_, NULL, lazy.arity, lazy.total_read_buffer, compare_, combine_);
     }
 
   private:
@@ -341,6 +383,7 @@ template <class Compare> class Sort {
     Offsets offsets_;
 
     const Compare compare_;
+    const Combine combine_;
 
     bool written_;
 };
