@@ -14,6 +14,10 @@
 namespace util {
 namespace stream {
 
+template <class Compare> class Sort;
+template <class Compare> class SortWriteRet;
+template <class Compare> Chain &operator>>(Chain &chain, SortWriteRet<Compare> info);
+
 // Manage the offsets of sorted blocks in a file.  
 class Offsets {
   public:
@@ -80,8 +84,6 @@ class Offsets {
     uint64_t output_sum_;
 };
 
-template <class Compare> class Sort;
-
 template <class Compare> class MergingReader {
   public:
     void Run(const ChainPosition &position) {
@@ -101,7 +103,7 @@ template <class Compare> class MergingReader {
         return;
       }
 
-      Stream str(position, true);
+      Stream str(position);
       const std::size_t entry_size = position.GetChain().EntrySize();
       const std::size_t be_multiple = arity_ * entry_size;
       const std::size_t total_buffer = be_multiple * ((buffer_size_ + be_multiple - 1) / be_multiple);
@@ -218,8 +220,6 @@ template <class Compare> class MergingReader {
     std::size_t buffer_size_;
 };
 
-template <class Compare> class SortChain;
-
 struct MergeConfig {
   std::size_t arity;
   // Shared across all arity readers.  
@@ -227,6 +227,20 @@ struct MergeConfig {
   // Configuration for the chain from reader to file writer.
   ChainConfig chain;
 };
+
+template <class Compare> class SortWriteRet {
+  private:
+    friend class Sort<Compare>;
+    // Yep, that says >> <>
+    friend Chain &operator>> <> (Chain &chain, SortWriteRet<Compare> info);
+    SortWriteRet(int data, Offsets &offsets, const Compare &compare) 
+      : data_(data), offsets_(&offsets), compare_(&compare) {}
+
+    int data_;
+    Offsets *offsets_;
+    const Compare *compare_;
+};
+
 
 /* Usage:
  * Sort<Compare> sorter(temp, compare);
@@ -241,28 +255,29 @@ struct MergeConfig {
 template <class Compare> class Sort {
   public:
     explicit Sort(const TempMaker &temp, const Compare &compare) :
-        temp_(temp), data_(temp_.Make()), offsets_(temp), compare_(compare), called_(false) {}
+        temp_(temp), data_(temp_.Make()), offsets_(temp), compare_(compare), written_(false) {}
+
+    SortWriteRet<Compare> Write() {
+      written_ = true;
+      return SortWriteRet<Compare>(data_.get(), offsets_, compare_);
+    }
 
     int Merge(const MergeConfig &config) {
-      UTIL_THROW_IF(!called_, Exception, "Sort::Merge called without preparing the chain with SortChain.");
+      UTIL_THROW_IF(!written_, Exception, "Sort::Merge called before Sort::Write");
       scoped_fd data2(temp_.Make());
       int fd_in = data_.get(), fd_out = data2.get();
       Offsets offsets2(temp_);
       Offsets *offsets_in = &offsets_, *offsets_out = &offsets2;
       while (offsets_in->RemainingBlocks() > 1) {
         SeekOrThrow(fd_in, 0);
-        {
-          Chain chain(config.chain);
-          Thread<MergingReader<Compare> > reader(
-              chain.Between(), 
-              MergingReader<Compare>(
-                fd_in,
-                *offsets_in, *offsets_out,
-                config.arity,
-                config.total_read_buffer,
-                compare_));
-          Thread<Write> write(chain.Last(), fd_out);
-        }
+        Chain(config.chain) >>
+          MergingReader<Compare>(
+              fd_in,
+              *offsets_in, *offsets_out,
+              config.arity,
+              config.total_read_buffer,
+              compare_) >>
+          stream::Write(fd_out);
         offsets_out->FinishedAppending();
         ResizeOrThrow(fd_in, 0);
         offsets_in->Reset();
@@ -274,8 +289,6 @@ template <class Compare> class Sort {
     }
 
   private:
-    friend class SortChain<Compare>;
-
     TempMaker temp_;
     scoped_fd data_;
 
@@ -283,48 +296,36 @@ template <class Compare> class Sort {
 
     const Compare compare_;
 
-    bool called_;
+    bool written_;
 };
 
-/* Munch a chain, writing sorted blocks in preparation for the merge step. */
-template <class Compare> class SortChain {
+template <class Compare> class SortWriteWorker {
   public:
-    SortChain(Chain &chain, Sort<Compare> &boss) :
-        sort_(chain.Between(), SortWorker(boss.offsets_, boss.compare_)),
-        write_(chain.Last(), boss.data_.get()) {
-      // The boss only likes to be called once.  
-      assert(!boss.called_);
-      boss.called_ = true;
-    }    
-        
+    SortWriteWorker(Offsets &offsets, const Compare &compare) :
+      offsets_(&offsets), compare_(compare) {}
+
+    void Run(const ChainPosition &position) {
+      const std::size_t entry_size = position.GetChain().EntrySize();
+      for (Link link(position); link; ++link) {
+        // Record the size of each block in a separate file.    
+        offsets_->Append(link->ValidSize());
+        void *end = static_cast<uint8_t*>(link->Get()) + link->ValidSize();
+        std::sort(
+            SizedIt(link->Get(), entry_size),
+            SizedIt(end, entry_size),
+            compare_);
+      }
+      offsets_->FinishedAppending();
+    }
+
   private:
-    class SortWorker {
-      public:
-        SortWorker(Offsets &offsets, const Compare &compare) :
-          offsets_(&offsets), compare_(compare) {}
-
-        void Run(const ChainPosition &position) {
-          const std::size_t entry_size = position.GetChain().EntrySize();
-          for (Link link(position); link; ++link) {
-            // Record the size of each block in a separate file.    
-            offsets_->Append(link->ValidSize());
-            void *end = static_cast<uint8_t*>(link->Get()) + link->ValidSize();
-            std::sort(
-                SizedIt(link->Get(), entry_size),
-                SizedIt(end, entry_size),
-                compare_);
-          }
-          offsets_->FinishedAppending();
-        }
-
-      private:
-        Offsets *offsets_;
-        SizedCompare<Compare> compare_;
-    };
-
-    Thread<SortWorker> sort_;
-    Thread<Write> write_;
+    Offsets *offsets_;
+    SizedCompare<Compare> compare_;
 };
+
+template <class Compare> Chain &operator>>(Chain &chain, SortWriteRet<Compare> info) {
+  return chain >> SortWriteWorker<Compare>(*info.offsets_, *info.compare_) >> Write(info.data_) >> kRecycle;
+}
 
 } // namespace stream
 } // namespace util

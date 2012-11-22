@@ -45,7 +45,36 @@ class ChainPosition {
     Chain *chain_;
 };
 
+class Thread {
+  public:
+    template <class Worker> Thread(const ChainPosition &position, const Worker &worker)
+      : thread_(boost::ref(*this), position, worker) {}
+
+    ~Thread() {
+      thread_.join();
+    }
+
+    template <class Worker> void operator()(const ChainPosition &position, Worker &worker) {
+      worker.Run(position);
+    }
+
+  private:
+    boost::thread thread_;
+};
+
+class Recycler {
+  public:
+    void Run(const ChainPosition &position);
+};
+
+extern const Recycler kRecycle;
+
 class Chain {
+  private:
+    template <class T, void (T::*ptr)(const ChainPosition &) = &T::Run> struct CheckForRun {
+      typedef Chain type;
+    };
+
   public:
     explicit Chain(const ChainConfig &config);
 
@@ -58,9 +87,24 @@ class Chain {
       return config_.block_size;
     }
 
-    ChainPosition Between();
+    // Two ways to add to the chain: Add() or operator>>.  
+    ChainPosition Add();
 
-    ChainPosition Last();
+    // This is for adding threaded workers with a Run method.  
+    template <class Worker> typename CheckForRun<Worker>::type &operator>>(const Worker &worker) {
+      threads_.push_back(new Thread(Add(), worker));
+      return *this;
+    }
+    
+    // Note that Link and Stream also define operator>> outside this class.  
+
+    // To complete the loop, call CompleteLoop(), >> kRecycle, or the destructor.  
+    void CompleteLoop();
+
+    Chain &operator>>(const Recycler &recycle) {
+      CompleteLoop();
+      return *this;
+    }
 
   private:
     ChainConfig config_;
@@ -69,12 +113,18 @@ class Chain {
 
     boost::ptr_vector<PCQueue<Block> > queues_;
 
-    bool last_called_;
+    bool complete_called_;
+
+    boost::ptr_vector<Thread> threads_;
 };
 
 // Create the link in the worker thread using the position token.
 class Link {
   public:
+    // Either default construct and Init or just construct all at once.
+    Link();
+    void Init(const ChainPosition &position);
+
     explicit Link(const ChainPosition &position);
 
     ~Link();
@@ -97,23 +147,10 @@ class Link {
     bool poisoned_;
 };
 
-template <class Worker> class Thread {
-  public:
-    template <class Construct> Thread(const ChainPosition &position, const Construct &construct)
-      : worker_(construct), thread_(boost::ref(*this), position) {}
-
-    ~Thread() {
-      thread_.join();
-    }
-
-    void operator()(const ChainPosition &position) {
-      worker_.Run(position);
-    }
-
-  private:
-    Worker worker_;
-    boost::thread thread_;
-};
+inline Chain &operator>>(Chain &chain, Link &link) {
+  link.Init(chain.Add());
+  return chain;
+}
 
 } // namespace stream
 } // namespace util

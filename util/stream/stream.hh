@@ -13,18 +13,18 @@ namespace stream {
 
 class Stream : boost::noncopyable {
   public:
-    explicit Stream(const ChainPosition &position, bool generating) : 
-        entry_size_(position.GetChain().EntrySize()),
-        block_size_(position.GetChain().BlockSize()),
-        generating_(generating),
-        block_it_(position) {
+    Stream() : current_(NULL), end_(NULL) {}
+
+    void Init(const ChainPosition &position) {
+      entry_size_ = position.GetChain().EntrySize();
+      block_size_ = position.GetChain().BlockSize();
+      block_it_.Init(position);
       current_ = static_cast<uint8_t*>(block_it_->Get());
-      if (generating_) block_it_->SetValidSize(block_size_);
       end_ = current_ + block_it_->ValidSize();
     }
 
-    ~Stream() {
-      if (generating_) Poison();
+    explicit Stream(const ChainPosition &position) {
+      Init(position);
     }
 
     operator bool() const { return current_ != NULL; }
@@ -34,7 +34,6 @@ class Stream : boost::noncopyable {
     void *Get() { return current_; }
 
     void Poison() {
-      generating_ = false;
       block_it_->SetValidSize(current_ - static_cast<uint8_t*>(block_it_->Get()));
       ++block_it_;
       block_it_.Poison();
@@ -44,10 +43,9 @@ class Stream : boost::noncopyable {
       assert(*this);
       assert(current_ < end_);
       current_ += entry_size_;
-      while (current_ == end_ && current_) {
+      while (current_ == end_) {
         ++block_it_;
         current_ = static_cast<uint8_t*>(block_it_->Get());
-        if (generating_) block_it_->SetValidSize(block_size_);
         end_ = current_ + block_it_->ValidSize();
       }  
       return *this;
@@ -56,13 +54,16 @@ class Stream : boost::noncopyable {
   private:
     uint8_t *current_, *end_;
 
-    const std::size_t entry_size_;
-    const std::size_t block_size_;
-
-    bool generating_;
+    std::size_t entry_size_;
+    std::size_t block_size_;
 
     Link block_it_;
 };
+
+inline Chain &operator>>(Chain &chain, Stream &stream) {
+  stream.Init(chain.Add());
+  return chain;
+}
 
 } // namespace stream
 } // namespace util

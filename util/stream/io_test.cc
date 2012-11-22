@@ -26,15 +26,7 @@ BOOST_AUTO_TEST_CASE(CopyFile) {
   config.block_count = 10;
   config.queue_length = 2;
 
-  {
-    Chain chain(config);
-    {
-      Thread<Read> read(chain.Between(), in.get());
-      Thread<Write> write(chain.Last(), out.get());
-      //std::cerr << "Awaiting ReadThread and WriteThread destructors." << std::endl;
-    }
-    //std::cerr << "Awaiting Chain destructor" << std::endl;
-  }
+  Chain(config) >> Read(in.get()) >> Write(out.get());
 
   SeekOrThrow(out.get(), 0);
   for (uint64_t i = 0; i < 100000; ++i) {

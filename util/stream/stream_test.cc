@@ -25,13 +25,15 @@ BOOST_AUTO_TEST_CASE(StreamTest) {
   config.block_count = 12;
   config.queue_length = 2;
 
+  Stream s;
   Chain chain(config);
-  Thread<Read> read(chain.Between(), in.get());
+  chain >> Read(in.get()) >> s >> kRecycle;
   uint64_t i = 0;
-  for (Stream s(chain.Last(), false); s; ++s, ++i) {
+  for (; s; ++s, ++i) {
     BOOST_CHECK_EQUAL(i, *static_cast<const uint64_t*>(s.Get()));
   }
   BOOST_CHECK_EQUAL(100000, i);
+  std::cerr << "Destructor time." << std::endl;
 }
 
 }}} // namespaces

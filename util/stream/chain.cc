@@ -15,7 +15,15 @@ namespace stream {
 ChainConfigException::ChainConfigException() throw() { *this << "Chain configured with "; }
 ChainConfigException::~ChainConfigException() throw() {}
 
-Chain::Chain(const ChainConfig &config) : config_(config), last_called_(false) {
+void Recycler::Run(const ChainPosition &position) {
+  for (Link l(position); l; ++l) {
+    l->SetValidSize(position.GetChain().BlockSize());
+  }
+}
+
+const Recycler kRecycle = Recycler();
+
+Chain::Chain(const ChainConfig &config) : config_(config), complete_called_(false) {
   UTIL_THROW_IF(!config.entry_size, ChainConfigException, "zero-size entries.");
   UTIL_THROW_IF(!config.block_size, ChainConfigException, "block size zero");
   UTIL_THROW_IF(!config.block_count, ChainConfigException, "block count zero");
@@ -36,28 +44,42 @@ Chain::Chain(const ChainConfig &config) : config_(config), last_called_(false) {
 }
 
 Chain::~Chain() {
-  if (!last_called_) return;
+  if (!complete_called_) CompleteLoop();
+  threads_.clear(); // Force all the threads to complete.  
   for (std::size_t i = 0; i < config_.block_count; ++i) {
     if (!queues_.front().Consume()) return;
   }
-  std::cerr << "Queue destructor without poison." << std::endl;
+  std::cerr << "Chain destructor without poison." << std::endl;
   abort();
 }
 
-ChainPosition Chain::Between() {
+ChainPosition Chain::Add() {
   PCQueue<Block> &in = queues_.back();
   queues_.push_back(new PCQueue<Block>(config_.queue_length));
   return ChainPosition(in, queues_.back(), this);
 }
 
-ChainPosition Chain::Last() {
-  UTIL_THROW_IF(last_called_, util::Exception, "Last() called twice");
-  last_called_ = true;
-  return ChainPosition(queues_.back(), queues_.front(), this);
+void Chain::CompleteLoop() {
+  UTIL_THROW_IF(complete_called_, util::Exception, "CompleteLoop() called twice");
+  complete_called_ = true;
+  threads_.push_back(
+      new Thread(
+        ChainPosition(queues_.back(), queues_.front(), this),
+        kRecycle));
 }
 
-Link::Link(const ChainPosition &position) : in_(position.in_), out_(position.out_), poisoned_(false) {
+Link::Link() : in_(NULL), out_(NULL), poisoned_(true) {}
+
+void Link::Init(const ChainPosition &position) {
+  UTIL_THROW_IF(in_, util::Exception, "Link::Init twice");
+  in_ = position.in_;
+  out_ = position.out_;
+  poisoned_ = false;
   in_->Consume(current_);
+}
+
+Link::Link(const ChainPosition &position) : in_(NULL) {
+  Init(position);
 }
 
 Link::~Link() {
@@ -76,6 +98,10 @@ Link &Link::operator++() {
   assert(current_);
   out_->Produce(current_);
   in_->Consume(current_);
+  if (!current_) {
+    poisoned_ = true;
+    out_->Produce(current_);
+  }
   return *this;
 }
 

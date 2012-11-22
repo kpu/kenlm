@@ -30,11 +30,11 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
   config.block_size = 100;
   config.block_count = 3;
   config.queue_length = 4;
-  Sort<CompareUInt64> boss(temps, CompareUInt64());
+  Sort<CompareUInt64> sorter(temps, CompareUInt64());
   {
     Chain chain(config);
-    Stream put_shuffled(chain.Between(), true);
-    SortChain<CompareUInt64> sorter(chain, boss);
+    Stream put_shuffled(chain.Add());
+    chain >> sorter.Write();
     for (uint64_t i = 0; i < kSize; ++i, ++put_shuffled) {
       *static_cast<uint64_t*>(put_shuffled.Get()) = shuffled[i];
     }
@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
   merge_config.chain.block_size = 500;
   merge_config.chain.block_count = 6;
   merge_config.chain.queue_length = 3;
-  scoped_fd sorted(boss.Merge(merge_config));
+  scoped_fd sorted(sorter.Merge(merge_config));
   uint64_t got;
   for (uint64_t i = 0; i < kSize; ++i) {
     ReadOrThrow(sorted.get(), &got, sizeof(uint64_t));
