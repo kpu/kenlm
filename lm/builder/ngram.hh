@@ -3,48 +3,68 @@
 
 #include "lm/word_index.hh"
 
-#include <inttypes.h>
+#include <stdint.h>
 #include <string.h>
 
 namespace lm {
 namespace builder {
 
-template <unsigned N> struct NGram {
-  static const unsigned n = N;
-  WordIndex w[N];
-  bool operator==(const NGram<N> &gram) const {
-    return !memcmp(w, gram.w, sizeof(w));
-  }
-};
-
-template <unsigned N> struct CountedNGram : NGram<N> {
-  uint64_t count;
-};
-
-template <unsigned N> struct UninterpNGram : NGram<N> {
+struct Uninterpolated {
   float prob;  // Uninterpolated probability.
   float gamma; // Interpolation weight for lower order.
 };
 
-template <unsigned N> struct InterpNGram : NGram<N> {
+struct Interpolated {
   float prob;  // p(w_n | w_1^{n-1})
   float lower; // p(w_n | w_2^{n-1})
 };
 
-const WordIndex kBOS = 1;
+union Payload {
+  uint64_t count;
+  Uninterpolated uninterp;
+  Interpolated interp;
+};
 
-#define STATICALLY_DISPATCH(i) do { \
-  switch (i) { \
-    case 1: { XX(1); } break; \
-    case 2: { XX(2); } break; \
-    case 3: { XX(3); } break; \
-    case 4: { XX(4); } break; \
-    case 5: { XX(5); } break; \
-    default: \
-      fprintf(stderr, "%d-grams are not supported; please, accomodate ngram.hh to your needs\n", i); \
-      break; \
-  } \
-} while(0)
+class NGram {
+  public:
+    NGram(void *begin, std::size_t order) 
+      : begin_(static_cast<WordIndex*>(begin)), end_(begin_ + order) {}
+
+    // Lower-case in deference to STL.  
+    const WordIndex *begin() const { return begin_; }
+    WordIndex *begin() { return begin_; }
+    const WordIndex *end() const { return end_; }
+    WordIndex *end() { return end_; }
+
+    const Payload &Value() const { return *reinterpret_cast<const Payload *>(end_); }
+    Payload &Value() { return *reinterpret_cast<Payload *>(end_); }
+
+    uint64_t &Count() { return Value().count; }
+    const uint64_t Count() const { return Value().count; }
+
+    std::size_t Order() const { return end_ - begin_; }
+
+    static std::size_t Size(std::size_t order) {
+      return order * sizeof(WordIndex) + sizeof(Payload);
+    }
+    std::size_t Size() const {
+      // Compiler should optimize this.  
+      return Size(Order());
+    }
+
+    // Advance by size.  
+    NGram &operator++() {
+      std::size_t change = Size();
+      begin_ = reinterpret_cast<WordIndex*>(reinterpret_cast<uint8_t*>(begin_) + change);
+      end_ = reinterpret_cast<WordIndex*>(reinterpret_cast<uint8_t*>(end_) + change);
+      return *this;
+    }
+    
+  private:
+    WordIndex *begin_, *end_;
+};
+
+const WordIndex kBOS = 1;
 
 } // namespace builder
 } // namespace lm
