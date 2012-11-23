@@ -1,5 +1,5 @@
-#ifndef BUILDER_NGRAM__
-#define BUILDER_NGRAM__
+#ifndef LM_BUILDER_NGRAM__
+#define LM_BUILDER_NGRAM__
 
 #include "lm/word_index.hh"
 
@@ -44,22 +44,14 @@ class NGram {
 
     std::size_t Order() const { return end_ - begin_; }
 
-    static std::size_t Size(std::size_t order) {
+    static std::size_t TotalSize(std::size_t order) {
       return order * sizeof(WordIndex) + sizeof(Payload);
     }
-    std::size_t Size() const {
+    std::size_t TotalSize() const {
       // Compiler should optimize this.  
-      return Size(Order());
+      return TotalSize(Order());
     }
 
-    // Advance by size.  
-    NGram &operator++() {
-      std::size_t change = Size();
-      begin_ = reinterpret_cast<WordIndex*>(reinterpret_cast<uint8_t*>(begin_) + change);
-      end_ = reinterpret_cast<WordIndex*>(reinterpret_cast<uint8_t*>(end_) + change);
-      return *this;
-    }
-    
   private:
     WordIndex *begin_, *end_;
 };
@@ -69,4 +61,4 @@ const WordIndex kBOS = 1;
 } // namespace builder
 } // namespace lm
 
-#endif // BUILDER_NGRAM__
+#endif // LM_BUILDER_NGRAM__

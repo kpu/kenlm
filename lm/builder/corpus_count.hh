@@ -2,6 +2,7 @@
 #define LM_BUILDER_CORPUS_COUNT__
 
 #include <cstddef>
+#include <string>
 
 namespace util {
 class FilePiece;
@@ -13,7 +14,18 @@ class ChainPosition;
 namespace lm {
 namespace builder {
 
-void CorpusCount(util::FilePiece &from, std::size_t order, const util::stream::ChainPosition &position, const char *vocab_write);
+class CorpusCount {
+  public:
+    CorpusCount(util::FilePiece &from, std::size_t order, const std::string &vocab_write)
+      : from_(from), order_(order), vocab_write_(vocab_write) {}
+
+    void Run(const util::stream::ChainPosition &position);
+
+  private:
+    util::FilePiece &from_;
+    const std::size_t order_;
+    std::string vocab_write_;
+};
 
 } // namespace builder
 } // namespace lm

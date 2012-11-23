@@ -1,5 +1,9 @@
 import testing ;
 
-lib tpie ;
+lib builder : corpus_count.cc ../../util//kenutil ../../util/stream//stream ..//kenlm : : : <library>/top//boost_thread ;
 
-exe fs_test : corpus_count.cc fs_test.cc ../../util//kenutil ../../lm//kenlm /top//boost_system /top//boost_thread /top//boost_filesystem tpie ;
+unit-test corpus_count_test : corpus_count_test.cc builder /top//boost_unit_test_framework ;
+
+#lib tpie ;
+
+#exe fs_test : corpus_count.cc fs_test.cc ../../util//kenutil ../../lm//kenlm /top//boost_system /top//boost_thread /top//boost_filesystem tpie ;

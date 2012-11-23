@@ -81,8 +81,9 @@ class Writer {
   public:
     Writer(std::size_t order, const util::stream::ChainPosition &position) 
       : block_(position), gram_(block_->Get(), order),
-        cache_(position.GetChain().BlockSize() / NGram::Size(order), DedupeHash(order), DedupeEquals(order)),
-        buffer_(new WordIndex[order - 1]) {}
+        cache_(position.GetChain().BlockSize() / NGram::TotalSize(order), DedupeHash(order), DedupeEquals(order)),
+        buffer_(new WordIndex[order - 1]),
+        block_size_(position.GetChain().BlockSize()) {}
 
     ~Writer() {
       block_->SetValidSize(reinterpret_cast<const uint8_t*>(gram_.begin()) - static_cast<const uint8_t*>(block_->Get()));
@@ -111,8 +112,8 @@ class Writer {
       gram_.Count() = 1;
       // Prepare the next n-gram.  
       NGram last(gram_);
-      ++gram_;
-      if (gram_.begin() != block_->Get()) {
+      gram_ = NGram(reinterpret_cast<uint8_t*>(gram_.begin()) + gram_.TotalSize(), gram_.Order());
+      if (reinterpret_cast<uint8_t*>(gram_.begin()) != static_cast<uint8_t*>(block_->Get()) + block_size_) {
         std::copy(last.begin() + 1, last.end(), gram_.begin());
         return;
       }
@@ -135,17 +136,19 @@ class Writer {
 
     // Small buffer to hold existing ngrams when shifting across a block boundary.  
     boost::scoped_array<WordIndex> buffer_;
+
+    const std::size_t block_size_;
 };
 
 } // namespace
 
-void CorpusCount(util::FilePiece &from, std::size_t order, const util::stream::ChainPosition &position, const char *vocab_write) {
-  VocabHandout vocab(vocab_write);
+void CorpusCount::Run(const util::stream::ChainPosition &position) {
+  VocabHandout vocab(vocab_write_.c_str());
   const WordIndex end_sentence = vocab.Lookup("</s>");
-  Writer writer(order, position);
+  Writer writer(order_, position);
   try {
     while(true) {
-      StringPiece line(from.ReadLine());
+      StringPiece line(from_.ReadLine());
       writer.StartSentence();
       for (util::TokenIter<util::SingleCharacter, true> w(line, ' '); w; ++w) {
         writer.Append(vocab.Lookup(*w));
