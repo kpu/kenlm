@@ -111,15 +111,16 @@ class Writer {
       // Complete the write.  
       gram_.Count() = 1;
       // Prepare the next n-gram.  
-      NGram last(gram_);
-      gram_ = NGram(reinterpret_cast<uint8_t*>(gram_.begin()) + gram_.TotalSize(), gram_.Order());
-      if (reinterpret_cast<uint8_t*>(gram_.begin()) != static_cast<uint8_t*>(block_->Get()) + block_size_) {
+      if (reinterpret_cast<uint8_t*>(gram_.begin()) + gram_.TotalSize() != static_cast<uint8_t*>(block_->Get()) + block_size_) {
+        NGram last(gram_);
+        gram_ = NGram(reinterpret_cast<uint8_t*>(gram_.begin()) + gram_.TotalSize(), gram_.Order());
         std::copy(last.begin() + 1, last.end(), gram_.begin());
         return;
       }
       // Block end.  Need to store the context in a temporary buffer.  
-      std::copy(last.begin() + 1, last.end(), buffer_.get());
+      std::copy(gram_.begin() + 1, gram_.end(), buffer_.get());
       cache_.clear();
+      block_->SetValidSize(block_size_);
       ++block_;
       gram_ = NGram(block_->Get(), gram_.Order());
       std::copy(buffer_.get(), buffer_.get() + gram_.Order() - 1, gram_.begin());

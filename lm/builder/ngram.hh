@@ -3,6 +3,7 @@
 
 #include "lm/word_index.hh"
 
+#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -50,6 +51,11 @@ class NGram {
     std::size_t TotalSize() const {
       // Compiler should optimize this.  
       return TotalSize(Order());
+    }
+    static std::size_t OrderFromSize(std::size_t size) {
+      std::size_t ret = (size - sizeof(Payload)) / sizeof(WordIndex);
+      assert(size == TotalSize(ret));
+      return ret;
     }
 
   private:
