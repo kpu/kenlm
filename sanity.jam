@@ -117,7 +117,11 @@ rule boost-lib ( name macro : deps * ) {
   #Link multi-threaded programs against the -mt version if available.  Old 
   #versions of boost do not have -mt tagged versions of all libraries.   Sadly,
   #boost.jam does not handle this correctly.  
-  if [ test_flags $(L-boost-search)" -lboost_"$(name)"-mt$(boost-lib-version)" ] {
+  local boost-check-static = "" ;
+  if $(boost-auto-shared) != "<link>shared" {
+    boost-check-static = "-static" ;
+  }
+  if [ test_flags $(L-boost-search)" $(boost-check-static) -lboost_"$(name)"-mt$(boost-lib-version)" ] {
     lib inner_boost_$(name) : : <threading>single $(boost-search) <name>boost_$(name)$(boost-lib-version) : : <library>$(deps) ;
     lib inner_boost_$(name) : : <threading>multi $(boost-search) <name>boost_$(name)-mt$(boost-lib-version) : : <library>$(deps) ;
   } else {
