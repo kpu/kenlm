@@ -1,0 +1,12 @@
+Test adjust counts
+Have adjust counts compute D and counts for each order
+Rewrite sort.hh
+Chains::operator>> taking thread to launch
+Test utilities including printer to text file for comparison/debugging
+Option to sort to write to a given fd instead of one it made up, and write completely sorted data to that file
+Multithreading sort
+Some way to manage all the crazy config options
+(p,gamma) step
+interpolate step
+backoff step
+The above steps will probably want a convenient way to iterate through all N streams in their desired order.
