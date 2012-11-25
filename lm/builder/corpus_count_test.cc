@@ -9,10 +9,8 @@
 #include "util/stream/chain.hh"
 #include "util/stream/stream.hh"
 
-#include <boost/unordered_map.hpp>
 #define BOOST_TEST_MODULE CorpusCountTest
 #include <boost/test/unit_test.hpp>
-#include <boost/test/floating_point_comparison.hpp>
 
 namespace lm { namespace builder { namespace {
 
