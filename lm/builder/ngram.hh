@@ -3,6 +3,8 @@
 
 #include "lm/word_index.hh"
 
+#include <cstddef>
+
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
@@ -63,6 +65,7 @@ class NGram {
 };
 
 const WordIndex kBOS = 1;
+const WordIndex kTombstone = static_cast<WordIndex>(-1);
 
 } // namespace builder
 } // namespace lm

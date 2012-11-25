@@ -96,6 +96,13 @@ class Chain {
       threads_.push_back(new Thread(Add(), worker));
       return *this;
     }
+
+    // Avoid copying the worker.  
+    template <class Worker> typename CheckForRun<Worker>::type &operator>>(const boost::reference_wrapper<Worker> &worker) {
+      assert(!complete_called_);
+      threads_.push_back(new Thread(Add(), worker));
+      return *this;
+    }
     
     // Note that Link and Stream also define operator>> outside this class.  
 
