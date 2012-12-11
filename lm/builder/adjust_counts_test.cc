@@ -36,6 +36,8 @@ struct Gram4 {
 
 BOOST_AUTO_TEST_CASE(Simple) {
   KeepCopy outputs[4];
+  std::vector<uint64_t> counts;
+  std::vector<Discount> discount;
   {
     util::stream::ChainConfig config;
     config.block_size = 100;
@@ -47,7 +49,7 @@ BOOST_AUTO_TEST_CASE(Simple) {
     NGramStream input(chains[3].Add());
     ChainPositions for_adjust;
     chains >> for_adjust;
-    boost::thread adjust_thread(AdjustCounts, boost::ref(for_adjust));
+    boost::thread adjust_thread(AdjustCounts, boost::ref(for_adjust), boost::ref(counts), boost::ref(discount));
     for (unsigned i = 0; i < 4; ++i) {
       chains[i] >> boost::ref(outputs[i]);
     }
@@ -67,6 +69,11 @@ BOOST_AUTO_TEST_CASE(Simple) {
     input.Poison();
     adjust_thread.join();
   }
+  BOOST_REQUIRE_EQUAL(4, counts.size());
+  BOOST_CHECK_EQUAL(2, counts[0]);
+  BOOST_CHECK_EQUAL(4, counts[1]);
+  BOOST_CHECK_EQUAL(3, counts[2]);
+  BOOST_CHECK_EQUAL(3, counts[3]);
   BOOST_REQUIRE_EQUAL(NGram::TotalSize(1) * 2, outputs[0].Size());
   NGram uni(outputs[0].Get(), 1);
   BOOST_CHECK_EQUAL(0, *uni.begin());

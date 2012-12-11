@@ -1,5 +1,4 @@
 Test adjust counts
-Have adjust counts compute D and counts for each order
 Rewrite sort.hh
 Chains::operator>> taking thread to launch
 Test utilities including printer to text file for comparison/debugging

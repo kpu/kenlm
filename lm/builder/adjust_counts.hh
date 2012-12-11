@@ -1,6 +1,12 @@
 #ifndef LM_BUILDER_ADJUST_COUNTS__
 #define LM_BUILDER_ADJUST_COUNTS__
 
+#include "lm/builder/discount.hh"
+
+#include <vector>
+
+#include <stdint.h>
+
 namespace lm {
 namespace builder {
 
@@ -13,7 +19,7 @@ class ChainPositions;
  * all <s> and count 0.  These will go to the beginning on the next sort pass
  * and should be stripped off.  
  */
-void AdjustCounts(const ChainPositions &positions);
+void AdjustCounts(const ChainPositions &positions, std::vector<uint64_t> &counts, std::vector<Discount> &discounts);
 
 } // namespace builder
 } // namespace lm
