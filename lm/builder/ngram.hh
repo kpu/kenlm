@@ -60,6 +60,13 @@ class NGram {
       return ret;
     }
 
+    // Would do operator++ but that can get confusing for a stream.  
+    void NextInMemory() {
+      std::size_t difference = end_ - begin_;
+      begin_ = reinterpret_cast<WordIndex*>(reinterpret_cast<uint8_t*>(end_) + sizeof(Payload));
+      end_ = begin_ + difference;
+    }
+
   private:
     WordIndex *begin_, *end_;
 };

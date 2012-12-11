@@ -53,17 +53,34 @@ BOOST_AUTO_TEST_CASE(Simple) {
     }
     chains >> util::stream::kRecycle;
 
-    Gram4 grams[] = {{{0,0,0,0},10}};
+    Gram4 grams[] = {
+      {{0,0,0,0},10},
+      {{0,0,3,0},3},
+      // bos
+      {{1,1,1,2},5},
+      {{0,0,3,2},5},
+    };
     for (size_t i = 0; i < sizeof(grams) / sizeof(Gram4); ++i, ++input) {
-      memcpy(input->begin(), grams[i].ids, 0);
+      memcpy(input->begin(), grams[i].ids, sizeof(WordIndex) * 4);
       input->Count() = grams[i].count;
     }
     input.Poison();
     adjust_thread.join();
   }
-  BOOST_REQUIRE_EQUAL(NGram::TotalSize(1), outputs[0].Size());
+  BOOST_REQUIRE_EQUAL(NGram::TotalSize(1) * 2, outputs[0].Size());
   NGram uni(outputs[0].Get(), 1);
-  BOOST_CHECK_EQUAL(1, uni.Count());
+  BOOST_CHECK_EQUAL(0, *uni.begin());
+  BOOST_CHECK_EQUAL(2, uni.Count());
+  uni.NextInMemory();
+  BOOST_CHECK_EQUAL(2, uni.Count());
+  BOOST_CHECK_EQUAL(2, *uni.begin());
+
+  BOOST_REQUIRE_EQUAL(NGram::TotalSize(2) * 4, outputs[1].Size());
+  NGram bi(outputs[1].Get(), 2);
+  BOOST_CHECK_EQUAL(0, *bi.begin());
+  BOOST_CHECK_EQUAL(0, *(bi.begin() + 1));
+  BOOST_CHECK_EQUAL(1, bi.Count());
+  bi.NextInMemory();
 }
 
 }}} // namespaces

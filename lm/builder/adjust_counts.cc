@@ -55,7 +55,7 @@ void AdjustCounts(const ChainPositions &positions) {
     // Now bos indicates where <s> is or is the 0th word of full.  
     if (bos != full->begin()) {
       // There is an <s> beyond the 0th word.  
-      NGramStream &to = *(lower_valid + 1);
+      NGramStream &to = *++lower_valid;
       std::copy(bos, full_end, to->begin());
       to->Count() = full->Count();
       
