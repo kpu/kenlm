@@ -60,7 +60,7 @@ template <class KeyIter, class ValueIter> class JointProxy {
     JointProxy(const KeyIter &key_iter, const ValueIter &value_iter) : inner_(key_iter, value_iter) {}
     JointProxy(const JointProxy<KeyIter, ValueIter> &other) : inner_(other.inner_) {}
 
-    operator const value_type() const {
+    operator value_type() const {
       value_type ret;
       ret.key = *inner_.key_;
       ret.value = *inner_.value_;
@@ -121,7 +121,7 @@ template <class Proxy, class Less> class LessWrapper : public std::binary_functi
 
 template <class KeyIter, class ValueIter> class PairedIterator : public ProxyIterator<detail::JointProxy<KeyIter, ValueIter> > {
   public:
-    PairedIterator(const KeyIter &key, const ValueIter &value) : 
+    PairedIterator(const KeyIter &key, const ValueIter &value) :
       ProxyIterator<detail::JointProxy<KeyIter, ValueIter> >(detail::JointProxy<KeyIter, ValueIter>(key, value)) {}
 };
 
