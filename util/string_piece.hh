@@ -1,6 +1,6 @@
 /* If you use ICU in your program, then compile with -DHAVE_ICU -licui18n.  If
  * you don't use ICU, then this will use the Google implementation from Chrome.
- * This has been modified from the original version to let you choose.  
+ * This has been modified from the original version to let you choose.
  */
 
 // Copyright 2008, Google Inc.
@@ -62,9 +62,9 @@
 #include <unicode/stringpiece.h>
 #include <unicode/uversion.h>
 
-// Old versions of ICU don't define operator== and operator!=.  
+// Old versions of ICU don't define operator== and operator!=.
 #if (U_ICU_VERSION_MAJOR_NUM < 4) || ((U_ICU_VERSION_MAJOR_NUM == 4) && (U_ICU_VERSION_MINOR_NUM < 4))
-#warning You are using an old version of ICU.  Consider upgrading to ICU >= 4.6.  
+#warning You are using an old version of ICU.  Consider upgrading to ICU >= 4.6.
 inline bool operator==(const StringPiece& x, const StringPiece& y) {
   if (x.size() != y.size())
     return false;
@@ -294,6 +294,8 @@ template <class T> typename T::iterator FindStringPiece(T &t, const StringPiece 
 
 #ifdef HAVE_ICU
 U_NAMESPACE_END
+using U_NAMESPACE_QUALIFIER StringPiece;
 #endif
+
 
 #endif  // BASE_STRING_PIECE_H__
