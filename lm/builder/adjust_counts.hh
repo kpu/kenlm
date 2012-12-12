@@ -16,8 +16,8 @@ class ChainPositions;
  * Input: unique suffix sorted N-grams (and just the N-grams) with raw counts.
  * Output: suffix sorted [1,N]-grams with adjusted counts.  
  * The N-gram output replaces <s> <s> * entries with tombstones consisting of
- * all <s> and count 0.  These will go to the beginning on the next sort pass
- * and should be stripped off.  
+ * kTombstone and count 0.  These will go to the end on the next sort pass and
+ * should be stripped off.  
  */
 class AdjustCounts {
   public:
