@@ -9,7 +9,7 @@
  * Combiners take the form:
  * bool operator()(void *into, const void *option, const Compare &compare) const
  * which returns true iff a combination happened.  The sorting algorithm
- * guarantees compare(into, option).  But it does guarantee 
+ * guarantees compare(into, option).  But it does not guarantee 
  * compare(option, into).  
  * Currently, combining is only done in merge steps, not during on-the-fly
  * sort.  Use a hash table for that.  
@@ -19,6 +19,7 @@
 #define UTIL_STREAM_SORT__
 
 #include "util/stream/chain.hh"
+#include "util/stream/config.hh"
 #include "util/stream/io.hh"
 #include "util/stream/stream.hh"
 
@@ -272,15 +273,6 @@ template <class Compare, class Combine> class MergingReader {
     std::size_t buffer_size_;
 };
 
-struct MergeConfig {
-  // Number of readers to merge at once.  
-  std::size_t arity;
-  // Shared across all arity readers.  
-  std::size_t total_read_buffer;
-  // Configuration for the chain from reader to file writer.
-  ChainConfig chain;
-};
-
 // Returned by Sort<Compare>::Write.  Users normally don't care to see this;
 // just do
 // chain >> sorter.Write();
@@ -342,16 +334,14 @@ template <class Compare, class Combine = NeverCombine> class Sort {
       return UnsortedRet<Compare>(data_.get(), offsets_, compare_);
     }
 
-    MergingReader<Compare, Combine> Sorted(
-        const MergeConfig &internal_loop, // Settings to use in the main merge loop
-        const MergeConfig &lazy) {        // Settings to use while lazily merging (may want lower arity, less memory).   
-      InternalLoop(internal_loop, lazy.arity);
-      return MergingReader<Compare, Combine>(data_.get(), offsets_, NULL, lazy.arity, lazy.total_read_buffer, compare_, combine_);
+    MergingReader<Compare, Combine> Sorted(const MergeConfig &config) {
+      InternalLoop(config, config.lazy_arity);
+      return MergingReader<Compare, Combine>(data_.get(), offsets_, NULL, config.lazy_arity, config.lazy_total_read_buffer, compare_, combine_);
     }
 
     // Releases ownership of fd, so caller should take it over.  
-    int CompletelySorted(const MergeConfig &internal_loop) {
-      InternalLoop(internal_loop, 1);
+    int CompletelySorted(const MergeConfig &config) {
+      InternalLoop(config, 1);
       return data_.release();
     }
 

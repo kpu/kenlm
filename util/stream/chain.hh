@@ -2,6 +2,7 @@
 #define UTIL_STREAM_CHAIN__
 
 #include "util/stream/block.hh"
+#include "util/stream/config.hh"
 #include "util/scoped.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -19,14 +20,6 @@ class ChainConfigException : public Exception {
   public:
     ChainConfigException() throw();
     ~ChainConfigException() throw();
-};
-
-struct ChainConfig {
-  std::size_t entry_size;
-  // Chain's constructor will make thisa multiple of entry_size. 
-  std::size_t block_size;
-  std::size_t block_count;
-  std::size_t queue_length;
 };
 
 class Chain;
