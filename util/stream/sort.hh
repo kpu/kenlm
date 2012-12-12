@@ -345,21 +345,33 @@ template <class Compare, class Combine = NeverCombine> class Sort {
     MergingReader<Compare, Combine> Sorted(
         const MergeConfig &internal_loop, // Settings to use in the main merge loop
         const MergeConfig &lazy) {        // Settings to use while lazily merging (may want lower arity, less memory).   
+      InternalLoop(internal_loop, lazy.arity);
+      return MergingReader<Compare, Combine>(data_.get(), offsets_, NULL, lazy.arity, lazy.total_read_buffer, compare_, combine_);
+    }
+
+    // Releases ownership of fd, so caller should take it over.  
+    int CompletelySorted(const MergeConfig &internal_loop) {
+      InternalLoop(internal_loop, 1);
+      return data_.release();
+    }
+
+  private:
+    void InternalLoop(const MergeConfig &config, std::size_t lazy_arity) {
       UTIL_THROW_IF(!written_, Exception, "Sort::Sorted called before Sort::Unsorted.");
-      UTIL_THROW_IF(internal_loop.arity < 2, Exception, "Cannot have an arity < 2.");
-      UTIL_THROW_IF(lazy.arity == 0, Exception, "Cannot have lazy arity 0.");
+      UTIL_THROW_IF(config.arity < 2, Exception, "Cannot have an arity < 2.");
+      UTIL_THROW_IF(lazy_arity == 0, Exception, "Cannot have lazy arity 0.");
       scoped_fd data2(temp_.Make());
       int fd_in = data_.get(), fd_out = data2.get();
       Offsets offsets2(temp_);
       Offsets *offsets_in = &offsets_, *offsets_out = &offsets2;
-      while (offsets_in->RemainingBlocks() > lazy.arity) {
+      while (offsets_in->RemainingBlocks() > lazy_arity) {
         SeekOrThrow(fd_in, 0);
-        Chain(internal_loop.chain) >>
+        Chain(config.chain) >>
           MergingReader<Compare, Combine>(
               fd_in,
               *offsets_in, offsets_out,
-              internal_loop.arity,
-              internal_loop.total_read_buffer,
+              config.arity,
+              config.total_read_buffer,
               compare_, combine_) >>
           Write(fd_out);
         offsets_out->FinishedAppending();
@@ -373,10 +385,8 @@ template <class Compare, class Combine = NeverCombine> class Sort {
         data_.reset(data2.release());
         offsets_.MoveFrom(offsets2);
       }
-      return MergingReader<Compare, Combine>(fd_in, offsets_, NULL, lazy.arity, lazy.total_read_buffer, compare_, combine_);
     }
 
-  private:
     TempMaker temp_;
     scoped_fd data_;
 

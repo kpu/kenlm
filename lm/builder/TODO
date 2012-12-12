@@ -1,7 +1,6 @@
 Test adjust counts
 Chains::operator>> taking thread to launch
 Test utilities including printer to text file for comparison/debugging
-Option to sort to write to a given fd instead of one it made up, and write completely sorted data to that file
 Multithreading sort
 Some way to manage all the crazy config options
 (p,gamma) step
