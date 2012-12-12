@@ -1,50 +1,50 @@
-#include <tpie/progress_indicator_null.h>
-#include <tpie/sort.h>
-#include <tpie/file_stream.h>
+#ifndef LM_BUILDER_SORT__
+#define LM_BUILDER_SORT__
 
 #include <functional>
 
 namespace lm {
 namespace builder {
 
-struct SuffixOrder {
-  template <class Gram> struct Comparator : public std::binary_function<const Gram &, const Gram &, bool> {
-    inline bool operator()(const Gram& lhs, const Gram& rhs) const {
-      for (int i = Gram::n - 1; i >= 0; --i) {
-        if (rhs.w[i] < lhs.w[i]) {
-          return false;
-        } else if (rhs.w[i] > lhs.w[i]) {
-          return true;
-        }
-      }
-      return false;
+template <class Child> class Comparator : public std::binary_function<const void *, const void *, bool> {
+  public:
+    explicit Comparator(std::size_t order) : order_(order) {}
+
+    inline bool operator()(const void *lhs, const void *rhs) const {
+      return (*static_cast<Child*>(this))(static_cast<const WordIndex*>(lhs), static_cast<const WordIndex*>(rhs));
     }
-  };
+
+  protected:
+    std::size_t order_;
 };
 
-struct ContextOrder {
-  template <class Gram> struct Comparator : public std::binary_function<const Gram &, const Gram &, bool> {
-    inline bool operator()(const Gram &lhs, const Gram &rhs) const {
-      for (int i = Gram::n - 2; i >= 0; --i) {
-        if (rhs.w[i] < lhs.w[i]) {
-          return false;
-        } else if (rhs.w[i] > lhs.w[i]) {
-          return true;
-        }
+class SuffixOrder : public Comparator<SuffixOrder> {
+  public:
+    explicit SuffixOrder(std::size_t order) : Comparator<SuffixOrder>(order) {}
+
+    inline bool operator()(const WordIndex *lhs, const WordIndex *rhs) const {
+      for (std::size_t i = order_ - 1; i != 0; --i) {
+        if (lhs[i] != rhs[i])
+          return lhs[i] < rhs[i];
       }
-      return rhs.w[Gram::n - 1] > lhs.w[Gram::n - 1];
+      return lhs[0] < rhs[0];
     }
-  };
 };
 
-template <class Gram, class Compare> void Sort(const char* filename) {
-  tpie::file_stream<Gram> stream;
-  tpie::progress_indicator_null indicator;
-  stream.open(filename);
-  typename Compare::template Comparator<Gram> compare;
-  tpie::sort(stream, compare, indicator);
-}
+class ContextOrder : public Comparator<SuffixOrder> {
+  public:
+    explicit ContextOrder(std::size_t order) : Comparator<SuffixOrder>(order) {}
+
+    inline bool operator()(const WordIndex *lhs, const WordIndex *rhs) const {
+      for (int i = order_ - 2; i >= 0; --i) {
+        if (lhs[i] != rhs[i])
+          return lhs[i] < rhs[i];
+      }
+      return lhs[order_ - 1] < rhs[order_ - 1];
+    }
+};
 
 } // namespace builder
 } // namespace lm
 
+#endif // LM_BUILDER_SORT__
