@@ -14,6 +14,8 @@ template <class Child> class Comparator : public std::binary_function<const void
       return (*static_cast<Child*>(this))(static_cast<const WordIndex*>(lhs), static_cast<const WordIndex*>(rhs));
     }
 
+    std::size_t Order() const { return order_; }
+
   protected:
     std::size_t order_;
 };
@@ -42,6 +44,15 @@ class ContextOrder : public Comparator<SuffixOrder> {
       }
       return lhs[order_ - 1] < rhs[order_ - 1];
     }
+};
+
+struct AddCombiner {
+  bool operator()(const void *first_void, const void *second_void, const Compare &compare) {
+    NGram first(first_void, compare.Order()), second(second_void, compare.Order());
+    if (!memcmp(first.begin(), second.begin(), sizeof(WordIndex) * compare.Order())) return false;
+    first.Count() += second.Count();
+    return true;
+  }
 };
 
 } // namespace builder

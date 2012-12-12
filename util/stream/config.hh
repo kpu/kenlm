@@ -2,6 +2,7 @@
 #define UTIL_STREAM_CONFIG__
 
 #include <cstddef>
+#include <string>
 
 namespace util { namespace stream {
 
@@ -13,7 +14,8 @@ struct ChainConfig {
   std::size_t queue_length;
 };
 
-struct MergeConfig {
+struct SortConfig {
+  std::string temp_prefix;
   // Number of readers to merge at once.  
   std::size_t arity;
   // Shared across all arity readers.  

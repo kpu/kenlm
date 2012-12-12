@@ -326,29 +326,35 @@ struct NeverCombine {
 
 template <class Compare, class Combine = NeverCombine> class Sort {
   public:
-    explicit Sort(const TempMaker &temp, const Compare &compare = Compare(), const Combine &combine = Combine()) :
-        temp_(temp), data_(temp_.Make()), offsets_(temp), compare_(compare), combine_(combine), written_(false) {}
+    explicit Sort(const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = Combine()) :
+        config_(config),
+        temp_(config.temp_prefix),
+        data_(temp_.Make()),
+        offsets_(temp_),
+        compare_(compare),
+        combine_(combine),
+        written_(false) {}
 
     UnsortedRet<Compare> Unsorted() {
       written_ = true;
       return UnsortedRet<Compare>(data_.get(), offsets_, compare_);
     }
 
-    MergingReader<Compare, Combine> Sorted(const MergeConfig &config) {
-      InternalLoop(config, config.lazy_arity);
-      return MergingReader<Compare, Combine>(data_.get(), offsets_, NULL, config.lazy_arity, config.lazy_total_read_buffer, compare_, combine_);
+    MergingReader<Compare, Combine> Sorted() {
+      InternalLoop(config_.lazy_arity);
+      return MergingReader<Compare, Combine>(data_.get(), offsets_, NULL, config_.lazy_arity, config_.lazy_total_read_buffer, compare_, combine_);
     }
 
     // Releases ownership of fd, so caller should take it over.  
-    int CompletelySorted(const MergeConfig &config) {
-      InternalLoop(config, 1);
+    int CompletelySorted() {
+      InternalLoop(1);
       return data_.release();
     }
 
   private:
-    void InternalLoop(const MergeConfig &config, std::size_t lazy_arity) {
+    void InternalLoop(std::size_t lazy_arity) {
       UTIL_THROW_IF(!written_, Exception, "Sort::Sorted called before Sort::Unsorted.");
-      UTIL_THROW_IF(config.arity < 2, Exception, "Cannot have an arity < 2.");
+      UTIL_THROW_IF(config_.arity < 2, Exception, "Cannot have an arity < 2.");
       UTIL_THROW_IF(lazy_arity == 0, Exception, "Cannot have lazy arity 0.");
       scoped_fd data2(temp_.Make());
       int fd_in = data_.get(), fd_out = data2.get();
@@ -356,12 +362,12 @@ template <class Compare, class Combine = NeverCombine> class Sort {
       Offsets *offsets_in = &offsets_, *offsets_out = &offsets2;
       while (offsets_in->RemainingBlocks() > lazy_arity) {
         SeekOrThrow(fd_in, 0);
-        Chain(config.chain) >>
+        Chain(config_.chain) >>
           MergingReader<Compare, Combine>(
               fd_in,
               *offsets_in, offsets_out,
-              config.arity,
-              config.total_read_buffer,
+              config_.arity,
+              config_.total_read_buffer,
               compare_, combine_) >>
           Write(fd_out);
         offsets_out->FinishedAppending();
@@ -376,6 +382,8 @@ template <class Compare, class Combine = NeverCombine> class Sort {
         offsets_.MoveFrom(offsets2);
       }
     }
+
+    SortConfig config_;
 
     TempMaker temp_;
     scoped_fd data_;
