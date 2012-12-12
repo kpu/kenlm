@@ -1,5 +1,4 @@
-Test adjust counts
-Chains::operator>> taking thread to launch
+More adjust counts tests
 Test utilities including printer to text file for comparison/debugging
 Multithreading sort
 Some way to manage all the crazy config options

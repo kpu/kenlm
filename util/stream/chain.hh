@@ -45,16 +45,17 @@ class ChainPosition {
     Chain *chain_;
 };
 
+// Position is usually ChainPosition but if there are multiple streams involved, this can be ChainPositions.  
 class Thread {
   public:
-    template <class Worker> Thread(const ChainPosition &position, const Worker &worker)
+    template <class Position, class Worker> Thread(const Position &position, const Worker &worker)
       : thread_(boost::ref(*this), position, worker) {}
 
     ~Thread() {
       thread_.join();
     }
 
-    template <class Worker> void operator()(const ChainPosition &position, Worker &worker) {
+    template <class Position, class Worker> void operator()(const Position &position, Worker &worker) {
       worker.Run(position);
     }
 
@@ -103,7 +104,7 @@ class Chain {
       threads_.push_back(new Thread(Add(), worker));
       return *this;
     }
-    
+
     // Note that Link and Stream also define operator>> outside this class.  
 
     // To complete the loop, call CompleteLoop(), >> kRecycle, or the destructor.  

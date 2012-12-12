@@ -47,9 +47,7 @@ BOOST_AUTO_TEST_CASE(Simple) {
     Chains chains(configs);
 
     NGramStream input(chains[3].Add());
-    ChainPositions for_adjust;
-    chains >> for_adjust;
-    boost::thread adjust_thread(AdjustCounts, boost::ref(for_adjust), boost::ref(counts), boost::ref(discount));
+    chains >> AdjustCounts(counts, discount);
     for (unsigned i = 0; i < 4; ++i) {
       chains[i] >> boost::ref(outputs[i]);
     }
@@ -67,7 +65,6 @@ BOOST_AUTO_TEST_CASE(Simple) {
       input->Count() = grams[i].count;
     }
     input.Poison();
-    adjust_thread.join();
   }
   BOOST_REQUIRE_EQUAL(4, counts.size());
   BOOST_CHECK_EQUAL(2, counts[0]);

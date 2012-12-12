@@ -19,7 +19,17 @@ class ChainPositions;
  * all <s> and count 0.  These will go to the beginning on the next sort pass
  * and should be stripped off.  
  */
-void AdjustCounts(const ChainPositions &positions, std::vector<uint64_t> &counts, std::vector<Discount> &discounts);
+class AdjustCounts {
+  public:
+    AdjustCounts(std::vector<uint64_t> &counts, std::vector<Discount> &discounts)
+      : counts_(counts), discounts_(discounts) {}
+
+    void Run(const ChainPositions &positions);
+
+  private:
+    std::vector<uint64_t> &counts_;
+    std::vector<Discount> &discounts_;
+};
 
 } // namespace builder
 } // namespace lm

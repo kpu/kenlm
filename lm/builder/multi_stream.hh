@@ -15,6 +15,15 @@ namespace lm { namespace builder {
 
 template <class T> class FixedArray {
   public:
+    FixedArray(const FixedArray &from) {
+      std::size_t size = from.newed_end_ - static_cast<const T*>(from.block_.get());
+      Init(size);
+      for (std::size_t i = 0; i < size; ++i) {
+        new(end()) T(from[i]);
+        Constructed();
+      }
+    }
+
     ~FixedArray() {
       for (T *i = begin(); i != end(); ++i) {
         i->~T();
@@ -57,7 +66,25 @@ template <class T> class FixedArray {
     T *newed_end_;
 };
 
+class Chains;
+
+class ChainPositions : public FixedArray<util::stream::ChainPosition> {
+  public:
+    ChainPositions() {}
+
+    void Init(Chains &chains);
+
+    explicit ChainPositions(Chains &chains) {
+      Init(chains);
+    }
+};
+
 class Chains : public FixedArray<util::stream::Chain> {
+  private:
+    template <class T, void (T::*ptr)(const ChainPositions &) = &T::Run> struct CheckForRun {
+      typedef Chains type;
+    };
+
   public:
     explicit Chains(std::vector<util::stream::ChainConfig> &config) 
       : FixedArray<util::stream::Chain>(config.size()) {
@@ -67,28 +94,32 @@ class Chains : public FixedArray<util::stream::Chain> {
       }
     }
 
+    template <class Worker> typename CheckForRun<Worker>::type &operator>>(const Worker &worker) {
+      threads_.push_back(new util::stream::Thread(ChainPositions(*this), worker));
+      return *this;
+    }
+
+    template <class Worker> typename CheckForRun<Worker>::type &operator>>(const boost::reference_wrapper<Worker> &worker) {
+      threads_.push_back(new util::stream::Thread(ChainPositions(*this), worker));
+      return *this;
+    }
+
     Chains &operator>>(const util::stream::Recycler &recycler) {
       for (util::stream::Chain *i = begin(); i != end(); ++i) 
         *i >> recycler;
       return *this;
     }
+
+  private:
+    boost::ptr_vector<util::stream::Thread> threads_;
 };
 
-class ChainPositions : public FixedArray<util::stream::ChainPosition> {
-  public:
-    ChainPositions() {}
-
-    void Init(Chains &chains) {
-      FixedArray<util::stream::ChainPosition>::Init(chains.size());
-      for (util::stream::Chain *i = chains.begin(); i != chains.end(); ++i) {
-        new (end()) util::stream::ChainPosition(i->Add()); Constructed();
-      }
-    }
-
-    explicit ChainPositions(Chains &chains) {
-      Init(chains);
-    }
-};
+inline void ChainPositions::Init(Chains &chains) {
+  FixedArray<util::stream::ChainPosition>::Init(chains.size());
+  for (util::stream::Chain *i = chains.begin(); i != chains.end(); ++i) {
+    new (end()) util::stream::ChainPosition(i->Add()); Constructed();
+  }
+}
 
 inline Chains &operator>>(Chains &chains, ChainPositions &positions) {
   positions.Init(chains);

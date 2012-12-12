@@ -60,7 +60,7 @@ class StatCollector {
 
 } // namespace
 
-void AdjustCounts(const ChainPositions &positions, std::vector<uint64_t> &counts, std::vector<Discount> &discounts) {
+void AdjustCounts::Run(const ChainPositions &positions) {
   NGramStreams streams(positions);
   NGramStream *const lower_end = streams.end() - 1;
   NGramStream &full = *(lower_end);
@@ -71,12 +71,12 @@ void AdjustCounts(const ChainPositions &positions, std::vector<uint64_t> &counts
     // Only unigrams.  Just collect stats.  
     for (; full; ++full) 
       stats.AddFull(full->Count());
-    stats.Complete(counts, discounts);
+    stats.Complete(counts_, discounts_);
     return;
   }
   if (!full) {
     // No n-gram at all, oddly.
-    stats.Complete(counts, discounts);
+    stats.Complete(counts_, discounts_);
     return;
   }
 
@@ -132,7 +132,7 @@ void AdjustCounts(const ChainPositions &positions, std::vector<uint64_t> &counts
   for (NGramStream *s = streams.begin(); s != streams.end() - 1; ++s) {
     s->Poison();
   }
-  stats.Complete(counts, discounts);
+  stats.Complete(counts_, discounts_);
 }
 
 }} // namespaces
