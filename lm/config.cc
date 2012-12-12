@@ -6,6 +6,7 @@ namespace lm {
 namespace ngram {
 
 Config::Config() :
+  show_progress(true),
   messages(&std::cerr),
   enumerate_vocab(NULL),
   unknown_missing(COMPLAIN),
