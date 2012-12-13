@@ -20,7 +20,7 @@ namespace lm { namespace builder { namespace {
   for (util::TokenIter<util::AnyCharacter, true> t(str, " "); t; ++t, ++w) { \
     BOOST_CHECK_EQUAL(*t, v[*w]); \
   } \
-  BOOST_CHECK_EQUAL(count, stream->Count()); \
+  BOOST_CHECK_EQUAL((uint64_t)count, stream->Count()); \
   ++stream; \
 }
 
