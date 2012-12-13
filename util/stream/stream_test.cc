@@ -30,8 +30,7 @@ BOOST_AUTO_TEST_CASE(StreamTest) {
   for (; s; ++s, ++i) {
     BOOST_CHECK_EQUAL(i, *static_cast<const uint64_t*>(s.Get()));
   }
-  BOOST_CHECK_EQUAL(100000, i);
-  std::cerr << "Destructor time." << std::endl;
+  BOOST_CHECK_EQUAL(100000ULL, i);
 }
 
 }}} // namespaces
