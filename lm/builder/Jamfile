@@ -6,7 +6,3 @@ exe lmplz : main.cc builder /top//boost_program_options ;
 
 unit-test corpus_count_test : corpus_count_test.cc builder /top//boost_unit_test_framework ;
 unit-test adjust_counts_test : adjust_counts_test.cc builder /top//boost_unit_test_framework ;
-
-#lib tpie ;
-
-#exe fs_test : corpus_count.cc fs_test.cc ../../util//kenutil ../../lm//kenlm /top//boost_system /top//boost_thread /top//boost_filesystem tpie ;
