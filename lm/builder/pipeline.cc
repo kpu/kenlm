@@ -2,7 +2,6 @@
 
 #include "lm/builder/adjust_counts.hh"
 #include "lm/builder/corpus_count.hh"
-#include "lm/builder/multi_sort.hh"
 #include "lm/builder/print.hh"
 #include "lm/builder/sort.hh"
 
@@ -27,9 +26,10 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     chains[config.order - 1] >> first_suffix.Sorted();
     chains >> AdjustCounts(counts, discounts) >> second_context.Unsorted();
   }
-  VocabReconstitute vocab(config.vocab_file.c_str());
-  Chains chains(chain_configs);
-  chains >> second_context.Sorted() >> Print<uint64_t>(vocab, std::cout) >> util::stream::kRecycle;
+  {
+    VocabReconstitute vocab(config.vocab_file.c_str());
+    Chains(chain_configs) >> second_context.Sorted() >> Print<uint64_t>(vocab, out) >> util::stream::kRecycle;
+  }
 }
 
 }} // namespaces
