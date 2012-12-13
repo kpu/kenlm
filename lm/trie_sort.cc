@@ -84,7 +84,7 @@ FILE *WriteContextFile(uint8_t *begin, uint8_t *end, const std::string &temp_pre
 #endif
     (context_begin, context_end, util::SizedCompare<EntryCompare, PartialViewProxy>(EntryCompare(order - 1)));
 
-  util::scoped_FILE out(util::MakeTempFile(temp_prefix));
+  util::scoped_FILE out(util::FMakeTemp(temp_prefix));
 
   // Write out to file and uniqueify at the same time.  Could have used unique_copy if there was an appropriate OutputIterator.  
   if (context_begin == context_end) return out.release();
@@ -119,7 +119,7 @@ template <class Combine> FILE *MergeSortedFiles(FILE *first_file, FILE *second_f
   RecordReader first, second;
   first.Init(first_file, entry_size);
   second.Init(second_file, entry_size);
-  util::scoped_FILE out_file(util::MakeTempFile(temp_prefix));
+  util::scoped_FILE out_file(util::FMakeTemp(temp_prefix));
   EntryCompare less(order);
   while (first && second) {
     if (less(first.Data(), second.Data())) {

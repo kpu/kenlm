@@ -12,7 +12,8 @@ int main(int argc, char *argv[]) {
   lm::builder::PipelineConfig pipeline;
   options.add_options()
     ("order,o", po::value<std::size_t>(&pipeline.order)->required(), "Order of the model")
-    ("vocab_file,v", po::value<std::string>(&pipeline.vocab_file)->required(), "Location to write vocabulary file TODO use temp by default")
+    ("temp_prefix,t", po::value<std::string>(&pipeline.sort.temp_prefix)->default_value("/tmp/lm"), "Temporary file prefix")
+    ("vocab_file,v", po::value<std::string>(&pipeline.vocab_file)->default_value(""), "Location to write vocabulary file")
     ("block_size,b", po::value<std::size_t>(&pipeline.chain.block_size)->default_value(1 << 26), "Block size")
     ("block_count", po::value<std::size_t>(&pipeline.chain.block_count)->default_value(2), "Block count (per order)")
     ("queue_length", po::value<std::size_t>(&pipeline.chain.queue_length)->default_value(2), "Message queue length")

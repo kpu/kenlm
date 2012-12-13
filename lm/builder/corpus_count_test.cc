@@ -40,14 +40,11 @@ BOOST_AUTO_TEST_CASE(Short) {
   config.block_count = 2;
   config.queue_length = 2;
 
-  char vocab_name[] = "corpus_count_vocabXXXXXX";
-  util::scoped_fd vocab(mkstemp(vocab_name));
+  util::scoped_FILE vocab(util::FMakeTemp("corpus_count_test_vocab"));
 
   util::stream::Chain chain(config);
   NGramStream stream;
-  chain >> CorpusCount(input_piece, 3, vocab_name) >> stream >> util::stream::kRecycle;
-
-  unlink(vocab_name);
+  chain >> CorpusCount(input_piece, 3, vocab.get()) >> stream >> util::stream::kRecycle;
 
   const char *v[] = {"<unk>", "<s>", "</s>", "looking", "on", "a", "little", "more", "loin", "foo", "bar"};
 

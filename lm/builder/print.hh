@@ -13,14 +13,14 @@ namespace lm { namespace builder {
 
 class VocabReconstitute {
   public:
-    explicit VocabReconstitute(const char *file);
+    // fd must be alive for life of this object; does not take ownership.
+    explicit VocabReconstitute(int fd);
 
     const char *Lookup(WordIndex index) const {
       return index >= map_.size() ? "OUT_OF_BOUNDS" : map_[index];
     }
 
   private:
-    util::scoped_fd fd_;
     util::scoped_memory memory_;
     std::vector<const char*> map_;
 };

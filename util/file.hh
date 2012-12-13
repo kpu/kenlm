@@ -90,11 +90,12 @@ void SeekOrThrow(int fd, uint64_t off);
 void AdvanceOrThrow(int fd, int64_t off);
 void SeekEnd(int fd);
 
+std::FILE *FOpenOrThrow(const char *name);
 std::FILE *FDOpenOrThrow(scoped_fd &file);
 std::FILE *FDOpenReadOrThrow(scoped_fd &file);
 
 int MakeTemp(const std::string &prefix);
-std::FILE *MakeTempFile(const std::string &prefix);
+std::FILE *FMakeTemp(const std::string &prefix);
 
 } // namespace util
 

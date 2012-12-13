@@ -5,6 +5,8 @@
 #include "lm/builder/print.hh"
 #include "lm/builder/sort.hh"
 
+#include "util/file.hh"
+
 #include <vector>
 
 namespace lm { namespace builder {
@@ -15,8 +17,12 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     chain_configs[i].entry_size = NGram::TotalSize(i + 1);
   }
 
+  util::scoped_FILE vocab_file(config.vocab_file.empty() ? 
+      util::FMakeTemp(config.TempPrefix()) : 
+      util::FOpenOrThrow(config.vocab_file.c_str()));
+
   util::stream::Sort<SuffixOrder, AddCombiner> first_suffix(config.sort, SuffixOrder(config.order));
-  util::stream::Chain(chain_configs.back()) >> CorpusCount(text, config.order, config.vocab_file) >> first_suffix.Unsorted();
+  util::stream::Chain(chain_configs.back()) >> CorpusCount(text, config.order, vocab_file.get()) >> first_suffix.Unsorted();
 
   std::cerr << "Finished counting" << std::endl;
 
@@ -30,7 +36,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   }
   std::cerr << "Finished adjusting" << std::endl;
   {
-    VocabReconstitute vocab(config.vocab_file.c_str());
+    VocabReconstitute vocab(fileno(vocab_file.get()));
     Chains(chain_configs) >> second_context.Sorted() >> Print<uint64_t>(vocab, out) >> util::stream::kRecycle;
   }
 }

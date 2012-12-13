@@ -20,15 +20,10 @@ namespace lm {
 namespace builder {
 namespace {
 
-FILE *FOpenOrThrow(const char *name, const char *mode) {
-  FILE *ret = fopen(name, "wb");
-  UTIL_THROW_IF(!ret, util::ErrnoException, "Failed to open " << name);
-  return ret;
-}
 
 class VocabHandout {
   public:
-    explicit VocabHandout(const char *name) : word_list_(FOpenOrThrow(name, "wb")) {
+    explicit VocabHandout(FILE *word_list) : word_list_(word_list) {
       Lookup("<unk>"); // Force 0
       Lookup("<s>"); // Force 1
     }
@@ -38,8 +33,8 @@ class VocabHandout {
       std::pair<Seen::iterator, bool> ret(seen_.insert(std::pair<uint64_t, lm::WordIndex>(hashed, seen_.size())));
       if (ret.second) {
         char null_delimit = 0;
-        util::WriteOrThrow(word_list_.get(), word.data(), word.size());
-        util::WriteOrThrow(word_list_.get(), &null_delimit, 1);
+        util::WriteOrThrow(word_list_, word.data(), word.size());
+        util::WriteOrThrow(word_list_, &null_delimit, 1);
         UTIL_THROW_IF(seen_.size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh.");
       }
       return ret.first->second;
@@ -50,7 +45,7 @@ class VocabHandout {
 
     Seen seen_;
 
-    util::scoped_FILE word_list_;
+    FILE *word_list_;
 };
 
 class DedupeHash : public std::unary_function<const WordIndex *, bool> {
@@ -144,7 +139,7 @@ class Writer {
 } // namespace
 
 void CorpusCount::Run(const util::stream::ChainPosition &position) {
-  VocabHandout vocab(vocab_write_.c_str());
+  VocabHandout vocab(vocab_write_);
   const WordIndex end_sentence = vocab.Lookup("</s>");
   Writer writer(order_, position);
   try {
