@@ -66,24 +66,24 @@ BOOST_AUTO_TEST_CASE(Simple) {
     }
     input.Poison();
   }
-  BOOST_REQUIRE_EQUAL(4, counts.size());
-  BOOST_CHECK_EQUAL(2, counts[0]);
-  BOOST_CHECK_EQUAL(4, counts[1]);
-  BOOST_CHECK_EQUAL(3, counts[2]);
-  BOOST_CHECK_EQUAL(3, counts[3]);
+  BOOST_REQUIRE_EQUAL(4UL, counts.size());
+  BOOST_CHECK_EQUAL(2UL, counts[0]);
+  BOOST_CHECK_EQUAL(4UL, counts[1]);
+  BOOST_CHECK_EQUAL(3UL, counts[2]);
+  BOOST_CHECK_EQUAL(3UL, counts[3]);
   BOOST_REQUIRE_EQUAL(NGram::TotalSize(1) * 2, outputs[0].Size());
   NGram uni(outputs[0].Get(), 1);
-  BOOST_CHECK_EQUAL(0, *uni.begin());
-  BOOST_CHECK_EQUAL(2, uni.Count());
+  BOOST_CHECK_EQUAL(0UL, *uni.begin());
+  BOOST_CHECK_EQUAL(2ULL, uni.Count());
   uni.NextInMemory();
-  BOOST_CHECK_EQUAL(2, uni.Count());
-  BOOST_CHECK_EQUAL(2, *uni.begin());
+  BOOST_CHECK_EQUAL(2ULL, uni.Count());
+  BOOST_CHECK_EQUAL(2UL, *uni.begin());
 
   BOOST_REQUIRE_EQUAL(NGram::TotalSize(2) * 4, outputs[1].Size());
   NGram bi(outputs[1].Get(), 2);
-  BOOST_CHECK_EQUAL(0, *bi.begin());
-  BOOST_CHECK_EQUAL(0, *(bi.begin() + 1));
-  BOOST_CHECK_EQUAL(1, bi.Count());
+  BOOST_CHECK_EQUAL(0UL, *bi.begin());
+  BOOST_CHECK_EQUAL(0UL, *(bi.begin() + 1));
+  BOOST_CHECK_EQUAL(1ULL, bi.Count());
   bi.NextInMemory();
 }
 
