@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(Short) {
   config.block_count = 2;
   config.queue_length = 2;
 
-  util::scoped_FILE vocab(util::FMakeTemp("corpus_count_test_vocab"));
+  util::scoped_fd vocab(util::MakeTemp("corpus_count_test_vocab"));
 
   util::stream::Chain chain(config);
   NGramStream stream;

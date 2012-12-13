@@ -20,10 +20,12 @@ namespace lm {
 namespace builder {
 namespace {
 
-
 class VocabHandout {
   public:
-    explicit VocabHandout(FILE *word_list) : word_list_(word_list) {
+    explicit VocabHandout(int fd) {
+      util::scoped_fd duped(util::DupOrThrow(fd));
+      word_list_.reset(util::FDOpenOrThrow(duped));
+      
       Lookup("<unk>"); // Force 0
       Lookup("<s>"); // Force 1
     }
@@ -33,8 +35,8 @@ class VocabHandout {
       std::pair<Seen::iterator, bool> ret(seen_.insert(std::pair<uint64_t, lm::WordIndex>(hashed, seen_.size())));
       if (ret.second) {
         char null_delimit = 0;
-        util::WriteOrThrow(word_list_, word.data(), word.size());
-        util::WriteOrThrow(word_list_, &null_delimit, 1);
+        util::WriteOrThrow(word_list_.get(), word.data(), word.size());
+        util::WriteOrThrow(word_list_.get(), &null_delimit, 1);
         UTIL_THROW_IF(seen_.size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh.");
       }
       return ret.first->second;
@@ -45,7 +47,7 @@ class VocabHandout {
 
     Seen seen_;
 
-    FILE *word_list_;
+    util::scoped_FILE word_list_;
 };
 
 class DedupeHash : public std::unary_function<const WordIndex *, bool> {

@@ -174,12 +174,6 @@ void SeekEnd(int fd) {
   InternalSeek(fd, 0, SEEK_END);
 }
 
-std::FILE *FOpenOrThrow(const char *name) {
-  std::FILE *ret = fopen(name, "wb");
-  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fopen descriptor " << name << " for write");
-  return ret;
-}
-
 std::FILE *FDOpenOrThrow(scoped_fd &file) {
   std::FILE *ret = fdopen(file.get(), "r+b");
   if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen descriptor " << file.get());
@@ -328,6 +322,12 @@ int MakeTemp(const std::string &base) {
 std::FILE *FMakeTemp(const std::string &base) {
   util::scoped_fd file(MakeTemp(base));
   return FDOpenOrThrow(file);
+}
+
+int DupOrThrow(int fd) {
+  int ret = dup(fd);
+  UTIL_THROW_IF(ret == -1, ErrnoException, "Duplicating fd " << fd);
+  return ret;
 }
 
 } // namespace util
