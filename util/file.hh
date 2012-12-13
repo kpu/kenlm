@@ -94,20 +94,7 @@ std::FILE *FDOpenOrThrow(scoped_fd &file);
 std::FILE *FDOpenReadOrThrow(scoped_fd &file);
 
 int MakeTemp(const std::string &prefix);
-
-class TempMaker {
-  public:
-    explicit TempMaker(const std::string &prefix);
-
-    // These will already be unlinked for you.  
-    int Make() const {
-      return MakeTemp(base_);
-    }
-    std::FILE *MakeFile() const;
-
-  private:
-    std::string base_;
-};
+std::FILE *MakeTempFile(const std::string &prefix);
 
 } // namespace util
 

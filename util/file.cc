@@ -188,10 +188,6 @@ std::FILE *FDOpenReadOrThrow(scoped_fd &file) {
   return ret;
 }
 
-TempMaker::TempMaker(const std::string &prefix) : base_(prefix) {
-  base_ += "XXXXXX";
-}
-
 // Sigh.  Windows temporary file creation is full of race conditions.
 #if defined(_WIN32) || defined(_WIN64)
 /* mkstemp extracted from libc/sysdeps/posix/tempname.c.  Copyright
@@ -323,8 +319,8 @@ int MakeTemp(const std::string &base) {
   return ret;
 }
 
-std::FILE *TempMaker::MakeFile() const {
-  util::scoped_fd file(Make());
+std::FILE *MakeTempFile(const std::string &base) {
+  util::scoped_fd file(MakeTemp(base));
   return FDOpenOrThrow(file);
 }
 
