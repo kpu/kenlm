@@ -150,7 +150,6 @@ template <class Compare, class Combine> class MergingReader {
 
         // Populate queue.
         uint8_t *buf = static_cast<uint8_t*>(buffer.get());
-        uint64_t total_to_write = 0;
         QueueGreater inner_compare(compare_);
         Queue queue(inner_compare);
         for (std::size_t i = 0; i < arity; ++i, buf += per_buffer) {
@@ -159,7 +158,6 @@ template <class Compare, class Combine> class MergingReader {
           entry.remaining = in_offsets_->NextSize();
           assert(entry.remaining);
           assert(!(entry.remaining % entry_size));
-          total_to_write += entry.remaining;
           // current is set relative to end by Read. 
           entry.buffer_end = buf + per_buffer;
           // entries has only non-empty streams, so this is always true.  
@@ -167,7 +165,8 @@ template <class Compare, class Combine> class MergingReader {
           assert(entry.current < entry.buffer_end);
           queue.push(entry);
         }
-        if (out_offsets_) out_offsets_->Append(total_to_write);
+
+        uint64_t written = 0;
 
         assert(!queue.empty());
         // Write the first one for the combiner.  
@@ -183,13 +182,15 @@ template <class Compare, class Combine> class MergingReader {
           QueueEntry top(queue.top());
           queue.pop();
           if (!combine_(str.Get(), top.current, compare_)) {
-            ++str;
+            ++written; ++str;
             memcpy(str.Get(), top.current, entry_size);
           }
           if (top.Increment(in_, per_buffer, entry_size))
             queue.push(top);
         }
-        ++str;
+        ++written; ++str;
+        if (out_offsets_)
+          out_offsets_->Append(written * entry_size);
       }
       str.Poison();
     }
