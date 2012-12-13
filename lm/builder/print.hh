@@ -27,13 +27,13 @@ class VocabReconstitute {
 
 // Not defined, only specialized.  
 template <class T> void PrintPayload(std::ostream &to, const Payload &payload);
-template <> void PrintPayload<uint64_t>(std::ostream &to, const Payload &payload) {
+template <> inline void PrintPayload<uint64_t>(std::ostream &to, const Payload &payload) {
   to << payload.count;
 }
-template <> void PrintPayload<Uninterpolated>(std::ostream &to, const Payload &payload) {
+template <> inline void PrintPayload<Uninterpolated>(std::ostream &to, const Payload &payload) {
   to << payload.uninterp.prob << ' ' << payload.uninterp.gamma;
 }
-template <> void PrintPayload<Interpolated>(std::ostream &to, const Payload &payload) {
+template <> inline void PrintPayload<Interpolated>(std::ostream &to, const Payload &payload) {
   to << payload.interp.prob << ' ' << payload.interp.lower;
 }
 

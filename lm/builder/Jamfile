@@ -1,6 +1,6 @@
 import testing ;
 
-lib builder : corpus_count.cc adjust_counts.cc print.cc ../../util//kenutil ../../util/stream//stream ..//kenlm : : : <library>/top//boost_thread ;
+lib builder : corpus_count.cc adjust_counts.cc pipeline.cc print.cc ../../util//kenutil ../../util/stream//stream ..//kenlm : : : <library>/top//boost_thread ;
 
 unit-test corpus_count_test : corpus_count_test.cc builder /top//boost_unit_test_framework ;
 unit-test adjust_counts_test : adjust_counts_test.cc builder /top//boost_unit_test_framework ;

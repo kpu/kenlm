@@ -39,7 +39,7 @@ template <class Compare> Chain &operator>>(Chain &chain, UnsortedRet<Compare> in
 // Manage the offsets of sorted blocks in a file.  
 class Offsets {
   public:
-    explicit Offsets(const TempMaker &temp) : log_(temp.Make()) {
+    explicit Offsets(const std::string &temp) : log_(MakeTemp(temp)) {
       Reset();
     }
 
@@ -151,7 +151,8 @@ template <class Compare, class Combine> class MergingReader {
         // Populate queue.
         uint8_t *buf = static_cast<uint8_t*>(buffer.get());
         uint64_t total_to_write = 0;
-        Queue queue(compare_);
+        QueueGreater inner_compare(compare_);
+        Queue queue(inner_compare);
         for (std::size_t i = 0; i < arity; ++i, buf += per_buffer) {
           QueueEntry entry;
           entry.offset = in_offsets_->TotalOffset();
@@ -248,7 +249,7 @@ template <class Compare, class Combine> class MergingReader {
 
     class QueueGreater : public std::binary_function<const QueueEntry &, const QueueEntry &, bool> {
       public:
-        QueueGreater(const Compare &compare) : compare_(compare) {}
+        explicit QueueGreater(const Compare &compare) : compare_(compare) {}
 
         bool operator()(const QueueEntry &first, const QueueEntry &second) const {
           return compare_(second.current, first.current);
@@ -260,7 +261,7 @@ template <class Compare, class Combine> class MergingReader {
 
     typedef std::priority_queue<QueueEntry, std::vector<QueueEntry>, QueueGreater> Queue;
     
-    QueueGreater compare_;
+    Compare compare_;
     Combine combine_;
 
     int in_;
@@ -328,9 +329,8 @@ template <class Compare, class Combine = NeverCombine> class Sort {
   public:
     explicit Sort(const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = Combine()) :
         config_(config),
-        temp_(config.temp_prefix),
-        data_(temp_.Make()),
-        offsets_(temp_),
+        data_(MakeTemp(config.temp_prefix)),
+        offsets_(config.temp_prefix),
         compare_(compare),
         combine_(combine),
         written_(false) {}
@@ -356,9 +356,9 @@ template <class Compare, class Combine = NeverCombine> class Sort {
       UTIL_THROW_IF(!written_, Exception, "Sort::Sorted called before Sort::Unsorted.");
       UTIL_THROW_IF(config_.arity < 2, Exception, "Cannot have an arity < 2.");
       UTIL_THROW_IF(lazy_arity == 0, Exception, "Cannot have lazy arity 0.");
-      scoped_fd data2(temp_.Make());
+      scoped_fd data2(MakeTemp(config_.temp_prefix));
       int fd_in = data_.get(), fd_out = data2.get();
-      Offsets offsets2(temp_);
+      Offsets offsets2(config_.temp_prefix);
       Offsets *offsets_in = &offsets_, *offsets_out = &offsets2;
       while (offsets_in->RemainingBlocks() > lazy_arity) {
         SeekOrThrow(fd_in, 0);
@@ -385,7 +385,6 @@ template <class Compare, class Combine = NeverCombine> class Sort {
 
     SortConfig config_;
 
-    TempMaker temp_;
     scoped_fd data_;
 
     Offsets offsets_;

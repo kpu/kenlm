@@ -11,9 +11,7 @@
 namespace util { namespace stream { namespace {
 
 BOOST_AUTO_TEST_CASE(StreamTest) {
-  util::TempMaker temps("io_test_temp");
-
-  scoped_fd in(temps.Make());
+  scoped_fd in(MakeTemp("io_test_temp"));
   for (uint64_t i = 0; i < 100000; ++i) {
     WriteOrThrow(in.get(), &i, sizeof(uint64_t));
   }

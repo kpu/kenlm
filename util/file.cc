@@ -314,11 +314,12 @@ mkstemp_and_unlink(char *tmpl) {
 }
 #endif
 
-int TempMaker::Make() const {
-  std::string name(base_);
+int MakeTemp(const std::string &base) {
+  std::string name(base);
+  name += "XXXXXX";
   name.push_back(0);
   int ret;
-  UTIL_THROW_IF(-1 == (ret = mkstemp_and_unlink(&name[0])), util::ErrnoException, "Failed to make a temporary based on " << base_);
+  UTIL_THROW_IF(-1 == (ret = mkstemp_and_unlink(&name[0])), util::ErrnoException, "Failed to make a temporary based on " << base);
   return ret;
 }
 

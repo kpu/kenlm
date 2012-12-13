@@ -1,8 +1,12 @@
 #ifndef LM_BUILDER_PIPELINE__
 #define LM_BUILDER_PIPELINE__
 
+#include "util/stream/config.hh"
+
 #include <string>
 #include <cstddef>
+
+namespace util { class FilePiece; }
 
 namespace lm { namespace builder {
 
@@ -10,9 +14,9 @@ struct PipelineConfig {
   std::size_t order;
   std::string vocab_file;
   util::stream::ChainConfig chain;
-  util::stream::SortConfig merge;
+  util::stream::SortConfig sort;
 
-  const std::string &TempPrefix() const { return merge.temp_prefix; }
+  const std::string &TempPrefix() const { return sort.temp_prefix; }
 };
 
 void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream &out);

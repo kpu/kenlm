@@ -25,8 +25,7 @@ namespace lm { namespace builder { namespace {
 }
 
 BOOST_AUTO_TEST_CASE(Short) {
-  util::TempMaker temp("corpus_count_test_temp");
-  util::scoped_fd input_file(temp.Make());
+  util::scoped_fd input_file(util::MakeTemp("corpus_count_test_temp"));
   const char input[] = "looking on a little more loin\non a little more loin\non foo little more loin\nbar\n\n";
   // Blocks of 10 are
   // looking on a little more loin </s> on a little[duplicate] more[duplicate] loin[duplicate] </s>[duplicate] on[duplicate] foo

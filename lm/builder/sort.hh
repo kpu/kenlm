@@ -11,7 +11,7 @@ template <class Child> class Comparator : public std::binary_function<const void
     explicit Comparator(std::size_t order) : order_(order) {}
 
     inline bool operator()(const void *lhs, const void *rhs) const {
-      return (*static_cast<Child*>(this))(static_cast<const WordIndex*>(lhs), static_cast<const WordIndex*>(rhs));
+      return static_cast<const Child*>(this)->Compare(static_cast<const WordIndex*>(lhs), static_cast<const WordIndex*>(rhs));
     }
 
     std::size_t Order() const { return order_; }
@@ -24,7 +24,7 @@ class SuffixOrder : public Comparator<SuffixOrder> {
   public:
     explicit SuffixOrder(std::size_t order) : Comparator<SuffixOrder>(order) {}
 
-    inline bool operator()(const WordIndex *lhs, const WordIndex *rhs) const {
+    inline bool Compare(const WordIndex *lhs, const WordIndex *rhs) const {
       for (std::size_t i = order_ - 1; i != 0; --i) {
         if (lhs[i] != rhs[i])
           return lhs[i] < rhs[i];
@@ -37,7 +37,7 @@ class ContextOrder : public Comparator<SuffixOrder> {
   public:
     explicit ContextOrder(std::size_t order) : Comparator<SuffixOrder>(order) {}
 
-    inline bool operator()(const WordIndex *lhs, const WordIndex *rhs) const {
+    inline bool Compare(const WordIndex *lhs, const WordIndex *rhs) const {
       for (int i = order_ - 2; i >= 0; --i) {
         if (lhs[i] != rhs[i])
           return lhs[i] < rhs[i];
@@ -47,7 +47,7 @@ class ContextOrder : public Comparator<SuffixOrder> {
 };
 
 struct AddCombiner {
-  bool operator()(const void *first_void, const void *second_void, const Compare &compare) {
+  bool operator()(void *first_void, void *second_void, const SuffixOrder &compare) {
     NGram first(first_void, compare.Order()), second(second_void, compare.Order());
     if (!memcmp(first.begin(), second.begin(), sizeof(WordIndex) * compare.Order())) return false;
     first.Count() += second.Count();

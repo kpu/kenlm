@@ -153,50 +153,5 @@ inline Chains &operator>>(Chains &chains, NGramStreams &streams) {
   return chains;
 }
 
-/*
-// Could also do Combine, haven't needed to.
-template <class Compare> class Sorts : public FixedArray<util::stream::Sort<Compare> > {
-  public:
-    explicit Sorts(const TempMaker &temp) : temp_(temp) {}
-
-    void Unsorted(Chains &chains) {
-      Init(chains.size());
-      for (Chain *c = chains.begin(); c != chains.end(); ++c) {
-        new (end()) util::stream::Sort<Compare>(temp);
-        Constructed();
-        *c >> *(end() - 1);
-      }
-    }
-
-    void Sorted(Chains &chains) {
-      for (size_t i = 0; i < chains.size(); ++i) {
-        chains[i] >> (*this)[i].Sorted();
-      }
-    }
-
-    class UnsortedRet {
-      public:
-        explicit UnsortedRet(Sorts &sorts) : sorts_(sorts) {}
-        void Add(Chains &chains) {
-          sorts_.Unsorted(chains);
-        }
-      private:
-        Sorts &sorts_;
-    };
-    UnsortedRet Unsorted() {
-      return UnsortedRet(*this);
-    }
-
-  private:
-    friend class UnsortedRet;
-
-    void Init(std::size_t order) {
-    }
-
-    util::TempMaker temp_;
-};
-
-*/
-
 }} // namespaces
 #endif // LM_BUILDER_MULTI_STREAM__
