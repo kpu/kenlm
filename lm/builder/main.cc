@@ -1,5 +1,8 @@
 #include "lm/builder/pipeline.hh"
 #include "util/file_piece.hh"
+#include "util/usage.hh"
+
+#include <iostream>
 
 #include <boost/program_options.hpp>
 
@@ -29,4 +32,5 @@ int main(int argc, char *argv[]) {
 
   util::FilePiece in(0, "stdin");
   lm::builder::Pipeline(pipeline, in, std::cout);
+  util::PrintUsage(std::cerr);
 }

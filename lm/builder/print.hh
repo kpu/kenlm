@@ -46,10 +46,10 @@ template <class V> class Print {
       NGramStreams streams(chains);
       for (NGramStream *s = streams.begin(); s != streams.end(); ++s) {
         for (; *s; ++*s) {
-          for (const WordIndex *w = (*s)->begin(); w != (*s)->end(); ++w) {
-            to_ << vocab_.Lookup(*w) << ' ';
-          }
           PrintPayload<V>(to_, (*s)->Value());
+          for (const WordIndex *w = (*s)->begin(); w != (*s)->end(); ++w) {
+            to_ << ' ' << vocab_.Lookup(*w);
+          }
           to_ << '\n';
         }
       }

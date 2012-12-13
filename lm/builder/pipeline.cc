@@ -18,6 +18,8 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   util::stream::Sort<SuffixOrder, AddCombiner> first_suffix(config.sort, SuffixOrder(config.order));
   util::stream::Chain(chain_configs.back()) >> CorpusCount(text, config.order, config.vocab_file) >> first_suffix.Unsorted();
 
+  std::cerr << "Finished counting" << std::endl;
+
   std::vector<uint64_t> counts;
   std::vector<Discount> discounts;
   Sorts<ContextOrder> second_context(config.sort);
@@ -26,6 +28,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     chains[config.order - 1] >> first_suffix.Sorted();
     chains >> AdjustCounts(counts, discounts) >> second_context.Unsorted();
   }
+  std::cerr << "Finished adjusting" << std::endl;
   {
     VocabReconstitute vocab(config.vocab_file.c_str());
     Chains(chain_configs) >> second_context.Sorted() >> Print<uint64_t>(vocab, out) >> util::stream::kRecycle;
