@@ -45,17 +45,26 @@ template <class V> class Print {
     void Run(const ChainPositions &chains) {
       NGramStreams streams(chains);
       for (NGramStream *s = streams.begin(); s != streams.end(); ++s) {
-        for (; *s; ++*s) {
-          PrintPayload<V>(to_, (*s)->Value());
-          for (const WordIndex *w = (*s)->begin(); w != (*s)->end(); ++w) {
-            to_ << ' ' << vocab_.Lookup(*w);
-          }
-          to_ << '\n';
-        }
+        DumpStream(*s);
       }
     }
 
+    void Run(const util::stream::ChainPosition &position) {
+      NGramStream stream(position);
+      DumpStream(stream);
+    }
+
   private:
+    void DumpStream(NGramStream &stream) {
+      for (; stream; ++stream) {
+        PrintPayload<V>(to_, stream->Value());
+        for (const WordIndex *w = stream->begin(); w != stream->end(); ++w) {
+          to_ << ' ' << vocab_.Lookup(*w);
+        }
+        to_ << '\n';
+      }
+    }
+
     const VocabReconstitute &vocab_;
     std::ostream &to_;
 };
