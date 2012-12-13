@@ -54,7 +54,7 @@ class ContextOrder : public Comparator<SuffixOrder> {
 struct AddCombiner {
   bool operator()(void *first_void, void *second_void, const SuffixOrder &compare) {
     NGram first(first_void, compare.Order()), second(second_void, compare.Order());
-    if (!memcmp(first.begin(), second.begin(), sizeof(WordIndex) * compare.Order())) return false;
+    if (memcmp(first.begin(), second.begin(), sizeof(WordIndex) * compare.Order())) return false;
     first.Count() += second.Count();
     return true;
   }
