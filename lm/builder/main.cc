@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
   pipeline.chain.entry_size = 0;
   pipeline.sort.chain = pipeline.chain;
 
-  util::FilePiece in(0, "stdin");
+  util::FilePiece in(0, "stdin", &std::cerr);
   lm::builder::Pipeline(pipeline, in, std::cout);
   util::PrintUsage(std::cerr);
 }
