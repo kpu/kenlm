@@ -24,6 +24,8 @@ int main(int argc, char *argv[]) {
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, options), vm);
   po::notify(vm);
+  pipeline.chain.entry_size = 0;
+  pipeline.sort.chain = pipeline.chain;
 
   util::FilePiece in(0, "stdin");
   lm::builder::Pipeline(pipeline, in, std::cout);

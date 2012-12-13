@@ -282,12 +282,13 @@ template <class Compare> class UnsortedRet {
     template <class A, class B> friend class Sort;
     // Yep, that says >> <> since it's a template function.  
     friend Chain &operator>> <> (Chain &chain, UnsortedRet<Compare> info);
-    UnsortedRet(int data, Offsets &offsets, const Compare &compare) 
-      : data_(data), offsets_(&offsets), compare_(&compare) {}
+    UnsortedRet(int data, Offsets &offsets, const Compare &compare, std::size_t &set_entry_size) 
+      : data_(data), offsets_(&offsets), compare_(&compare), set_entry_size_(&set_entry_size) {}
 
     int data_;
     Offsets *offsets_;
     const Compare *compare_;
+    std::size_t *set_entry_size_;
 };
 
 // Don't use this directly.  Get it from Sort::Unsorted.
@@ -316,6 +317,8 @@ template <class Compare> class UnsortedWorker {
 };
 
 template <class Compare> Chain &operator>>(Chain &chain, UnsortedRet<Compare> info) {
+  // Write the entry size into sort's config.  
+  *info.set_entry_size_ = chain.EntrySize();
   return chain >> UnsortedWorker<Compare>(*info.offsets_, *info.compare_) >> Write(info.data_) >> kRecycle;
 }
 
@@ -337,7 +340,8 @@ template <class Compare, class Combine = NeverCombine> class Sort {
 
     UnsortedRet<Compare> Unsorted() {
       written_ = true;
-      return UnsortedRet<Compare>(data_.get(), offsets_, compare_);
+      // This will get the entry size from the incoming information.  
+      return UnsortedRet<Compare>(data_.get(), offsets_, compare_, config_.chain.entry_size);
     }
 
     MergingReader<Compare, Combine> Sorted() {
