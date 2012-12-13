@@ -16,7 +16,7 @@ alias read_compressed : read_compressed.o $(compressed_deps) ;
 obj read_compressed_test.o : read_compressed_test.cc /top//boost_unit_test_framework : $(compressed_flags) ;
 obj file_piece_test.o : file_piece_test.cc /top//boost_unit_test_framework : $(compressed_flags) ;
 
-lib kenutil : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc mmap.cc murmur_hash.cc pool.cc read_compressed string_piece.cc usage.cc : <include>.. : : <include>.. ;
+fakelib kenutil : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc mmap.cc murmur_hash.cc pool.cc read_compressed string_piece.cc usage.cc : <include>.. : : <include>.. ;
 
 import testing ;
 
