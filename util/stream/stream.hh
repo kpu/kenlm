@@ -21,6 +21,7 @@ class Stream : boost::noncopyable {
       block_it_.Init(position);
       current_ = static_cast<uint8_t*>(block_it_->Get());
       end_ = current_ + block_it_->ValidSize();
+      SkipZero();
     }
 
     explicit Stream(const ChainPosition &position) {
@@ -43,15 +44,19 @@ class Stream : boost::noncopyable {
       assert(*this);
       assert(current_ < end_);
       current_ += entry_size_;
-      while (current_ == end_) {
-        ++block_it_;
-        current_ = static_cast<uint8_t*>(block_it_->Get());
-        end_ = current_ + block_it_->ValidSize();
-      }  
+      SkipZero();
       return *this;
     }
 
   private:
+    void SkipZero() {
+      while (current_ == end_ && block_it_) {
+        ++block_it_;
+        current_ = static_cast<uint8_t*>(block_it_->Get());
+        end_ = current_ + block_it_->ValidSize();
+      } 
+    }
+
     uint8_t *current_, *end_;
 
     std::size_t entry_size_;
