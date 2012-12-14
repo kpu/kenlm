@@ -108,6 +108,14 @@ class Chain {
       return *this;
     }
 
+    // Chains are reusable.  Call Wait to wait for everything to finish and free memory.  
+    void Wait(bool release_memory = true);
+
+    // Waits for the current chain to complete (if any) then starts again.  
+    void Start();
+
+    bool Running() const { return !queues_.empty(); }
+
   private:
     ChainConfig config_;
 

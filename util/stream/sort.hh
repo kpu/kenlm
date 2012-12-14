@@ -32,16 +32,20 @@
 namespace util {
 namespace stream {
 
-template <class Compare, class Combine> class Sort;
-template <class Compare> class UnsortedRet;
-template <class Compare> Chain &operator>>(Chain &chain, UnsortedRet<Compare> info);
+struct NeverCombine {
+  template <class Compare> bool operator()(const void *, const void *, const Compare &) const { 
+    return false;
+  }
+};
 
 // Manage the offsets of sorted blocks in a file.  
 class Offsets {
   public:
-    explicit Offsets(const std::string &temp) : log_(MakeTemp(temp)) {
+    explicit Offsets(int fd) : log_(fd) {
       Reset();
     }
+
+    int File() const { return log_; }
 
     void Append(uint64_t length) {
       if (!length) return;
@@ -50,14 +54,14 @@ class Offsets {
         ++cur_.run;
         return;
       }
-      WriteOrThrow(log_.get(), &cur_, sizeof(Entry));
+      WriteOrThrow(log_, &cur_, sizeof(Entry));
       cur_.length = length;
       cur_.run = 1;
     }
 
     void FinishedAppending() {
-      WriteOrThrow(log_.get(), &cur_, sizeof(Entry));
-      SeekOrThrow(log_.get(), sizeof(Entry)); // Skip 0,0 at beginning.
+      WriteOrThrow(log_, &cur_, sizeof(Entry));
+      SeekOrThrow(log_, sizeof(Entry)); // Skip 0,0 at beginning.
       cur_.run = 0;
     }
 
@@ -69,7 +73,7 @@ class Offsets {
     uint64_t NextSize() {
       assert(RemainingBlocks());
       if (!cur_.run) {
-        ReadOrThrow(log_.get(), &cur_, sizeof(Entry));
+        ReadOrThrow(log_, &cur_, sizeof(Entry));
         assert(cur_.length);
       }
       --cur_.run;
@@ -80,23 +84,16 @@ class Offsets {
     }
 
     void Reset() {
-      SeekOrThrow(log_.get(), 0);
-      ResizeOrThrow(log_.get(), 0);
+      SeekOrThrow(log_, 0);
+      ResizeOrThrow(log_, 0);
       cur_.length = 0;
       cur_.run = 0;
       block_count_ = 0;
       output_sum_ = 0;
     }
 
-    void MoveFrom(Offsets &other) {
-      log_.reset(other.log_.release());
-      cur_ = other.cur_;
-      block_count_ = other.block_count_;
-      output_sum_ = other.output_sum_;
-    }
-
   private:
-    scoped_fd log_;
+    int log_;
 
     struct Entry {
       uint64_t length;
@@ -117,6 +114,12 @@ class Offsets {
  */
 template <class Compare, class Combine> class MergingReader {
   public:
+    MergingReader(int in, Offsets &in_offsets, Offsets *out_offsets, std::size_t arity, std::size_t buffer_size, const Compare &compare, const Combine &combine) :
+        compare_(compare), combine_(combine),
+        in_(in),
+        in_offsets_(&in_offsets), out_offsets_(out_offsets),
+        arity_(arity), buffer_size_(buffer_size) {}
+
     void Run(const ChainPosition &position) {
       // Special case: nothing to read.  
       if (!in_offsets_->RemainingBlocks()) {
@@ -196,13 +199,6 @@ template <class Compare, class Combine> class MergingReader {
     }
 
   private:
-    friend class Sort<Compare, Combine>;
-    MergingReader(int in, Offsets &in_offsets, Offsets *out_offsets, std::size_t arity, std::size_t buffer_size, const Compare &compare, const Combine &combine) :
-        compare_(compare), combine_(combine),
-        in_(in),
-        in_offsets_(&in_offsets), out_offsets_(out_offsets),
-        arity_(arity), buffer_size_(buffer_size) {}
-
     void ReadSingle(uint64_t offset, const uint64_t size, const ChainPosition &position) {
       // Special case: only one to read.  
       const uint64_t end = offset + size;
@@ -275,27 +271,31 @@ template <class Compare, class Combine> class MergingReader {
     std::size_t buffer_size_;
 };
 
-// Returned by Sort<Compare>::Write.  Users normally don't care to see this;
-// just do
-// chain >> sorter.Write();
-template <class Compare> class UnsortedRet {
+// The lazy step owns the remaining files.  This keeps track of them.  
+template <class Compare, class Combine> class OwningMergingReader : public MergingReader<Compare, Combine> {
   private:
-    template <class A, class B> friend class Sort;
-    // Yep, that says >> <> since it's a template function.  
-    friend Chain &operator>> <> (Chain &chain, UnsortedRet<Compare> info);
-    UnsortedRet(int data, Offsets &offsets, const Compare &compare, std::size_t &set_entry_size) 
-      : data_(data), offsets_(&offsets), compare_(&compare), set_entry_size_(&set_entry_size) {}
+    typedef MergingReader<Compare, Combine> P;
+  public:
+    OwningMergingReader(int data, const Offsets &offsets, const SortConfig &config, const Compare &compare, const Combine &combine) 
+      : P(data, offsets_, NULL, config.lazy_arity, config.lazy_total_read_buffer, compare, combine),
+        data_(data),
+        offsets_(offsets) {}
 
+    void Run(const ChainPosition &position) {
+      scoped_fd data(data_);
+      scoped_fd offsets_file(offsets_.File());
+      P::Run(position);
+    }
+
+  private:
     int data_;
-    Offsets *offsets_;
-    const Compare *compare_;
-    std::size_t *set_entry_size_;
+    Offsets offsets_;
 };
 
-// Don't use this directly.  Get it from Sort::Unsorted.
-template <class Compare> class UnsortedWorker {
+// Don't use this directly.  Worker that sorts blocks.   
+template <class Compare> class BlockSorter {
   public:
-    UnsortedWorker(Offsets &offsets, const Compare &compare) :
+    BlockSorter(Offsets &offsets, const Compare &compare) :
       offsets_(&offsets), compare_(compare) {}
 
     void Run(const ChainPosition &position) {
@@ -317,88 +317,59 @@ template <class Compare> class UnsortedWorker {
     SizedCompare<Compare> compare_;
 };
 
-template <class Compare> Chain &operator>>(Chain &chain, UnsortedRet<Compare> info) {
-  // Write the entry size into sort's config.  
-  *info.set_entry_size_ = chain.EntrySize();
-  return chain >> UnsortedWorker<Compare>(*info.offsets_, *info.compare_) >> Write(info.data_) >> kRecycle;
+template <class Compare, class Combine> void MergeSort(const SortConfig &config, scoped_fd &data, scoped_fd &offsets_file, Offsets &offsets, const Compare &compare, const Combine &combine) {
+  scoped_fd data2(MakeTemp(config.temp_prefix));
+  int fd_in = data.get(), fd_out = data2.get();
+  scoped_fd offsets2_file(MakeTemp(config.temp_prefix));
+  Offsets offsets2(offsets2_file.get());
+  Offsets *offsets_in = &offsets, *offsets_out = &offsets2;
+  Chain chain(config.chain);
+  while (offsets_in->RemainingBlocks() > config.lazy_arity) {
+    SeekOrThrow(fd_in, 0);
+    chain >>
+      MergingReader<Compare, Combine>(
+          fd_in,
+          *offsets_in, offsets_out,
+          config.arity,
+          config.total_read_buffer,
+          compare, combine) >>
+      Write(fd_out);
+    chain.Wait();
+    offsets_out->FinishedAppending();
+    ResizeOrThrow(fd_in, 0);
+    offsets_in->Reset();
+    std::swap(fd_in, fd_out);
+    std::swap(offsets_in, offsets_out);
+  }
+  SeekOrThrow(fd_in, 0);
+  if (fd_in == data2.get()) {
+    data.reset(data2.release());
+    offsets_file.reset(offsets2_file.release());
+    offsets = offsets2;
+  }
 }
 
-struct NeverCombine {
-  template <class Compare> bool operator()(const void *, const void *, const Compare &) const { 
-    return false;
-  }
-};
+template <class Compare, class Combine> void Sort(Chain &in, Chain &out, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine()) {
+  UTIL_THROW_IF(config.arity < 2, Exception, "Cannot have an arity < 2.");
+  UTIL_THROW_IF(config.lazy_arity == 0, Exception, "Cannot have lazy arity 0.");
+  scoped_fd offsets_file(MakeTemp(config.temp_prefix));
+  Offsets offsets(offsets_file.get());
+  scoped_fd data(MakeTemp(config.temp_prefix));
+  in >> BlockSorter<Compare>(offsets, compare) >> Write(data.get());
+  in.Wait(true);
+  MergeSort(config, data, offsets_file, offsets, compare, combine);
+  out >> OwningMergingReader<Compare, Combine>(data.get(), offsets, config, compare, combine);
+  data.release();
+  offsets_file.release();
+}
 
-template <class Compare, class Combine = NeverCombine> class Sort {
-  public:
-    explicit Sort(const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = Combine()) :
-        config_(config),
-        data_(MakeTemp(config.temp_prefix)),
-        offsets_(config.temp_prefix),
-        compare_(compare),
-        combine_(combine),
-        written_(false) {}
+template <class Compare, class Combine> void Sort(Chain &chain, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine()) {
+  Sort(chain, chain, config, compare, combine);
+}
 
-    UnsortedRet<Compare> Unsorted() {
-      written_ = true;
-      // This will get the entry size from the incoming information.  
-      return UnsortedRet<Compare>(data_.get(), offsets_, compare_, config_.chain.entry_size);
-    }
-
-    MergingReader<Compare, Combine> Sorted() {
-      InternalLoop(config_.lazy_arity);
-      return MergingReader<Compare, Combine>(data_.get(), offsets_, NULL, config_.lazy_arity, config_.lazy_total_read_buffer, compare_, combine_);
-    }
-
-    // Releases ownership of fd, so caller should take it over.  
-    int CompletelySorted() {
-      InternalLoop(1);
-      return data_.release();
-    }
-
-  private:
-    void InternalLoop(std::size_t lazy_arity) {
-      UTIL_THROW_IF(!written_, Exception, "Sort::Sorted called before Sort::Unsorted.");
-      UTIL_THROW_IF(config_.arity < 2, Exception, "Cannot have an arity < 2.");
-      UTIL_THROW_IF(lazy_arity == 0, Exception, "Cannot have lazy arity 0.");
-      scoped_fd data2(MakeTemp(config_.temp_prefix));
-      int fd_in = data_.get(), fd_out = data2.get();
-      Offsets offsets2(config_.temp_prefix);
-      Offsets *offsets_in = &offsets_, *offsets_out = &offsets2;
-      while (offsets_in->RemainingBlocks() > lazy_arity) {
-        SeekOrThrow(fd_in, 0);
-        Chain(config_.chain) >>
-          MergingReader<Compare, Combine>(
-              fd_in,
-              *offsets_in, offsets_out,
-              config_.arity,
-              config_.total_read_buffer,
-              compare_, combine_) >>
-          Write(fd_out);
-        offsets_out->FinishedAppending();
-        ResizeOrThrow(fd_in, 0);
-        offsets_in->Reset();
-        std::swap(fd_in, fd_out);
-        std::swap(offsets_in, offsets_out);
-      }
-      SeekOrThrow(fd_in, 0);
-      if (fd_in == data2.get()) {
-        data_.reset(data2.release());
-        offsets_.MoveFrom(offsets2);
-      }
-    }
-
-    SortConfig config_;
-
-    scoped_fd data_;
-
-    Offsets offsets_;
-
-    const Compare compare_;
-    const Combine combine_;
-
-    bool written_;
-};
+template <class Compare> void Sort(Chain &chain, const SortConfig &config, const Compare &compare = Compare()) {
+  Sort(chain, config, compare, NeverCombine());
+}
 
 } // namespace stream
 } // namespace util

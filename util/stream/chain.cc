@@ -30,9 +30,57 @@ Chain::Chain(const ChainConfig &config) : config_(config), complete_called_(fals
   UTIL_THROW_IF(!config.queue_length, ChainConfigException, "queue length 0");
   // Round up to multiple of config_.entry_size.
   config_.block_size = config_.entry_size * ((config_.block_size + config_.entry_size - 1) / config_.entry_size);
-  std::size_t malloc_size = config_.block_size * config_.block_count;
-  memory_.reset(malloc(malloc_size));
-  UTIL_THROW_IF(!memory_.get(), util::ErrnoException, "Failed to allocate " << malloc_size << " bytes for " << config_.block_count << " blocks each of size " << config_.block_size);
+}
+
+Chain::~Chain() {
+  Wait();
+}
+
+ChainPosition Chain::Add() {
+  if (!Running()) Start();
+  PCQueue<Block> &in = queues_.back();
+  queues_.push_back(new PCQueue<Block>(config_.queue_length));
+  return ChainPosition(in, queues_.back(), this);
+}
+
+void Chain::CompleteLoop() {
+  assert(Running());
+  UTIL_THROW_IF(complete_called_, util::Exception, "CompleteLoop() called twice");
+  complete_called_ = true;
+  threads_.push_back(
+      new Thread(
+        ChainPosition(queues_.back(), queues_.front(), this),
+        kRecycle));
+}
+
+void Chain::Wait(bool release_memory) {
+  if (queues_.empty()) {
+    assert(thread_.empty());
+    return; // Nothing to wait for.  
+  }
+  if (!complete_called_) CompleteLoop();
+  threads_.clear();
+  for (std::size_t i = 0; queues_.front().Consume(); ++i) {
+    if (i == config_.block_count) {
+      std::cerr << "Chain ending without poison." << std::endl;
+      abort();
+    }
+  }
+  queues_.clear();
+  complete_called_ = false;
+  if (release_memory) memory_.reset();
+}
+
+void Chain::Start() {
+  Wait(false);
+  if (!memory_.get()) {
+    // Allocate memory.  
+    assert(threads_.empty());
+    assert(queues_.empty());
+    std::size_t malloc_size = config_.block_size * config_.block_count;
+    memory_.reset(malloc(malloc_size));
+    UTIL_THROW_IF(!memory_.get(), util::ErrnoException, "Failed to allocate " << malloc_size << " bytes for " << config_.block_count << " blocks each of size " << config_.block_size);
+  }
   // This queue has special size to accomodate all blocks.  
   queues_.push_back(new PCQueue<Block>(std::max(config_.queue_length, config_.block_size)));
   // Populate the lead queue with blocks.  
@@ -41,31 +89,6 @@ Chain::Chain(const ChainConfig &config) : config_(config), complete_called_(fals
     queues_.front().Produce(Block(base, config_.block_size));
     base += config_.block_size;
   }
-}
-
-Chain::~Chain() {
-  if (!complete_called_) CompleteLoop();
-  threads_.clear(); // Force all the threads to complete.  
-  for (std::size_t i = 0; i < config_.block_count; ++i) {
-    if (!queues_.front().Consume()) return;
-  }
-  std::cerr << "Chain destructor without poison." << std::endl;
-  abort();
-}
-
-ChainPosition Chain::Add() {
-  PCQueue<Block> &in = queues_.back();
-  queues_.push_back(new PCQueue<Block>(config_.queue_length));
-  return ChainPosition(in, queues_.back(), this);
-}
-
-void Chain::CompleteLoop() {
-  UTIL_THROW_IF(complete_called_, util::Exception, "CompleteLoop() called twice");
-  complete_called_ = true;
-  threads_.push_back(
-      new Thread(
-        ChainPosition(queues_.back(), queues_.front(), this),
-        kRecycle));
 }
 
 Link::Link() : in_(NULL), out_(NULL), poisoned_(true) {}

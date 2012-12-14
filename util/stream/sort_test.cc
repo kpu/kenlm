@@ -15,8 +15,22 @@ struct CompareUInt64 : public std::binary_function<const void *, const void *, b
   }
 };
 
+const uint64_t kSize = 10000;
+
+struct Putter {
+  Putter(std::vector<uint64_t> &shuffled) : shuffled_(shuffled) {}
+
+  void Run(const ChainPosition &position) {
+    Stream put_shuffled(position);
+    for (uint64_t i = 0; i < shuffled_.size(); ++i, ++put_shuffled) {
+      *static_cast<uint64_t*>(put_shuffled.Get()) = shuffled_[i];
+    }
+    put_shuffled.Poison();
+  }
+  std::vector<uint64_t> &shuffled_;
+};
+
 BOOST_AUTO_TEST_CASE(FromShuffled) {
-  const uint64_t kSize = 10000;
   std::vector<uint64_t> shuffled;
   shuffled.reserve(kSize);
   for (uint64_t i = 0; i < kSize; ++i) {
@@ -41,20 +55,11 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
   merge_config.chain.block_count = 6;
   merge_config.chain.queue_length = 3;
 
-  Sort<CompareUInt64> sorter(merge_config, CompareUInt64());
-  {
-    Chain chain(config);
-    Stream put_shuffled(chain.Add());
-    chain >> sorter.Unsorted();
-    for (uint64_t i = 0; i < kSize; ++i, ++put_shuffled) {
-      *static_cast<uint64_t*>(put_shuffled.Get()) = shuffled[i];
-    }
-    put_shuffled.Poison();
-  }
-  
-  Stream sorted;
   Chain chain(config);
-  chain >> sorter.Sorted() >> sorted >> kRecycle;
+  chain >> Putter(shuffled);
+  Sort(chain, merge_config, CompareUInt64());
+  Stream sorted;
+  chain >> sorted >> kRecycle;
   for (uint64_t i = 0; i < kSize; ++i, ++sorted) {
     BOOST_CHECK_EQUAL(i, *static_cast<const uint64_t*>(sorted.Get()));
   }

@@ -51,6 +51,7 @@ class ContextOrder : public Comparator<SuffixOrder> {
     }
 };
 
+// Sum counts for the same n-gram.
 struct AddCombiner {
   bool operator()(void *first_void, void *second_void, const SuffixOrder &compare) {
     NGram first(first_void, compare.Order()), second(second_void, compare.Order());
@@ -60,64 +61,12 @@ struct AddCombiner {
   }
 };
 
-
-// And now how to use these in multiple streams.  
-template <class Compare> class Sorts;
-
-// Annoying separate types so operator>> can tell the difference.  
-template <class Compare> struct UnsortedRet { Sorts<Compare> *master; };
-template <class Compare> struct SortedRet { Sorts<Compare> *master; };
-
-template <class Compare> class Sorts : public FixedArray<util::stream::Sort<Compare> > {
-  private:
-    typedef FixedArray<util::stream::Sort<Compare> > P;
-  public:
-    explicit Sorts(const util::stream::SortConfig &config) : config_(config) {}
-
-    void Unsorted(Chains &chains) {
-      P::Init(chains.size());
-      for (util::stream::Chain *c = chains.begin(); c != chains.end(); ++c) {
-        util::stream::SortConfig config(config_);
-        config.chain.entry_size = c->EntrySize();
-        new (P::end()) util::stream::Sort<Compare>(config, Compare(c - chains.begin() + 1));
-        P::Constructed();
-        *c >> (P::end() - 1)->Unsorted();
-      }
-    }
-
-    void Sorted(Chains &chains) {
-      for (size_t i = 0; i < chains.size(); ++i) {
-        chains[i] >> (*this)[i].Sorted();
-      }
-    }
-
-    UnsortedRet<Compare> Unsorted() {
-      UnsortedRet<Compare> ret;
-      ret.master = this;
-      return ret;
-    }
-
-    SortedRet<Compare> Sorted() {
-      SortedRet<Compare> ret;
-      ret.master = this;
-      return ret;
-    }
-
-  private:
-    util::stream::SortConfig config_;
-};
-
-// Yes it's ugly to be defining class methods here.  But if I defined them as 
-// separate functions, they were not working with
-// Chains(config) >> sorter.Sorted()
-// for whatever silly reason.  
-template <class Compare> Chains &Chains::operator>>(const UnsortedRet<Compare> &unsorted) {
-  unsorted.master->Unsorted(*this);
-  return *this;
-}
-template <class Compare> Chains &Chains::operator>>(const SortedRet<Compare> &sorted) {
-  sorted.master->Sorted(*this);
-  return *this;
+// The combiner is only used on a single chain, so I didn't bother to allow
+// that template.  
+template <class Compare> void Sort(Chains &chains, const util::stream::SortConfig &config) {
+  for (util::stream::Chain *i = chains.begin(); i != chains.end(); ++i) {
+    util::stream::Sort(*i, config, Compare(i - chains.begin() + 1));
+  }
 }
 
 } // namespace builder

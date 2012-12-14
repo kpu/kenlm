@@ -79,9 +79,6 @@ class ChainPositions : public FixedArray<util::stream::ChainPosition> {
     }
 };
 
-template <class Compare> struct UnsortedRet;
-template <class Compare> struct SortedRet;
-
 class Chains : public FixedArray<util::stream::Chain> {
   private:
     template <class T, void (T::*ptr)(const ChainPositions &) = &T::Run> struct CheckForRun {
@@ -112,9 +109,6 @@ class Chains : public FixedArray<util::stream::Chain> {
         *i >> recycler;
       return *this;
     }
-
-    template <class Compare> Chains &operator>>(const UnsortedRet<Compare> &unsorted);
-    template <class Compare> Chains &operator>>(const SortedRet<Compare> &sorted);
 
   private:
     boost::ptr_vector<util::stream::Thread> threads_;
