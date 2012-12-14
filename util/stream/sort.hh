@@ -349,9 +349,10 @@ template <class Compare, class Combine> void MergeSort(const SortConfig &config,
   }
 }
 
-template <class Compare, class Combine> void Sort(Chain &in, Chain &out, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine()) {
+template <class Compare, class Combine> void Sort(Chain &in, Chain &out, SortConfig config, const Compare &compare = Compare(), const Combine &combine = NeverCombine()) {
   UTIL_THROW_IF(config.arity < 2, Exception, "Cannot have an arity < 2.");
   UTIL_THROW_IF(config.lazy_arity == 0, Exception, "Cannot have lazy arity 0.");
+  config.chain.entry_size = in.EntrySize();
   scoped_fd offsets_file(MakeTemp(config.temp_prefix));
   Offsets offsets(offsets_file.get());
   scoped_fd data(MakeTemp(config.temp_prefix));

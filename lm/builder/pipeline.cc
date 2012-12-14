@@ -22,7 +22,6 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   }
   Chains chains(chain_configs);
 
-  std::cerr << "Counting" << std::endl;
   chains[config.order - 1] >> CorpusCount(text, config.order, vocab_file.get());
 
   Sort(chains[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner());

@@ -55,7 +55,7 @@ void Chain::CompleteLoop() {
 
 void Chain::Wait(bool release_memory) {
   if (queues_.empty()) {
-    assert(thread_.empty());
+    assert(threads_.empty());
     return; // Nothing to wait for.  
   }
   if (!complete_called_) CompleteLoop();
