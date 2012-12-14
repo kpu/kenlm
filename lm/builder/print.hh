@@ -3,11 +3,12 @@
 
 #include "lm/builder/ngram.hh"
 #include "lm/builder/multi_stream.hh"
-
 #include "util/file.hh"
 #include "util/mmap.hh"
 
 #include <ostream>
+
+#include <assert.h>
 
 namespace lm { namespace builder {
 
@@ -17,7 +18,8 @@ class VocabReconstitute {
     explicit VocabReconstitute(int fd);
 
     const char *Lookup(WordIndex index) const {
-      return index >= map_.size() ? "OUT_OF_BOUNDS" : map_[index];
+      assert(index < map_.size());
+      return map_[index];
     }
 
   private:

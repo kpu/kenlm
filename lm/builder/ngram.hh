@@ -33,6 +33,20 @@ class NGram {
     NGram(void *begin, std::size_t order) 
       : begin_(static_cast<WordIndex*>(begin)), end_(begin_ + order) {}
 
+    const uint8_t *Base() const { return reinterpret_cast<const uint8_t*>(begin_); }
+    uint8_t *Base() { return reinterpret_cast<uint8_t*>(begin_); }
+
+    void ReBase(void *to) {
+      std::size_t difference = end_ - begin_;
+      begin_ = reinterpret_cast<WordIndex*>(to);
+      end_ = begin_ + difference;
+    }
+
+    // Would do operator++ but that can get confusing for a stream.  
+    void NextInMemory() {
+      ReBase(&Value() + 1);
+    }
+
     // Lower-case in deference to STL.  
     const WordIndex *begin() const { return begin_; }
     WordIndex *begin() { return begin_; }
@@ -60,19 +74,11 @@ class NGram {
       return ret;
     }
 
-    // Would do operator++ but that can get confusing for a stream.  
-    void NextInMemory() {
-      std::size_t difference = end_ - begin_;
-      begin_ = reinterpret_cast<WordIndex*>(reinterpret_cast<uint8_t*>(end_) + sizeof(Payload));
-      end_ = begin_ + difference;
-    }
-
   private:
     WordIndex *begin_, *end_;
 };
 
 const WordIndex kBOS = 1;
-const WordIndex kTombstone = static_cast<WordIndex>(-1);
 
 } // namespace builder
 } // namespace lm

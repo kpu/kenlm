@@ -7,11 +7,11 @@
 namespace lm { namespace builder {
 namespace {
 // Return last word in full that is different.  
-const WordIndex* FindDifference(NGramStream &full, NGramStream &lower_last) {
-  const WordIndex *cur_word = full->end() - 1;
-  WordIndex *pre_word = lower_last->end() - 1;
+const WordIndex* FindDifference(const NGram &full, const NGram &lower_last) {
+  const WordIndex *cur_word = full.end() - 1;
+  const WordIndex *pre_word = lower_last.end() - 1;
   // Find last difference.  
-  for (; pre_word >= lower_last->begin() && *pre_word == *cur_word; --cur_word, --pre_word) {}
+  for (; pre_word >= lower_last.begin() && *pre_word == *cur_word; --cur_word, --pre_word) {}
   return cur_word;
 }
 
@@ -58,22 +58,82 @@ class StatCollector {
     OrderStat &full_;
 };
 
+// Reads all entries in order like NGramStream does.  
+// But deletes any entries that have <s> in the 1st (not 0th) position on the
+// way out by putting other entries in their place.  This disrupts the sort
+// order but we don't care because the data is going to be sorted again.  
+class CollapseStream {
+  public:
+    CollapseStream(const util::stream::ChainPosition &position) :
+      current_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())),
+      block_(position) {
+      StartBlock();
+    }
+
+    const NGram &operator*() const { return current_; }
+    const NGram *operator->() const { return &current_; }
+
+    operator bool() const { return block_; }
+
+    CollapseStream &operator++() {
+      assert(block_);
+      if (current_.begin()[1] == kBOS && current_.Base() < copy_from_) {
+        memcpy(current_.Base(), copy_from_, current_.TotalSize());
+        UpdateCopyFrom();
+      }
+      current_.NextInMemory();
+      uint8_t *block_base = static_cast<uint8_t*>(block_->Get());
+      if (current_.Base() == block_base + block_->ValidSize()) {
+        block_->SetValidSize(copy_from_ + current_.TotalSize() - block_base);
+        ++block_;
+        StartBlock();
+      }
+      return *this;
+    }
+
+  private:
+    void StartBlock() {
+      for (; ; ++block_) {
+        if (!block_) return;
+        if (block_->ValidSize()) break;
+      }
+      current_.ReBase(block_->Get());
+      copy_from_ = static_cast<uint8_t*>(block_->Get()) + block_->ValidSize();
+      UpdateCopyFrom();
+    }
+
+    // Find last without bos.  
+    void UpdateCopyFrom() {
+      for (copy_from_ -= current_.TotalSize(); copy_from_ >= current_.Base(); copy_from_ -= current_.TotalSize()) {
+        if (NGram(copy_from_, current_.Order()).begin()[1] != kBOS) break;
+      }
+    }
+
+    NGram current_;
+
+    // Goes backwards in the block
+    uint8_t *copy_from_;
+
+    util::stream::Link block_;
+};
+
 } // namespace
 
 void AdjustCounts::Run(const ChainPositions &positions) {
-  NGramStreams streams(positions);
-  NGramStream *const lower_end = streams.end() - 1;
-  NGramStream &full = *(lower_end);
-
-  const std::size_t order = streams.size();
+  const std::size_t order = positions.size();
   StatCollector stats(order);
   if (order == 1) {
     // Only unigrams.  Just collect stats.  
-    for (; full; ++full) 
+    for (NGramStream full(positions[0]); full; ++full) 
       stats.AddFull(full->Count());
     stats.Complete(counts_, discounts_);
     return;
   }
+
+  NGramStreams streams;
+  streams.Init(positions, positions.size() - 1);
+  CollapseStream full(positions[positions.size() - 1]);
+
   if (!full) {
     // No n-gram at all, oddly.
     stats.Complete(counts_, discounts_);
@@ -86,7 +146,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   *(*lower_valid)->begin() = *(full->end() - 1);
 
   for (; full; ++full) {
-    const WordIndex *different = FindDifference(full, *lower_valid);
+    const WordIndex *different = FindDifference(*full, **lower_valid);
     std::size_t same = full->end() - 1 - different;
     // Increment the adjusted count.  
     if (same) ++streams[same - 1]->Count();
@@ -112,11 +172,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
       // There is an <s> beyond the 0th word.  
       NGramStream &to = *++lower_valid;
       std::copy(bos, full_end, to->begin());
-      to->Count() = full->Count();
-      
-      // Make a tombstone in the N-grams.   
-      std::fill(full->begin(), full->end(), kTombstone);
-      full->Count() = 0;
+      to->Count() = full->Count();  
     } else {
       stats.AddFull(full->Count());
     }
@@ -129,7 +185,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
     ++*s;
   }
   // Poison everyone!  Except the N-grams which were already poisoned by the input.   
-  for (NGramStream *s = streams.begin(); s != streams.end() - 1; ++s) {
+  for (NGramStream *s = streams.begin(); s != streams.end(); ++s) {
     s->Poison();
   }
   stats.Complete(counts_, discounts_);
