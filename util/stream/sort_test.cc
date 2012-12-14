@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
 
   Chain chain(config);
   chain >> Putter(shuffled);
-  Sort(chain, merge_config, CompareUInt64());
+  BlockingSort(chain, merge_config, CompareUInt64());
   Stream sorted;
   chain >> sorted >> kRecycle;
   for (uint64_t i = 0; i < kSize; ++i, ++sorted) {

@@ -136,6 +136,9 @@ void AdjustCounts::Run(const ChainPositions &positions) {
 
   if (!full) {
     // No n-gram at all, oddly.
+    for (NGramStream *s = streams.begin(); s != streams.end(); ++s) {
+      s->Poison();
+    }
     stats.Complete(counts_, discounts_);
     return;
   }

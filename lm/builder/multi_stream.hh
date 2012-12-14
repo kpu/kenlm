@@ -110,6 +110,12 @@ class Chains : public FixedArray<util::stream::Chain> {
       return *this;
     }
 
+    void Wait(bool release_memory = true) {
+      for (util::stream::Chain *i = begin(); i != end(); ++i) {
+        i->Wait(release_memory);
+      }
+    }
+
   private:
     boost::ptr_vector<util::stream::Thread> threads_;
 

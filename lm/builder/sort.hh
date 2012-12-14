@@ -63,10 +63,31 @@ struct AddCombiner {
 
 // The combiner is only used on a single chain, so I didn't bother to allow
 // that template.  
-template <class Compare> void Sort(Chains &chains, const util::stream::SortConfig &config) {
-  for (util::stream::Chain *i = chains.begin(); i != chains.end(); ++i) {
-    util::stream::Sort(*i, config, Compare(i - chains.begin() + 1));
-  }
+template <class Compare> class Sorts : public FixedArray<util::stream::Sort<Compare> > {
+  private:
+    typedef util::stream::Sort<Compare> S;
+    typedef FixedArray<S> P;
+
+  public:
+    Sorts(Chains &chains, const util::stream::SortConfig &config) : P(chains.size()) {
+      for (util::stream::Chain *i = chains.begin(); i != chains.end(); ++i) {
+        new (P::end()) S(*i, config, Compare(i - chains.begin() + 1));
+        P::Constructed();
+      }
+    }
+
+    void Output(Chains &chains) {
+      assert(chains.size() == P::size());
+      for (size_t i = 0; i < P::size(); ++i) {
+        P::begin()[i].Output(chains[i]);
+      }
+    }
+};
+
+template <class Compare> void BlockingSort(Chains &chains, const util::stream::SortConfig &config) {
+  Sorts<Compare> sorts(chains, config);
+  chains.Wait(true);
+  sorts.Output(chains);
 }
 
 } // namespace builder

@@ -24,18 +24,25 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
 
   chains[config.order - 1] >> CorpusCount(text, config.order, vocab_file.get());
 
-  Sort(chains[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner());
+  BlockingSort(chains[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner());
 
   std::cerr << "Adjusting" << std::endl;
   std::vector<uint64_t> counts;
   std::vector<Discount> discounts;
   chains >> AdjustCounts(counts, discounts);
 
-  Sort<ContextOrder>(chains, config.sort);
+  BlockingSort<ContextOrder>(chains, config.sort);
+
+  std::cerr << "Counts are:\n";
+  for (std::size_t i = 0; i < counts.size(); ++i) {
+    std::cerr << (i+1) << ' ' << counts[i] << '\n';
+  }
+  std::cerr << '\n';
 
   std::cerr << "Printing" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
   chains >> Print<uint64_t>(vocab, out) >> util::stream::kRecycle;
+  chains.Wait();
 }
 
 }} // namespaces

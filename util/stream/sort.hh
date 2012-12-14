@@ -114,10 +114,10 @@ class Offsets {
  */
 template <class Compare, class Combine> class MergingReader {
   public:
-    MergingReader(int in, Offsets &in_offsets, Offsets *out_offsets, std::size_t arity, std::size_t buffer_size, const Compare &compare, const Combine &combine) :
+    MergingReader(int in, Offsets *in_offsets, Offsets *out_offsets, std::size_t arity, std::size_t buffer_size, const Compare &compare, const Combine &combine) :
         compare_(compare), combine_(combine),
         in_(in),
-        in_offsets_(&in_offsets), out_offsets_(out_offsets),
+        in_offsets_(in_offsets), out_offsets_(out_offsets),
         arity_(arity), buffer_size_(buffer_size) {}
 
     void Run(const ChainPosition &position) {
@@ -263,7 +263,10 @@ template <class Compare, class Combine> class MergingReader {
 
     int in_;
 
+  protected:
     Offsets *in_offsets_;
+
+  private:
     Offsets *out_offsets_;
 
     std::size_t arity_;
@@ -277,11 +280,12 @@ template <class Compare, class Combine> class OwningMergingReader : public Mergi
     typedef MergingReader<Compare, Combine> P;
   public:
     OwningMergingReader(int data, const Offsets &offsets, const SortConfig &config, const Compare &compare, const Combine &combine) 
-      : P(data, offsets_, NULL, config.lazy_arity, config.lazy_total_read_buffer, compare, combine),
+      : P(data, NULL, NULL, config.lazy_arity, config.lazy_total_read_buffer, compare, combine),
         data_(data),
         offsets_(offsets) {}
 
     void Run(const ChainPosition &position) {
+      P::in_offsets_ = &offsets_;
       scoped_fd data(data_);
       scoped_fd offsets_file(offsets_.File());
       P::Run(position);
@@ -329,7 +333,7 @@ template <class Compare, class Combine> void MergeSort(const SortConfig &config,
     chain >>
       MergingReader<Compare, Combine>(
           fd_in,
-          *offsets_in, offsets_out,
+          offsets_in, offsets_out,
           config.arity,
           config.total_read_buffer,
           compare, combine) >>
@@ -349,27 +353,51 @@ template <class Compare, class Combine> void MergeSort(const SortConfig &config,
   }
 }
 
-template <class Compare, class Combine> void Sort(Chain &in, Chain &out, SortConfig config, const Compare &compare = Compare(), const Combine &combine = NeverCombine()) {
-  UTIL_THROW_IF(config.arity < 2, Exception, "Cannot have an arity < 2.");
-  UTIL_THROW_IF(config.lazy_arity == 0, Exception, "Cannot have lazy arity 0.");
-  config.chain.entry_size = in.EntrySize();
-  scoped_fd offsets_file(MakeTemp(config.temp_prefix));
-  Offsets offsets(offsets_file.get());
-  scoped_fd data(MakeTemp(config.temp_prefix));
-  in >> BlockSorter<Compare>(offsets, compare) >> Write(data.get());
+template <class Compare, class Combine = NeverCombine> class Sort {
+  public:
+    Sort(Chain &in, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = Combine())
+      : config_(config),
+        data_(MakeTemp(config.temp_prefix)),
+        offsets_file_(MakeTemp(config.temp_prefix)), offsets_(offsets_file_.get()),
+        compare_(compare), combine_(combine) {
+
+      UTIL_THROW_IF(config.arity < 2, Exception, "Cannot have an arity < 2.");
+      UTIL_THROW_IF(config.lazy_arity == 0, Exception, "Cannot have lazy arity 0.");
+      config_.chain.entry_size = in.EntrySize();
+      in >> BlockSorter<Compare>(offsets_, compare_) >> Write(data_.get()) >> util::stream::kRecycle;
+    }
+
+    void Output(Chain &out) {
+      MergeSort(config_, data_, offsets_file_, offsets_, compare_, combine_);
+      out >> OwningMergingReader<Compare, Combine>(data_.get(), offsets_, config_, compare_, combine_);
+      data_.release();
+      offsets_file_.release();
+    }
+
+  private:
+    SortConfig config_;
+
+    scoped_fd data_;
+
+    scoped_fd offsets_file_;
+    Offsets offsets_;
+
+    const Compare compare_;
+    const Combine combine_;
+};
+
+template <class Compare, class Combine> void BlockingSort(Chain &in, Chain &out, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine()) {
+  Sort<Compare, Combine> sorter(in, config, compare, combine);
   in.Wait(true);
-  MergeSort(config, data, offsets_file, offsets, compare, combine);
-  out >> OwningMergingReader<Compare, Combine>(data.get(), offsets, config, compare, combine);
-  data.release();
-  offsets_file.release();
+  sorter.Output(out);
 }
 
-template <class Compare, class Combine> void Sort(Chain &chain, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine()) {
-  Sort(chain, chain, config, compare, combine);
+template <class Compare, class Combine> void BlockingSort(Chain &chain, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine()) {
+  BlockingSort(chain, chain, config, compare, combine);
 }
 
-template <class Compare> void Sort(Chain &chain, const SortConfig &config, const Compare &compare = Compare()) {
-  Sort(chain, config, compare, NeverCombine());
+template <class Compare> void BlockingSort(Chain &chain, const SortConfig &config, const Compare &compare = Compare()) {
+  BlockingSort(chain, config, compare, NeverCombine());
 }
 
 } // namespace stream
