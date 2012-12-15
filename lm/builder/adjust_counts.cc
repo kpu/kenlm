@@ -17,8 +17,24 @@ const WordIndex* FindDifference(const NGram &full, const NGram &lower_last) {
 
 class StatCollector {
   public:
-    StatCollector(std::size_t order) : orders_(order), full_(orders_.back()) {
+    StatCollector(std::size_t order, std::vector<uint64_t> &counts, std::vector<Discount> &discounts) 
+      : orders_(order), full_(orders_.back()), counts_(counts), discounts_(discounts) {
       memset(&orders_[0], 0, sizeof(OrderStat) * order);
+    }
+
+    ~StatCollector() {
+      counts_.resize(orders_.size());
+      discounts_.resize(orders_.size());
+      for (std::size_t i = 0; i < orders_.size(); ++i) {
+        const OrderStat &s = orders_[i];
+        counts_[i] = s.count;
+        // See equation (26) in Chen and Goodman.
+        discounts_[i].amount[0] = 0.0;
+        float y = static_cast<float>(s.n[0]) / static_cast<float>(s.n[0] + 2.0 * s.n[1]);
+        for (unsigned j = 1; j < 4; ++j) {
+          discounts_[i].amount[j] = static_cast<float>(i) - static_cast<float>(i + 1) * y * static_cast<float>(s.n[j]) / static_cast<float>(s.n[j-1]);
+        }
+      }
     }
 
     void Add(std::size_t order_minus_1, uint64_t count) {
@@ -32,21 +48,6 @@ class StatCollector {
       if (count < 5) ++full_.n[count - 1];
     }
 
-    void Complete(std::vector<uint64_t> &counts, std::vector<Discount> &discounts) const {
-      counts.resize(orders_.size());
-      discounts.resize(orders_.size());
-      for (std::size_t i = 0; i < orders_.size(); ++i) {
-        const OrderStat &s = orders_[i];
-        counts[i] = s.count;
-        // See equation (26) in Chen and Goodman.
-        discounts[i].amount[0] = 0.0;
-        float y = static_cast<float>(s.n[0]) / static_cast<float>(s.n[0] + 2.0 * s.n[1]);
-        for (unsigned j = 1; j < 4; ++j) {
-          discounts[i].amount[j] = static_cast<float>(i) - static_cast<float>(i + 1) * y * static_cast<float>(s.n[j]) / static_cast<float>(s.n[j-1]);
-        }
-      }
-    }
-
   private:
     struct OrderStat {
       // n_[0] is n_1 in equation 26 of Chen and Goodman
@@ -56,6 +57,9 @@ class StatCollector {
 
     std::vector<OrderStat> orders_;
     OrderStat &full_;
+
+    std::vector<uint64_t> &counts_;
+    std::vector<Discount> &discounts_;
 };
 
 // Reads all entries in order like NGramStream does.  
@@ -121,12 +125,11 @@ class CollapseStream {
 
 void AdjustCounts::Run(const ChainPositions &positions) {
   const std::size_t order = positions.size();
-  StatCollector stats(order);
+  StatCollector stats(order, counts_, discounts_);
   if (order == 1) {
     // Only unigrams.  Just collect stats.  
     for (NGramStream full(positions[0]); full; ++full) 
       stats.AddFull(full->Count());
-    stats.Complete(counts_, discounts_);
     return;
   }
 
@@ -139,7 +142,6 @@ void AdjustCounts::Run(const ChainPositions &positions) {
     for (NGramStream *s = streams.begin(); s != streams.end(); ++s) {
       s->Poison();
     }
-    stats.Complete(counts_, discounts_);
     return;
   }
 
@@ -191,7 +193,6 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   for (NGramStream *s = streams.begin(); s != streams.end(); ++s) {
     s->Poison();
   }
-  stats.Complete(counts_, discounts_);
 }
 
 }} // namespaces
