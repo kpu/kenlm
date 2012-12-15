@@ -37,7 +37,7 @@ class NGramStream {
 
     NGramStream &operator++() {
       ++stream_;
-      gram_ = NGram(stream_.Get(), gram_.Order());
+      gram_.ReBase(stream_.Get());
       return *this;
     }
 
