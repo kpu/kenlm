@@ -1,6 +1,6 @@
 import testing ;
 
-fakelib builder : corpus_count.cc adjust_counts.cc pipeline.cc print.cc ../../util//kenutil ../../util/stream//stream ..//kenlm : : : <library>/top//boost_thread ;
+fakelib builder : corpus_count.cc adjust_counts.cc pipeline.cc print.cc sum_extend.cc ../../util//kenutil ../../util/stream//stream ..//kenlm : : : <library>/top//boost_thread ;
 
 exe lmplz : main.cc builder /top//boost_program_options ;
 
