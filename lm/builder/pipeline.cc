@@ -34,9 +34,14 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     Sorts<ContextOrder> sorts(chains, config.sort);
     chains.Wait(true);
 
-    std::cerr << "Counts are:\n";
-    for (size_t i = 0; i < chains.size(); ++i)
-      std::cerr << (i + 1) << " " << counts[i] << std::endl;
+    std::cerr << "Statistics:\n";
+    for (size_t i = 0; i < chains.size(); ++i) {
+      std::cerr << (i + 1) << ' ' << counts[i];
+      for (size_t d = 1; d <= 3; ++d)
+        std::cerr << ' ' << discounts[i].amount[d];
+      std::cerr << '\n';
+    }
+    std::cerr << "Computing uninterpolated weights." << std::endl;
 
     util::stream::ChainConfig read_ahead;
     read_ahead.block_size = 512;
