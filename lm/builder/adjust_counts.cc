@@ -145,10 +145,10 @@ void AdjustCounts::Run(const ChainPositions &positions) {
     return;
   }
 
-  // Initialization: unigrams are valid.  
+  // Initialization: <unk> has count 0.  
   NGramStream *lower_valid = streams.begin();
   (*lower_valid)->Count() = 0;
-  *(*lower_valid)->begin() = *(full->end() - 1);
+  *(*lower_valid)->begin() = kUNK;
 
   for (; full; ++full) {
     const WordIndex *different = FindDifference(*full, **lower_valid);

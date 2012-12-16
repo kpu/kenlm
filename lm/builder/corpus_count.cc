@@ -80,7 +80,18 @@ class Writer {
       : block_(position), gram_(block_->Get(), order),
         cache_(position.GetChain().BlockSize() / NGram::TotalSize(order), DedupeHash(order), DedupeEquals(order)),
         buffer_(new WordIndex[order - 1]),
-        block_size_(position.GetChain().BlockSize()) {}
+        block_size_(position.GetChain().BlockSize()) {
+      if (order == 1) {
+        // Add <unk>.  AdjustCounts is responsible if order != 1.    
+        *gram_.begin() = kUNK;
+        gram_.Count() = 0;
+        gram_.NextInMemory();
+        if (gram_.Base() == static_cast<uint8_t*>(block_->Get()) + block_size_) {
+          block_->SetValidSize(block_size_);
+          gram_.ReBase((++block_)->Get());
+        }
+      }
+    }
 
     ~Writer() {
       block_->SetValidSize(reinterpret_cast<const uint8_t*>(gram_.begin()) - static_cast<const uint8_t*>(block_->Get()));
@@ -110,7 +121,7 @@ class Writer {
       // Prepare the next n-gram.  
       if (reinterpret_cast<uint8_t*>(gram_.begin()) + gram_.TotalSize() != static_cast<uint8_t*>(block_->Get()) + block_size_) {
         NGram last(gram_);
-        gram_ = NGram(reinterpret_cast<uint8_t*>(gram_.begin()) + gram_.TotalSize(), gram_.Order());
+        gram_.NextInMemory();
         std::copy(last.begin() + 1, last.end(), gram_.begin());
         return;
       }
@@ -118,8 +129,7 @@ class Writer {
       std::copy(gram_.begin() + 1, gram_.end(), buffer_.get());
       cache_.clear();
       block_->SetValidSize(block_size_);
-      ++block_;
-      gram_ = NGram(block_->Get(), gram_.Order());
+      gram_.ReBase((++block_)->Get());
       std::copy(buffer_.get(), buffer_.get() + gram_.Order() - 1, gram_.begin());
     }
 

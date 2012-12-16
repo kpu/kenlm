@@ -78,6 +78,7 @@ class NGram {
     WordIndex *begin_, *end_;
 };
 
+const WordIndex kUNK = 0;
 const WordIndex kBOS = 1;
 
 } // namespace builder
