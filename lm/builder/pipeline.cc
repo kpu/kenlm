@@ -12,16 +12,6 @@
 
 namespace lm { namespace builder {
 
-class UninterpolatedArray : public FixedArray<Uninterpolated> {
-  public:
-    explicit UninterpolatedArray(std::size_t count) : FixedArray<Uninterpolated>(count) {}
-
-    void push_back(int input_file, const util::stream::ChainConfig &adder_in, const util::stream::ChainConfig &adder_out, const Discount &discount) {
-      new (end()) Uninterpolated(input_file, adder_in, adder_out, discount);
-      Constructed();
-    }
-};
-
 void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream &out) {
   util::scoped_fd vocab_file(config.vocab_file.empty() ? 
       util::MakeTemp(config.TempPrefix()) : 
@@ -52,10 +42,10 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     read_ahead.block_size = 512;
     read_ahead.block_count = 2;
     read_ahead.queue_length = 2;
-    UninterpolatedArray uninterp(chains.size());
     for (size_t i = 0; i < chains.size(); ++i) {
-      uninterp.push_back(sorts[i].StealCompleted(), chain_configs[i], read_ahead, discounts[i]);
-      chains[i] >> util::stream::PRead(uninterp[i].Input()) >> boost::ref(uninterp[i]);
+      util::scoped_fd fd(sorts[i].StealCompleted());
+      chains[i] >> util::stream::PRead(fd.get());
+      chains[i] >> Uninterpolated(fd.release(), chain_configs[i], read_ahead, discounts[i]);
     }
     BlockingSort<SuffixOrder>(chains, config.sort);
   }

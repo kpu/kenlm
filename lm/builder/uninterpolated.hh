@@ -19,12 +19,10 @@ class Uninterpolated {
         adder_in_(adder_in), adder_out_(adder_out), 
         discount_(discount) {}
 
-    int Input() const { return input_file_.get(); }
-
     void Run(const util::stream::ChainPosition &main_chain);
 
   private:
-    util::scoped_fd input_file_;
+    int input_file_;
     util::stream::ChainConfig adder_in_;
     util::stream::ChainConfig adder_out_;
     Discount discount_;

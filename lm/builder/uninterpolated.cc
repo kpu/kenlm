@@ -52,11 +52,12 @@ class AddRight {
 } // namespace
 
 void Uninterpolated::Run(const util::stream::ChainPosition &main_chain) {
+  util::scoped_fd input(input_file_);
   adder_in_.entry_size = main_chain.GetChain().EntrySize();
   adder_out_.entry_size = sizeof(BufferEntry);
 
   util::stream::Chain add_in(adder_in_);
-  add_in >> util::stream::PRead(input_file_.get());
+  add_in >> util::stream::PRead(input.get());
   util::stream::ChainPosition add_in_pos(add_in.Add());
   add_in >> util::stream::kRecycle;
 
@@ -77,7 +78,6 @@ void Uninterpolated::Run(const util::stream::ChainPosition &main_chain) {
       pay.uninterp.gamma = sums.gamma;
     } while (++grams && !memcmp(&previous[0], grams->begin(), size));
   }
-  input_file_.reset();
 }
 
 }} // namespaces
