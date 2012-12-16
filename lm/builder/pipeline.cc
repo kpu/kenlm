@@ -38,7 +38,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     for (size_t i = 0; i < chains.size(); ++i) {
       std::cerr << (i + 1) << ' ' << counts[i];
       for (size_t d = 1; d <= 3; ++d)
-        std::cerr << ' ' << discounts[i].amount[d];
+        std::cerr << " D" << d << (d == 3 ? "+=" : "=") << discounts[i].amount[d];
       std::cerr << '\n';
     }
     std::cerr << "Computing uninterpolated weights." << std::endl;

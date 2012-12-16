@@ -30,9 +30,9 @@ class StatCollector {
         counts_[i] = s.count;
         // See equation (26) in Chen and Goodman.
         discounts_[i].amount[0] = 0.0;
-        float y = static_cast<float>(s.n[0]) / static_cast<float>(s.n[0] + 2.0 * s.n[1]);
+        float y = static_cast<float>(s.n[1]) / static_cast<float>(s.n[1] + 2.0 * s.n[2]);
         for (unsigned j = 1; j < 4; ++j) {
-          discounts_[i].amount[j] = static_cast<float>(i) - static_cast<float>(i + 1) * y * static_cast<float>(s.n[j]) / static_cast<float>(s.n[j-1]);
+          discounts_[i].amount[j] = static_cast<float>(j) - static_cast<float>(j + 1) * y * static_cast<float>(s.n[j+1]) / static_cast<float>(s.n[j]);
         }
       }
     }
@@ -40,18 +40,18 @@ class StatCollector {
     void Add(std::size_t order_minus_1, uint64_t count) {
       OrderStat &stat = orders_[order_minus_1];
       ++stat.count;
-      if (count < 5) ++stat.n[count - 1];
+      if (count < 5) ++stat.n[count];
     }
 
     void AddFull(uint64_t count) {
       ++full_.count;
-      if (count < 5) ++full_.n[count - 1];
+      if (count < 5) ++full_.n[count];
     }
 
   private:
     struct OrderStat {
-      // n_[0] is n_1 in equation 26 of Chen and Goodman
-      uint64_t n[4];
+      // n_1 in equation 26 of Chen and Goodman etc
+      uint64_t n[5];
       uint64_t count;
     };
 
