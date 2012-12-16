@@ -11,7 +11,6 @@ struct ChainConfig {
   // Chain's constructor will make this a multiple of entry_size. 
   std::size_t block_size;
   std::size_t block_count;
-  std::size_t queue_length;
 };
 
 struct SortConfig {

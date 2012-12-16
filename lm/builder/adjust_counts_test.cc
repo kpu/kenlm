@@ -42,7 +42,6 @@ BOOST_AUTO_TEST_CASE(Simple) {
     util::stream::ChainConfig config;
     config.block_size = 100;
     config.block_count = 1;
-    config.queue_length = 1;
     std::vector<util::stream::ChainConfig> configs(4, config);
     for (unsigned i = 0; i < 4; ++i) {
       configs[i].entry_size = NGram::TotalSize(i + 1);

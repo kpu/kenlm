@@ -41,19 +41,18 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
         std::cerr << " D" << d << (d == 3 ? "+=" : "=") << discounts[i].amount[d];
       std::cerr << '\n';
     }
-    std::cerr << "Computing uninterpolated weights." << std::endl;
+    std::cerr << "Computing uninterpolated probabilities." << std::endl;
 
     util::stream::ChainConfig read_ahead;
     read_ahead.block_size = 512;
     read_ahead.block_count = 2;
-    read_ahead.queue_length = 2;
     for (size_t i = 0; i < chains.size(); ++i) {
       util::scoped_fd fd(sorts[i].StealCompleted());
       chains[i] >> util::stream::PRead(fd.get());
       chains[i] >> Uninterpolated(fd.release(), chain_configs[i], read_ahead, discounts[i]);
     }
-    BlockingSort<SuffixOrder>(chains, config.sort);
   }
+  BlockingSort<SuffixOrder>(chains, config.sort);
 
   std::cerr << "Printing" << std::endl;
   VocabReconstitute vocab(vocab_file.get());

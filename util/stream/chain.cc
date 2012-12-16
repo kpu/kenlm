@@ -27,7 +27,6 @@ Chain::Chain(const ChainConfig &config) : config_(config), complete_called_(fals
   UTIL_THROW_IF(!config.entry_size, ChainConfigException, "zero-size entries.");
   UTIL_THROW_IF(!config.block_size, ChainConfigException, "block size zero");
   UTIL_THROW_IF(!config.block_count, ChainConfigException, "block count zero");
-  UTIL_THROW_IF(!config.queue_length, ChainConfigException, "queue length 0");
   // Round up to multiple of config_.entry_size.
   config_.block_size = config_.entry_size * ((config_.block_size + config_.entry_size - 1) / config_.entry_size);
 }
@@ -39,7 +38,7 @@ Chain::~Chain() {
 ChainPosition Chain::Add() {
   if (!Running()) Start();
   PCQueue<Block> &in = queues_.back();
-  queues_.push_back(new PCQueue<Block>(config_.queue_length));
+  queues_.push_back(new PCQueue<Block>(config_.block_count));
   return ChainPosition(in, queues_.back(), this);
 }
 
@@ -81,8 +80,8 @@ void Chain::Start() {
     memory_.reset(malloc(malloc_size));
     UTIL_THROW_IF(!memory_.get(), util::ErrnoException, "Failed to allocate " << malloc_size << " bytes for " << config_.block_count << " blocks each of size " << config_.block_size);
   }
-  // This queue has special size to accomodate all blocks.  
-  queues_.push_back(new PCQueue<Block>(std::max(config_.queue_length, config_.block_size)));
+  // This queue can accomodate all blocks.    
+  queues_.push_back(new PCQueue<Block>(config_.block_size));
   // Populate the lead queue with blocks.  
   uint8_t *base = static_cast<uint8_t*>(memory_.get());
   for (std::size_t i = 0; i < config_.block_count; ++i) {

@@ -42,7 +42,6 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
   config.entry_size = 8;
   config.block_size = 100;
   config.block_count = 3;
-  config.queue_length = 4;
 
   SortConfig merge_config;
   merge_config.temp_prefix = "sort_test_temp";
@@ -53,7 +52,6 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
   merge_config.chain.entry_size = 8;
   merge_config.chain.block_size = 500;
   merge_config.chain.block_count = 6;
-  merge_config.chain.queue_length = 3;
 
   Chain chain(config);
   chain >> Putter(shuffled);
