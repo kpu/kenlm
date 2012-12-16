@@ -12,6 +12,18 @@
 
 namespace lm { namespace builder {
 
+namespace {
+void PrintStatistics(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts) {
+  std::cerr << "Statistics:\n";
+  for (size_t i = 0; i < counts.size(); ++i) {
+    std::cerr << (i + 1) << ' ' << counts[i];
+    for (size_t d = 1; d <= 3; ++d)
+      std::cerr << " D" << d << (d == 3 ? "+=" : "=") << discounts[i].amount[d];
+    std::cerr << '\n';
+  }
+}
+} // namespace
+
 void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream &out) {
   util::scoped_fd vocab_file(config.vocab_file.empty() ? 
       util::MakeTemp(config.TempPrefix()) : 
@@ -33,23 +45,19 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   {
     Sorts<ContextOrder> sorts(chains, config.sort);
     chains.Wait(true);
+    PrintStatistics(counts, discounts);
 
-    std::cerr << "Statistics:\n";
-    for (size_t i = 0; i < chains.size(); ++i) {
-      std::cerr << (i + 1) << ' ' << counts[i];
-      for (size_t d = 1; d <= 3; ++d)
-        std::cerr << " D" << d << (d == 3 ? "+=" : "=") << discounts[i].amount[d];
-      std::cerr << '\n';
-    }
     std::cerr << "Computing uninterpolated probabilities." << std::endl;
-
-    util::stream::ChainConfig read_ahead;
-    read_ahead.block_size = 512;
-    read_ahead.block_count = 2;
+    // Short leashes to minimize the distance between the adder's position and the rejoiner's position.   
+    util::stream::ChainConfig adder_in, adder_out;
+    adder_in.block_size = 32768;
+    adder_in.block_count = 2;
+    adder_out.block_size = 512;
+    adder_out.block_count = 2;
     for (size_t i = 0; i < chains.size(); ++i) {
       util::scoped_fd fd(sorts[i].StealCompleted());
       chains[i] >> util::stream::PRead(fd.get());
-      chains[i] >> Uninterpolated(fd.release(), chain_configs[i], read_ahead, discounts[i]);
+      chains[i] >> Uninterpolated(fd.release(), adder_in, adder_out, discounts[i]);
     }
   }
   BlockingSort<SuffixOrder>(chains, config.sort);
