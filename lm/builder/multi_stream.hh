@@ -24,11 +24,7 @@ template <class T> class FixedArray {
       }
     }
 
-    ~FixedArray() {
-      for (T *i = begin(); i != end(); ++i) {
-        i->~T();
-      }
-    }
+    ~FixedArray() { clear(); }
 
     T *begin() { return static_cast<T*>(block_.get()); }
     const T *begin() const { return static_cast<const T*>(block_.get()); }
@@ -41,6 +37,16 @@ template <class T> class FixedArray {
 
     T &operator[](std::size_t i) { return begin()[i]; }
     const T &operator[](std::size_t i) const { return begin()[i]; }
+
+    template <class C> void push_back(const C &c) {
+      new (end()) T(c);
+      Constructed();
+    }
+
+    void clear() {
+      for (T *i = begin(); i != end(); ++i)
+        i->~T();
+    }
 
   protected:
     FixedArray() : newed_end_(NULL) {}
@@ -89,10 +95,12 @@ class Chains : public FixedArray<util::stream::Chain> {
     explicit Chains(std::vector<util::stream::ChainConfig> &config) 
       : FixedArray<util::stream::Chain>(config.size()) {
       for (std::vector<util::stream::ChainConfig>::iterator i = config.begin(); i != config.end(); ++i) {
-        i->entry_size = NGram::TotalSize(i - config.begin() + 1);
-        new(end()) util::stream::Chain(*i); Constructed();
+        new(end()) util::stream::Chain(*i);
+        Constructed();
       }
     }
+
+    explicit Chains(std::size_t limit) : FixedArray<util::stream::Chain>(limit) {}
 
     template <class Worker> typename CheckForRun<Worker>::type &operator>>(const Worker &worker) {
       threads_.push_back(new util::stream::Thread(ChainPositions(*this), worker));
@@ -111,6 +119,7 @@ class Chains : public FixedArray<util::stream::Chain> {
     }
 
     void Wait(bool release_memory = true) {
+      threads_.clear();
       for (util::stream::Chain *i = begin(); i != end(); ++i) {
         i->Wait(release_memory);
       }

@@ -11,8 +11,12 @@ namespace builder {
 struct Discount {
   float amount[4];
 
+  float Get(uint64_t count) const {
+    return amount[std::min<uint64_t>(count, 3)];
+  }
+
   float Apply(uint64_t count) const {
-    return static_cast<float>(count) - amount[std::min<uint64_t>(count, 3)];
+    return static_cast<float>(count) - Get(count);
   }
 };
 

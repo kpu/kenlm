@@ -24,6 +24,17 @@ class Read {
     int file_;
 };
 
+// Like read but uses pread so that the file can be accessed from multiple threads.  
+class PRead {
+  public:
+    explicit PRead(int fd) : file_(fd) {}
+
+    void Run(const ChainPosition &position);
+
+  private:
+    int file_;
+};
+
 class Write {
   public:
     explicit Write(int fd) : file_(fd) {}

@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(CopyFile) {
   config.block_count = 10;
   config.queue_length = 2;
 
-  Chain(config) >> Read(in.get()) >> Write(out.get());
+  Chain(config) >> PRead(in.get()) >> Write(out.get());
 
   SeekOrThrow(out.get(), 0);
   for (uint64_t i = 0; i < 100000; ++i) {

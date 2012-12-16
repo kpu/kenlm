@@ -32,7 +32,7 @@ template <class T> void PrintPayload(std::ostream &to, const Payload &payload);
 template <> inline void PrintPayload<uint64_t>(std::ostream &to, const Payload &payload) {
   to << payload.count;
 }
-template <> inline void PrintPayload<Uninterpolated>(std::ostream &to, const Payload &payload) {
+template <> inline void PrintPayload<Uninterp>(std::ostream &to, const Payload &payload) {
   to << payload.uninterp.prob << ' ' << payload.uninterp.gamma;
 }
 template <> inline void PrintPayload<Interpolated>(std::ostream &to, const Payload &payload) {

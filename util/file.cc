@@ -68,6 +68,12 @@ uint64_t SizeFile(int fd) {
 #endif
 }
 
+uint64_t SizeOrThrow(int fd) {
+  uint64_t ret = SizeFile(fd);
+  UTIL_THROW_IF(ret == kBadSize, ErrnoException, "Could not size file with fd " << fd);
+  return ret;
+}
+
 void ResizeOrThrow(int fd, uint64_t to) {
 #if defined(_WIN32) || defined(_WIN64)
   UTIL_THROW_IF(_chsize_s(fd, to), ErrnoException, "Resizing to " << to << " bytes failed");

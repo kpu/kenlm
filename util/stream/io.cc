@@ -26,6 +26,22 @@ void Read::Run(const ChainPosition &position) {
   }
 }
 
+void PRead::Run(const ChainPosition &position) {
+  uint64_t size = SizeOrThrow(file_);
+  UTIL_THROW_IF(size % static_cast<uint64_t>(position.GetChain().EntrySize()), ReadSizeException, "File size " << file_ << " size is " << size << " not a multiple of " << position.GetChain().EntrySize());
+  std::size_t block_size = position.GetChain().BlockSize();
+  Link link(position);
+  uint64_t offset = 0;
+  for (; offset + block_size < size; offset += block_size, ++link) {
+    PReadOrThrow(file_, link->Get(), block_size, offset);
+  }
+  if (size - offset) {
+    PReadOrThrow(file_, link->Get(), size - offset, offset);
+    ++link;
+  }
+  link.Poison();
+}
+
 void Write::Run(const ChainPosition &position) {
   for (Link link(position); link; ++link) {
     util::WriteOrThrow(file_, link->Get(), link->ValidSize());

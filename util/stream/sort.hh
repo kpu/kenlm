@@ -367,6 +367,14 @@ template <class Compare, class Combine = NeverCombine> class Sort {
       in >> BlockSorter<Compare>(offsets_, compare_) >> Write(data_.get()) >> util::stream::kRecycle;
     }
 
+    int StealCompleted() {
+      config_.lazy_arity = 1;
+      MergeSort(config_, data_, offsets_file_, offsets_, compare_, combine_);
+      SeekOrThrow(data_.get(), 0);
+      offsets_file_.reset();
+      return data_.release();
+    }
+
     void Output(Chain &out) {
       MergeSort(config_, data_, offsets_file_, offsets_, compare_, combine_);
       out >> OwningMergingReader<Compare, Combine>(data_.get(), offsets_, config_, compare_, combine_);

@@ -17,7 +17,7 @@ class scoped_fd {
 
     ~scoped_fd();
 
-    void reset(int to) {
+    void reset(int to = -1) {
       scoped_fd other(fd_);
       fd_ = to;
     }
@@ -71,6 +71,7 @@ int CreateOrThrow(const char *name);
 // Return value for SizeFile when it can't size properly.  
 const uint64_t kBadSize = (uint64_t)-1;
 uint64_t SizeFile(int fd);
+uint64_t SizeOrThrow(int fd);
 
 void ResizeOrThrow(int fd, uint64_t to);
 
