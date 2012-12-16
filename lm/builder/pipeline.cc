@@ -18,6 +18,7 @@ class UninterpolatedArray : public FixedArray<Uninterpolated> {
 
     void push_back(int input_file, const util::stream::ChainConfig &adder_in, const util::stream::ChainConfig &adder_out, const Discount &discount) {
       new (end()) Uninterpolated(input_file, adder_in, adder_out, discount);
+      Constructed();
     }
 };
 
@@ -45,7 +46,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
 
     std::cerr << "Counts are:\n";
     for (size_t i = 0; i < chains.size(); ++i)
-      std::cerr << i << " " << counts[i] << std::endl;
+      std::cerr << (i + 1) << " " << counts[i] << std::endl;
 
     util::stream::ChainConfig read_ahead;
     read_ahead.block_size = 512;
