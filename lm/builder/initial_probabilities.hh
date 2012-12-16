@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_UNINTERPOLATED__
-#define LM_BUILDER_UNINTERPOLATED__
+#ifndef LM_BUILDER_INITIAL_PROBABILITIES__
+#define LM_BUILDER_INITIAL_PROBABILITIES__
 
 #include "lm/builder/discount.hh"
 #include "util/stream/chain.hh"
@@ -8,9 +8,14 @@
 namespace lm {
 namespace builder {
 
-class Uninterpolated {
+/* Compute initial (uninterpolated) probabilities
+ * Input: context sorted adjusted counts.  The file is read twice in
+ * near-parallel threads.  
+ * Output: context sorted uninterpolated counts.  
+ */
+class InitialProbabilities {
   public:
-    Uninterpolated(
+    InitialProbabilities(
         int input_file, 
         const util::stream::ChainConfig &adder_in,
         const util::stream::ChainConfig &adder_out, 
@@ -31,4 +36,4 @@ class Uninterpolated {
 } // namespace builder
 } // namespace lm
 
-#endif // LM_BUILDER_UNINTERPOLATED__
+#endif // LM_BUILDER_INITIAL_PROBABILITIES__

@@ -1,4 +1,4 @@
-#include "lm/builder/uninterpolated.hh"
+#include "lm/builder/initial_probabilities.hh"
 
 #include "lm/builder/discount.hh"
 #include "lm/builder/ngram_stream.hh"
@@ -51,7 +51,7 @@ class AddRight {
 
 } // namespace
 
-void Uninterpolated::Run(const util::stream::ChainPosition &main_chain) {
+void InitialProbabilities::Run(const util::stream::ChainPosition &main_chain) {
   util::scoped_fd input(input_file_);
   adder_in_.entry_size = main_chain.GetChain().EntrySize();
   adder_out_.entry_size = sizeof(BufferEntry);

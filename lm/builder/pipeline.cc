@@ -4,7 +4,7 @@
 #include "lm/builder/corpus_count.hh"
 #include "lm/builder/print.hh"
 #include "lm/builder/sort.hh"
-#include "lm/builder/uninterpolated.hh"
+#include "lm/builder/initial_probabilities.hh"
 
 #include "util/file.hh"
 
@@ -57,7 +57,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     for (size_t i = 0; i < chains.size(); ++i) {
       util::scoped_fd fd(sorts[i].StealCompleted());
       chains[i] >> util::stream::PRead(fd.get());
-      chains[i] >> Uninterpolated(fd.release(), adder_in, adder_out, discounts[i]);
+      chains[i] >> InitialProbabilities(fd.release(), adder_in, adder_out, discounts[i]);
     }
   }
   BlockingSort<SuffixOrder>(chains, config.sort);
