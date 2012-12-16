@@ -137,18 +137,24 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   streams.Init(positions, positions.size() - 1);
   CollapseStream full(positions[positions.size() - 1]);
 
+  // Initialization: <unk> has count 0 and so does <s>.  
+  NGramStream *lower_valid = streams.begin();
+  streams[0]->Count() = 0;
+  *streams[0]->begin() = kUNK;
+  stats.Add(0, 0);
+  (++streams[0])->Count() = 0;
+  *streams[0]->begin() = kBOS;
+  stats.Add(0, 0);
+
   if (!full) {
-    // No n-gram at all, oddly.
-    for (NGramStream *s = streams.begin(); s != streams.end(); ++s) {
+    for (NGramStream *s = streams.begin(); s != streams.end(); ++s)
       s->Poison();
-    }
     return;
   }
 
-  // Initialization: <unk> has count 0.  
-  NGramStream *lower_valid = streams.begin();
-  (*lower_valid)->Count() = 0;
-  *(*lower_valid)->begin() = kUNK;
+  // Populate first unigram that can't be <s>.  
+  (++streams[0])->Count() = 0;
+  *streams[0]->begin() = *(full->end() - 1);
 
   for (; full; ++full) {
     const WordIndex *different = FindDifference(*full, **lower_valid);
@@ -190,9 +196,8 @@ void AdjustCounts::Run(const ChainPositions &positions) {
     ++*s;
   }
   // Poison everyone!  Except the N-grams which were already poisoned by the input.   
-  for (NGramStream *s = streams.begin(); s != streams.end(); ++s) {
+  for (NGramStream *s = streams.begin(); s != streams.end(); ++s)
     s->Poison();
-  }
 }
 
 }} // namespaces

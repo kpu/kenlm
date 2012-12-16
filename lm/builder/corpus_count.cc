@@ -82,14 +82,9 @@ class Writer {
         buffer_(new WordIndex[order - 1]),
         block_size_(position.GetChain().BlockSize()) {
       if (order == 1) {
-        // Add <unk>.  AdjustCounts is responsible if order != 1.    
-        *gram_.begin() = kUNK;
-        gram_.Count() = 0;
-        gram_.NextInMemory();
-        if (gram_.Base() == static_cast<uint8_t*>(block_->Get()) + block_size_) {
-          block_->SetValidSize(block_size_);
-          gram_.ReBase((++block_)->Get());
-        }
+        // Add special words.  AdjustCounts is responsible if order != 1.    
+        AddUnigramWord(kUNK);
+        AddUnigramWord(kBOS);
       }
     }
 
@@ -134,6 +129,16 @@ class Writer {
     }
 
   private:
+    void AddUnigramWord(WordIndex index) {
+      *gram_.begin() = kUNK;
+      gram_.Count() = 0;
+      gram_.NextInMemory();
+      if (gram_.Base() == static_cast<uint8_t*>(block_->Get()) + block_size_) {
+        block_->SetValidSize(block_size_);
+        gram_.ReBase((++block_)->Get());
+      }
+    }
+
     util::stream::Link block_;
 
     NGram gram_;
