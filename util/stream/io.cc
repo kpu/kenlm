@@ -34,9 +34,11 @@ void PRead::Run(const ChainPosition &position) {
   uint64_t offset = 0;
   for (; offset + block_size < size; offset += block_size, ++link) {
     PReadOrThrow(file_, link->Get(), block_size, offset);
+    link->SetValidSize(block_size);
   }
   if (size - offset) {
     PReadOrThrow(file_, link->Get(), size - offset, offset);
+    link->SetValidSize(size - offset);
     ++link;
   }
   link.Poison();
