@@ -1,6 +1,4 @@
-More adjust counts tests
+More tests!
 Multithreading sort
 Some way to manage all the crazy config options
-interpolate step
 backoff step
-The above steps will probably want a convenient way to iterate through all N streams in their desired order.

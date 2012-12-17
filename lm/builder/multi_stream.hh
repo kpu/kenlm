@@ -148,12 +148,20 @@ class NGramStreams : public FixedArray<NGramStream> {
   public:
     NGramStreams() {}
 
+    // This puts a dummy NGramStream at the beginning (useful to algorithms that need to reference something at the beginning).
+    void InitWithDummy(const ChainPositions &positions) {
+      FixedArray<NGramStream>::Init(positions.size() + 1);
+      new (end()) NGramStream(); Constructed();
+      for (const util::stream::ChainPosition *i = positions.begin(); i != positions.end(); ++i) {
+        push_back(*i);
+      }
+    }
+
     // Limit restricts to positions[0,limit)
     void Init(const ChainPositions &positions, std::size_t limit) {
       FixedArray<NGramStream>::Init(limit);
       for (const util::stream::ChainPosition *i = positions.begin(); i != positions.begin() + limit; ++i) {
-        new (end()) NGramStream(*i);
-        Constructed();
+        push_back(*i);
       }
     }
     void Init(const ChainPositions &positions) {
