@@ -67,7 +67,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   std::cerr << "Interpolated probabilities" << std::endl;
   chains >> Interpolate(counts[0]);
 
-  BlockingSort<ContextOrder>(chains, config.sort);
+  BlockingSort<PrefixOrder>(chains, config.sort);
   std::cerr << "Backoff" << std::endl;
   chains >> Backoff();
 

@@ -5,7 +5,7 @@ namespace lm { namespace builder {
 class ChainPositions;
 
 /* Compute backoff weights.  
- * Input: context-sorted n-grams with interpolated probabilities.
+ * Input: prefix-sorted n-grams with interpolated probabilities.
  * Output: n-grams with probability and backoff.  Second field of N-grams is
  * undefined.  
  */

@@ -2,6 +2,7 @@
 
 #include "lm/builder/joint_order.hh"
 #include "lm/builder/multi_stream.hh"
+#include "lm/builder/sort.hh"
 
 namespace lm { namespace builder {
 namespace {
@@ -23,7 +24,9 @@ class Callback {
 
     void Exit(unsigned order_minus_1, NGram &gram) {
       // TODO: rounding corner cases.  
-      gram.Value().complete.backoff = (1.0 - sums_[order_minus_1 + 1].prob) / (1.0 - sums_[order_minus_1 + 1].lower);
+      ProbBackoff &out = gram.Value().complete;
+      out.prob = log10(out.prob);
+      out.backoff = log10((1.0 - sums_[order_minus_1 + 1].prob) / (1.0 - sums_[order_minus_1 + 1].lower));
       sums_[order_minus_1 + 1].prob = 0.0;
       sums_[order_minus_1 + 1].lower = 0.0;
     }
@@ -40,7 +43,7 @@ class Callback {
 
 void Backoff::Run(const ChainPositions &positions) {
   Callback callback(positions.size());
-  JointOrder<Callback, false>(positions, callback);
+  JointOrder<Callback, PrefixOrder>(positions, callback);
 }
 
 }} // namespaces

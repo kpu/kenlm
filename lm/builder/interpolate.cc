@@ -2,6 +2,7 @@
 
 #include "lm/builder/joint_order.hh"
 #include "lm/builder/multi_stream.hh"
+#include "lm/builder/sort.hh"
 #include "lm/lm_exception.hh"
 
 #include <assert.h>
@@ -32,7 +33,7 @@ class Callback {
 
 void Interpolate::Run(const ChainPositions &positions) {
   Callback callback(positions.size(), unigram_count_);
-  JointOrder<Callback, true>(positions, callback);
+  JointOrder<Callback, SuffixOrder>(positions, callback);
 }
 
 }} // namespaces

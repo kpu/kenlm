@@ -8,7 +8,7 @@
 
 namespace lm { namespace builder {
 
-template <class Callback, bool SuffixOrder> void JointOrder(const ChainPositions &positions, Callback &callback) {
+template <class Callback, class Compare> void JointOrder(const ChainPositions &positions, Callback &callback) {
   // Allow matching to reference streams[-1].
   NGramStreams streams_with_dummy;
   streams_with_dummy.InitWithDummy(positions);
@@ -20,7 +20,7 @@ template <class Callback, bool SuffixOrder> void JointOrder(const ChainPositions
   unsigned int current = 0;
   while (true) {
     // Does the context match the lower one?  
-    if (!memcmp(streams[static_cast<int>(current) - 1]->begin(), streams[current]->begin() + SuffixOrder, sizeof(WordIndex) * current)) {
+    if (!memcmp(streams[static_cast<int>(current) - 1]->begin(), streams[current]->begin() + Compare::kMatchOffset, sizeof(WordIndex) * current)) {
       callback.Enter(current, *streams[current]);
       // Transition to looking for extensions.  
       if (++current < order) continue;

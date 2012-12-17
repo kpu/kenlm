@@ -36,6 +36,8 @@ class SuffixOrder : public Comparator<SuffixOrder> {
       }
       return lhs[0] < rhs[0];
     }
+
+    static const unsigned kMatchOffset = 1;
 };
 
 class ContextOrder : public Comparator<ContextOrder> {
@@ -49,6 +51,21 @@ class ContextOrder : public Comparator<ContextOrder> {
       }
       return lhs[order_ - 1] < rhs[order_ - 1];
     }
+};
+
+class PrefixOrder : public Comparator<PrefixOrder> {
+  public:
+    explicit PrefixOrder(std::size_t order) : Comparator<PrefixOrder>(order) {}
+
+    inline bool Compare(const WordIndex *lhs, const WordIndex *rhs) const {
+      for (std::size_t i = 0; i < order_; ++i) {
+        if (lhs[i] != rhs[i])
+          return lhs[i] < rhs[i];
+      }
+      return false;
+    }
+    
+    static const unsigned kMatchOffset = 0;
 };
 
 // Sum counts for the same n-gram.
