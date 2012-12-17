@@ -1,6 +1,7 @@
 #include "lm/builder/pipeline.hh"
 
 #include "lm/builder/adjust_counts.hh"
+#include "lm/builder/backoff.hh"
 #include "lm/builder/corpus_count.hh"
 #include "lm/builder/initial_probabilities.hh"
 #include "lm/builder/interpolate.hh"
@@ -9,6 +10,7 @@
 
 #include "util/file.hh"
 
+#include <iostream>
 #include <vector>
 
 namespace lm { namespace builder {
@@ -36,8 +38,8 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   Chains chains(chain_configs);
 
   chains[config.order - 1] >> CorpusCount(text, config.order, vocab_file.get());
-  BlockingSort(chains[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner());
 
+  BlockingSort(chains[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner());
   std::cerr << "Adjusted counts" << std::endl;
   std::vector<uint64_t> counts;
   std::vector<Discount> discounts;
@@ -64,11 +66,15 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   BlockingSort<SuffixOrder>(chains, config.sort);
   std::cerr << "Interpolated probabilities" << std::endl;
   chains >> Interpolate(counts[0]);
-  BlockingSort<ContextOrder>(chains, config.sort);
 
+  BlockingSort<ContextOrder>(chains, config.sort);
+  std::cerr << "Backoff" << std::endl;
+  chains >> Backoff();
+
+  BlockingSort<SuffixOrder>(chains, config.sort);
   std::cerr << "Print" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
-  chains >> Print<Interpolated>(vocab, out) >> util::stream::kRecycle;
+  chains >> Print<ProbBackoff>(vocab, out) >> util::stream::kRecycle;
   chains.Wait();
 }
 

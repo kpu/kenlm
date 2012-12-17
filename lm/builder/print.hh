@@ -38,6 +38,9 @@ template <> inline void PrintPayload<Uninterpolated>(std::ostream &to, const Pay
 template <> inline void PrintPayload<Interpolated>(std::ostream &to, const Payload &payload) {
   to << payload.interp.prob << ' ' << payload.interp.lower;
 }
+template <> inline void PrintPayload<ProbBackoff>(std::ostream &to, const Payload &payload) {
+  to << payload.complete.prob << ' ' << payload.complete.backoff;
+}
 
 // template parameter is the type stored.  
 template <class V> class Print {

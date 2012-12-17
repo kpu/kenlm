@@ -1,6 +1,7 @@
 #ifndef LM_BUILDER_NGRAM__
 #define LM_BUILDER_NGRAM__
 
+#include "lm/weights.hh"
 #include "lm/word_index.hh"
 
 #include <cstddef>
@@ -26,6 +27,7 @@ union Payload {
   uint64_t count;
   Uninterpolated uninterp;
   Interpolated interp;
+  ProbBackoff complete;
 };
 
 class NGram {

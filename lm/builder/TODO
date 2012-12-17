@@ -1,4 +1,6 @@
 More tests!
 Multithreading sort
 Some way to manage all the crazy config options
-backoff step
+Backoff corner cases
+Change to log format
+Option to build the binary file directly.  
