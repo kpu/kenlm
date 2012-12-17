@@ -38,7 +38,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   chains[config.order - 1] >> CorpusCount(text, config.order, vocab_file.get());
   BlockingSort(chains[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner());
 
-  std::cerr << "Adjusting" << std::endl;
+  std::cerr << "Adjusted counts" << std::endl;
   std::vector<uint64_t> counts;
   std::vector<Discount> discounts;
   chains >> AdjustCounts(counts, discounts);
@@ -48,7 +48,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     chains.Wait(true);
     PrintStatistics(counts, discounts);
 
-    std::cerr << "Computing uninterpolated probabilities." << std::endl;
+    std::cerr << "Uninterpolated probabilities" << std::endl;
     // Short leashes to minimize the distance between the adder's position and the rejoiner's position.   
     util::stream::ChainConfig adder_in, adder_out;
     adder_in.block_size = 32768;
@@ -62,11 +62,11 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     }
   }
   BlockingSort<SuffixOrder>(chains, config.sort);
-  std::cerr << "Interpolating" << std::endl;
+  std::cerr << "Interpolated probabilities" << std::endl;
   chains >> Interpolate(counts[0]);
   BlockingSort<ContextOrder>(chains, config.sort);
 
-  std::cerr << "Printing" << std::endl;
+  std::cerr << "Print" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
   chains >> Print<Interpolated>(vocab, out) >> util::stream::kRecycle;
   chains.Wait();
