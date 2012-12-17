@@ -62,6 +62,7 @@ class Recycler {
 };
 
 extern const Recycler kRecycle;
+class WriteAndRecycle;
 
 class Chain {
   private:
@@ -101,12 +102,16 @@ class Chain {
     // Note that Link and Stream also define operator>> outside this class.  
 
     // To complete the loop, call CompleteLoop(), >> kRecycle, or the destructor.  
-    void CompleteLoop();
+    void CompleteLoop() {
+      threads_.push_back(new Thread(Complete(), kRecycle));
+    }
 
     Chain &operator>>(const Recycler &recycle) {
       CompleteLoop();
       return *this;
     }
+
+    Chain &operator>>(const WriteAndRecycle &writer);
 
     // Chains are reusable.  Call Wait to wait for everything to finish and free memory.  
     void Wait(bool release_memory = true);
@@ -117,6 +122,8 @@ class Chain {
     bool Running() const { return !queues_.empty(); }
 
   private:
+    ChainPosition Complete();
+
     ChainConfig config_;
 
     scoped_malloc memory_;

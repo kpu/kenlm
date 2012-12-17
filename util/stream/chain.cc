@@ -1,5 +1,7 @@
 #include "util/stream/chain.hh"
 
+#include "util/stream/io.hh"
+
 #include "util/exception.hh"
 #include "util/pcqueue.hh"
 
@@ -42,14 +44,9 @@ ChainPosition Chain::Add() {
   return ChainPosition(in, queues_.back(), this);
 }
 
-void Chain::CompleteLoop() {
-  assert(Running());
-  UTIL_THROW_IF(complete_called_, util::Exception, "CompleteLoop() called twice");
-  complete_called_ = true;
-  threads_.push_back(
-      new Thread(
-        ChainPosition(queues_.back(), queues_.front(), this),
-        kRecycle));
+Chain &Chain::operator>>(const WriteAndRecycle &writer) {
+  threads_.push_back(new Thread(Complete(), writer));
+  return *this;
 }
 
 void Chain::Wait(bool release_memory) {
@@ -88,6 +85,13 @@ void Chain::Start() {
     queues_.front().Produce(Block(base, config_.block_size));
     base += config_.block_size;
   }
+}
+
+ChainPosition Chain::Complete() {
+  assert(Running());
+  UTIL_THROW_IF(complete_called_, util::Exception, "CompleteLoop() called twice");
+  complete_called_ = true;
+  return ChainPosition(queues_.back(), queues_.front(), this);
 }
 
 Link::Link() : in_(NULL), out_(NULL), poisoned_(true) {}

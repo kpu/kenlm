@@ -50,5 +50,13 @@ void Write::Run(const ChainPosition &position) {
   }
 }
 
+void WriteAndRecycle::Run(const ChainPosition &position) {
+  const std::size_t block_size = position.GetChain().BlockSize();
+  for (Link link(position); link; ++link) {
+    util::WriteOrThrow(file_, link->Get(), link->ValidSize());
+    link->SetValidSize(block_size);
+  }
+}
+
 } // namespace stream
 } // namespace util

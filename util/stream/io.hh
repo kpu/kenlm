@@ -17,9 +17,7 @@ class ReadSizeException : public util::Exception {
 class Read {
   public:
     explicit Read(int fd) : file_(fd) {}
-
     void Run(const ChainPosition &position); 
-
   private:
     int file_;
 };
@@ -28,9 +26,7 @@ class Read {
 class PRead {
   public:
     explicit PRead(int fd) : file_(fd) {}
-
     void Run(const ChainPosition &position);
-
   private:
     int file_;
 };
@@ -38,9 +34,15 @@ class PRead {
 class Write {
   public:
     explicit Write(int fd) : file_(fd) {}
-
     void Run(const ChainPosition &position);
+  private:
+    int file_;
+};
 
+class WriteAndRecycle {
+  public:
+    explicit WriteAndRecycle(int fd) : file_(fd) {}
+    void Run(const ChainPosition &position);
   private:
     int file_;
 };

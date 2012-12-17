@@ -337,7 +337,7 @@ template <class Compare, class Combine> void MergeSort(const SortConfig &config,
           config.arity,
           config.total_read_buffer,
           compare, combine) >>
-      Write(fd_out);
+      WriteAndRecycle(fd_out);
     chain.Wait();
     offsets_out->FinishedAppending();
     ResizeOrThrow(fd_in, 0);
@@ -364,7 +364,7 @@ template <class Compare, class Combine = NeverCombine> class Sort {
       UTIL_THROW_IF(config.arity < 2, Exception, "Cannot have an arity < 2.");
       UTIL_THROW_IF(config.lazy_arity == 0, Exception, "Cannot have lazy arity 0.");
       config_.chain.entry_size = in.EntrySize();
-      in >> BlockSorter<Compare>(offsets_, compare_) >> Write(data_.get()) >> util::stream::kRecycle;
+      in >> BlockSorter<Compare>(offsets_, compare_) >> WriteAndRecycle(data_.get());
     }
 
     int StealCompleted() {
