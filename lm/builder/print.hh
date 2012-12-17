@@ -33,10 +33,10 @@ template <> inline void PrintPayload<uint64_t>(std::ostream &to, const Payload &
   to << payload.count;
 }
 template <> inline void PrintPayload<Uninterpolated>(std::ostream &to, const Payload &payload) {
-  to << payload.uninterp.prob << ' ' << payload.uninterp.gamma;
+  to << log10(payload.uninterp.prob) << ' ' << log10(payload.uninterp.gamma);
 }
 template <> inline void PrintPayload<Interpolated>(std::ostream &to, const Payload &payload) {
-  to << payload.interp.prob << ' ' << payload.interp.lower;
+  to << log10(payload.interp.prob) << ' ' << log10(payload.interp.lower);
 }
 template <> inline void PrintPayload<ProbBackoff>(std::ostream &to, const Payload &payload) {
   to << payload.complete.prob << ' ' << payload.complete.backoff;
@@ -64,7 +64,7 @@ template <class V> class Print {
       for (; stream; ++stream) {
         PrintPayload<V>(to_, stream->Value());
         for (const WordIndex *w = stream->begin(); w != stream->end(); ++w) {
-          to_ << ' ' << vocab_.Lookup(*w);
+          to_ << ' ' << vocab_.Lookup(*w) << '=' << *w;
         }
         to_ << '\n';
       }
