@@ -144,17 +144,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   stats.Add(0, 0);
   (++streams[0])->Count() = 0;
   *streams[0]->begin() = kBOS;
-  stats.Add(0, 0);
-
-  if (!full) {
-    for (NGramStream *s = streams.begin(); s != streams.end(); ++s)
-      s->Poison();
-    return;
-  }
-
-  // Populate first unigram that can't be <s>.  
-  (++streams[0])->Count() = 0;
-  *streams[0]->begin() = *(full->end() - 1);
+  // not in stats because it will get put in later.  
 
   for (; full; ++full) {
     const WordIndex *different = FindDifference(*full, **lower_valid);
