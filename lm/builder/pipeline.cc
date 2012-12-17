@@ -2,9 +2,10 @@
 
 #include "lm/builder/adjust_counts.hh"
 #include "lm/builder/corpus_count.hh"
+#include "lm/builder/initial_probabilities.hh"
+#include "lm/builder/interpolate.hh"
 #include "lm/builder/print.hh"
 #include "lm/builder/sort.hh"
-#include "lm/builder/initial_probabilities.hh"
 
 #include "util/file.hh"
 
@@ -61,10 +62,13 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     }
   }
   BlockingSort<SuffixOrder>(chains, config.sort);
+  std::cerr << "Interpolating" << std::endl;
+  chains >> Interpolate(counts[0]);
+  BlockingSort<ContextOrder>(chains, config.sort);
 
   std::cerr << "Printing" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
-  chains >> Print<Uninterp>(vocab, out) >> util::stream::kRecycle;
+  chains >> Print<Interpolated>(vocab, out) >> util::stream::kRecycle;
   chains.Wait();
 }
 

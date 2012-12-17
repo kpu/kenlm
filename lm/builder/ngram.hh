@@ -12,7 +12,7 @@
 namespace lm {
 namespace builder {
 
-struct Uninterp {
+struct Uninterpolated {
   float prob;  // Uninterpolated probability.
   float gamma; // Interpolation weight for lower order.
 };
@@ -24,7 +24,7 @@ struct Interpolated {
 
 union Payload {
   uint64_t count;
-  Uninterp uninterp;
+  Uninterpolated uninterp;
   Interpolated interp;
 };
 
