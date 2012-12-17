@@ -38,9 +38,9 @@ class SuffixOrder : public Comparator<SuffixOrder> {
     }
 };
 
-class ContextOrder : public Comparator<SuffixOrder> {
+class ContextOrder : public Comparator<ContextOrder> {
   public:
-    explicit ContextOrder(std::size_t order) : Comparator<SuffixOrder>(order) {}
+    explicit ContextOrder(std::size_t order) : Comparator<ContextOrder>(order) {}
 
     inline bool Compare(const WordIndex *lhs, const WordIndex *rhs) const {
       for (int i = order_ - 2; i >= 0; --i) {

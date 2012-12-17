@@ -32,7 +32,7 @@ class Callback {
 
 void Interpolate::Run(const ChainPositions &positions) {
   Callback callback(positions.size(), unigram_count_);
-  JointOrder<Callback>(positions, callback);
+  JointOrder<Callback, true>(positions, callback);
 }
 
 }} // namespaces

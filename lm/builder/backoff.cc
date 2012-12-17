@@ -40,7 +40,7 @@ class Callback {
 
 void Backoff::Run(const ChainPositions &positions) {
   Callback callback(positions.size());
-  JointOrder<Callback>(positions, callback);
+  JointOrder<Callback, false>(positions, callback);
 }
 
 }} // namespaces
