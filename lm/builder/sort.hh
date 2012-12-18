@@ -80,29 +80,48 @@ struct AddCombiner {
 
 // The combiner is only used on a single chain, so I didn't bother to allow
 // that template.  
-template <class Compare> class Sorts : public FixedArray<util::stream::Sort<Compare> > {
+template <class Compare> class Sorts : private FixedArray<util::stream::Sort<Compare> > {
   private:
     typedef util::stream::Sort<Compare> S;
     typedef FixedArray<S> P;
 
   public:
-    Sorts(Chains &chains, const util::stream::SortConfig &config) : P(chains.size()) {
-      for (util::stream::Chain *i = chains.begin(); i != chains.end(); ++i) {
+    Sorts(util::stream::FileBuffer &unigrams, Chains &chains, const util::stream::SortConfig &config) 
+      : P(chains.size() - 1), unigrams_(unigrams) {
+      chains[0] >> unigrams_.Sink();
+      for (util::stream::Chain *i = chains.begin() + 1; i != chains.end(); ++i) {
         new (P::end()) S(*i, config, Compare(i - chains.begin() + 1));
         P::Constructed();
       }
     }
 
+    struct TwoReaders {
+      TwoReaders(int fd) : ahead(util::DupOrThrow(fd), true), behind(fd, true) {}
+      TwoReaders(util::stream::FileBuffer &buffer) 
+        : ahead(buffer.Source()), behind(buffer.Source()) {}
+      util::stream::PRead ahead;
+      util::stream::PRead behind;
+    };
+
+    TwoReaders OutputTwice(std::size_t index) {
+      if (index == 0) return TwoReaders(unigrams_);
+      return TwoReaders((*this)[index - 1].StealCompleted());
+    }
+
     void Output(Chains &chains) {
-      assert(chains.size() == P::size());
-      for (size_t i = 0; i < P::size(); ++i) {
-        P::begin()[i].Output(chains[i]);
+      assert(chains.size() == 1 + P::size());
+      chains[0] >> unigrams_.Source();
+      for (size_t i = 1; i < chains.size(); ++i) {
+        P::begin()[i - 1].Output(chains[i]);
       }
     }
+
+  private:
+    util::stream::FileBuffer &unigrams_;
 };
 
-template <class Compare> void BlockingSort(Chains &chains, const util::stream::SortConfig &config) {
-  Sorts<Compare> sorts(chains, config);
+template <class Compare> void BlockingSort(util::stream::FileBuffer &unigrams, Chains &chains, const util::stream::SortConfig &config) {
+  Sorts<Compare> sorts(unigrams, chains, config);
   chains.Wait(true);
   sorts.Output(chains);
 }

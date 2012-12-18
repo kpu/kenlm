@@ -27,6 +27,8 @@ void Read::Run(const ChainPosition &position) {
 }
 
 void PRead::Run(const ChainPosition &position) {
+  scoped_fd owner;
+  if (own_) owner.reset(file_);
   uint64_t size = SizeOrThrow(file_);
   UTIL_THROW_IF(size % static_cast<uint64_t>(position.GetChain().EntrySize()), ReadSizeException, "File size " << file_ << " size is " << size << " not a multiple of " << position.GetChain().EntrySize());
   std::size_t block_size = position.GetChain().BlockSize();
@@ -46,14 +48,14 @@ void PRead::Run(const ChainPosition &position) {
 
 void Write::Run(const ChainPosition &position) {
   for (Link link(position); link; ++link) {
-    util::WriteOrThrow(file_, link->Get(), link->ValidSize());
+    WriteOrThrow(file_, link->Get(), link->ValidSize());
   }
 }
 
 void WriteAndRecycle::Run(const ChainPosition &position) {
   const std::size_t block_size = position.GetChain().BlockSize();
   for (Link link(position); link; ++link) {
-    util::WriteOrThrow(file_, link->Get(), link->ValidSize());
+    WriteOrThrow(file_, link->Get(), link->ValidSize());
     link->SetValidSize(block_size);
   }
 }
