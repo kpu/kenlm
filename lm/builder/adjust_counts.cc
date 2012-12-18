@@ -1,5 +1,4 @@
 #include "lm/builder/adjust_counts.hh"
-
 #include "lm/builder/multi_stream.hh"
 
 #include <algorithm>
@@ -146,6 +145,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   *streams[0]->begin() = kBOS;
   // not in stats because it will get put in later.  
 
+  // iterate over full (the stream of the highest order ngrams)
   for (; full; ++full) {
     const WordIndex *different = FindDifference(*full, **lower_valid);
     std::size_t same = full->end() - 1 - different;
