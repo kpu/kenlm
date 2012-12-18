@@ -52,16 +52,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
 
     std::cerr << "Uninterpolated probabilities" << std::endl;
     // Short leashes to minimize the distance between the adder's position and the rejoiner's position.   
-    util::stream::ChainConfig adder_in, adder_out;
-    adder_in.block_size = 32768;
-    adder_in.block_count = 2;
-    adder_out.block_size = 512;
-    adder_out.block_count = 2;
-    for (size_t i = 0; i < chains.size(); ++i) {
-      util::scoped_fd fd(sorts[i].StealCompleted());
-      chains[i] >> util::stream::PRead(fd.get());
-      chains[i] >> InitialProbabilities(fd.release(), adder_in, adder_out, discounts[i]);
-    }
+    InitialProbabilities(config.initial_probs, discounts, sorts, chains);
   }
   BlockingSort<SuffixOrder>(chains, config.sort);
   std::cerr << "Interpolated probabilities" << std::endl;

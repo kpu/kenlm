@@ -12,8 +12,8 @@ namespace {
 
 class Callback {
   public:
-    Callback(std::size_t order, uint64_t unigram_count) : probs_(order + 1) {
-      probs_[0] = 1.0 / static_cast<float>(unigram_count - 1); // exclude <s> from unigram count
+    Callback(std::size_t order, float uniform_prob) : probs_(order + 1) {
+      probs_[0] = uniform_prob;
     }
 
     void Enter(unsigned order_minus_1, NGram &gram) {
@@ -31,8 +31,11 @@ class Callback {
 };
 } // namespace
 
+Interpolate::Interpolate(uint64_t unigram_count) 
+  : uniform_prob_(1.0 / static_cast<float>(unigram_count - 1)) {}
+
 void Interpolate::Run(const ChainPositions &positions) {
-  Callback callback(positions.size(), unigram_count_);
+  Callback callback(positions.size(), uniform_prob_);
   JointOrder<Callback, SuffixOrder>(positions, callback);
 }
 

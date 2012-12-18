@@ -14,12 +14,12 @@ class ChainPositions;
  */
 class Interpolate {
   public:
-    explicit Interpolate(uint64_t unigram_count) : unigram_count_(unigram_count) {}
+    explicit Interpolate(uint64_t unigram_count);
 
     void Run(const ChainPositions &positions);
 
   private:
-    uint64_t unigram_count_;
+    float uniform_prob_;
 };
 
 }} // namespaces

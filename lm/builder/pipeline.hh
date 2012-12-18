@@ -1,6 +1,7 @@
 #ifndef LM_BUILDER_PIPELINE__
 #define LM_BUILDER_PIPELINE__
 
+#include "lm/builder/initial_probabilities.hh"
 #include "util/stream/config.hh"
 
 #include <string>
@@ -15,6 +16,7 @@ struct PipelineConfig {
   std::string vocab_file;
   util::stream::ChainConfig chain;
   util::stream::SortConfig sort;
+  InitialProbabilitiesConfig initial_probs;
 
   const std::string &TempPrefix() const { return sort.temp_prefix; }
 };

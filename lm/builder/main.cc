@@ -19,7 +19,8 @@ int main(int argc, char *argv[]) {
     ("sort_arity,a", po::value<std::size_t>(&pipeline.sort.arity)->default_value(4), "Arity to use for sorting")
     ("sort_buffer", po::value<std::size_t>(&pipeline.sort.total_read_buffer)->default_value(1 << 26), "Sort read buffer size")
     ("sort_lazy_arity", po::value<std::size_t>(&pipeline.sort.lazy_arity)->default_value(2), "Lazy sorting arity (this * order readers active)")
-    ("sort_lazy_buffer", po::value<std::size_t>(&pipeline.sort.lazy_total_read_buffer)->default_value(1 << 25), "Lazy sorting read buffer size");
+    ("sort_lazy_buffer", po::value<std::size_t>(&pipeline.sort.lazy_total_read_buffer)->default_value(1 << 25), "Lazy sorting read buffer size")
+    ("interpolate_unigrams", "Interpolate the unigrams (default: emulate SRILM by not interpolating)");
   if (argc == 1) {
     std::cerr << options << std::endl;
     return 1;
@@ -29,6 +30,13 @@ int main(int argc, char *argv[]) {
   po::notify(vm);
   pipeline.chain.entry_size = 0;
   pipeline.sort.chain = pipeline.chain;
+
+  lm::builder::InitialProbabilitiesConfig &initial = pipeline.initial_probs;
+  initial.adder_in.block_size = 32768;
+  initial.adder_in.block_count = 2;
+  initial.adder_out.block_size = 512;
+  initial.adder_out.block_count = 2;
+  initial.interpolate_unigrams = !!vm.count("interpolate_unigrams");
 
   util::FilePiece in(0, "stdin", &std::cerr);
   lm::builder::Pipeline(pipeline, in, std::cout);

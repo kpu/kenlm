@@ -2,36 +2,31 @@
 #define LM_BUILDER_INITIAL_PROBABILITIES__
 
 #include "lm/builder/discount.hh"
-#include "util/stream/chain.hh"
-#include "util/file.hh"
+#include "util/stream/config.hh"
+
+#include <vector>
 
 namespace lm {
 namespace builder {
+template <class T> class Sorts;
+class ContextOrder;
+class Chains;
+
+struct InitialProbabilitiesConfig {
+  // These should be small buffers to keep the adder from getting too far ahead
+  util::stream::ChainConfig adder_in;
+  util::stream::ChainConfig adder_out;
+  // SRILM doesn't normally interpolate unigrams.  
+  bool interpolate_unigrams;
+};
 
 /* Compute initial (uninterpolated) probabilities
  * Input: context sorted adjusted counts.  The file is read twice in
- * near-parallel threads.  
- * Output: context sorted uninterpolated counts.  
+ * near-parallel threads, hence the need to get directly from the sorts.
+ * Output: context sorted uninterpolated probabilities and their interpolation 
+ * weights.  
  */
-class InitialProbabilities {
-  public:
-    InitialProbabilities(
-        int input_file, 
-        const util::stream::ChainConfig &adder_in,
-        const util::stream::ChainConfig &adder_out, 
-        const Discount &discount)
-      : input_file_(input_file),
-        adder_in_(adder_in), adder_out_(adder_out), 
-        discount_(discount) {}
-
-    void Run(const util::stream::ChainPosition &main_chain);
-
-  private:
-    int input_file_;
-    util::stream::ChainConfig adder_in_;
-    util::stream::ChainConfig adder_out_;
-    Discount discount_;
-};
+void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Sorts<ContextOrder> &in, Chains &out);
 
 } // namespace builder
 } // namespace lm
