@@ -25,6 +25,7 @@ void PrintStatistics(const std::vector<uint64_t> &counts, const std::vector<Disc
     std::cerr << '\n';
   }
 }
+
 } // namespace
 
 void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream &out) {
@@ -44,25 +45,26 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   std::vector<uint64_t> counts;
   std::vector<Discount> discounts;
   chains >> AdjustCounts(counts, discounts);
+  util::stream::FileBuffer unigrams(util::MakeTemp(config.TempPrefix()));
 
+  // Uninterpolated probabilities reads the file twice in separate threads, hence the special handling.  
   {
-    Sorts<ContextOrder> sorts(chains, config.sort);
+    Sorts<ContextOrder> sorts(unigrams, chains, config.sort);
     chains.Wait(true);
     PrintStatistics(counts, discounts);
 
     std::cerr << "Uninterpolated probabilities" << std::endl;
-    // Short leashes to minimize the distance between the adder's position and the rejoiner's position.   
     InitialProbabilities(config.initial_probs, discounts, sorts, chains);
   }
-  BlockingSort<SuffixOrder>(chains, config.sort);
+  BlockingSort<SuffixOrder>(unigrams, chains, config.sort);
   std::cerr << "Interpolated probabilities" << std::endl;
   chains >> Interpolate(counts[0]);
 
-  BlockingSort<PrefixOrder>(chains, config.sort);
+  BlockingSort<PrefixOrder>(unigrams, chains, config.sort);
   std::cerr << "Backoff" << std::endl;
   chains >> Backoff();
 
-  BlockingSort<SuffixOrder>(chains, config.sort);
+  BlockingSort<SuffixOrder>(unigrams, chains, config.sort);
   std::cerr << "Print" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
   chains >> PrintARPA(vocab, counts, out) >> util::stream::kRecycle;

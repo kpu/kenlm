@@ -59,24 +59,23 @@ class AddRight {
 class MergeRight {
   public:
     MergeRight(
-        const InitialProbabilitiesConfig &config, int input_file,  const Discount &discount)
-      : config_(config), input_file_(input_file), discount_(discount) {}
+        const InitialProbabilitiesConfig &config, util::stream::PRead reader, const Discount &discount)
+      : config_(config), reader_(reader), discount_(discount) {}
 
     void Run(const util::stream::ChainPosition &main_chain);
 
   private:
     InitialProbabilitiesConfig config_;
-    int input_file_;
+    util::stream::PRead reader_;
     Discount discount_;
 };
 
 void MergeRight::Run(const util::stream::ChainPosition &main_chain) {
-  util::scoped_fd input(input_file_);
   config_.adder_in.entry_size = main_chain.GetChain().EntrySize();
   config_.adder_out.entry_size = sizeof(BufferEntry);
 
   util::stream::Chain add_in(config_.adder_in);
-  add_in >> util::stream::PRead(input.get());
+  add_in >> reader_;
   util::stream::ChainPosition add_in_pos(add_in.Add());
   add_in >> util::stream::kRecycle;
 
@@ -116,10 +115,10 @@ void MergeRight::Run(const util::stream::ChainPosition &main_chain) {
 } // namespace
 
 void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Sorts<ContextOrder> &in, Chains &out) {
-  for (size_t i = 0; i < in.size(); ++i) {
-    util::scoped_fd fd(in[i].StealCompleted());
-    out[i] >> util::stream::PRead(fd.get());
-    out[i] >> MergeRight(config, fd.release(), discounts[i]);
+  for (size_t i = 0; i < out.size(); ++i) {
+    Sorts<ContextOrder>::TwoReaders readers(in.OutputTwice(i));
+    out[i] >> readers.behind;
+    out[i] >> MergeRight(config, readers.ahead, discounts[i]);
   }
 }
 
