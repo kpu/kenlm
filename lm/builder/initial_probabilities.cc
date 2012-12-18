@@ -31,15 +31,21 @@ class AddRight {
       const std::size_t size = sizeof(WordIndex) * previous.size();
       for(; in; ++out) {
         memcpy(&previous[0], in->begin(), size);
-        BufferEntry &entry = *reinterpret_cast<BufferEntry*>(out.Get());
         uint64_t denominator = 0;
-        entry.gamma = 0.0;
+        uint64_t counts[4];
+        memset(counts, 0, sizeof(counts));
         do {
           denominator += in->Count();
-          entry.gamma += discount_.Get(in->Count());
+          ++counts[std::min(in->Count(), static_cast<uint64_t>(3))];
         } while (++in && !memcmp(&previous[0], in->begin(), size));
+        BufferEntry &entry = *reinterpret_cast<BufferEntry*>(out.Get());
         entry.denominator = static_cast<float>(denominator);
+        entry.gamma = 0.0;
+        for (unsigned i = 1; i <= 3; ++i) {
+          entry.gamma += discount_.Get(i) * static_cast<float>(counts[i]);
+        }
         entry.gamma /= entry.denominator;
+        std::cerr << "Denominator " << entry.denominator << " gamma " << entry.gamma << std::endl;
       }
       out.Poison();
     }
