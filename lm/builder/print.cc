@@ -17,4 +17,31 @@ VocabReconstitute::VocabReconstitute(int fd) {
   }
 }
 
+PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> counts, std::ostream &out) 
+  : vocab_(vocab), out_(out) {
+  out_ << "\\data\\\n";
+  for (size_t i = 0; i < counts.size(); ++i) {
+    out_ << "ngram " << (i+1) << '=' << counts[i] << '\n';
+  }
+  out_ << '\n';
+}
+
+void PrintARPA::Run(const ChainPositions &positions) {
+  for (unsigned order = 1; order <= positions.size(); ++order) {
+    out_ << "\\" << order << "-grams:" << '\n';
+    for (NGramStream stream(positions[order - 1]); stream; ++stream) {
+      out_ << stream->Value().complete.prob << '\t' << vocab_.Lookup(*stream->begin());
+      for (const WordIndex *i = stream->begin() + 1; i != stream->end(); ++i) {
+        out_ << ' ' << vocab_.Lookup(*i);
+      }
+      float backoff = stream->Value().complete.backoff;
+      if (backoff != 0.0)
+        out_ << '\t' << backoff;
+      out_ << '\n';
+    }
+    out_ << '\n';
+  }
+  out_ << "\\end\\\n";
+}
+
 }} // namespaces

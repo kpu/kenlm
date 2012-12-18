@@ -10,6 +10,10 @@
 
 #include <assert.h>
 
+// Warning: print routines read all unigrams before all bigrams before all
+// trigrams etc.  So if other parts of the chain move jointly, you'll have to
+// buffer.  
+
 namespace lm { namespace builder {
 
 class VocabReconstitute {
@@ -72,6 +76,17 @@ template <class V> class Print {
 
     const VocabReconstitute &vocab_;
     std::ostream &to_;
+};
+
+class PrintARPA {
+  public:
+    explicit PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> counts, std::ostream &out);
+
+    void Run(const ChainPositions &positions);
+
+  private:
+    const VocabReconstitute &vocab_;
+    std::ostream &out_;
 };
 
 }} // namespaces

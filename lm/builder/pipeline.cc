@@ -65,7 +65,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   BlockingSort<SuffixOrder>(chains, config.sort);
   std::cerr << "Print" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
-  chains >> Print<ProbBackoff>(vocab, out) >> util::stream::kRecycle;
+  chains >> PrintARPA(vocab, counts, out) >> util::stream::kRecycle;
   chains.Wait();
 }
 
