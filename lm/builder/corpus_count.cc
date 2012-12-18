@@ -130,7 +130,7 @@ class Writer {
 
   private:
     void AddUnigramWord(WordIndex index) {
-      *gram_.begin() = kUNK;
+      *gram_.begin() = index;
       gram_.Count() = 0;
       gram_.NextInMemory();
       if (gram_.Base() == static_cast<uint8_t*>(block_->Get()) + block_size_) {
