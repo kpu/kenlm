@@ -400,7 +400,7 @@ template <class Compare, class Combine = NeverCombine> class Sort {
 template <class Compare, class Combine> void BlockingSort(Chain &in, Chain &out, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine(), const std::string &timer_name = "") {
   Sort<Compare, Combine> sorter(in, config, compare, combine);
   {
-    UTIL_TIMER(timer_name + ": Sort barrier took %w seconds\n");
+    UTIL_TIMER("Barrier for %w seconds\n");
     in.Wait(true);
   }
 

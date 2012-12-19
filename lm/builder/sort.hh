@@ -126,11 +126,11 @@ template <class Compare> class Sorts : private FixedArray<util::stream::Sort<Com
   template <class Compare> void BlockingSort(util::stream::FileBuffer &unigrams, Chains &chains, const util::stream::SortConfig &config, const std::string &timer_name) {
   Sorts<Compare> sorts(unigrams, chains, config);
   {
-    UTIL_TIMER(timer_name + ": Partial merge sort blocked for %w seconds\n");
+    UTIL_TIMER("Barrier for %w seconds\n");
     chains.Wait(true);
   }
   {
-    UTIL_TIMER(timer_name + ": Finishing partial merge sort took %w seconds\n");
+    UTIL_TIMER(timer_name + ": Non-lazy merge sort took %w seconds\n");
     sorts.Output(chains);
   }
 }
