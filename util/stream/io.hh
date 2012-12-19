@@ -63,10 +63,6 @@ class FileBuffer {
       return PRead(file_.get());
     }
 
-    PRead StealSource() {
-      return PRead(file_.release(), true);
-    }
-
   private:
     scoped_fd file_;
 };

@@ -90,19 +90,22 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   chains >> Backoff();
 
   // we don't *need* to sort after renormalizing the backoff weights to still produce a valid ARPA file
+  std::vector<boost::shared_ptr<util::stream::FileBuffer> > file_buffers; // must survive until PrintARPA is done
   if (config.sorted_arpa) {
     uint64_t backoff_bytes = BlockingSort<SuffixOrder>(unigrams, chains, config.sort, "Preparing to write ARPA file");
     std::cerr << "[" << ToMB(backoff_bytes) << " MB] Renormalized backoff weights" << std::endl;
   } else { 
     // allocate a temporary holding location on disk (we'll use the same temp space as sorting)
-    chains[0] >> unigrams.Sink();
-    chains[0].Wait();
-    chains[0] >> unigrams.Source();
-    for (std::size_t i = 1; i < config.order; ++i) {
-      util::stream::FileBuffer buffer(util::MakeTemp(config.sort.temp_prefix));
-      chains[i] >> buffer.Sink();
-      chains[i].Wait();
-      chains[i] >> buffer.StealSource();
+    for (size_t i = 0; i < config.order; ++i) {
+      file_buffers.push_back(boost::shared_ptr<util::stream::FileBuffer>(
+        new util::stream::FileBuffer(util::MakeTemp(config.sort.temp_prefix))));
+      chains[i] >> file_buffers.at(i)->Sink();
+    }
+    // wait for backoff weights to finish writing
+    chains.Wait();
+    // begin reading from disk again
+    for (size_t i = 0; i < config.order; ++i) {
+      chains[i] >> file_buffers.at(i)->Source();
     }
   }
 
