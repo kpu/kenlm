@@ -37,7 +37,7 @@ PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t>
 }
 
 void PrintARPA::Run(const ChainPositions &positions) {
-  boost::timer::auto_cpu_timer t(std::cerr, 1, "Writing ARPA file took %w seconds\n");
+  boost::timer::auto_cpu_timer t(std::cerr, 1, "(%w s) Wrote ARPA file\n");
 
   for (unsigned order = 1; order <= positions.size(); ++order) {
     out_ << "\\" << order << "-grams:" << '\n';

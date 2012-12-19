@@ -34,7 +34,7 @@ uint64_t ToMB(uint64_t bytes) {
 }
 
 void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream &out) {
-  boost::timer::auto_cpu_timer t(std::cerr, 1, "Total wall time elapsed: %w seconds\n");
+  boost::timer::auto_cpu_timer t(std::cerr, 1, "[%w s] Total wall time elapsed\n");
 
   util::scoped_fd vocab_file(config.vocab_file.empty() ? 
       util::MakeTemp(config.TempPrefix()) : 
@@ -71,7 +71,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     Sorts<ContextOrder> sorts(unigrams, chains, config.sort);
 
     { // scope the timer
-      boost::timer::auto_cpu_timer t(std::cerr, 1, "Preparing to calculate initial probabilities: Finishing partial merge sort took %w seconds\n");
+      boost::timer::auto_cpu_timer t(std::cerr, 1, "(%w s) Preparing to calculate initial probabilities: Time to finish partial merge sort\n");
       chains.Wait(true);
     }
     PrintStatistics(counts, discounts);

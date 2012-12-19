@@ -90,7 +90,7 @@ void MergeRight::Run(const util::stream::ChainPosition &main_chain) {
   add_out >> util::stream::kRecycle;
 
   NGramStream grams(main_chain);
-  std::string timer_msg = (boost::format("Calculating initial probabilities for %1%-grams took %%w seconds\n") % grams->Order()).str();
+  std::string timer_msg = (boost::format("(%%w s) Calculated initial probabilities for %1%-grams\n") % grams->Order()).str();
   boost::timer::auto_cpu_timer t(std::cerr, 1, timer_msg);
 
   // Without interpolation, the interpolation weight goes to <unk>.

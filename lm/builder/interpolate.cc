@@ -38,7 +38,7 @@ Interpolate::Interpolate(uint64_t unigram_count)
 
 // perform order-wise interpolation
 void Interpolate::Run(const ChainPositions &positions) {
-  boost::timer::auto_cpu_timer t(std::cerr, 1, "Interpolating orders took %w seconds\n");
+  boost::timer::auto_cpu_timer t(std::cerr, 1, "(%w s) Interpolated orders\n");
 
   Callback callback(positions.size(), uniform_prob_);
   JointOrder<Callback, SuffixOrder>(positions, callback);

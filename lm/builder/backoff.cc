@@ -44,7 +44,7 @@ class Callback {
 } // namespace
 
 void Backoff::Run(const ChainPositions &positions) {
-  boost::timer::auto_cpu_timer t(std::cerr, 1, "Backoff renormalization took %w seconds\n");
+  boost::timer::auto_cpu_timer t(std::cerr, 1, "(%w s) Renormalized backoff weights\n");
 
   Callback callback(positions.size());
   JointOrder<Callback, PrefixOrder>(positions, callback);

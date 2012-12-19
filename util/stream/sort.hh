@@ -404,11 +404,11 @@ template <class Compare, class Combine = NeverCombine> class Sort {
 template <class Compare, class Combine> uint64_t BlockingSort(Chain &in, Chain &out, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine(), const std::string &timer_name = "") {
   Sort<Compare, Combine> sorter(in, config, compare, combine);
   {
-    boost::timer::auto_cpu_timer t(std::cerr, 1, timer_name + ": Partial merge sort blocked for %w seconds\n");
+    boost::timer::auto_cpu_timer t(std::cerr, 1, "(%w s) Partial merge sort was waiting\n");
     in.Wait(true);
   }
 
-  boost::timer::auto_cpu_timer t(std::cerr, 1, timer_name + ": Finishing partial merge sort took %w seconds\n");
+  boost::timer::auto_cpu_timer t(std::cerr, 1, "(%w s) Finished partial merge sort for " + timer_name + "\n");
   return sorter.Output(out);
 }
 

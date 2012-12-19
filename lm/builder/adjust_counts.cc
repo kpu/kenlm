@@ -124,7 +124,7 @@ class CollapseStream {
 } // namespace
 
 void AdjustCounts::Run(const ChainPositions &positions) {
-  boost::timer::auto_cpu_timer t(std::cerr, 1, "Adjusting counts took %w seconds\n");
+  boost::timer::auto_cpu_timer t(std::cerr, 1, "(%w s) Adjusted counts\n");
 
   const std::size_t order = positions.size();
   StatCollector stats(order, counts_, discounts_);
