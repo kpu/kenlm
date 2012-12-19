@@ -1,6 +1,6 @@
 #include "lm/builder/adjust_counts.hh"
 #include "lm/builder/multi_stream.hh"
-#include <boost/timer/timer.hpp>
+#include "lm/builder/timer.hh"
 
 #include <algorithm>
 
@@ -124,7 +124,7 @@ class CollapseStream {
 } // namespace
 
 void AdjustCounts::Run(const ChainPositions &positions) {
-  boost::timer::auto_cpu_timer t(std::cerr, 1, "Adjusting counts took %w seconds\n");
+  LM_TIMER("Adjusting counts took %w seconds\n");
 
   const std::size_t order = positions.size();
   StatCollector stats(order, counts_, discounts_);

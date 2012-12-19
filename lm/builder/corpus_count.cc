@@ -11,7 +11,7 @@
 
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/timer/timer.hpp>
+#include "lm/builder/timer.hh"
 
 #include <functional>
 
@@ -157,7 +157,7 @@ class Writer {
 } // namespace
 
 void CorpusCount::Run(const util::stream::ChainPosition &position) {
-  boost::timer::auto_cpu_timer t(std::cerr, 1, "Counting n-grams took %w seconds\n");
+  LM_TIMER("Counting n-grams took %w seconds\n");
 
   VocabHandout vocab(vocab_write_);
   const WordIndex end_sentence = vocab.Lookup("</s>");

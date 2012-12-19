@@ -4,7 +4,7 @@
 #include "lm/builder/multi_stream.hh"
 #include "lm/builder/sort.hh"
 
-#include <boost/timer/timer.hpp>
+#include "lm/builder/timer.hh"
 
 namespace lm { namespace builder {
 namespace {
@@ -44,7 +44,7 @@ class Callback {
 } // namespace
 
 void Backoff::Run(const ChainPositions &positions) {
-  boost::timer::auto_cpu_timer t(std::cerr, 1, "Backoff renormalization took %w seconds\n");
+  LM_TIMER("Backoff renormalization took %w seconds\n");
 
   Callback callback(positions.size());
   JointOrder<Callback, PrefixOrder>(positions, callback);

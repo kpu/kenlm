@@ -8,7 +8,7 @@
 #include "util/stream/io.hh"
 #include "util/stream/stream.hh"
 
-#include <boost/timer/timer.hpp>
+#include "lm/builder/timer.hh"
 
 #include <vector>
 
@@ -74,7 +74,7 @@ class MergeRight {
 
 // calculate the initial probability of each n-gram (before order-interpolation)
 void MergeRight::Run(const util::stream::ChainPosition &main_chain) {
-  boost::timer::auto_cpu_timer t(std::cerr, 1, "Calculating initial probabilities thread (MergeRight) took %w seconds\n");
+  LM_TIMER("Calculating initial probabilities thread (MergeRight) took %w seconds\n");
 
   config_.adder_in.entry_size = main_chain.GetChain().EntrySize();
   config_.adder_out.entry_size = sizeof(BufferEntry);
