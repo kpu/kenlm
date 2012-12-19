@@ -9,6 +9,7 @@
 #include "lm/builder/sort.hh"
 
 #include "util/file.hh"
+#include "util/stream/io.hh"
 
 #include <iostream>
 #include <vector>
@@ -81,8 +82,27 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   std::cerr << "Calculating backoff weights" << std::endl;
   chains >> Backoff();
 
-  BlockingSort<SuffixOrder>(unigrams, chains, config.sort, "Preparing to write ARPA file");
-  std::cerr << "Writing ARPA model" << std::endl;
+  // we don't *need* to sort after renormalizing the backoff weights to still produce a valid ARPA file
+  std::vector<boost::shared_ptr<util::stream::FileBuffer> > file_buffers; // must survive until PrintARPA is done
+  if (config.sorted_arpa) {
+    uint64_t backoff_bytes = BlockingSort<SuffixOrder>(unigrams, chains, config.sort, "Preparing to write ARPA file");
+    std::cerr << "[" << ToMB(backoff_bytes) << " MB] Renormalized backoff weights" << std::endl;
+  } else { 
+    // allocate a temporary holding location on disk (we'll use the same temp space as sorting)
+    for (size_t i = 0; i < config.order; ++i) {
+      file_buffers.push_back(boost::shared_ptr<util::stream::FileBuffer>(
+        new util::stream::FileBuffer(util::MakeTemp(config.sort.temp_prefix))));
+      chains[i] >> file_buffers.at(i)->Sink();
+    }
+    // wait for backoff weights to finish writing
+    chains.Wait();
+    // begin reading from disk again
+    for (size_t i = 0; i < config.order; ++i) {
+      chains[i] >> file_buffers.at(i)->Source();
+    }
+  }
+
+  std::cerr << "=== 6/6 Writing ARPA model ===" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
   bool interpolate_orders = true;
   HeaderInfo header_info(text.FileName(), corpus_count.TokenCount(), config.order, interpolate_orders);

@@ -21,6 +21,7 @@ int main(int argc, char *argv[]) {
     ("sort_lazy_arity", po::value<std::size_t>(&pipeline.sort.lazy_arity)->default_value(2), "Lazy sorting arity (this * order readers active)")
     ("sort_lazy_buffer", po::value<std::size_t>(&pipeline.sort.lazy_total_read_buffer)->default_value(1 << 25), "Lazy sorting read buffer size")
     ("interpolate_unigrams", "Interpolate the unigrams (default: emulate SRILM by not interpolating)")
+    ("sorted_arpa", "Sort the n-grams in the final ARPA file? (default: no)")
     ("verbose_header,V", "Add a verbose header to the ARPA file that includes information such as token count, smoothing type, etc.");
   if (argc == 1) {
     std::cerr << options << std::endl;
@@ -32,6 +33,7 @@ int main(int argc, char *argv[]) {
   pipeline.chain.entry_size = 0;
   pipeline.sort.chain = pipeline.chain;
   pipeline.verbose_header = !!vm.count("verbose_header");
+  pipeline.sorted_arpa = !!vm.count("sorted_arpa");
 
   lm::builder::InitialProbabilitiesConfig &initial = pipeline.initial_probs;
   initial.adder_in.block_size = 32768;

@@ -18,6 +18,7 @@ struct PipelineConfig {
   util::stream::SortConfig sort;
   InitialProbabilitiesConfig initial_probs;
   bool verbose_header;
+  bool sorted_arpa;
 
   const std::string &TempPrefix() const { return sort.temp_prefix; }
 };
