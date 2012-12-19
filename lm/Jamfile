@@ -13,7 +13,7 @@ update-if-changed $(ORDER-LOG) $(max-order) ;
 
 max-order += <dependency>$(ORDER-LOG) ;
 
-fakelib kenlm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quantize.cc read_arpa.cc search_hashed.cc search_trie.cc trie.cc trie_sort.cc value_build.cc virtual_interface.cc vocab.cc ../util//kenutil : <include>.. $(max-order) : : <include>.. $(max-order) ;
+fakelib kenlm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quantize.cc read_arpa.cc search_hashed.cc search_trie.cc sizes.cc trie.cc trie_sort.cc value_build.cc virtual_interface.cc vocab.cc ../util//kenutil : <include>.. $(max-order) : : <include>.. $(max-order) ;
 
 import testing ;
 
