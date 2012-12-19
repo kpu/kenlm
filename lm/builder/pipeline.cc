@@ -29,6 +29,10 @@ void PrintStatistics(const std::vector<uint64_t> &counts, const std::vector<Disc
 
 } // namespace
 
+uint64_t ToMB(uint64_t bytes) {
+  return bytes / 1024 / 1024;
+}
+
 void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream &out) {
   boost::timer::auto_cpu_timer t(std::cerr, 1, "Total wall time elapsed: %w seconds\n");
 
@@ -46,12 +50,13 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   // initially, we only need counts for the highest order n-grams
   // so we'll operate just on chains[config.order-1]
   // TODO: Don't stick this in the middle of a progress bar
-  std::cerr << "Counting and sorting n-grams" << std::endl;
+  std::cerr << "=== 1/6 Counting and sorting n-grams ===" << std::endl;
   CorpusCount corpus_count(text, config.order, vocab_file.get());
   chains[config.order - 1] >> boost::ref(corpus_count);
-  BlockingSort(chains[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner(), "Preparing to adjust counts");
+  uint64_t corpus_count_bytes = BlockingSort(chains[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner(), "Preparing to adjust counts");
+  std::cerr << "[" << ToMB(corpus_count_bytes) << " MB] N-gram counts" << std::endl;
 
-  std::cerr << "Calculating and sorting adjusted counts" << std::endl;
+  std::cerr << "=== 2/6 Calculating and sorting adjusted counts ===" << std::endl;
   std::vector<uint64_t> counts;
   std::vector<Discount> discounts;
   chains >> AdjustCounts(counts, discounts);
@@ -71,15 +76,17 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     }
     PrintStatistics(counts, discounts);
 
-    std::cerr << "Calculating and sorting initial probabilities" << std::endl;
+    std::cerr << "=== 3/6 Calculating and sorting initial probabilities ===" << std::endl;
     InitialProbabilities(config.initial_probs, discounts, sorts, chains);
   }
-  BlockingSort<SuffixOrder>(unigrams, chains, config.sort, "Preparing to interpolate orders");
-  std::cerr << "Calculating and sorting order-interpolated probabilities" << std::endl;
+  uint64_t init_probs_bytes = BlockingSort<SuffixOrder>(unigrams, chains, config.sort, "Preparing to interpolate orders");
+  std::cerr << "[" << ToMB(init_probs_bytes) << " MB] Initial probabilities" << std::endl;
+  std::cerr << "=== 4/6 Calculating and sorting order-interpolated probabilities ===" << std::endl;
   chains >> Interpolate(counts[0]);
 
-  BlockingSort<PrefixOrder>(unigrams, chains, config.sort, "Preparing to renormalize backoff weights");
-  std::cerr << "Calculating backoff weights" << std::endl;
+  uint64_t interp_bytes = BlockingSort<PrefixOrder>(unigrams, chains, config.sort, "Preparing to renormalize backoff weights");
+  std::cerr << "[" << ToMB(interp_bytes) << " MB] Order-interpolated probabilites" << std::endl;
+  std::cerr << "=== 5/6 Calculating backoff weights ===" << std::endl;
   chains >> Backoff();
 
   // we don't *need* to sort after renormalizing the backoff weights to still produce a valid ARPA file
@@ -108,6 +115,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   HeaderInfo header_info(text.FileName(), corpus_count.TokenCount(), config.order, interpolate_orders);
   chains >> PrintARPA(vocab, counts, (config.verbose_header ? &header_info : NULL), out) >> util::stream::kRecycle;
   chains.Wait();
+  //std::cerr << "[" << ToMB(arpa_bytes) << " MB] ARPA File" << std::endl;
 }
 
 }} // namespaces

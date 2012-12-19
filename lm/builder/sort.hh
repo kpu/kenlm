@@ -111,28 +111,31 @@ template <class Compare> class Sorts : private FixedArray<util::stream::Sort<Com
       return TwoReaders((*this)[index - 1].StealCompleted());
     }
 
-    void Output(Chains &chains) {
+    // returns total bytes written
+    uint64_t Output(Chains &chains) {
       assert(chains.size() == 1 + P::size());
       chains[0] >> unigrams_.Source();
+      uint64_t byte_count = 0;
       for (size_t i = 1; i < chains.size(); ++i) {
-        P::begin()[i - 1].Output(chains[i]);
+        byte_count += P::begin()[i - 1].Output(chains[i]);
       }
+      return byte_count;
     }
 
   private:
     util::stream::FileBuffer &unigrams_;
 };
 
-  template <class Compare> void BlockingSort(util::stream::FileBuffer &unigrams, Chains &chains, const util::stream::SortConfig &config, const std::string &timer_name) {
+  // returns total bytes written
+  template <class Compare> uint64_t BlockingSort(util::stream::FileBuffer &unigrams, Chains &chains, const util::stream::SortConfig &config, const std::string &timer_name) {
   Sorts<Compare> sorts(unigrams, chains, config);
   {
     boost::timer::auto_cpu_timer t(std::cerr, 1, timer_name + ": Partial merge sort blocked for %w seconds\n");
     chains.Wait(true);
   }
-  {
-    boost::timer::auto_cpu_timer t(std::cerr, 1, timer_name + ": Finishing partial merge sort took %w seconds\n");
-    sorts.Output(chains);
-  }
+  boost::timer::auto_cpu_timer t(std::cerr, 1, timer_name + ": Finishing partial merge sort took %w seconds\n");
+  uint64_t byte_count = sorts.Output(chains);
+  return byte_count;
 }
 
 } // namespace builder

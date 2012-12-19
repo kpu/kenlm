@@ -378,11 +378,14 @@ template <class Compare, class Combine = NeverCombine> class Sort {
       return data_.release();
     }
 
-    void Output(Chain &out) {
+    // returns the total number of bytes written
+    uint64_t Output(Chain &out) {
       MergeSort(config_, data_, offsets_file_, offsets_, compare_, combine_);
+      uint64_t byte_count = util::SizeOrThrow(data_.get());
       out >> OwningMergingReader<Compare, Combine>(data_.get(), offsets_, config_, compare_, combine_);
       data_.release();
       offsets_file_.release();
+      return byte_count;
     }
 
   private:
@@ -397,25 +400,26 @@ template <class Compare, class Combine = NeverCombine> class Sort {
     const Combine combine_;
 };
 
-template <class Compare, class Combine> void BlockingSort(Chain &in, Chain &out, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine(), const std::string &timer_name = "") {
+// returns total bytes written
+template <class Compare, class Combine> uint64_t BlockingSort(Chain &in, Chain &out, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine(), const std::string &timer_name = "") {
   Sort<Compare, Combine> sorter(in, config, compare, combine);
   {
     boost::timer::auto_cpu_timer t(std::cerr, 1, timer_name + ": Partial merge sort blocked for %w seconds\n");
     in.Wait(true);
   }
 
-  {
-    boost::timer::auto_cpu_timer t(std::cerr, 1, timer_name + ": Finishing partial merge sort took %w seconds\n");
-    sorter.Output(out);
-  }
+  boost::timer::auto_cpu_timer t(std::cerr, 1, timer_name + ": Finishing partial merge sort took %w seconds\n");
+  return sorter.Output(out);
 }
 
-template <class Compare, class Combine> void BlockingSort(Chain &chain, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine(), const std::string &timer_name = "") {
-  BlockingSort(chain, chain, config, compare, combine, timer_name);
+// returns total bytes written
+template <class Compare, class Combine> uint64_t BlockingSort(Chain &chain, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine(), const std::string &timer_name = "") {
+  return BlockingSort(chain, chain, config, compare, combine, timer_name);
 }
 
-  template <class Compare> void BlockingSort(Chain &chain, const SortConfig &config, const Compare &compare = Compare(), const std::string& timer_name = "") {
-  BlockingSort(chain, config, compare, NeverCombine(), timer_name);
+// returns total bytes written
+template <class Compare> uint64_t BlockingSort(Chain &chain, const SortConfig &config, const Compare &compare = Compare(), const std::string& timer_name = "") {
+  return BlockingSort(chain, config, compare, NeverCombine(), timer_name);
 }
 
 } // namespace stream

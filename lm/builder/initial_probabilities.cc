@@ -8,6 +8,7 @@
 #include "util/stream/io.hh"
 #include "util/stream/stream.hh"
 
+#include <boost/format.hpp>
 #include <boost/timer/timer.hpp>
 
 #include <vector>
@@ -73,9 +74,8 @@ class MergeRight {
 };
 
 // calculate the initial probability of each n-gram (before order-interpolation)
+// Run() gets invoked once for each order
 void MergeRight::Run(const util::stream::ChainPosition &main_chain) {
-  boost::timer::auto_cpu_timer t(std::cerr, 1, "Calculating initial probabilities thread (MergeRight) took %w seconds\n");
-
   config_.adder_in.entry_size = main_chain.GetChain().EntrySize();
   config_.adder_out.entry_size = sizeof(BufferEntry);
 
@@ -90,7 +90,10 @@ void MergeRight::Run(const util::stream::ChainPosition &main_chain) {
   add_out >> util::stream::kRecycle;
 
   NGramStream grams(main_chain);
-  // Without interpolation, the interpolation weight goes to <unk>.  
+  std::string timer_msg = (boost::format("Calculating initial probabilities for %1%-grams took %%w seconds\n") % grams->Order()).str();
+  boost::timer::auto_cpu_timer t(std::cerr, 1, timer_msg);
+
+  // Without interpolation, the interpolation weight goes to <unk>.
   if (grams->Order() == 1 && !config_.interpolate_unigrams) {
     BufferEntry sums(*static_cast<const BufferEntry*>(summed.Get()));
     assert(*grams->begin() == kUNK);
