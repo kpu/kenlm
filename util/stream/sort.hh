@@ -22,11 +22,11 @@
 #include "util/stream/config.hh"
 #include "util/stream/io.hh"
 #include "util/stream/stream.hh"
+#include "util/stream/timer.hh"
 
 #include "util/file.hh"
 #include "util/sized_iterator.hh"
 
-#include <boost/timer/timer.hpp>
 
 #include <algorithm>
 #include <queue>
@@ -400,12 +400,12 @@ template <class Compare, class Combine = NeverCombine> class Sort {
 template <class Compare, class Combine> void BlockingSort(Chain &in, Chain &out, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine(), const std::string &timer_name = "") {
   Sort<Compare, Combine> sorter(in, config, compare, combine);
   {
-    boost::timer::auto_cpu_timer t(std::cerr, 1, timer_name + ": Partial merge sort blocked for %w seconds\n");
+    UTIL_TIMER(timer_name + ": Sort barrier took %w seconds\n");
     in.Wait(true);
   }
 
   {
-    boost::timer::auto_cpu_timer t(std::cerr, 1, timer_name + ": Finishing partial merge sort took %w seconds\n");
+    UTIL_TIMER(timer_name + ": Non-lazy merge sort took %w seconds\n");
     sorter.Output(out);
   }
 }

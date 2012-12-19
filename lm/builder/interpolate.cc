@@ -5,7 +5,7 @@
 #include "lm/builder/sort.hh"
 #include "lm/lm_exception.hh"
 
-#include "lm/builder/timer.hh"
+#include "util/stream/timer.hh"
 
 #include <assert.h>
 
@@ -38,7 +38,7 @@ Interpolate::Interpolate(uint64_t unigram_count)
 
 // perform order-wise interpolation
 void Interpolate::Run(const ChainPositions &positions) {
-  LM_TIMER("Interpolating orders took %w seconds\n");
+  UTIL_TIMER("Interpolating orders took %w seconds\n");
 
   Callback callback(positions.size(), uniform_prob_);
   JointOrder<Callback, SuffixOrder>(positions, callback);

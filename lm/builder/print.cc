@@ -3,7 +3,7 @@
 #include "util/file.hh"
 #include "util/mmap.hh"
 
-#include "lm/builder/timer.hh"
+#include "util/stream/timer.hh"
 
 #include <string.h>
 
@@ -37,7 +37,7 @@ PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t>
 }
 
 void PrintARPA::Run(const ChainPositions &positions) {
-  LM_TIMER("Writing ARPA file took %w seconds\n");
+  UTIL_TIMER("Writing ARPA file took %w seconds\n");
 
   for (unsigned order = 1; order <= positions.size(); ++order) {
     out_ << "\\" << order << "-grams:" << '\n';

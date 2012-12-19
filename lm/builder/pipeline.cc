@@ -29,7 +29,7 @@ void PrintStatistics(const std::vector<uint64_t> &counts, const std::vector<Disc
 } // namespace
 
 void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream &out) {
-  LM_TIMER("Total wall time elapsed: %w seconds\n");
+  UTIL_TIMER("Total wall time elapsed: %w seconds\n");
 
   util::scoped_fd vocab_file(config.vocab_file.empty() ? 
       util::MakeTemp(config.TempPrefix()) : 
@@ -65,7 +65,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     Sorts<ContextOrder> sorts(unigrams, chains, config.sort);
 
     { // scope the timer
-      LM_TIMER("Preparing to calculate initial probabilities: Finishing partial merge sort took %w seconds\n");
+      UTIL_TIMER("Preparing to calculate initial probabilities: Finishing partial merge sort took %w seconds\n");
       chains.Wait(true);
     }
     PrintStatistics(counts, discounts);

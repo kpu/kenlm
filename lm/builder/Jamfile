@@ -1,14 +1,7 @@
-import testing ;
-
-if $(BOOST-VERSION) >= 104800 {
-  timer-link = <library>/top//boost_timer ;
-} else {
-  timer-link = ;
-}
-
 fakelib builder : corpus_count.cc adjust_counts.cc initial_probabilities.cc interpolate.cc backoff.cc pipeline.cc print.cc ../../util//kenutil ../../util/stream//stream ..//kenlm : : : <library>/top//boost_thread $(timer-link) ;
 
 exe lmplz : main.cc builder /top//boost_program_options ;
 
+import testing ;
 unit-test corpus_count_test : corpus_count_test.cc builder /top//boost_unit_test_framework ;
 unit-test adjust_counts_test : adjust_counts_test.cc builder /top//boost_unit_test_framework ;
