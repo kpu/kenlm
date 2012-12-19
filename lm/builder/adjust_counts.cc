@@ -5,6 +5,10 @@
 #include <algorithm>
 
 namespace lm { namespace builder {
+
+BadDiscountException::BadDiscountException() throw() {}
+BadDiscountException::~BadDiscountException() throw() {}
+
 namespace {
 // Return last word in full that is different.  
 const WordIndex* FindDifference(const NGram &full, const NGram &lower_last) {
@@ -24,18 +28,20 @@ class StatCollector {
 
     ~StatCollector() {}
 
-    void CalculateDiscounts() {
+    void CalculateDiscounts(bool inspect_discounts) {
       counts_.resize(orders_.size());
       discounts_.resize(orders_.size());
       for (std::size_t i = 0; i < orders_.size(); ++i) {
         const OrderStat &s = orders_[i];
         counts_[i] = s.count;
 
-        for (unsigned j = 1; j < 4; ++j) {
-          // TODO: Specialize error message for j == 3, meaning 3+
-          UTIL_THROW_IF(s.n[j] == 0, util::Exception, "Could not calculate Kneser-Ney discounts for "
-            << (i+1) << "-grams with adjusted count " << (j+1) << " because we didn't observe any "
-            << (i+1) << "-grams with adjusted count " << j << "; Is this small or artificial data?");
+        if (inspect_discounts) {
+          for (unsigned j = 1; j < 4; ++j) {
+            // TODO: Specialize error message for j == 3, meaning 3+
+            UTIL_THROW_IF(s.n[j] == 0, BadDiscountException, "Could not calculate Kneser-Ney discounts for "
+                << (i+1) << "-grams with adjusted count " << (j+1) << " because we didn't observe any "
+                << (i+1) << "-grams with adjusted count " << j << "; Is this small or artificial data?");
+          }
         }
 
         // See equation (26) in Chen and Goodman.
@@ -143,7 +149,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
     // Only unigrams.  Just collect stats.  
     for (NGramStream full(positions[0]); full; ++full) 
       stats.AddFull(full->Count());
-    stats.CalculateDiscounts();
+    stats.CalculateDiscounts(inspect_discounts_);
     return;
   }
 
@@ -204,7 +210,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   for (NGramStream *s = streams.begin(); s != streams.end(); ++s)
     s->Poison();
 
-  stats.CalculateDiscounts();
+  stats.CalculateDiscounts(inspect_discounts_);
 
   // NOTE: See special early-return case for unigrams near the top of this function
 }

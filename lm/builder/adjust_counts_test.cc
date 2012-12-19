@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(Simple) {
     }
 
     NGramStream input(chains[3].Add());
-    chains >> AdjustCounts(counts, discount);
+    chains >> AdjustCounts(counts, discount, false);
     for (unsigned i = 0; i < 4; ++i) {
       chains[i] >> boost::ref(outputs[i]);
     }
