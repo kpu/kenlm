@@ -8,6 +8,8 @@
 #include "lm/builder/print.hh"
 #include "lm/builder/sort.hh"
 
+#include "lm/sizes.hh"
+
 #include "util/file.hh"
 #include "util/stream/io.hh"
 
@@ -138,6 +140,7 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
     Chains second(config.order);
     master.SortAndReadTwice(second, config.initial_probs.adder_in);
     PrintStatistics(counts, discounts);
+    lm::ngram::ShowSizes(counts);
 
     std::cerr << "=== 3/6 Calculating and sorting initial probabilities ===" << std::endl;
     InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second);

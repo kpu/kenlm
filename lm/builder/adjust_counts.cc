@@ -32,17 +32,18 @@ class StatCollector {
         counts_[i] = s.count;
 
         for (unsigned j = 1; j < 4; ++j) {
-	  // TODO: Specialize error message for j == 3, meaning 3+
-	  UTIL_THROW_IF(s.n[j] == 0, util::Exception, "Could not calculate Kneser-Ney discounts for "
-            << i << "-grams with adjusted count " << (j+1) << " because we didn't observe any "
-            << i << "-grams with adjusted count " << j);
-	}
+          // TODO: Specialize error message for j == 3, meaning 3+
+          UTIL_THROW_IF(s.n[j] == 0, util::Exception, "Could not calculate Kneser-Ney discounts for "
+            << (i+1) << "-grams with adjusted count " << (j+1) << " because we didn't observe any "
+            << (i+1) << "-grams with adjusted count " << j << "; Is this small or artificial data?");
+        }
 
         // See equation (26) in Chen and Goodman.
         discounts_[i].amount[0] = 0.0;
         float y = static_cast<float>(s.n[1]) / static_cast<float>(s.n[1] + 2.0 * s.n[2]);
         for (unsigned j = 1; j < 4; ++j) {
           discounts_[i].amount[j] = static_cast<float>(j) - static_cast<float>(j + 1) * y * static_cast<float>(s.n[j+1]) / static_cast<float>(s.n[j]);
+          UTIL_THROW_IF(discounts_[i].amount[j] < 0.0 || discounts_[i].amount[j] > j, util::Exception, "ERROR: " << (i+1) << "-gram discount out of range for adjusted count " << j << ": " << discounts_[i].amount[j]);
         }
       }
     }
