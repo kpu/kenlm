@@ -83,60 +83,17 @@ struct AddCombiner {
 
 // The combiner is only used on a single chain, so I didn't bother to allow
 // that template.  
-template <class Compare> class Sorts : private FixedArray<util::stream::Sort<Compare> > {
+template <class Compare> class Sorts : public FixedArray<util::stream::Sort<Compare> > {
   private:
     typedef util::stream::Sort<Compare> S;
     typedef FixedArray<S> P;
 
   public:
-    Sorts(util::stream::FileBuffer &unigrams, Chains &chains, const util::stream::SortConfig &config)
-      : P(chains.size() - 1), unigrams_(unigrams) {
-      chains[0] >> unigrams_.Sink();
-      for (util::stream::Chain *i = chains.begin() + 1; i != chains.end(); ++i) {
-        new (P::end()) S(*i, config, Compare(i - chains.begin() + 1));
-        P::Constructed();
-      }
+    void push_back(util::stream::Chain &chain, const util::stream::SortConfig &config, const Compare &compare) {
+      new (P::end()) S(chain, config, compare);
+      P::Constructed();
     }
-
-    struct TwoReaders {
-      TwoReaders(int fd) : ahead(util::DupOrThrow(fd), true), behind(fd, true) {}
-      TwoReaders(util::stream::FileBuffer &buffer) 
-        : ahead(buffer.Source()), behind(buffer.Source()) {}
-      util::stream::PRead ahead;
-      util::stream::PRead behind;
-    };
-
-    TwoReaders OutputTwice(std::size_t index) {
-      if (index == 0) return TwoReaders(unigrams_);
-      return TwoReaders((*this)[index - 1].StealCompleted());
-    }
-
-    // returns total bytes written
-    uint64_t Output(Chains &chains) {
-      assert(chains.size() == 1 + P::size());
-      chains[0] >> unigrams_.Source();
-      uint64_t byte_count = 0;
-      for (size_t i = 1; i < chains.size(); ++i) {
-        byte_count += P::begin()[i - 1].Output(chains[i]);
-      }
-      return byte_count;
-    }
-
-  private:
-    util::stream::FileBuffer &unigrams_;
 };
-
-  // returns total bytes written
-  template <class Compare> uint64_t BlockingSort(util::stream::FileBuffer &unigrams, Chains &chains, const util::stream::SortConfig &config, const std::string &timer_name) {
-  Sorts<Compare> sorts(unigrams, chains, config);
-  {
-    UTIL_TIMER("(%w s) Partial merge sort was waiting\n");
-    chains.Wait(true);
-  }
-  UTIL_TIMER("(%w s) Finished partial (non-lazy) merge sort for " + timer_name + "\n");
-  uint64_t byte_count = sorts.Output(chains);
-  return byte_count;
-}
 
 } // namespace builder
 } // namespace lm

@@ -15,6 +15,19 @@ namespace lm { namespace builder {
 
 template <class T> class FixedArray {
   public:
+    explicit FixedArray(std::size_t count) {
+      Init(count);
+    }
+
+    FixedArray() : newed_end_(NULL) {}
+
+    void Init(std::size_t count) {
+      assert(!block_.get());
+      block_.reset(malloc(sizeof(T) * count));
+      if (!block_.get()) throw std::bad_alloc();
+      newed_end_ = begin();
+    }
+
     FixedArray(const FixedArray &from) {
       std::size_t size = from.newed_end_ - static_cast<const T*>(from.block_.get());
       Init(size);
@@ -31,6 +44,9 @@ template <class T> class FixedArray {
     // Always call Constructed after successful completion of new.  
     T *end() { return newed_end_; }
     const T *end() const { return newed_end_; }
+
+    T &back() { return *(end() - 1); }
+    const T &back() const { return *(end() - 1); }
 
     std::size_t size() const { return end() - begin(); }
     bool empty() const { return begin() == end(); }
@@ -49,19 +65,6 @@ template <class T> class FixedArray {
     }
 
   protected:
-    FixedArray() : newed_end_(NULL) {}
-
-    void Init(std::size_t count) {
-      assert(!block_.get());
-      block_.reset(malloc(sizeof(T) * count));
-      if (!block_.get()) throw std::bad_alloc();
-      newed_end_ = begin();
-    }
-
-    explicit FixedArray(std::size_t count) {
-      Init(count);
-    }
-
     void Constructed() {
       ++newed_end_;
     }
@@ -92,14 +95,6 @@ class Chains : public FixedArray<util::stream::Chain> {
     };
 
   public:
-    explicit Chains(std::vector<util::stream::ChainConfig> &config) 
-      : FixedArray<util::stream::Chain>(config.size()) {
-      for (std::vector<util::stream::ChainConfig>::iterator i = config.begin(); i != config.end(); ++i) {
-        new(end()) util::stream::Chain(*i);
-        Constructed();
-      }
-    }
-
     explicit Chains(std::size_t limit) : FixedArray<util::stream::Chain>(limit) {}
 
     template <class Worker> typename CheckForRun<Worker>::type &operator>>(const Worker &worker) {

@@ -161,7 +161,7 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
 
   VocabHandout vocab(vocab_write_);
   const WordIndex end_sentence = vocab.Lookup("</s>");
-  Writer writer(order_, position);
+  Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position);
   uint64_t count = 0;
   try {
     while(true) {
@@ -169,14 +169,12 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
       writer.StartSentence();
       for (util::TokenIter<util::SingleCharacter, true> w(line, ' '); w; ++w) {
         writer.Append(vocab.Lookup(*w));
-	++count;
+        ++count;
       }
       writer.Append(end_sentence);
     }
   } catch (const util::EndOfFileException &e) {}
   token_count_ = count;
-  std::cerr << "Done reading corpus" << std::endl;
-  std::cerr << "Token Count: " << TokenCount() << std::endl;
 }
 
 } // namespace builder

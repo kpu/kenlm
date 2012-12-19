@@ -62,30 +62,24 @@ class AddRight {
 class MergeRight {
   public:
     MergeRight(
-        const InitialProbabilitiesConfig &config, util::stream::PRead reader, const Discount &discount)
-      : config_(config), reader_(reader), discount_(discount) {}
+        const InitialProbabilitiesConfig &config, const util::stream::ChainPosition &secondary_reader, const Discount &discount)
+      : config_(config), secondary_reader_(secondary_reader), discount_(discount) {}
 
     void Run(const util::stream::ChainPosition &main_chain);
 
   private:
     InitialProbabilitiesConfig config_;
-    util::stream::PRead reader_;
+    util::stream::ChainPosition secondary_reader_;
     Discount discount_;
 };
 
 // calculate the initial probability of each n-gram (before order-interpolation)
 // Run() gets invoked once for each order
 void MergeRight::Run(const util::stream::ChainPosition &main_chain) {
-  config_.adder_in.entry_size = main_chain.GetChain().EntrySize();
   config_.adder_out.entry_size = sizeof(BufferEntry);
 
-  util::stream::Chain add_in(config_.adder_in);
-  add_in >> reader_;
-  util::stream::ChainPosition add_in_pos(add_in.Add());
-  add_in >> util::stream::kRecycle;
-
   util::stream::Chain add_out(config_.adder_out);
-  add_out >> AddRight(discount_, add_in_pos);
+  add_out >> AddRight(discount_, secondary_reader_);
   util::stream::Stream summed(add_out.Add());
   add_out >> util::stream::kRecycle;
 
@@ -122,11 +116,10 @@ void MergeRight::Run(const util::stream::ChainPosition &main_chain) {
 
 } // namespace
 
-void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Sorts<ContextOrder> &in, Chains &out) {
-  for (size_t i = 0; i < out.size(); ++i) {
-    Sorts<ContextOrder>::TwoReaders readers(in.OutputTwice(i));
-    out[i] >> readers.behind;
-    out[i] >> MergeRight(config, readers.ahead, discounts[i]);
+void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Chains &primary, Chains &secondary) {
+  for (size_t i = 0; i < primary.size(); ++i) {
+    primary[i] >> MergeRight(config, secondary[i].Add(), discounts[i]);
+    secondary[i] >> util::stream::kRecycle;
   }
 }
 

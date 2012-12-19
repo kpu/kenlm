@@ -8,8 +8,6 @@
 
 namespace lm {
 namespace builder {
-template <class T> class Sorts;
-class ContextOrder;
 class Chains;
 
 struct InitialProbabilitiesConfig {
@@ -22,11 +20,11 @@ struct InitialProbabilitiesConfig {
 
 /* Compute initial (uninterpolated) probabilities
  * Input: context sorted adjusted counts.  The file is read twice in
- * near-parallel threads, hence the need to get directly from the sorts.
+ * near-parallel threads, hence the need to have two input chains.  
  * Output: context sorted uninterpolated probabilities and their interpolation 
  * weights.  
  */
-void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Sorts<ContextOrder> &in, Chains &out);
+void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Chains &primary, Chains &secondary);
 
 } // namespace builder
 } // namespace lm

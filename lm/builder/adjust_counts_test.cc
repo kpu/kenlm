@@ -42,11 +42,11 @@ BOOST_AUTO_TEST_CASE(Simple) {
     util::stream::ChainConfig config;
     config.block_size = 100;
     config.block_count = 1;
-    std::vector<util::stream::ChainConfig> configs(4, config);
+    Chains chains(4);
     for (unsigned i = 0; i < 4; ++i) {
-      configs[i].entry_size = NGram::TotalSize(i + 1);
+      config.entry_size = NGram::TotalSize(i + 1);
+      chains.push_back(config);
     }
-    Chains chains(configs);
 
     NGramStream input(chains[3].Add());
     chains >> AdjustCounts(counts, discount);
