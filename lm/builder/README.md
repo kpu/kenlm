@@ -1,8 +1,9 @@
 Dependencies
 ============
 
-lmplz requires boost 1.48+, which is available in the Ubuntu repositories as of 12.04+:
+Boost >= 1.42.0 is required.  
 
+For Ubuntu,
 ```bash
 sudo apt-get install libboost1.48-all-dev
 ```
@@ -27,33 +28,16 @@ Building
 ```bash
 bjam
 ```
+Your distribution might package bjam and boost-build separately from Boost.  Both are required.   
 
 Usage
 =====
 
+Run
 ```bash
 $ bin/lmplz
 ```
-
-```
-Language model building options:
-  -o [ --order ] arg                  Order of the model
-  -t [ --temp_prefix ] arg (=/tmp/lm) Temporary file prefix
-  -v [ --vocab_file ] arg             Location to write vocabulary file
-  -b [ --block_size ] arg (=67108864) Block size
-  --block_count arg (=2)              Block count (per order)
-  -a [ --sort_arity ] arg (=4)        Arity to use for sorting
-  --sort_buffer arg (=67108864)       Sort read buffer size
-  --sort_lazy_arity arg (=2)          Lazy sorting arity (this * order readers 
-                                      active)
-  --sort_lazy_buffer arg (=33554432)  Lazy sorting read buffer size
-  --interpolate_unigrams              Interpolate the unigrams (default: 
-                                      emulate SRILM by not interpolating)
-  -V [ --verbose_header ]             Add a verbose header to the ARPA file 
-                                      that includes information such as token 
-                                      count, smoothing type, etc.
-```
-
+to see command line arguments
 
 Running
 =======
