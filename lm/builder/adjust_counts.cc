@@ -2,8 +2,6 @@
 #include "lm/builder/multi_stream.hh"
 #include "util/stream/timer.hh"
 
-#include <boost/format.hpp>
-
 #include <algorithm>
 
 namespace lm { namespace builder {
@@ -35,8 +33,9 @@ class StatCollector {
 
         for (unsigned j = 1; j < 4; ++j) {
 	  // TODO: Specialize error message for j == 3, meaning 3+
-	  UTIL_THROW_IF(s.n[j] == 0, util::Exception,
-            (boost::format("Could not calculate Kneser-Ney discounts for %1%-grams with adjusted count %2% because we didn't observe any %3%-grams with adjusted count %4%") % i % (j+1) % i % (j)).str());
+	  UTIL_THROW_IF(s.n[j] == 0, util::Exception, "Could not calculate Kneser-Ney discounts for "
+            << i << "-grams with adjusted count " << (j+1) << " because we didn't observe any "
+            << i << "-grams with adjusted count " << j);
 	}
 
         // See equation (26) in Chen and Goodman.
