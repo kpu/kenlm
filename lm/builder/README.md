@@ -31,9 +31,29 @@ bjam
 Usage
 =====
 
-```
+```bash
 $ bin/lmplz
 ```
+
+```
+Language model building options:
+  -o [ --order ] arg                  Order of the model
+  -t [ --temp_prefix ] arg (=/tmp/lm) Temporary file prefix
+  -v [ --vocab_file ] arg             Location to write vocabulary file
+  -b [ --block_size ] arg (=67108864) Block size
+  --block_count arg (=2)              Block count (per order)
+  -a [ --sort_arity ] arg (=4)        Arity to use for sorting
+  --sort_buffer arg (=67108864)       Sort read buffer size
+  --sort_lazy_arity arg (=2)          Lazy sorting arity (this * order readers 
+                                      active)
+  --sort_lazy_buffer arg (=33554432)  Lazy sorting read buffer size
+  --interpolate_unigrams              Interpolate the unigrams (default: 
+                                      emulate SRILM by not interpolating)
+  -V [ --verbose_header ]             Add a verbose header to the ARPA file 
+                                      that includes information such as token 
+                                      count, smoothing type, etc.
+```
+
 
 Running
 =======
