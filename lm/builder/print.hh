@@ -3,6 +3,7 @@
 
 #include "lm/builder/ngram.hh"
 #include "lm/builder/multi_stream.hh"
+#include "lm/builder/header_info.hh"
 #include "util/file.hh"
 #include "util/mmap.hh"
 
@@ -80,7 +81,8 @@ template <class V> class Print {
 
 class PrintARPA {
   public:
-    explicit PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> counts, std::ostream &out);
+    // header_info may be NULL to disable the header
+    explicit PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> counts, const HeaderInfo* header_info, std::ostream &out);
 
     void Run(const ChainPositions &positions);
 

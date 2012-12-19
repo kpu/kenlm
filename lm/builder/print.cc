@@ -3,6 +3,8 @@
 #include "util/file.hh"
 #include "util/mmap.hh"
 
+#include <boost/timer/timer.hpp>
+
 #include <string.h>
 
 namespace lm { namespace builder {
@@ -17,8 +19,16 @@ VocabReconstitute::VocabReconstitute(int fd) {
   }
 }
 
-PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> counts, std::ostream &out) 
+PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> counts, const HeaderInfo* header_info, std::ostream &out) 
   : vocab_(vocab), out_(out) {
+
+  if (header_info) {
+    out_ << "# Input file: " << header_info->input_file_ << '\n';
+    out_ << "# Token count: " << header_info-> token_count_ << '\n';
+    out_ << "# Order: " << header_info->order_ << '\n';
+    out_ << "# Smoothing: Modified Kneser-Ney" << '\n';
+    out_ << "# Interpolate orders? yes" << '\n';
+  }
   out_ << "\\data\\\n";
   for (size_t i = 0; i < counts.size(); ++i) {
     out_ << "ngram " << (i+1) << '=' << counts[i] << '\n';
@@ -27,6 +37,8 @@ PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t>
 }
 
 void PrintARPA::Run(const ChainPositions &positions) {
+  boost::timer::auto_cpu_timer t(std::cerr, 1, "Writing ARPA file took %w seconds\n");
+
   for (unsigned order = 1; order <= positions.size(); ++order) {
     out_ << "\\" << order << "-grams:" << '\n';
     for (NGramStream stream(positions[order - 1]); stream; ++stream) {

@@ -2,12 +2,12 @@
 #define LM_BUILDER_PIPELINE__
 
 #include "lm/builder/initial_probabilities.hh"
+#include "lm/builder/header_info.hh"
 #include "util/stream/config.hh"
+#include "util/file_piece.hh"
 
 #include <string>
 #include <cstddef>
-
-namespace util { class FilePiece; }
 
 namespace lm { namespace builder {
 
@@ -17,6 +17,7 @@ struct PipelineConfig {
   util::stream::ChainConfig chain;
   util::stream::SortConfig sort;
   InitialProbabilitiesConfig initial_probs;
+  bool verbose_header;
 
   const std::string &TempPrefix() const { return sort.temp_prefix; }
 };

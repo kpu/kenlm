@@ -5,6 +5,8 @@
 #include "lm/builder/sort.hh"
 #include "lm/lm_exception.hh"
 
+#include <boost/timer/timer.hpp>
+
 #include <assert.h>
 
 namespace lm { namespace builder {
@@ -34,7 +36,10 @@ class Callback {
 Interpolate::Interpolate(uint64_t unigram_count) 
   : uniform_prob_(1.0 / static_cast<float>(unigram_count - 1)) {}
 
+// perform order-wise interpolation
 void Interpolate::Run(const ChainPositions &positions) {
+  boost::timer::auto_cpu_timer t(std::cerr, 1, "Interpolating orders took %w seconds\n");
+
   Callback callback(positions.size(), uniform_prob_);
   JointOrder<Callback, SuffixOrder>(positions, callback);
 }

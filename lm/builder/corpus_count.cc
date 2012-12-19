@@ -11,6 +11,7 @@
 
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/timer/timer.hpp>
 
 #include <functional>
 
@@ -156,19 +157,26 @@ class Writer {
 } // namespace
 
 void CorpusCount::Run(const util::stream::ChainPosition &position) {
+  boost::timer::auto_cpu_timer t(std::cerr, 1, "Counting n-grams took %w seconds\n");
+
   VocabHandout vocab(vocab_write_);
   const WordIndex end_sentence = vocab.Lookup("</s>");
   Writer writer(order_, position);
+  uint64_t count = 0;
   try {
     while(true) {
       StringPiece line(from_.ReadLine());
       writer.StartSentence();
       for (util::TokenIter<util::SingleCharacter, true> w(line, ' '); w; ++w) {
         writer.Append(vocab.Lookup(*w));
+	++count;
       }
       writer.Append(end_sentence);
     }
   } catch (const util::EndOfFileException &e) {}
+  token_count_ = count;
+  std::cerr << "Done reading corpus" << std::endl;
+  std::cerr << "Token Count: " << TokenCount() << std::endl;
 }
 
 } // namespace builder

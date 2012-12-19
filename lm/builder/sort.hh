@@ -6,7 +6,10 @@
 #include "lm/word_index.hh"
 #include "util/stream/sort.hh"
 
+#include <boost/timer/timer.hpp>
+
 #include <functional>
+#include <string>
 
 namespace lm {
 namespace builder {
@@ -86,7 +89,7 @@ template <class Compare> class Sorts : private FixedArray<util::stream::Sort<Com
     typedef FixedArray<S> P;
 
   public:
-    Sorts(util::stream::FileBuffer &unigrams, Chains &chains, const util::stream::SortConfig &config) 
+    Sorts(util::stream::FileBuffer &unigrams, Chains &chains, const util::stream::SortConfig &config)
       : P(chains.size() - 1), unigrams_(unigrams) {
       chains[0] >> unigrams_.Sink();
       for (util::stream::Chain *i = chains.begin() + 1; i != chains.end(); ++i) {
@@ -120,10 +123,16 @@ template <class Compare> class Sorts : private FixedArray<util::stream::Sort<Com
     util::stream::FileBuffer &unigrams_;
 };
 
-template <class Compare> void BlockingSort(util::stream::FileBuffer &unigrams, Chains &chains, const util::stream::SortConfig &config) {
+  template <class Compare> void BlockingSort(util::stream::FileBuffer &unigrams, Chains &chains, const util::stream::SortConfig &config, const std::string &timer_name) {
   Sorts<Compare> sorts(unigrams, chains, config);
-  chains.Wait(true);
-  sorts.Output(chains);
+  {
+    boost::timer::auto_cpu_timer t(std::cerr, 1, timer_name + ": Partial merge sort blocked for %w seconds\n");
+    chains.Wait(true);
+  }
+  {
+    boost::timer::auto_cpu_timer t(std::cerr, 1, timer_name + ": Finishing partial merge sort took %w seconds\n");
+    sorts.Output(chains);
+  }
 }
 
 } // namespace builder
