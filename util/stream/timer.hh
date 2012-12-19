@@ -7,6 +7,7 @@
 #include <boost/timer/timer.hpp>
 #define UTIL_TIMER(str) boost::timer::auto_cpu_timer timer(std::cerr, 1, (str))
 #else
+#warning Using Boost older than 1.48. Timing information will not be available.
 #define UTIL_TIMER(str) 
 #endif
 
