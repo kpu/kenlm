@@ -2,6 +2,8 @@
 #include "lm/builder/multi_stream.hh"
 #include "util/stream/timer.hh"
 
+#include <boost/format.hpp>
+
 #include <algorithm>
 
 namespace lm { namespace builder {
@@ -22,12 +24,21 @@ class StatCollector {
       memset(&orders_[0], 0, sizeof(OrderStat) * order);
     }
 
-    ~StatCollector() {
+    ~StatCollector() {}
+
+    void CalculateDiscounts() {
       counts_.resize(orders_.size());
       discounts_.resize(orders_.size());
       for (std::size_t i = 0; i < orders_.size(); ++i) {
         const OrderStat &s = orders_[i];
         counts_[i] = s.count;
+
+        for (unsigned j = 1; j < 4; ++j) {
+	  // TODO: Specialize error message for j == 3, meaning 3+
+	  UTIL_THROW_IF(s.n[j] == 0, util::Exception,
+            (boost::format("Could not calculate Kneser-Ney discounts for %1%-grams with adjusted count %2% because we didn't observe any %3%-grams with adjusted count %4%") % i % (j+1) % i % (j)).str());
+	}
+
         // See equation (26) in Chen and Goodman.
         discounts_[i].amount[0] = 0.0;
         float y = static_cast<float>(s.n[1]) / static_cast<float>(s.n[1] + 2.0 * s.n[2]);
@@ -132,6 +143,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
     // Only unigrams.  Just collect stats.  
     for (NGramStream full(positions[0]); full; ++full) 
       stats.AddFull(full->Count());
+    stats.CalculateDiscounts();
     return;
   }
 
@@ -191,6 +203,10 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   // Poison everyone!  Except the N-grams which were already poisoned by the input.   
   for (NGramStream *s = streams.begin(); s != streams.end(); ++s)
     s->Poison();
+
+  stats.CalculateDiscounts();
+
+  // NOTE: See special early-return case for unigrams near the top of this function
 }
 
 }} // namespaces
