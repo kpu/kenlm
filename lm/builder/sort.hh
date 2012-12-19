@@ -6,7 +6,7 @@
 #include "lm/word_index.hh"
 #include "util/stream/sort.hh"
 
-#include <boost/timer/timer.hpp>
+#include "util/stream/timer.hh"
 
 #include <functional>
 #include <string>
@@ -130,10 +130,10 @@ template <class Compare> class Sorts : private FixedArray<util::stream::Sort<Com
   template <class Compare> uint64_t BlockingSort(util::stream::FileBuffer &unigrams, Chains &chains, const util::stream::SortConfig &config, const std::string &timer_name) {
   Sorts<Compare> sorts(unigrams, chains, config);
   {
-    boost::timer::auto_cpu_timer t(std::cerr, 1, "(%w s) Partial merge sort was waiting\n");
+    UTIL_TIMER("(%w s) Partial merge sort was waiting\n");
     chains.Wait(true);
   }
-  boost::timer::auto_cpu_timer t(std::cerr, 1, "(%w s) Finished partial merge sort for " + timer_name + "\n");
+  UTIL_TIMER("(%w s) Finished partial (non-lazy) merge sort for " + timer_name + "\n");
   uint64_t byte_count = sorts.Output(chains);
   return byte_count;
 }

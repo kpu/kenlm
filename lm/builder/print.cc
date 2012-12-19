@@ -3,7 +3,7 @@
 #include "util/file.hh"
 #include "util/mmap.hh"
 
-#include <boost/timer/timer.hpp>
+#include "util/stream/timer.hh"
 
 #include <string.h>
 
@@ -37,8 +37,7 @@ PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t>
 }
 
 void PrintARPA::Run(const ChainPositions &positions) {
-  boost::timer::auto_cpu_timer t(std::cerr, 1, "(%w s) Wrote ARPA file\n");
-
+  UTIL_TIMER("(%w s) Wrote ARPA file\n");
   for (unsigned order = 1; order <= positions.size(); ++order) {
     out_ << "\\" << order << "-grams:" << '\n';
     for (NGramStream stream(positions[order - 1]); stream; ++stream) {

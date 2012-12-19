@@ -139,9 +139,9 @@ rule boost ( min-version ) {
     echo Failed to run "$(cmd)" ;
     exit Boost does not seem to be installed or g++ is confused. : 1 ;
   }
-  boost-version = [ MATCH "#define BOOST_VERSION ([0-9]*)" : $(boost-shell[1]) ] ;
-  if $(boost-version) < $(min-version) && $(CLEANING) = no {
-    exit You have Boost $(boost-version).  This package requires Boost at least $(min-version) (and preferably newer). : 1 ;
+  constant BOOST-VERSION : [ MATCH "#define BOOST_VERSION ([0-9]*)" : $(boost-shell[1]) ] ;
+  if $(BOOST-VERSION) < $(min-version) && $(CLEANING) = no {
+    exit You have Boost $(BOOST-VERSION).  This package requires Boost at least $(min-version) (and preferably newer). : 1 ;
   }
   # If matching version tags exist, use them.  
   boost-lib-version = [ MATCH "#define BOOST_LIB_VERSION \"([^\"]*)\"" : $(boost-shell[1]) ] ;

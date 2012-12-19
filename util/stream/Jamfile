@@ -1,4 +1,10 @@
-fakelib stream : io.cc chain.cc ..//kenutil /top//boost_thread : : : <library>/top//boost_thread ;
+if $(BOOST-VERSION) >= 104800 {
+    timer-link = <library>/top//boost_timer ;
+} else {
+    timer-link = ;
+}
+
+fakelib stream : io.cc chain.cc ..//kenutil /top//boost_thread : : : <library>/top//boost_thread $(timer-link) ;
 
 import testing ;
 unit-test io_test : io_test.cc stream /top//boost_unit_test_framework ;

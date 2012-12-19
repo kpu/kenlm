@@ -7,9 +7,9 @@
 #include "util/stream/chain.hh"
 #include "util/stream/io.hh"
 #include "util/stream/stream.hh"
+#include "util/stream/timer.hh"
 
 #include <boost/format.hpp>
-#include <boost/timer/timer.hpp>
 
 #include <vector>
 
@@ -91,7 +91,7 @@ void MergeRight::Run(const util::stream::ChainPosition &main_chain) {
 
   NGramStream grams(main_chain);
   std::string timer_msg = (boost::format("(%%w s) Calculated initial probabilities for %1%-grams\n") % grams->Order()).str();
-  boost::timer::auto_cpu_timer t(std::cerr, 1, timer_msg);
+  UTIL_TIMER(timer_msg);
 
   // Without interpolation, the interpolation weight goes to <unk>.
   if (grams->Order() == 1 && !config_.interpolate_unigrams) {
