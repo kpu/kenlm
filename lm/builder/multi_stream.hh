@@ -62,6 +62,7 @@ template <class T> class FixedArray {
     void clear() {
       for (T *i = begin(); i != end(); ++i)
         i->~T();
+      newed_end_ = begin();
     }
 
   protected:

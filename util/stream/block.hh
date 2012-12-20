@@ -2,6 +2,7 @@
 #define UTIL_STREAM_BLOCK__
 
 #include <cstddef>
+#include <stdint.h>
 
 namespace util {
 namespace stream {
@@ -18,6 +19,10 @@ class Block {
 
     void *Get() { return mem_; }
     const void *Get() const { return mem_; }
+
+    const void *ValidEnd() const { 
+      return reinterpret_cast<const uint8_t*>(mem_) + valid_size_;
+    }
 
     operator bool() const { return mem_ != NULL; }
     bool operator!() const { return mem_ == NULL; }

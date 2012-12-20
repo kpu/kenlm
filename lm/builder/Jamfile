@@ -1,4 +1,4 @@
-fakelib builder : corpus_count.cc adjust_counts.cc initial_probabilities.cc interpolate.cc backoff.cc pipeline.cc print.cc ../../util//kenutil ../../util/stream//stream ..//kenlm : : : <library>/top//boost_thread $(timer-link) ;
+fakelib builder : corpus_count.cc adjust_counts.cc initial_probabilities.cc interpolate.cc pipeline.cc print.cc ../../util//kenutil ../../util/stream//stream ..//kenlm : : : <library>/top//boost_thread $(timer-link) ;
 
 exe lmplz : main.cc builder /top//boost_program_options ;
 

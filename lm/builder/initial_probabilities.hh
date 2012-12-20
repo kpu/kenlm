@@ -19,12 +19,14 @@ struct InitialProbabilitiesConfig {
 };
 
 /* Compute initial (uninterpolated) probabilities
- * Input: context sorted adjusted counts.  The file is read twice in
- * near-parallel threads, hence the need to have two input chains.  
- * Output: context sorted uninterpolated probabilities and their interpolation 
- * weights.  
+ * primary: the normal chain of n-grams.  Incoming is context sorted adjusted
+ *   counts.  Outgoing has uninterpolated probabilities for use by Interpolate.
+ * second_in: a second copy of the primary input.  Discard the output.  
+ * gamma_out: Computed gamma values are output on these chains in suffix order.
+ *   The values are bare floats and should be buffered for interpolation to
+ *   use.  
  */
-void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Chains &primary, Chains &secondary);
+void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Chains &primary, Chains &second_in, Chains &gamma_out);
 
 } // namespace builder
 } // namespace lm

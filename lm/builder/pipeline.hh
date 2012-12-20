@@ -17,13 +17,14 @@ struct PipelineConfig {
   util::stream::ChainConfig chain;
   util::stream::SortConfig sort;
   InitialProbabilitiesConfig initial_probs;
+  util::stream::ChainConfig read_backoffs;
   bool verbose_header;
   bool sorted_arpa;
 
   const std::string &TempPrefix() const { return sort.temp_prefix; }
 };
 
-void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream &out);
+void Pipeline(PipelineConfig config, util::FilePiece &text, std::ostream &out);
 
 }} // namespaces
 #endif // LM_BUILDER_PIPELINE__

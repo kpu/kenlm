@@ -29,6 +29,7 @@ class VocabHandout {
       
       Lookup("<unk>"); // Force 0
       Lookup("<s>"); // Force 1
+      Lookup("</s>"); // Force 2
     }
 
     WordIndex Lookup(const StringPiece &word) {

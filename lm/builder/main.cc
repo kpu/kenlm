@@ -36,11 +36,13 @@ int main(int argc, char *argv[]) {
   pipeline.sorted_arpa = !!vm.count("sorted_arpa");
 
   lm::builder::InitialProbabilitiesConfig &initial = pipeline.initial_probs;
+  initial.interpolate_unigrams = !!vm.count("interpolate_unigrams");
+  // TODO: evaluate options for these.  
   initial.adder_in.block_size = 32768;
   initial.adder_in.block_count = 2;
-  initial.adder_out.block_size = 512;
+  initial.adder_out.block_size = 32768;
   initial.adder_out.block_count = 2;
-  initial.interpolate_unigrams = !!vm.count("interpolate_unigrams");
+  pipeline.read_backoffs = initial.adder_out;
 
   util::FilePiece in(0, "stdin", &std::cerr);
   lm::builder::Pipeline(pipeline, in, std::cout);

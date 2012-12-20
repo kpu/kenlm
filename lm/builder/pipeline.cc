@@ -1,7 +1,6 @@
 #include "lm/builder/pipeline.hh"
 
 #include "lm/builder/adjust_counts.hh"
-#include "lm/builder/backoff.hh"
 #include "lm/builder/corpus_count.hh"
 #include "lm/builder/initial_probabilities.hh"
 #include "lm/builder/interpolate.hh"
@@ -29,8 +28,6 @@ void PrintStatistics(const std::vector<uint64_t> &counts, const std::vector<Disc
   }
 }
 
-} // namespace
-
 uint64_t ToMB(uint64_t bytes) {
   return bytes / 1024 / 1024;
 }
@@ -47,6 +44,8 @@ class Master {
       // Setup unigram file.  
       files_.push_back(util::MakeTemp(config_.TempPrefix()));
     }
+
+    const PipelineConfig &Config() const { return config_; }
 
     Chains &MutableChains() { return chains_; }
 
@@ -113,8 +112,46 @@ class Master {
     std::vector<bool> in_memory_;
 };
 
-void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream &out) {
+void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts, Master &master, FixedArray<util::stream::FileBuffer> &gammas) {
+  const PipelineConfig &config = master.Config();
+  Chains second(config.order);
+
+  master.SortAndReadTwice(second, config.initial_probs.adder_in);
+  PrintStatistics(counts, discounts);
+  lm::ngram::ShowSizes(counts);
+
+  std::cerr << "=== 3/5 Calculating and sorting initial probabilities ===" << std::endl;
+  Chains gamma_chains(config.order);
+  InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second, gamma_chains);
+  // Don't care about gamma for 0.  
+  gamma_chains[0] >> util::stream::kRecycle;
+  gammas.Init(config.order - 1);
+  for (std::size_t i = 1; i < config.order; ++i) {
+    gammas.push_back(util::MakeTemp(config.TempPrefix()));
+    gamma_chains[i] >> gammas[i - 1].Sink();
+  }
+  master.Sort<SuffixOrder>("Initial Probabilities");
+}
+
+void InterpolateProbabilities(uint64_t unigram_count, Master &master, FixedArray<util::stream::FileBuffer> &gammas) {
+  const PipelineConfig &config = master.Config();
+  std::cerr << "=== 4/5 Calculating and sorting order-interpolated probabilities ===" << std::endl;
+  Chains gamma_chains(config.order - 1);
+  for (std::size_t i = 0; i < config.order - 1; ++i) {
+    gamma_chains.push_back(config.read_backoffs);
+    gamma_chains.back() >> gammas[i].Source();
+  }
+  master >> Interpolate(unigram_count, ChainPositions(gamma_chains));
+  gamma_chains >> util::stream::kRecycle;
+  master.BufferFinal();
+}
+
+} // namespace
+
+void Pipeline(PipelineConfig config, util::FilePiece &text, std::ostream &out) {
   UTIL_TIMER("[%w s] Total wall time elapsed\n");
+
+  config.read_backoffs.entry_size = sizeof(float);
 
   util::scoped_fd vocab_file(config.vocab_file.empty() ? 
       util::MakeTemp(config.TempPrefix()) : 
@@ -124,48 +161,29 @@ void Pipeline(const PipelineConfig &config, util::FilePiece &text, std::ostream 
   // initially, we only need counts for the highest order n-grams
   // so we'll operate just on chains[config.order-1]
   // TODO: Don't stick this in the middle of a progress bar
-  std::cerr << "=== 1/6 Counting and sorting n-grams ===" << std::endl;
+  std::cerr << "=== 1/5 Counting and sorting n-grams ===" << std::endl;
   uint64_t token_count;
   master.MutableChains()[config.order - 1] >> CorpusCount(text, vocab_file.get(), token_count);
   uint64_t corpus_count_bytes = BlockingSort(master.MutableChains()[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner(), "Preparing to adjust counts");
   std::cerr << "[" << ToMB(corpus_count_bytes) << " MB] N-gram counts" << std::endl;
 
-  std::cerr << "=== 2/6 Calculating and sorting adjusted counts ===" << std::endl;
+  std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;
   std::vector<uint64_t> counts;
   std::vector<Discount> discounts;
   master >> AdjustCounts(counts, discounts);
 
-  // Uninterpolated probabilities reads the file twice in separate threads, hence the special handling.  
   {
-    Chains second(config.order);
-    master.SortAndReadTwice(second, config.initial_probs.adder_in);
-    PrintStatistics(counts, discounts);
-    lm::ngram::ShowSizes(counts);
-
-    std::cerr << "=== 3/6 Calculating and sorting initial probabilities ===" << std::endl;
-    InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second);
-  }
-  master.Sort<SuffixOrder>("Initial Probabilities"); 
-  std::cerr << "=== 4/6 Calculating and sorting order-interpolated probabilities ===" << std::endl;
-  master >> Interpolate(counts[0]);
-
-  master.Sort<PrefixOrder>("Order-interpolated probabilities");
-  std::cerr << "=== 5/6 Calculating backoff weights ===" << std::endl;
-  master >> Backoff();
-
-  if (config.sorted_arpa) {
-    master.Sort<SuffixOrder>("Sorting ARPA entries in suffix order");
-  } else { 
-    master.BufferFinal();
+    FixedArray<util::stream::FileBuffer> gammas;
+    InitialProbabilities(counts, discounts, master, gammas);
+    InterpolateProbabilities(counts[0], master, gammas);
   }
 
-  std::cerr << "=== 6/6 Writing ARPA model ===" << std::endl;
+  std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
   bool interpolate_orders = true;
   HeaderInfo header_info(text.FileName(), token_count, config.order, interpolate_orders);
   master >> PrintARPA(vocab, counts, (config.verbose_header ? &header_info : NULL), out) >> util::stream::kRecycle;
   master.MutableChains().Wait(true);
-  //std::cerr << "[" << ToMB(arpa_bytes) << " MB] ARPA File" << std::endl;
 }
 
 }} // namespaces

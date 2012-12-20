@@ -18,15 +18,9 @@ struct Uninterpolated {
   float gamma; // Interpolation weight for lower order.
 };
 
-struct Interpolated {
-  float prob;  // p(w_n | w_1^{n-1})
-  float lower; // p(w_n | w_2^{n-1})
-};
-
 union Payload {
   uint64_t count;
   Uninterpolated uninterp;
-  Interpolated interp;
   ProbBackoff complete;
 };
 
@@ -82,6 +76,7 @@ class NGram {
 
 const WordIndex kUNK = 0;
 const WordIndex kBOS = 1;
+const WordIndex kEOS = 2;
 
 } // namespace builder
 } // namespace lm
