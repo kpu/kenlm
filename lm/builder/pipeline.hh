@@ -19,7 +19,6 @@ struct PipelineConfig {
   InitialProbabilitiesConfig initial_probs;
   util::stream::ChainConfig read_backoffs;
   bool verbose_header;
-  bool sorted_arpa;
 
   const std::string &TempPrefix() const { return sort.temp_prefix; }
 };
