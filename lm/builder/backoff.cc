@@ -6,6 +6,8 @@
 
 #include "util/stream/timer.hh"
 
+#include <math.h>
+
 namespace lm { namespace builder {
 namespace {
 
@@ -27,8 +29,9 @@ class Callback {
     void Exit(unsigned order_minus_1, NGram &gram) {
       // TODO: rounding corner cases.  
       ProbBackoff &out = gram.Value().complete;
-      out.prob = log10(out.prob);
-      out.backoff = log10((1.0 - sums_[order_minus_1 + 1].prob) / (1.0 - sums_[order_minus_1 + 1].lower));
+      out.prob = std::log10(out.prob);
+      out.backoff = log1p(-sums_[order_minus_1 + 1].prob) - log1p(-sums_[order_minus_1 + 1].lower);
+      out.backoff /= M_LN10;
       sums_[order_minus_1 + 1].prob = 0.0;
       sums_[order_minus_1 + 1].lower = 0.0;
     }
