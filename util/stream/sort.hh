@@ -403,10 +403,7 @@ template <class Compare, class Combine = NeverCombine> class Sort {
 // returns total bytes written
 template <class Compare, class Combine> uint64_t BlockingSort(Chain &in, Chain &out, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine(), const std::string &timer_name = "") {
   Sort<Compare, Combine> sorter(in, config, compare, combine);
-  {
-    UTIL_TIMER("(%w s) Partial merge sort was waiting\n");
-    in.Wait(true);
-  }
+  in.Wait(true);
 
   UTIL_TIMER("(%w s) Finished partial (non-lazy) merge sort for " + timer_name + "\n");
   return sorter.Output(out);
