@@ -1,14 +1,26 @@
 #ifndef UTIL_PCQUEUE__
 #define UTIL_PCQUEUE__
 
-#include "util/wait_semaphore.hh"
-
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/utility.hpp>
 
+#include <errno.h>
+
 namespace util {
+
+inline void WaitSemaphore (boost::interprocess::interprocess_semaphore &on) {
+  while (1) {
+    try {
+      on.wait();
+      break;
+    }
+    catch (boost::interprocess::interprocess_exception &e) {
+      if (e.get_native_error() != EINTR) throw;
+    }
+  }
+}
 
 /* Producer consumer queue safe for multiple producers and multiple consumers.
  * T must be default constructable and have operator=.  
