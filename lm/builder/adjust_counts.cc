@@ -28,20 +28,18 @@ class StatCollector {
 
     ~StatCollector() {}
 
-    void CalculateDiscounts(bool inspect_discounts) {
+    void CalculateDiscounts() {
       counts_.resize(orders_.size());
       discounts_.resize(orders_.size());
       for (std::size_t i = 0; i < orders_.size(); ++i) {
         const OrderStat &s = orders_[i];
         counts_[i] = s.count;
 
-        if (inspect_discounts) {
-          for (unsigned j = 1; j < 4; ++j) {
-            // TODO: Specialize error message for j == 3, meaning 3+
-            UTIL_THROW_IF(s.n[j] == 0, BadDiscountException, "Could not calculate Kneser-Ney discounts for "
-                << (i+1) << "-grams with adjusted count " << (j+1) << " because we didn't observe any "
-                << (i+1) << "-grams with adjusted count " << j << "; Is this small or artificial data?");
-          }
+        for (unsigned j = 1; j < 4; ++j) {
+          // TODO: Specialize error message for j == 3, meaning 3+
+          UTIL_THROW_IF(s.n[j] == 0, BadDiscountException, "Could not calculate Kneser-Ney discounts for "
+              << (i+1) << "-grams with adjusted count " << (j+1) << " because we didn't observe any "
+              << (i+1) << "-grams with adjusted count " << j << "; Is this small or artificial data?");
         }
 
         // See equation (26) in Chen and Goodman.
@@ -49,7 +47,7 @@ class StatCollector {
         float y = static_cast<float>(s.n[1]) / static_cast<float>(s.n[1] + 2.0 * s.n[2]);
         for (unsigned j = 1; j < 4; ++j) {
           discounts_[i].amount[j] = static_cast<float>(j) - static_cast<float>(j + 1) * y * static_cast<float>(s.n[j+1]) / static_cast<float>(s.n[j]);
-          UTIL_THROW_IF(discounts_[i].amount[j] < 0.0 || discounts_[i].amount[j] > j, util::Exception, "ERROR: " << (i+1) << "-gram discount out of range for adjusted count " << j << ": " << discounts_[i].amount[j]);
+          UTIL_THROW_IF(discounts_[i].amount[j] < 0.0 || discounts_[i].amount[j] > j, BadDiscountException, "ERROR: " << (i+1) << "-gram discount out of range for adjusted count " << j << ": " << discounts_[i].amount[j]);
         }
       }
     }
@@ -149,7 +147,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
     // Only unigrams.  Just collect stats.  
     for (NGramStream full(positions[0]); full; ++full) 
       stats.AddFull(full->Count());
-    stats.CalculateDiscounts(inspect_discounts_);
+    stats.CalculateDiscounts();
     return;
   }
 
@@ -210,7 +208,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   for (NGramStream *s = streams.begin(); s != streams.end(); ++s)
     s->Poison();
 
-  stats.CalculateDiscounts(inspect_discounts_);
+  stats.CalculateDiscounts();
 
   // NOTE: See special early-return case for unigrams near the top of this function
 }

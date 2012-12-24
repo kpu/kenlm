@@ -34,6 +34,25 @@ struct Gram4 {
   uint64_t count;
 };
 
+class WriteInput {
+  public:
+    void Run(const util::stream::ChainPosition &position) {
+      NGramStream input(position);
+      Gram4 grams[] = {
+        {{0,0,0,0},10},
+        {{0,0,3,0},3},
+        // bos
+        {{1,1,1,2},5},
+        {{0,0,3,2},5},
+      };
+      for (size_t i = 0; i < sizeof(grams) / sizeof(Gram4); ++i, ++input) {
+        memcpy(input->begin(), grams[i].ids, sizeof(WordIndex) * 4);
+        input->Count() = grams[i].count;
+      }
+      input.Poison();
+    }
+};
+
 BOOST_AUTO_TEST_CASE(Simple) {
   KeepCopy outputs[4];
   std::vector<uint64_t> counts;
@@ -48,31 +67,20 @@ BOOST_AUTO_TEST_CASE(Simple) {
       chains.push_back(config);
     }
 
-    NGramStream input(chains[3].Add());
-    chains >> AdjustCounts(counts, discount, false);
+    chains[3] >> WriteInput();
+    ChainPositions for_adjust(chains);
     for (unsigned i = 0; i < 4; ++i) {
       chains[i] >> boost::ref(outputs[i]);
     }
     chains >> util::stream::kRecycle;
-
-    Gram4 grams[] = {
-      {{0,0,0,0},10},
-      {{0,0,3,0},3},
-      // bos
-      {{1,1,1,2},5},
-      {{0,0,3,2},5},
-    };
-    for (size_t i = 0; i < sizeof(grams) / sizeof(Gram4); ++i, ++input) {
-      memcpy(input->begin(), grams[i].ids, sizeof(WordIndex) * 4);
-      input->Count() = grams[i].count;
-    }
-    input.Poison();
+    BOOST_CHECK_THROW(AdjustCounts(counts, discount).Run(for_adjust), BadDiscountException);
   }
   BOOST_REQUIRE_EQUAL(4UL, counts.size());
   BOOST_CHECK_EQUAL(4UL, counts[0]);
-  BOOST_CHECK_EQUAL(4UL, counts[1]);
+  // These are no longer set because the discounts are bad.  
+/*  BOOST_CHECK_EQUAL(4UL, counts[1]);
   BOOST_CHECK_EQUAL(3UL, counts[2]);
-  BOOST_CHECK_EQUAL(3UL, counts[3]);
+  BOOST_CHECK_EQUAL(3UL, counts[3]);*/
   BOOST_REQUIRE_EQUAL(NGram::TotalSize(1) * 4, outputs[0].Size());
   NGram uni(outputs[0].Get(), 1);
   BOOST_CHECK_EQUAL(kUNK, *uni.begin());

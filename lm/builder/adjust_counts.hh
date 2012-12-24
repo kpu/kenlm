@@ -27,16 +27,14 @@ class BadDiscountException : public util::Exception {
  */
 class AdjustCounts {
   public:
-    // For testing, allow bad discounts to be passed through.  
-    AdjustCounts(std::vector<uint64_t> &counts, std::vector<Discount> &discounts, bool inspect_discounts = true)
-      : counts_(counts), discounts_(discounts), inspect_discounts_(inspect_discounts) {}
+    AdjustCounts(std::vector<uint64_t> &counts, std::vector<Discount> &discounts)
+      : counts_(counts), discounts_(discounts) {}
 
     void Run(const ChainPositions &positions);
 
   private:
     std::vector<uint64_t> &counts_;
     std::vector<Discount> &discounts_;
-    bool inspect_discounts_;
 };
 
 } // namespace builder
