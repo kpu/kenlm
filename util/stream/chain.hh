@@ -44,15 +44,19 @@ class Thread {
     template <class Position, class Worker> Thread(const Position &position, const Worker &worker)
       : thread_(boost::ref(*this), position, worker) {}
 
-    ~Thread() {
-      thread_.join();
-    }
+    ~Thread();
 
     template <class Position, class Worker> void operator()(const Position &position, Worker &worker) {
-      worker.Run(position);
+      try {
+        worker.Run(position);
+      } catch (const std::exception &e) {
+        UnhandledException(e);
+      }
     }
 
   private:
+    void UnhandledException(const std::exception &e);
+
     boost::thread thread_;
 };
 
@@ -79,7 +83,7 @@ class Chain {
       return config_.entry_size;
     }
     std::size_t BlockSize() const {
-      return config_.block_size;
+      return block_size_;
     }
 
     // Two ways to add to the chain: Add() or operator>>.  
@@ -125,6 +129,8 @@ class Chain {
     ChainPosition Complete();
 
     ChainConfig config_;
+
+    std::size_t block_size_;
 
     scoped_malloc memory_;
 

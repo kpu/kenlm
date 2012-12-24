@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
   
   ChainConfig config;
   config.entry_size = 8;
-  config.block_size = 100;
+  config.total_memory = 800;
   config.block_count = 3;
 
   SortConfig merge_config;
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
   merge_config.lazy_arity = 2;
   merge_config.lazy_total_read_buffer = 10;
   merge_config.chain.entry_size = 8;
-  merge_config.chain.block_size = 500;
+  merge_config.chain.total_memory = 500;
   merge_config.chain.block_count = 6;
 
   Chain chain(config);

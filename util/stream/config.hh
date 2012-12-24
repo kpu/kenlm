@@ -8,9 +8,9 @@ namespace util { namespace stream {
 
 struct ChainConfig {
   std::size_t entry_size;
-  // Chain's constructor will make this a multiple of entry_size. 
-  std::size_t block_size;
   std::size_t block_count;
+  // Chain's constructor will make this a multiple of entry_size. 
+  std::size_t total_memory;
 };
 
 struct SortConfig {

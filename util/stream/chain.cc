@@ -10,12 +10,22 @@
 #include <iostream>
 
 #include <stdint.h>
+#include <stdlib.h>
 
 namespace util {
 namespace stream {
 
 ChainConfigException::ChainConfigException() throw() { *this << "Chain configured with "; }
 ChainConfigException::~ChainConfigException() throw() {}
+
+Thread::~Thread() {
+  thread_.join();
+}
+
+void Thread::UnhandledException(const std::exception &e) {
+  std::cerr << e.what() << std::endl;
+  abort();
+}
 
 void Recycler::Run(const ChainPosition &position) {
   for (Link l(position); l; ++l) {
@@ -27,10 +37,10 @@ const Recycler kRecycle = Recycler();
 
 Chain::Chain(const ChainConfig &config) : config_(config), complete_called_(false) {
   UTIL_THROW_IF(!config.entry_size, ChainConfigException, "zero-size entries.");
-  UTIL_THROW_IF(!config.block_size, ChainConfigException, "block size zero");
   UTIL_THROW_IF(!config.block_count, ChainConfigException, "block count zero");
-  // Round up to multiple of config_.entry_size.
-  config_.block_size = config_.entry_size * ((config_.block_size + config_.entry_size - 1) / config_.entry_size);
+  UTIL_THROW_IF(config.total_memory < config.entry_size * config.block_count, ChainConfigException, config.total_memory << " total memory, too small for " << config.block_count << " blocks of containing entries of size " << config.entry_size);
+  // Round down block size to a multiple of entry size.   
+  block_size_ = config.total_memory / (config.block_count * config.entry_size) * config.entry_size;
 }
 
 Chain::~Chain() {
@@ -73,17 +83,17 @@ void Chain::Start() {
     // Allocate memory.  
     assert(threads_.empty());
     assert(queues_.empty());
-    std::size_t malloc_size = config_.block_size * config_.block_count;
+    std::size_t malloc_size = block_size_ * config_.block_count;
     memory_.reset(malloc(malloc_size));
-    UTIL_THROW_IF(!memory_.get(), util::ErrnoException, "Failed to allocate " << malloc_size << " bytes for " << config_.block_count << " blocks each of size " << config_.block_size);
+    UTIL_THROW_IF(!memory_.get(), util::ErrnoException, "Failed to allocate " << malloc_size << " bytes for " << config_.block_count << " blocks each of size " << block_size_);
   }
   // This queue can accomodate all blocks.    
-  queues_.push_back(new PCQueue<Block>(config_.block_size));
+  queues_.push_back(new PCQueue<Block>(config_.block_count));
   // Populate the lead queue with blocks.  
   uint8_t *base = static_cast<uint8_t*>(memory_.get());
   for (std::size_t i = 0; i < config_.block_count; ++i) {
-    queues_.front().Produce(Block(base, config_.block_size));
-    base += config_.block_size;
+    queues_.front().Produce(Block(base, block_size_));
+    base += block_size_;
   }
 }
 

@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_CASE(StreamTest) {
 
   ChainConfig config;
   config.entry_size = 8;
-  config.block_size = 30;
+  config.total_memory = 100;
   config.block_count = 12;
 
   Stream s;

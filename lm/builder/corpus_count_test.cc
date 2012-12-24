@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(Short) {
 
   util::stream::ChainConfig config;
   config.entry_size = NGram::TotalSize(3);
-  config.block_size = config.entry_size * 10;
+  config.total_memory = config.entry_size * 20;
   config.block_count = 2;
 
   util::scoped_fd vocab(util::MakeTemp("corpus_count_test_vocab"));

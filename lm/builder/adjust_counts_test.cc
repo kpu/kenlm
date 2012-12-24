@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(Simple) {
   std::vector<Discount> discount;
   {
     util::stream::ChainConfig config;
-    config.block_size = 100;
+    config.total_memory = 100;
     config.block_count = 1;
     Chains chains(4);
     for (unsigned i = 0; i < 4; ++i) {

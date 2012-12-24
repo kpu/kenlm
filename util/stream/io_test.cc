@@ -22,7 +22,7 @@ BOOST_AUTO_TEST_CASE(CopyFile) {
 
   ChainConfig config;
   config.entry_size = 8;
-  config.block_size = 30;
+  config.total_memory = 1024;
   config.block_count = 10;
 
   Chain(config) >> PRead(in.get()) >> Write(out.get());

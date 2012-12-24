@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
     ("order,o", po::value<std::size_t>(&pipeline.order)->required(), "Order of the model")
     ("temp_prefix,t", po::value<std::string>(&pipeline.sort.temp_prefix)->default_value("/tmp/lm"), "Temporary file prefix")
     ("vocab_file,v", po::value<std::string>(&pipeline.vocab_file)->default_value(""), "Location to write vocabulary file")
-    ("block_size,b", po::value<std::size_t>(&pipeline.chain.block_size)->default_value(1 << 26), "Block size")
+    ("chain_memory", po::value<std::size_t>(&pipeline.chain.total_memory)->default_value(1 << 26), "Memory for each chain")
     ("block_count", po::value<std::size_t>(&pipeline.chain.block_count)->default_value(2), "Block count (per order)")
     ("sort_arity,a", po::value<std::size_t>(&pipeline.sort.arity)->default_value(4), "Arity to use for sorting")
     ("sort_buffer", po::value<std::size_t>(&pipeline.sort.total_read_buffer)->default_value(1 << 26), "Sort read buffer size")
@@ -36,9 +36,9 @@ int main(int argc, char *argv[]) {
   lm::builder::InitialProbabilitiesConfig &initial = pipeline.initial_probs;
   initial.interpolate_unigrams = !!vm.count("interpolate_unigrams");
   // TODO: evaluate options for these.  
-  initial.adder_in.block_size = 32768;
+  initial.adder_in.total_memory = 32768;
   initial.adder_in.block_count = 2;
-  initial.adder_out.block_size = 32768;
+  initial.adder_out.total_memory = 32768;
   initial.adder_out.block_count = 2;
   pipeline.read_backoffs = initial.adder_out;
 
