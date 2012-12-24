@@ -38,7 +38,7 @@ void ErsatzProgress::Milestone() {
     next_ = std::numeric_limits<uint64_t>::max();
     out_ = NULL;
   } else {
-    next_ = std::max(next_, (stone * complete_) / kWidth);
+    next_ = std::max(next_, ((stone + 1) * complete_ + kWidth - 1) / kWidth);
   }
 }
 
