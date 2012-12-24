@@ -10,6 +10,9 @@
 // boost.  Also adds option to print nothing.  
 
 namespace util {
+
+extern const char kProgressBanner[];
+
 class ErsatzProgress {
   public:
     // No output.  

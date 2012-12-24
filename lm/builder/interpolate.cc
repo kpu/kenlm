@@ -5,8 +5,6 @@
 #include "lm/builder/sort.hh"
 #include "lm/lm_exception.hh"
 
-#include "util/stream/timer.hh"
-
 #include <assert.h>
 
 namespace lm { namespace builder {
@@ -50,7 +48,6 @@ Interpolate::Interpolate(uint64_t unigram_count, const ChainPositions &backoffs)
 
 // perform order-wise interpolation
 void Interpolate::Run(const ChainPositions &positions) {
-  UTIL_TIMER("(%w s) Interpolated orders\n");
   assert(positions.size() == backoffs_.size() + 1);
   Callback callback(uniform_prob_, backoffs_);
   JointOrder<Callback, SuffixOrder>(positions, callback);

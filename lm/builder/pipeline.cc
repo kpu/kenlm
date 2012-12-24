@@ -54,24 +54,27 @@ class Master {
       return *this;
     }
 
-    template <class Compare> void Sort(const std::string &name) {
+    template <class Compare> void Sort(const char *contents, const char *banner) {
       Sorts<Compare> sorts;
       SetupSorts(sorts);
+      std::cerr << banner << std::endl;
       uint64_t bytes = 0;
       for (std::size_t i = 1; i < config_.order; ++i) {
-        bytes += sorts[i - 1].Output(chains_[i]);
+        bytes += sorts[i - 1].Output(chains_[i], i == config_.order - 1 ? &std::cerr : NULL);
       }
-      std::cerr << "[" << ToMB(bytes) << " MB] " << name << std::endl;
+      // TODO: conflicting with progress bar.  
+      //std::cerr << "[" << ToMB(bytes) << " MB] " << contents << std::endl;
     }
 
-    void SortAndReadTwice(Chains &second, util::stream::ChainConfig second_config) {
-      Sorts<ContextOrder> sorts;
-      SetupSorts(sorts);
+    void SortAndReadTwice(Sorts<ContextOrder> &sorts, Chains &second, util::stream::ChainConfig second_config) {
       second_config.entry_size = NGram::TotalSize(1);
       second.push_back(second_config);
       second.back() >> files_[0].Source();
       for (std::size_t i = 1; i < config_.order; ++i) {
         util::scoped_fd fd(sorts[i - 1].StealCompleted());
+        if (i == config_.order - 1)
+          chains_[i].ResetProgress(&std::cerr, util::SizeOrThrow(fd.get()));
+
         chains_[i] >> util::stream::PRead(util::DupOrThrow(fd.get()), true);
         second_config.entry_size = NGram::TotalSize(i + 1);
         second.push_back(second_config);
@@ -91,7 +94,6 @@ class Master {
       }
     }
 
-  private:
     template <class Compare> void SetupSorts(Sorts<Compare> &sorts) {
       sorts.Init(config_.order - 1);
       // Unigrams don't get sorted because their order is always the same.
@@ -103,6 +105,7 @@ class Master {
       chains_[0] >> files_[0].Source();
     }
 
+  private:
     PipelineConfig config_;
 
     Chains chains_;
@@ -116,11 +119,15 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
   const PipelineConfig &config = master.Config();
   Chains second(config.order);
 
-  master.SortAndReadTwice(second, config.initial_probs.adder_in);
-  PrintStatistics(counts, discounts);
-  lm::ngram::ShowSizes(counts);
+  {
+    Sorts<ContextOrder> sorts;
+    master.SetupSorts(sorts);
+    PrintStatistics(counts, discounts);
+    lm::ngram::ShowSizes(counts);
+    std::cerr << "=== 3/5 Calculating and sorting initial probabilities ===" << std::endl;
+    master.SortAndReadTwice(sorts, second, config.initial_probs.adder_in);
+  }
 
-  std::cerr << "=== 3/5 Calculating and sorting initial probabilities ===" << std::endl;
   Chains gamma_chains(config.order);
   InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second, gamma_chains);
   // Don't care about gamma for 0.  
@@ -130,12 +137,11 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
     gammas.push_back(util::MakeTemp(config.TempPrefix()));
     gamma_chains[i] >> gammas[i - 1].Sink();
   }
-  master.Sort<SuffixOrder>("Initial Probabilities");
+  master.Sort<SuffixOrder>("Initial Probabilities", "=== 4/5 Calculating and sorting order-interpolated probabilities ===");
 }
 
 void InterpolateProbabilities(uint64_t unigram_count, Master &master, FixedArray<util::stream::FileBuffer> &gammas) {
   const PipelineConfig &config = master.Config();
-  std::cerr << "=== 4/5 Calculating and sorting order-interpolated probabilities ===" << std::endl;
   Chains gamma_chains(config.order - 1);
   for (std::size_t i = 0; i < config.order - 1; ++i) {
     gamma_chains.push_back(config.read_backoffs);

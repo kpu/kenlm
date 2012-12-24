@@ -7,9 +7,6 @@
 #include "util/stream/chain.hh"
 #include "util/stream/io.hh"
 #include "util/stream/stream.hh"
-#include "util/stream/timer.hh"
-
-#include <boost/format.hpp>
 
 #include <vector>
 
@@ -86,8 +83,6 @@ class MergeRight {
       util::stream::Stream summed(from_adder_);
 
       NGramStream grams(primary);
-      std::string timer_msg = (boost::format("(%%w s) Calculated initial probabilities for %1%-grams\n") % grams->Order()).str();
-      UTIL_TIMER(timer_msg);
 
       // Without interpolation, the interpolation weight goes to <unk>.
       if (grams->Order() == 1 && !interpolate_unigrams_) {

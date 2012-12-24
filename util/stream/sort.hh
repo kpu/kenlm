@@ -379,9 +379,10 @@ template <class Compare, class Combine = NeverCombine> class Sort {
     }
 
     // returns the total number of bytes written
-    uint64_t Output(Chain &out) {
+    uint64_t Output(Chain &out, std::ostream *progress = NULL) {
       MergeSort(config_, data_, offsets_file_, offsets_, compare_, combine_);
       uint64_t byte_count = util::SizeOrThrow(data_.get());
+      out.ResetProgress(progress, byte_count);
       out >> OwningMergingReader<Compare, Combine>(data_.get(), offsets_, config_, compare_, combine_);
       data_.release();
       offsets_file_.release();

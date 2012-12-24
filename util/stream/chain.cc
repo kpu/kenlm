@@ -51,7 +51,7 @@ ChainPosition Chain::Add() {
   if (!Running()) Start();
   PCQueue<Block> &in = queues_.back();
   queues_.push_back(new PCQueue<Block>(config_.block_count));
-  return ChainPosition(in, queues_.back(), this);
+  return ChainPosition(in, queues_.back(), this, progress_);
 }
 
 Chain &Chain::operator>>(const WriteAndRecycle &writer) {
@@ -73,6 +73,7 @@ void Chain::Wait(bool release_memory) {
     }
   }
   queues_.clear();
+  progress_.Complete();
   complete_called_ = false;
   if (release_memory) memory_.reset();
 }
@@ -101,7 +102,7 @@ ChainPosition Chain::Complete() {
   assert(Running());
   UTIL_THROW_IF(complete_called_, util::Exception, "CompleteLoop() called twice");
   complete_called_ = true;
-  return ChainPosition(queues_.back(), queues_.front(), this);
+  return ChainPosition(queues_.back(), queues_.front(), this, progress_);
 }
 
 Link::Link() : in_(NULL), out_(NULL), poisoned_(true) {}
@@ -111,6 +112,7 @@ void Link::Init(const ChainPosition &position) {
   in_ = position.in_;
   out_ = position.out_;
   poisoned_ = false;
+  progress_ = position.progress_;
   in_->Consume(current_);
 }
 
@@ -132,6 +134,7 @@ Link::~Link() {
 
 Link &Link::operator++() {
   assert(current_);
+  progress_ += current_.ValidSize();
   out_->Produce(current_);
   in_->Consume(current_);
   if (!current_) {

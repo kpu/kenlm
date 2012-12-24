@@ -3,6 +3,7 @@
 
 #include "util/stream/block.hh"
 #include "util/stream/config.hh"
+#include "util/stream/multi_progress.hh"
 #include "util/scoped.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -30,12 +31,14 @@ class ChainPosition {
   private:
     friend class Chain;
     friend class Link;
-    ChainPosition(PCQueue<Block> &in, PCQueue<Block> &out, Chain *chain) 
-      : in_(&in), out_(&out), chain_(chain) {}
+    ChainPosition(PCQueue<Block> &in, PCQueue<Block> &out, Chain *chain, MultiProgress &progress) 
+      : in_(&in), out_(&out), chain_(chain), progress_(progress.Add()) {}
 
     PCQueue<Block> *in_, *out_;
 
     Chain *chain_;
+
+    WorkerProgress progress_;
 };
 
 // Position is usually ChainPosition but if there are multiple streams involved, this can be ChainPositions.  
@@ -78,6 +81,11 @@ class Chain {
     explicit Chain(const ChainConfig &config);
 
     ~Chain();
+
+    void ResetProgress(std::ostream *out, uint64_t block_count) {
+      assert(!Running());
+      progress_.Reset(out, block_count);
+    }
 
     std::size_t EntrySize() const {
       return config_.entry_size;
@@ -139,6 +147,8 @@ class Chain {
     bool complete_called_;
 
     boost::ptr_vector<Thread> threads_;
+
+    MultiProgress progress_;
 };
 
 // Create the link in the worker thread using the position token.
@@ -167,7 +177,10 @@ class Link {
   private:
     Block current_;
     PCQueue<Block> *in_, *out_;
+ 
     bool poisoned_;
+
+    WorkerProgress progress_;
 };
 
 inline Chain &operator>>(Chain &chain, Link &link) {
