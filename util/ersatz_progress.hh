@@ -32,7 +32,6 @@ class ErsatzProgress {
 
     void Set(uint64_t to) {
       if ((current_ = to) >= next_) Milestone();
-      Milestone();
     }
 
     void Finished() {
