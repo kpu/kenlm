@@ -82,9 +82,13 @@ class Chain {
 
     ~Chain();
 
-    void ResetProgress(std::ostream *out, uint64_t block_count) {
+    void ActivateProgress() {
       assert(!Running());
-      progress_.Reset(out, block_count);
+      progress_.Activate();
+    }
+
+    void SetProgressTarget(uint64_t target) {
+      progress_.SetTarget(target);
     }
 
     std::size_t EntrySize() const {

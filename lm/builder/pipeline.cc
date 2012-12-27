@@ -58,9 +58,8 @@ class Master {
       Sorts<Compare> sorts;
       SetupSorts(sorts);
       std::cerr << banner << std::endl;
-      uint64_t bytes = 0;
       for (std::size_t i = 1; i < config_.order; ++i) {
-        bytes += sorts[i - 1].Output(chains_[i], i == config_.order - 1 ? &std::cerr : NULL);
+        sorts[i - 1].Output(chains_[i]);
       }
       // TODO: conflicting with progress bar.  
       //std::cerr << "[" << ToMB(bytes) << " MB] " << contents << std::endl;
@@ -72,9 +71,7 @@ class Master {
       second.back() >> files_[0].Source();
       for (std::size_t i = 1; i < config_.order; ++i) {
         util::scoped_fd fd(sorts[i - 1].StealCompleted());
-        if (i == config_.order - 1)
-          chains_[i].ResetProgress(&std::cerr, util::SizeOrThrow(fd.get()));
-
+        chains_[i].SetProgressTarget(util::SizeOrThrow(fd.get()));
         chains_[i] >> util::stream::PRead(util::DupOrThrow(fd.get()), true);
         second_config.entry_size = NGram::TotalSize(i + 1);
         second.push_back(second_config);
@@ -117,6 +114,7 @@ class Master {
 
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts, Master &master, FixedArray<util::stream::FileBuffer> &gammas) {
   const PipelineConfig &config = master.Config();
+  master.MutableChains().back().ActivateProgress();
   Chains second(config.order);
 
   {
@@ -170,7 +168,7 @@ void Pipeline(PipelineConfig config, util::FilePiece &text, std::ostream &out) {
   std::cerr << "=== 1/5 Counting and sorting n-grams ===" << std::endl;
   uint64_t token_count;
   master.MutableChains()[config.order - 1] >> CorpusCount(text, vocab_file.get(), token_count);
-  uint64_t corpus_count_bytes = BlockingSort(master.MutableChains()[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner(), "Preparing to adjust counts");
+  uint64_t corpus_count_bytes = BlockingSort(master.MutableChains()[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner());
   std::cerr << "[" << ToMB(corpus_count_bytes) << " MB] N-gram counts" << std::endl;
 
   std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;

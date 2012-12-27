@@ -3,7 +3,12 @@
 // TODO: merge some functionality with the simple progress bar?
 #include "util/ersatz_progress.hh"
 
+#include <iostream>
 #include <limits>
+
+#if !defined(_WIN32) && !defined(_WIN64)
+#include <unistd.h>
+#endif
 
 namespace util { namespace stream {
 
@@ -16,27 +21,35 @@ uint64_t Next(unsigned char stone, uint64_t complete) {
 
 } // namespace
 
-MultiProgress::MultiProgress(std::ostream *out, uint64_t complete) : out_(NULL) {
-  Reset(out, complete);
+MultiProgress::MultiProgress() : active_(false), complete_(std::numeric_limits<uint64_t>::max()), character_handout_(0) {}
+
+MultiProgress::~MultiProgress() {
+  if (active_ && complete_ != std::numeric_limits<uint64_t>::max())
+    std::cerr << '\n';
 }
 
-void MultiProgress::Reset(std::ostream *out, uint64_t complete) {
-  if (out_) *out_ << '\n';
-  out_ = out;
-  if (!out) {
-    complete_ = std::numeric_limits<uint64_t>::max();
-  } else if (!complete) {
-    complete_ = 1;
-  } else {
-    complete_ = complete;
-  }
+void MultiProgress::Activate() {
+  active_ = 
+#if !defined(_WIN32) && !defined(_WIN64)
+    // Is stderr a terminal?  
+    (isatty(2) == 1)
+#else
+    true
+#endif
+    ;
+}
+
+void MultiProgress::SetTarget(uint64_t complete) {
+  if (!active_) return;
+  complete_ = complete;
+  if (!complete) complete_ = 1;
   memset(display_, 0, sizeof(display_));
   character_handout_ = 0;
-  if (out_) (*out_) << kProgressBanner;
+  std::cerr << kProgressBanner;
 }
 
 WorkerProgress MultiProgress::Add() {
-  if (!out_)
+  if (!active_)
     return WorkerProgress(std::numeric_limits<uint64_t>::max(), *this, '\0');
   std::size_t character_index;
   {
@@ -48,12 +61,14 @@ WorkerProgress MultiProgress::Add() {
   return WorkerProgress(Next(0, complete_), *this, kDisplayCharacters[character_index]);
 }
 
-MultiProgress::~MultiProgress() {
-  if (out_) (*out_) << '\n';
+void MultiProgress::Finished() {
+  if (!active_ || complete_ == std::numeric_limits<uint64_t>::max()) return;
+  std::cerr << '\n';
+  complete_ = std::numeric_limits<uint64_t>::max();
 }
 
 void MultiProgress::Milestone(WorkerProgress &worker) {
-  assert(out_);
+  if (!active_ || complete_ == std::numeric_limits<uint64_t>::max()) return;
   unsigned char stone = std::min(static_cast<uint64_t>(kWidth), worker.current_ * kWidth / complete_);
   for (char *i = &display_[worker.stone_]; i < &display_[stone]; ++i) {
     *i = worker.character_;
@@ -62,7 +77,7 @@ void MultiProgress::Milestone(WorkerProgress &worker) {
   worker.stone_ = stone;
   {
     boost::unique_lock<boost::mutex> lock(mutex_);
-    (*out_) << '\r' << display_ << std::flush;
+    std::cerr << '\r' << display_ << std::flush;
   }
 }
 

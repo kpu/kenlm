@@ -378,15 +378,16 @@ template <class Compare, class Combine = NeverCombine> class Sort {
       return data_.release();
     }
 
-    // returns the total number of bytes written
-    uint64_t Output(Chain &out, std::ostream *progress = NULL) {
+    uint64_t Size() const {
+      return SizeOrThrow(data_.get());
+    }
+
+    void Output(Chain &out, std::ostream *progress = NULL) {
       MergeSort(config_, data_, offsets_file_, offsets_, compare_, combine_);
-      uint64_t byte_count = util::SizeOrThrow(data_.get());
-      out.ResetProgress(progress, byte_count);
+      out.SetProgressTarget(Size());
       out >> OwningMergingReader<Compare, Combine>(data_.get(), offsets_, config_, compare_, combine_);
       data_.release();
       offsets_file_.release();
-      return byte_count;
     }
 
   private:
@@ -401,23 +402,13 @@ template <class Compare, class Combine = NeverCombine> class Sort {
     const Combine combine_;
 };
 
-// returns total bytes written
-template <class Compare, class Combine> uint64_t BlockingSort(Chain &in, Chain &out, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine(), const std::string &timer_name = "") {
-  Sort<Compare, Combine> sorter(in, config, compare, combine);
-  in.Wait(true);
-
-  UTIL_TIMER("(%w s) Finished partial (non-lazy) merge sort for " + timer_name + "\n");
-  return sorter.Output(out);
-}
-
-// returns total bytes written
-template <class Compare, class Combine> uint64_t BlockingSort(Chain &chain, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine(), const std::string &timer_name = "") {
-  return BlockingSort(chain, chain, config, compare, combine, timer_name);
-}
-
-// returns total bytes written
-template <class Compare> uint64_t BlockingSort(Chain &chain, const SortConfig &config, const Compare &compare = Compare(), const std::string& timer_name = "") {
-  return BlockingSort(chain, config, compare, NeverCombine(), timer_name);
+// returns bytes to be read on demand.  
+template <class Compare, class Combine> uint64_t BlockingSort(Chain &chain, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = NeverCombine()) {
+  Sort<Compare, Combine> sorter(chain, config, compare, combine);
+  chain.Wait(true);
+  uint64_t size = sorter.Size();
+  sorter.Output(chain);
+  return size;
 }
 
 } // namespace stream

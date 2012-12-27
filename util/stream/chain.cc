@@ -73,7 +73,7 @@ void Chain::Wait(bool release_memory) {
     }
   }
   queues_.clear();
-  progress_.Complete();
+  progress_.Finished();
   complete_called_ = false;
   if (release_memory) memory_.reset();
 }

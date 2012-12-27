@@ -5,7 +5,6 @@
 #include <boost/thread/mutex.hpp>
 
 #include <cstddef>
-#include <ostream>
 
 #include <stdint.h>
 
@@ -17,21 +16,24 @@ class MultiProgress {
   public:
     static const unsigned char kWidth = 100;
 
-    MultiProgress(std::ostream *out = NULL, uint64_t complete = (uint64_t)-1);
-
-    void Reset(std::ostream *out = NULL, uint64_t complete = (uint64_t)-1);
+    MultiProgress();
 
     ~MultiProgress();
 
+    // Turns on showing (requires SetTarget too).
+    void Activate();
+
+    void SetTarget(uint64_t complete);
+
     WorkerProgress Add();
 
-    void Complete() { Reset(); }
+    void Finished();
 
   private:
     friend class WorkerProgress;
     void Milestone(WorkerProgress &worker);
 
-    std::ostream *out_;
+    bool active_;
 
     uint64_t complete_;
 
