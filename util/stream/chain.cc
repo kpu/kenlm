@@ -122,8 +122,8 @@ Link::Link(const ChainPosition &position) : in_(NULL) {
 
 Link::~Link() {
   if (current_) {
+    // Probably an exception unwinding.  
     std::cerr << "Last input should have been poison." << std::endl;
-    std::abort();
   } else {
     if (!poisoned_) {
       // Pass the poison!
