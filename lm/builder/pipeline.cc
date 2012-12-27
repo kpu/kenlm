@@ -71,6 +71,8 @@ class Master {
       second.back() >> files_[0].Source();
       for (std::size_t i = 1; i < config_.order; ++i) {
         util::scoped_fd fd(sorts[i - 1].StealCompleted());
+        if (i == config_.order - 1)
+          chains_[i].ActivateProgress();
         chains_[i].SetProgressTarget(util::SizeOrThrow(fd.get()));
         chains_[i] >> util::stream::PRead(util::DupOrThrow(fd.get()), true);
         second_config.entry_size = NGram::TotalSize(i + 1);
@@ -114,7 +116,6 @@ class Master {
 
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts, Master &master, FixedArray<util::stream::FileBuffer> &gammas) {
   const PipelineConfig &config = master.Config();
-  master.MutableChains().back().ActivateProgress();
   Chains second(config.order);
 
   {

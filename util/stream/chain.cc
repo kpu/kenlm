@@ -124,6 +124,7 @@ Link::~Link() {
   if (current_) {
     // Probably an exception unwinding.  
     std::cerr << "Last input should have been poison." << std::endl;
+    abort();
   } else {
     if (!poisoned_) {
       // Pass the poison!

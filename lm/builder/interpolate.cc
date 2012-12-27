@@ -19,6 +19,15 @@ class Callback {
       }
     }
 
+    ~Callback() {
+      for (std::size_t i = 0; i < backoffs_.size(); ++i) {
+        if (backoffs_[i]) {
+          std::cerr << "Backoffs do not match for order " << (i + 1) << std::endl;
+          abort();
+        }
+      }
+    }
+
     void Enter(unsigned order_minus_1, NGram &gram) {
       Payload &pay = gram.Value();
       pay.complete.prob = pay.uninterp.prob + pay.uninterp.gamma * probs_[order_minus_1];
