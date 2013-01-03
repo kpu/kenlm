@@ -109,6 +109,98 @@ class Offsets {
     uint64_t output_sum_;
 };
 
+// A priority queue of entries backed by file buffers
+template <class Compare> class MergeQueue {
+  public:
+    MergeQueue(int fd, std::size_t buffer_size, std::size_t entry_size, const Compare &compare)
+      : queue_(Greater(compare)), in_(fd), buffer_size_(buffer_size), entry_size_(entry_size) {}
+
+    void Push(void *base, uint64_t offset, uint64_t amount) {
+      queue_.push(Entry(base, in_, offset, amount, buffer_size_));
+    }
+
+    const void *Top() const {
+      return queue_.top().Current();
+    }
+
+    void Pop() {
+      Entry top(queue_.top());
+      queue_.pop();
+      if (top.Increment(in_, buffer_size_, entry_size_))
+        queue_.push(top);
+    }
+
+    bool Empty() const {
+      return queue_.empty();
+    }
+
+  private:
+    // Priority queue contains these entries.  
+    class Entry {
+      public:
+        Entry() {}
+
+        Entry(void *base, int fd, uint64_t offset, uint64_t amount, std::size_t buf_size) {
+          offset_ = offset;
+          remaining_ = amount;
+          buffer_end_ = static_cast<uint8_t*>(base) + buf_size;
+          Read(fd, buf_size);
+        }
+
+        bool Increment(int fd, std::size_t buf_size, std::size_t entry_size) {
+          current_ += entry_size;
+          if (current_ != buffer_end_) return true;
+          return Read(fd, buf_size);
+        }
+
+        const void *Current() const { return current_; }
+
+      private:
+        bool Read(int fd, std::size_t buf_size) {
+          current_ = buffer_end_ - buf_size;
+          std::size_t amount;
+          if (static_cast<uint64_t>(buf_size) < remaining_) {
+            amount = buf_size;
+          } else if (!remaining_) {
+            return false;
+          } else {
+            amount = remaining_;
+            buffer_end_ = current_ + remaining_;
+          }
+          PReadOrThrow(fd, current_, amount, offset_);
+          offset_ += amount;
+          assert(current_ <= buffer_end_);
+          remaining_ -= amount;
+          return true;
+        }
+
+        // Buffer
+        uint8_t *current_, *buffer_end_;
+        // File
+        uint64_t remaining_, offset_;
+    };
+
+    // Wrapper comparison function for queue entries.   
+    class Greater : public std::binary_function<const Entry &, const Entry &, bool> {
+      public:
+        explicit Greater(const Compare &compare) : compare_(compare) {}
+
+        bool operator()(const Entry &first, const Entry &second) const {
+          return compare_(second.Current(), first.Current());
+        }
+
+      private:
+        const Compare compare_;
+    };
+
+    typedef std::priority_queue<Entry, std::vector<Entry>, Greater> Queue;
+    Queue queue_;
+
+    const int in_;
+    const std::size_t buffer_size_;
+    const std::size_t entry_size_;
+};
+
 /* A worker object that merges.  If the number of pieces to merge exceeds the
  * arity, it outputs multiple sorted blocks, recording to out_offsets.  
  * However, users will only every see a single sorted block out output because
@@ -156,43 +248,20 @@ template <class Compare, class Combine> class MergingReader {
 
         // Populate queue.
         uint8_t *buf = static_cast<uint8_t*>(buffer.get());
-        QueueGreater inner_compare(compare_);
-        Queue queue(inner_compare);
+        MergeQueue<Compare> queue(in_, per_buffer, entry_size, compare_);
         for (std::size_t i = 0; i < arity; ++i, buf += per_buffer) {
-          QueueEntry entry;
-          entry.offset = in_offsets_->TotalOffset();
-          entry.remaining = in_offsets_->NextSize();
-          assert(entry.remaining);
-          assert(!(entry.remaining % entry_size));
-          // current is set relative to end by Read. 
-          entry.buffer_end = buf + per_buffer;
-          // entries has only non-empty streams, so this is always true.  
-          entry.Read(in_, per_buffer);
-          assert(entry.current < entry.buffer_end);
-          queue.push(entry);
+          uint64_t offset = in_offsets_->TotalOffset();
+          queue.Push(buf, offset, in_offsets_->NextSize()); 
         }
 
         uint64_t written = 0;
-
-        assert(!queue.empty());
-        // Write the first one for the combiner.  
-        {
-          QueueEntry top(queue.top());
-          queue.pop();
-          memcpy(str.Get(), top.current, entry_size);
-          if (top.Increment(in_, per_buffer, entry_size))
-            queue.push(top);
-        }
-
-        while (!queue.empty()) {
-          QueueEntry top(queue.top());
-          queue.pop();
-          if (!combine_(str.Get(), top.current, compare_)) {
+        // Merge including combiner support.  
+        memcpy(str.Get(), queue.Top(), entry_size);
+        for (queue.Pop(); !queue.Empty(); queue.Pop()) {
+          if (!combine_(str.Get(), queue.Top(), compare_)) {
             ++written; ++str;
-            memcpy(str.Get(), top.current, entry_size);
+            memcpy(str.Get(), queue.Top(), entry_size);
           }
-          if (top.Increment(in_, per_buffer, entry_size))
-            queue.push(top);
         }
         ++written; ++str;
         if (out_offsets_)
@@ -201,7 +270,7 @@ template <class Compare, class Combine> class MergingReader {
       str.Poison();
     }
 
-  private:
+  private: 
     void ReadSingle(uint64_t offset, const uint64_t size, const ChainPosition &position) {
       // Special case: only one to read.  
       const uint64_t end = offset + size;
@@ -216,51 +285,7 @@ template <class Compare, class Combine> class MergingReader {
       (++l).Poison();
       return;
     }
-
-    struct QueueEntry {
-      bool Read(int fd, std::size_t buf_size) {
-        current = buffer_end - buf_size;
-        std::size_t amount;
-        if (static_cast<uint64_t>(buf_size) < remaining) {
-          amount = buf_size;
-        } else {
-          amount = remaining;
-          buffer_end = current + remaining;
-          if (!remaining) return false;
-        }
-        PReadOrThrow(fd, current, amount, offset);
-        offset += amount;
-        assert(current <= buffer_end);
-        remaining -= amount;
-        return true;
-      }
-
-      bool Increment(int fd, std::size_t buf_size, std::size_t entry_size) {
-        current += entry_size;
-        if (current != buffer_end) return true;
-        return Read(fd, buf_size);
-      }
-
-      // Buffer
-      uint8_t *current, *buffer_end;
-      // File
-      uint64_t remaining, offset;
-    };
-
-    class QueueGreater : public std::binary_function<const QueueEntry &, const QueueEntry &, bool> {
-      public:
-        explicit QueueGreater(const Compare &compare) : compare_(compare) {}
-
-        bool operator()(const QueueEntry &first, const QueueEntry &second) const {
-          return compare_(second.current, first.current);
-        }
-
-      private:
-        const Compare compare_;
-    };
-
-    typedef std::priority_queue<QueueEntry, std::vector<QueueEntry>, QueueGreater> Queue;
-    
+   
     Compare compare_;
     Combine combine_;
 

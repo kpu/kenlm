@@ -73,8 +73,10 @@ class PrefixOrder : public Comparator<PrefixOrder> {
 
 // Sum counts for the same n-gram.
 struct AddCombiner {
-  bool operator()(void *first_void, void *second_void, const SuffixOrder &compare) {
-    NGram first(first_void, compare.Order()), second(second_void, compare.Order());
+  bool operator()(void *first_void, const void *second_void, const SuffixOrder &compare) const {
+    NGram first(first_void, compare.Order());
+    // There isn't a const version of NGram.  
+    NGram second(const_cast<void*>(second_void), compare.Order());
     if (memcmp(first.begin(), second.begin(), sizeof(WordIndex) * compare.Order())) return false;
     first.Count() += second.Count();
     return true;
