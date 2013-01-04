@@ -95,8 +95,7 @@ if $(with-macports) {
   boost-search = <search>$(with-macports)/lib ;
   I-boost-include = -I$(with-macports)/include ;
   boost-include = <include>$(with-macports)/include ;
-}
-else {
+} else {
   with-boost = [ option.get "with-boost" ] ;
   with-boost ?= [ os.environ "BOOST_ROOT" ] ;
   if $(with-boost) {
@@ -117,11 +116,11 @@ rule boost-lib ( name macro : deps * ) {
   #Link multi-threaded programs against the -mt version if available.  Old 
   #versions of boost do not have -mt tagged versions of all libraries.   Sadly,
   #boost.jam does not handle this correctly.  
-  local boost-check-static = "" ;
+  flags = $(L-boost-search)" -lboost_"$(name)"-mt$(boost-lib-version)" ;
   if $(boost-auto-shared) != "<link>shared" {
-    boost-check-static = "-static" ;
+    flags += " -static" ;
   }
-  if [ test_flags $(L-boost-search)" $(boost-check-static) -lboost_"$(name)"-mt$(boost-lib-version)" ] {
+  if [ test_flags $(flags) ] {
     lib inner_boost_$(name) : : <threading>single $(boost-search) <name>boost_$(name)$(boost-lib-version) : : <library>$(deps) ;
     lib inner_boost_$(name) : : <threading>multi $(boost-search) <name>boost_$(name)-mt$(boost-lib-version) : : <library>$(deps) ;
   } else {
@@ -160,7 +159,6 @@ rule boost ( min-version ) {
   boost-lib program_options PROGRAM_OPTIONS_DYN_LINK ;
   boost-lib unit_test_framework TEST_DYN_LINK ;
   boost-lib iostreams IOSTREAMS_DYN_LINK ;
-  boost-lib filesystem BOOST_FILE_SYSTEM_DYN_LINK ;
 }
  
 #Link normally to a library, but sometimes static isn't installed so fall back to dynamic.
@@ -204,7 +202,7 @@ if [ option.get "git" : : "yes" ] {
   constant GITTAG : "" ;
 }
 
-prefix = [ option.get "prefix" ] ;
+local prefix = [ option.get "prefix" ] ;
 if $(prefix) {
   prefix = [ path.root $(prefix) [ path.pwd ] ] ;
   prefix = $(prefix)$(GITTAG) ;
@@ -212,11 +210,13 @@ if $(prefix) {
   prefix = $(TOP)$(GITTAG) ;
 }
 
-bindir = [ option.get "bindir" : $(prefix)/bin ] ;
-libdir = [ option.get "libdir" : $(prefix)/lib ] ;
+path-constant PREFIX : $(prefix) ;
+
+path-constant BINDIR : [ option.get "bindir" : $(PREFIX)/bin ] ;
+path-constant LIBDIR : [ option.get "libdir" : $(PREFIX)/lib ] ;
 rule install-bin-libs ( deps * ) {
-  install prefix-bin : $(deps) : <location>$(bindir) <install-dependencies>on <install-type>EXE <link>shared:<dll-path>$(libdir) ;
-  install prefix-lib : $(deps) : <location>$(libdir) <install-dependencies>on <install-type>LIB <link>shared:<dll-path>$(libdir) ;
+  install prefix-bin : $(deps) : <location>$(BINDIR) <install-dependencies>on <install-type>EXE <link>shared:<dll-path>$(LIBDIR) ;
+  install prefix-lib : $(deps) : <location>$(LIBDIR) <install-dependencies>on <install-type>LIB <link>shared:<dll-path>$(LIBDIR) ;
 }
 rule install-headers ( name : list * : source-root ? ) {
   local includedir = [ option.get "includedir" : $(prefix)/include ] ;
