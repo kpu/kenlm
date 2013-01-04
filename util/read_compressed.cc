@@ -370,7 +370,7 @@ ReadBase *ReadFactory(int fd, uint64_t &raw_amount) {
       break;
   }
   try {
-    AdvanceOrThrow(fd, -ReadCompressed::kMagicSize);
+    SeekOrThrow(fd, 0);
   } catch (const util::ErrnoException &e) {
     return new UncompressedWithHeader(hold.release(), header, ReadCompressed::kMagicSize);
   }

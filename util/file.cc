@@ -1,3 +1,5 @@
+#define _LARGEFILE64_SOURCE
+
 #include "util/file.hh"
 
 #include "util/exception.hh"
@@ -163,7 +165,7 @@ void InternalSeek(int fd, int64_t off, int whence) {
   UTIL_THROW_IF((__int64)-1 == _lseeki64(fd, off, whence), ErrnoException, "Windows seek failed");
 
 #else
-  UTIL_THROW_IF((off_t)-1 == lseek(fd, off, whence), ErrnoException, "Seek failed");
+  UTIL_THROW_IF((off_t)-1 == lseek64(fd, off, whence), ErrnoException, "Seek failed");
 #endif
 }
 } // namespace
