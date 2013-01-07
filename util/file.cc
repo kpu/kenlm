@@ -1,4 +1,5 @@
 #define _LARGEFILE64_SOURCE
+#define _FILE_OFFSET_BITS 64
 
 #include "util/file.hh"
 
@@ -143,10 +144,8 @@ void InternalSeek(int fd, int64_t off, int whence) {
   UTIL_THROW_IF(
 #if defined(_WIN32) || defined(_WIN64)
     (__int64)-1 == _lseeki64(fd, off, whence), 
-#elif defined(__APPLE__) && defined(__MACH__)
-    (off_t)-1 == lseek(fd, off, whence),
 #else
-    (off64_t)-1 == lseek64(fd, off, whence),
+    (off_t)-1 == lseek(fd, off, whence),
 #endif
     ErrnoException, "Seek failed");
 }
