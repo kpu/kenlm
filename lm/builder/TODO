@@ -1,5 +1,5 @@
 More tests!
-Multithreading sort
-Some way to manage all the crazy config options
-Backoff corner cases
+Sharding.
+Some way to manage all the crazy config options.
 Option to build the binary file directly.  
+Interpolation of different orders.  
