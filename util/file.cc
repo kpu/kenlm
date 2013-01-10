@@ -79,11 +79,15 @@ uint64_t SizeFile(int fd) {
 }
 
 void ResizeOrThrow(int fd, uint64_t to) {
+  UTIL_THROW_IF(
 #if defined(_WIN32) || defined(_WIN64)
-  UTIL_THROW_IF(_chsize_s(fd, to), ErrnoException, "Resizing to " << to << " bytes failed");
+    _chsize_s
+#elif defined(OS_ANDROID)
+    ftruncate64
 #else
-  UTIL_THROW_IF(ftruncate(fd, to), ErrnoException, "Resizing to " << to << " bytes failed");
+    ftruncate
 #endif
+    (fd, to), ErrnoException, "Resizing to " << to << " bytes failed");
 }
 
 std::size_t PartialRead(int fd, void *to, std::size_t amount) {
