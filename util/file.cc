@@ -134,7 +134,11 @@ void PReadOrThrow(int fd, void *to, std::size_t size, uint64_t off) {
   UTIL_THROW(Exception, "TODO: PReadOrThrow for windows using ReadFile http://stackoverflow.com/questions/766477/are-there-equivalents-to-pread-on-different-platforms");
 #else
   for (;size ;) {
+#ifdef OS_ANDROID
+    ssize_t ret = pread64(fd, to, size, off);
+#else
     ssize_t ret = pread(fd, to, size, off);
+#endif
     if (ret <= 0) {
       UTIL_THROW_IF(ret == 0, EndOfFileException, " for reading " << size << " bytes at " << off << " in fd " << fd);
       UTIL_THROW(ErrnoException, " while reading " << size << " bytes at offset " << off);
