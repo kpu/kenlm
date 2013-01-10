@@ -64,9 +64,16 @@ uint64_t SizeFile(int fd) {
 #if defined(_WIN32) || defined(_WIN64)
   __int64 ret = _filelengthi64(fd);
   return (ret == -1) ? kBadSize : ret;
+#else // Not windows.
+
+#ifdef OS_ANDROID
+  struct stat64 sb;
+  int ret = fstat64(fd, &sb);
 #else
   struct stat sb;
-  if (fstat(fd, &sb) == -1 || (!sb.st_size && !S_ISREG(sb.st_mode))) return kBadSize;
+  int ret = fstat(fd, &sb);
+#endif
+  if (ret == -1 || (!sb.st_size && !S_ISREG(sb.st_mode))) return kBadSize;
   return sb.st_size;
 #endif
 }
@@ -143,7 +150,9 @@ namespace {
 void InternalSeek(int fd, int64_t off, int whence) {
   UTIL_THROW_IF(
 #if defined(_WIN32) || defined(_WIN64)
-    (__int64)-1 == _lseeki64(fd, off, whence), 
+    (__int64)-1 == _lseeki64(fd, off, whence),
+#elif defined(OS_ANDROID)
+    (off64_t)-1 == lseek64(fd, off, whence),
 #else
     (off_t)-1 == lseek(fd, off, whence),
 #endif
