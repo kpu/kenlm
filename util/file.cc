@@ -146,6 +146,18 @@ void FSyncOrThrow(int fd) {
 }
 
 namespace {
+
+// Static assert for 64-bit off_t size.
+#if !defined(_WIN32) && !defined(_WIN64) && !defined(OS_ANDROID)
+template <unsigned> struct CheckOffT;
+template <> struct CheckOffT<8> {
+  struct True {};
+};
+// If there's a compiler error on the next line, then off_t isn't 64 bit.  And
+// that makes me a sad panda.
+typedef CheckOffT<sizeof(off_t)>::True IgnoredType;
+#endif
+
 // Can't we all just get along?  
 void InternalSeek(int fd, int64_t off, int whence) {
   UTIL_THROW_IF(
