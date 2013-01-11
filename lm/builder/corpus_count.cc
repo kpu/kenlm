@@ -168,7 +168,7 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
     while(true) {
       StringPiece line(from_.ReadLine());
       writer.StartSentence();
-      for (util::TokenIter<util::SingleCharacter, true> w(line, ' '); w; ++w) {
+      for (util::TokenIter<util::AnyCharacter, true> w(line, " \t"); w; ++w) {
         WordIndex word = vocab.Lookup(*w);
         UTIL_THROW_IF(word <= 2, FormatLoadException, "Special word " << *w << " is not allowed in the corpus.  I plan to support models containing <unk> in the future.");
         writer.Append(word);
