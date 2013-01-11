@@ -66,24 +66,34 @@ class Offsets {
       WriteOrThrow(log_, &cur_, sizeof(Entry));
       SeekOrThrow(log_, sizeof(Entry)); // Skip 0,0 at beginning.
       cur_.run = 0;
+      if (block_count_) {
+        ReadOrThrow(log_, &cur_, sizeof(Entry));
+        assert(cur_.length);
+        assert(cur_.run);
+      }
     }
 
     uint64_t RemainingBlocks() const { return block_count_; }
 
     uint64_t TotalOffset() const { return output_sum_; }
 
-    // Throws EndOfFileException if out.
+    uint64_t PeekSize() const {
+      return cur_.length;
+    }
+
     uint64_t NextSize() {
-      assert(RemainingBlocks());
-      if (!cur_.run) {
-        ReadOrThrow(log_, &cur_, sizeof(Entry));
-        assert(cur_.length);
-      }
+      assert(block_count_);
+      uint64_t ret = cur_.length;
+      output_sum_ += ret;
+
       --cur_.run;
       --block_count_;
-      output_sum_ += cur_.length;
-      assert(cur_.length);
-      return cur_.length;
+      if (!cur_.run && block_count_) {
+        ReadOrThrow(log_, &cur_, sizeof(Entry));
+        assert(cur_.length);
+        assert(cur_.run);
+      }
+      return ret;
     }
 
     void Reset() {
@@ -128,6 +138,10 @@ template <class Compare> class MergeQueue {
       queue_.pop();
       if (top.Increment(in_, buffer_size_, entry_size_))
         queue_.push(top);
+    }
+
+    std::size_t Size() const {
+      return queue_.size();
     }
 
     bool Empty() const {
@@ -241,17 +255,23 @@ template <class Compare, class Combine> class MergingReader {
 
       while (in_offsets_->RemainingBlocks()) {
         // Use bigger buffers if there's less remaining.
-        std::size_t per_buffer = std::max(buffer_size_, total_memory_ / in_offsets_->RemainingBlocks());
+        uint64_t per_buffer = std::max(buffer_size_, total_memory_ / in_offsets_->RemainingBlocks());
         per_buffer -= per_buffer % entry_size;
         assert(per_buffer);
 
         // Populate queue.
         MergeQueue<Compare> queue(in_, per_buffer, entry_size, compare_);
-        for (uint8_t *buf = static_cast<uint8_t*>(buffer.get()); (buf + per_buffer < buffer_end) && in_offsets_->RemainingBlocks();) {
+        for (uint8_t *buf = static_cast<uint8_t*>(buffer.get()); 
+            in_offsets_->RemainingBlocks() && (buf + std::min(per_buffer, in_offsets_->PeekSize()) <= buffer_end);) {
           uint64_t offset = in_offsets_->TotalOffset();
           uint64_t size = in_offsets_->NextSize();
           queue.Push(buf, offset, size);
-          buf += static_cast<std::size_t>(std::min<uint64_t>(size, static_cast<uint64_t>(per_buffer)));
+          buf += static_cast<std::size_t>(std::min<uint64_t>(size, per_buffer));
+        }
+        // This shouldn't happen but it's probably better to die than loop indefinitely.
+        if (queue.Size() < 2 && in_offsets_->RemainingBlocks()) {
+          std::cerr << "Bug in sort implementation: not merging at least two stripes." << std::endl;
+          abort();
         }
 
         uint64_t written = 0;
