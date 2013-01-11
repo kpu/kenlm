@@ -27,8 +27,8 @@
 #include "util/file.hh"
 #include "util/sized_iterator.hh"
 
-
 #include <algorithm>
+#include <iostream>
 #include <queue>
 #include <string>
 
@@ -230,6 +230,10 @@ template <class Compare, class Combine> class MergingReader {
         buffer_size_(buffer_size), total_memory_(total_memory) {}
 
     void Run(const ChainPosition &position) {
+      Run(position, false);
+    }
+
+    void Run(const ChainPosition &position, bool assert_one) {
       // Special case: nothing to read.  
       if (!in_offsets_->RemainingBlocks()) {
         Link l(position);
@@ -271,6 +275,10 @@ template <class Compare, class Combine> class MergingReader {
         // This shouldn't happen but it's probably better to die than loop indefinitely.
         if (queue.Size() < 2 && in_offsets_->RemainingBlocks()) {
           std::cerr << "Bug in sort implementation: not merging at least two stripes." << std::endl;
+          abort();
+        }
+        if (assert_one && in_offsets_->RemainingBlocks()) {
+          std::cerr << "Bug in sort implementation: should only be one merge group for lazy sort" << std::endl;
           abort();
         }
 
@@ -335,7 +343,7 @@ template <class Compare, class Combine> class OwningMergingReader : public Mergi
       P::in_offsets_ = &offsets_;
       scoped_fd data(data_);
       scoped_fd offsets_file(offsets_.File());
-      P::Run(position);
+      P::Run(position, true);
     }
 
   private:
