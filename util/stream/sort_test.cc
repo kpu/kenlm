@@ -15,7 +15,7 @@ struct CompareUInt64 : public std::binary_function<const void *, const void *, b
   }
 };
 
-const uint64_t kSize = 10000;
+const uint64_t kSize = 100000;
 
 struct Putter {
   Putter(std::vector<uint64_t> &shuffled) : shuffled_(shuffled) {}
@@ -45,13 +45,9 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
 
   SortConfig merge_config;
   merge_config.temp_prefix = "sort_test_temp";
-  merge_config.arity = 3;
-  merge_config.total_read_buffer = 50;
-  merge_config.lazy_arity = 2;
-  merge_config.lazy_total_read_buffer = 10;
-  merge_config.chain.entry_size = 8;
-  merge_config.chain.total_memory = 500;
-  merge_config.chain.block_count = 6;
+  merge_config.buffer_size = 800;
+  merge_config.total_memory = 3300;
+  merge_config.lazy_total_memory = 1000;
 
   Chain chain(config);
   chain >> Putter(shuffled);

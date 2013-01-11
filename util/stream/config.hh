@@ -15,17 +15,17 @@ struct ChainConfig {
 
 struct SortConfig {
   std::string temp_prefix;
-  // Number of readers to merge at once.  
-  std::size_t arity;
-  // Shared across all arity readers.  
-  std::size_t total_read_buffer;
 
-  // Same thing but for the lazy read.
-  std::size_t lazy_arity;
-  std::size_t lazy_total_read_buffer;
+  // Size of each input/output buffer.
+  std::size_t buffer_size;
 
-  // Configuration for the chain from reader to file writer.
-  ChainConfig chain;
+  // Total memory to use when running alone.
+  std::size_t total_memory;
+  // Same thing when doing lazy merge.
+  std::size_t lazy_total_memory;
+
+  // Size of entries to be sorted.  Don't bother setting this; it's automatic.
+  std::size_t entry_size;
 };
 
 }} // namespaces

@@ -209,11 +209,11 @@ template <class Compare> class MergeQueue {
  */
 template <class Compare, class Combine> class MergingReader {
   public:
-    MergingReader(int in, Offsets *in_offsets, Offsets *out_offsets, std::size_t arity, std::size_t buffer_size, const Compare &compare, const Combine &combine) :
+    MergingReader(int in, Offsets *in_offsets, Offsets *out_offsets, std::size_t buffer_size, std::size_t total_memory, const Compare &compare, const Combine &combine) :
         compare_(compare), combine_(combine),
         in_(in),
         in_offsets_(in_offsets), out_offsets_(out_offsets),
-        arity_(arity), buffer_size_(buffer_size) {}
+        buffer_size_(buffer_size), total_memory_(total_memory) {}
 
     void Run(const ChainPosition &position) {
       // Special case: nothing to read.  
@@ -233,25 +233,25 @@ template <class Compare, class Combine> class MergingReader {
       }
 
       Stream str(position);
+      scoped_malloc buffer(malloc(total_memory_));
+      UTIL_THROW_IF(!buffer.get(), ErrnoException, " while trying to malloc " << total_memory_ << " bytes");
+      uint8_t *const buffer_end = static_cast<uint8_t*>(buffer.get()) + total_memory_;
+
       const std::size_t entry_size = position.GetChain().EntrySize();
-      const std::size_t be_multiple = arity_ * entry_size;
-      const std::size_t total_buffer = be_multiple * ((buffer_size_ + be_multiple - 1) / be_multiple);
-      scoped_malloc buffer(malloc(total_buffer));
-      UTIL_THROW_IF(!buffer.get(), ErrnoException, " while trying to malloc " << total_buffer << " bytes");
 
       while (in_offsets_->RemainingBlocks()) {
-        std::size_t arity = std::min<uint64_t>(static_cast<uint64_t>(arity_), in_offsets_->RemainingBlocks());
-        //  The buffer size was calculated to support full arity, but the practical arity may be lower.  
-        std::size_t per_buffer = total_buffer / arity;
+        // Use bigger buffers if there's less remaining.
+        std::size_t per_buffer = std::max(buffer_size_, total_memory_ / in_offsets_->RemainingBlocks());
         per_buffer -= per_buffer % entry_size;
         assert(per_buffer);
 
         // Populate queue.
-        uint8_t *buf = static_cast<uint8_t*>(buffer.get());
         MergeQueue<Compare> queue(in_, per_buffer, entry_size, compare_);
-        for (std::size_t i = 0; i < arity; ++i, buf += per_buffer) {
+        for (uint8_t *buf = static_cast<uint8_t*>(buffer.get()); (buf + per_buffer < buffer_end) && in_offsets_->RemainingBlocks();) {
           uint64_t offset = in_offsets_->TotalOffset();
-          queue.Push(buf, offset, in_offsets_->NextSize()); 
+          uint64_t size = in_offsets_->NextSize();
+          queue.Push(buf, offset, size);
+          buf += static_cast<std::size_t>(std::min<uint64_t>(size, static_cast<uint64_t>(per_buffer)));
         }
 
         uint64_t written = 0;
@@ -296,10 +296,9 @@ template <class Compare, class Combine> class MergingReader {
 
   private:
     Offsets *out_offsets_;
-
-    std::size_t arity_;
-    
+ 
     std::size_t buffer_size_;
+    std::size_t total_memory_;
 };
 
 // The lazy step owns the remaining files.  This keeps track of them.  
@@ -308,7 +307,7 @@ template <class Compare, class Combine> class OwningMergingReader : public Mergi
     typedef MergingReader<Compare, Combine> P;
   public:
     OwningMergingReader(int data, const Offsets &offsets, const SortConfig &config, const Compare &compare, const Combine &combine) 
-      : P(data, NULL, NULL, config.lazy_arity, config.lazy_total_read_buffer, compare, combine),
+      : P(data, NULL, NULL, config.buffer_size, config.lazy_total_memory, compare, combine),
         data_(data),
         offsets_(offsets) {}
 
@@ -355,15 +354,29 @@ template <class Compare, class Combine> void MergeSort(const SortConfig &config,
   scoped_fd offsets2_file(MakeTemp(config.temp_prefix));
   Offsets offsets2(offsets2_file.get());
   Offsets *offsets_in = &offsets, *offsets_out = &offsets2;
-  Chain chain(config.chain);
-  while (offsets_in->RemainingBlocks() > config.lazy_arity) {
+
+  // Double buffered writing.  
+  ChainConfig chain_config;
+  chain_config.entry_size = config.entry_size;
+  chain_config.block_count = 2;
+  chain_config.total_memory = config.buffer_size * 2;
+  Chain chain(chain_config);
+
+  const uint64_t lazy_arity = std::max<uint64_t>(1, config.lazy_total_memory / config.buffer_size);
+  while (offsets_in->RemainingBlocks() > lazy_arity) {
+    uint64_t size = SizeOrThrow(fd_in);
+    if (size < static_cast<uint64_t>(config.lazy_total_memory)) return;
+    std::size_t reading_memory = config.total_memory - 2 * config.buffer_size;
+    if (size < static_cast<uint64_t>(reading_memory)) {
+      reading_memory = static_cast<std::size_t>(size);
+    }
     SeekOrThrow(fd_in, 0);
     chain >>
       MergingReader<Compare, Combine>(
           fd_in,
           offsets_in, offsets_out,
-          config.arity,
-          config.total_read_buffer,
+          config.buffer_size,
+          reading_memory,
           compare, combine) >>
       WriteAndRecycle(fd_out);
     chain.Wait();
@@ -381,6 +394,12 @@ template <class Compare, class Combine> void MergeSort(const SortConfig &config,
   }
 }
 
+class BadSortConfig : public Exception {
+  public:
+    BadSortConfig() throw() {}
+    ~BadSortConfig() throw() {}
+};
+
 template <class Compare, class Combine = NeverCombine> class Sort {
   public:
     Sort(Chain &in, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = Combine())
@@ -388,15 +407,18 @@ template <class Compare, class Combine = NeverCombine> class Sort {
         data_(MakeTemp(config.temp_prefix)),
         offsets_file_(MakeTemp(config.temp_prefix)), offsets_(offsets_file_.get()),
         compare_(compare), combine_(combine) {
-
-      UTIL_THROW_IF(config.arity < 2, Exception, "Cannot have an arity < 2.");
-      UTIL_THROW_IF(config.lazy_arity == 0, Exception, "Cannot have lazy arity 0.");
-      config_.chain.entry_size = in.EntrySize();
+      config_.entry_size = in.EntrySize();
+      UTIL_THROW_IF(!config_.entry_size, BadSortConfig, "Sorting entries of size 0");
+      // Make buffer_size a multiple of the entry_size.  
+      config_.buffer_size -= config_.buffer_size % config_.entry_size;
+      UTIL_THROW_IF(!config_.buffer_size, BadSortConfig, "Sort buffer too small");
+      UTIL_THROW_IF(config_.total_memory < config_.buffer_size * 4, BadSortConfig, "Sorting memory " << config_.total_memory << " is too small for four buffers (two read and two write).");
       in >> BlockSorter<Compare>(offsets_, compare_) >> WriteAndRecycle(data_.get());
     }
 
     int StealCompleted() {
-      config_.lazy_arity = 1;
+      // Force lazy arity 1.
+      config_.lazy_total_memory = 0;
       MergeSort(config_, data_, offsets_file_, offsets_, compare_, combine_);
       SeekOrThrow(data_.get(), 0);
       offsets_file_.reset();
