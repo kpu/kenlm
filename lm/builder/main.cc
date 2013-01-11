@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
       ("chain_memory", po::value<std::size_t>(&pipeline.chain.total_memory)->default_value(1 << 27), "Memory for each chain")
       ("block_count", po::value<std::size_t>(&pipeline.chain.block_count)->default_value(2), "Block count (per order)")
       ("sort_memory,S", po::value<std::size_t>(&pipeline.sort.total_memory)->default_value(1 << 30), "Sorting memory")
-      ("sort_lazy_memory", po::value<std::size_t>(&pipeline.sort.lazy_total_memory)->default_value(1 << 28), "Lazy sorting arity (this * order readers active)")
+      ("sort_lazy_memory", po::value<std::size_t>(&pipeline.sort.lazy_total_memory)->default_value(1 << 28), "Lazy sorting memory (uses this * order RAM)")
       ("sort_block", po::value<std::size_t>(&pipeline.sort.buffer_size)->default_value(1 << 26), "Size of IO operations for sort (determines arity)")
       ("interpolate_unigrams", po::bool_switch(&pipeline.initial_probs.interpolate_unigrams), "Interpolate the unigrams (default: emulate SRILM by not interpolating)")
       ("verbose_header,V", po::bool_switch(&pipeline.verbose_header), "Add a verbose header to the ARPA file that includes information such as token count, smoothing type, etc.");
