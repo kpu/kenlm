@@ -62,6 +62,7 @@ class Master {
       for (std::size_t i = 1; i < config_.order; ++i) {
         sorts[i - 1].Merge();
       }
+      chains_[0] >> files_[0].Source();
       for (std::size_t i = 1; i < config_.order; ++i) {
         sorts[i - 1].Output(chains_[i]);
       }
@@ -74,6 +75,7 @@ class Master {
       for (std::size_t i = 1; i < config_.order; ++i) {
         sorts[i - 1].Merge(true);
       }
+      chains_[0] >> files_[0].Source();
       second_config.entry_size = NGram::TotalSize(1);
       second.push_back(second_config);
       second.back() >> files_[0].Source();
@@ -109,7 +111,6 @@ class Master {
         sorts.push_back(chains_[i], config_.sort, Compare(i + 1));
       }
       chains_.Wait(true);
-      chains_[0] >> files_[0].Source();
     }
 
   private:
