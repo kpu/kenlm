@@ -129,7 +129,8 @@ std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount) {
   return amount;
 }
 
-void PReadOrThrow(int fd, void *to, std::size_t size, uint64_t off) {
+void PReadOrThrow(int fd, void *to_void, std::size_t size, uint64_t off) {
+  uint8_t *to = static_cast<uint8_t*>(to_void);
 #if defined(_WIN32) || defined(_WIN64)
   UTIL_THROW(Exception, "TODO: PReadOrThrow for windows using ReadFile http://stackoverflow.com/questions/766477/are-there-equivalents-to-pread-on-different-platforms");
 #else
@@ -145,6 +146,7 @@ void PReadOrThrow(int fd, void *to, std::size_t size, uint64_t off) {
     }
     size -= ret;
     off += ret;
+    to += ret;
   }
 #endif
 }
