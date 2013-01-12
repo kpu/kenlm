@@ -58,6 +58,10 @@ class Master {
       Sorts<Compare> sorts;
       SetupSorts(sorts);
       std::cerr << banner << std::endl;
+      // Call merge first to prevent it from using memory at the same time as the chain.  
+      for (std::size_t i = 1; i < config_.order; ++i) {
+        sorts[i - 1].Merge();
+      }
       for (std::size_t i = 1; i < config_.order; ++i) {
         sorts[i - 1].Output(chains_[i]);
       }
