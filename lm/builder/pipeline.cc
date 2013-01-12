@@ -70,6 +70,10 @@ class Master {
     }
 
     void SortAndReadTwice(Sorts<ContextOrder> &sorts, Chains &second, util::stream::ChainConfig second_config) {
+      // Do merge first before allocating chain memory.
+      for (std::size_t i = 1; i < config_.order; ++i) {
+        sorts[i - 1].Merge(true);
+      }
       second_config.entry_size = NGram::TotalSize(1);
       second.push_back(second_config);
       second.back() >> files_[0].Source();

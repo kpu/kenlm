@@ -447,20 +447,15 @@ template <class Compare, class Combine = NeverCombine> class Sort {
       in >> BlockSorter<Compare>(offsets_, compare_) >> WriteAndRecycle(data_.get());
     }
 
-    int StealCompleted() {
-      // Force lazy arity 1.
-      config_.lazy_total_memory = 0;
-      Merge();
-      SeekOrThrow(data_.get(), 0);
-      offsets_file_.reset();
-      return data_.release();
-    }
-
     uint64_t Size() const {
       return SizeOrThrow(data_.get());
     }
 
-    void Merge() {
+    void Merge(bool completely = false) {
+      if (completely) {
+        // Force lazy arity 1.
+        config_.lazy_total_memory = 0;
+      }
       MergeSort(config_, data_, offsets_file_, offsets_, compare_, combine_);
     }
 
@@ -470,6 +465,13 @@ template <class Compare, class Combine = NeverCombine> class Sort {
       out >> OwningMergingReader<Compare, Combine>(data_.get(), offsets_, config_, compare_, combine_);
       data_.release();
       offsets_file_.release();
+    }
+
+    int StealCompleted() {
+      Merge(true);
+      SeekOrThrow(data_.get(), 0);
+      offsets_file_.reset();
+      return data_.release();
     }
 
   private:

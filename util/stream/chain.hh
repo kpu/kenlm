@@ -50,11 +50,11 @@ class Thread {
     ~Thread();
 
     template <class Position, class Worker> void operator()(const Position &position, Worker &worker) {
-      try {
+//      try {
         worker.Run(position);
-      } catch (const std::exception &e) {
+/*      } catch (const std::exception &e) {
         UnhandledException(e);
-      }
+      }*/
     }
 
   private:
