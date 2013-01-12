@@ -369,6 +369,10 @@ template <class Compare> class BlockSorter {
 };
 
 template <class Compare, class Combine> void MergeSort(const SortConfig &config, scoped_fd &data, scoped_fd &offsets_file, Offsets &offsets, const Compare &compare, const Combine &combine) {
+  const uint64_t lazy_arity = std::max<uint64_t>(1, config.lazy_total_memory / config.buffer_size);
+  if (offsets.RemainingBlocks() <= lazy_arity || SizeOrThrow(data.get()) < config.lazy_total_memory)
+    return;
+
   scoped_fd data2(MakeTemp(config.temp_prefix));
   int fd_in = data.get(), fd_out = data2.get();
   scoped_fd offsets2_file(MakeTemp(config.temp_prefix));
@@ -382,7 +386,6 @@ template <class Compare, class Combine> void MergeSort(const SortConfig &config,
   chain_config.total_memory = config.buffer_size * 2;
   Chain chain(chain_config);
 
-  const uint64_t lazy_arity = std::max<uint64_t>(1, config.lazy_total_memory / config.buffer_size);
   while (offsets_in->RemainingBlocks() > lazy_arity) {
     uint64_t size = SizeOrThrow(fd_in);
     if (size < static_cast<uint64_t>(config.lazy_total_memory)) return;
@@ -439,7 +442,7 @@ template <class Compare, class Combine = NeverCombine> class Sort {
     int StealCompleted() {
       // Force lazy arity 1.
       config_.lazy_total_memory = 0;
-      MergeSort(config_, data_, offsets_file_, offsets_, compare_, combine_);
+      Merge();
       SeekOrThrow(data_.get(), 0);
       offsets_file_.reset();
       return data_.release();
@@ -449,8 +452,12 @@ template <class Compare, class Combine = NeverCombine> class Sort {
       return SizeOrThrow(data_.get());
     }
 
-    void Output(Chain &out, std::ostream *progress = NULL) {
+    void Merge() {
       MergeSort(config_, data_, offsets_file_, offsets_, compare_, combine_);
+    }
+
+    void Output(Chain &out) {
+      Merge();
       out.SetProgressTarget(Size());
       out >> OwningMergingReader<Compare, Combine>(data_.get(), offsets_, config_, compare_, combine_);
       data_.release();
