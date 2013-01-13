@@ -7,6 +7,7 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <sstream>
 #include <iostream>
 
 #include <assert.h>
@@ -79,6 +80,12 @@ uint64_t SizeFile(int fd) {
 #endif
 }
 
+uint64_t SizeOrThrow(int fd) {
+  uint64_t ret = SizeFile(fd);
+  UTIL_THROW_IF(ret == kBadSize, ErrnoException, "Could not size " << NameFromFD(fd));
+  return ret;
+}
+
 void ResizeOrThrow(int fd, uint64_t to) {
   UTIL_THROW_IF(
 #if defined(_WIN32) || defined(_WIN64)
@@ -88,7 +95,7 @@ void ResizeOrThrow(int fd, uint64_t to) {
 #else
     ftruncate
 #endif
-    (fd, to), ErrnoException, "Resizing to " << to << " bytes failed");
+    (fd, to), ErrnoException, "Resizing to " << to << " bytes failed for " << NameFromFD(fd));
 }
 
 std::size_t PartialRead(int fd, void *to, std::size_t amount) {
@@ -102,7 +109,7 @@ std::size_t PartialRead(int fd, void *to, std::size_t amount) {
     ret = read(fd, to, amount);
   } while (ret == -1 && errno == EINTR);
 #endif
-  UTIL_THROW_IF(ret < 0, ErrnoException, "Reading " << amount << " from fd " << fd << " failed.");
+  UTIL_THROW_IF(ret < 0, ErrnoException, "Reading " << amount << " from " << NameFromFD(fd) << " failed.");
   return static_cast<std::size_t>(ret);
 }
 
@@ -110,7 +117,7 @@ void ReadOrThrow(int fd, void *to_void, std::size_t amount) {
   uint8_t *to = static_cast<uint8_t*>(to_void);
   while (amount) {
     std::size_t ret = PartialRead(fd, to, amount);
-    UTIL_THROW_IF(ret == 0, EndOfFileException, " in fd " << fd << " but there should be " << amount << " more bytes to read.");
+    UTIL_THROW_IF(ret == 0, EndOfFileException, " in " << NameFromFD(fd) << " but there should be " << amount << " more bytes to read.");
     amount -= ret;
     to += ret;
   }
@@ -128,6 +135,32 @@ std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount) {
   return amount;
 }
 
+void PReadOrThrow(int fd, void *to_void, std::size_t size, uint64_t off) {
+  uint8_t *to = static_cast<uint8_t*>(to_void);
+#if defined(_WIN32) || defined(_WIN64)
+  UTIL_THROW(Exception, "TODO: PReadOrThrow for windows using ReadFile http://stackoverflow.com/questions/766477/are-there-equivalents-to-pread-on-different-platforms");
+#else
+  for (;size ;) {
+    ssize_t ret;
+    errno = 0;
+    do {
+#ifdef OS_ANDROID
+      ret = pread64(fd, to, size, off);
+#else
+      ret = pread(fd, to, size, off);
+#endif
+    } while (ret == -1 && errno == EINTR);
+    if (ret <= 0) {
+      UTIL_THROW_IF(ret == 0, EndOfFileException, " for reading " << size << " bytes at " << off << " from " << NameFromFD(fd));
+      UTIL_THROW(ErrnoException, " while reading " << size << " bytes at offset " << off << " from " << NameFromFD(fd));
+    }
+    size -= ret;
+    off += ret;
+    to += ret;
+  }
+#endif
+}
+
 void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
   const uint8_t *data = static_cast<const uint8_t*>(data_void);
   while (size) {
@@ -140,21 +173,21 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
       ret = write(fd, data, size);
     } while (ret == -1 && errno == EINTR);
 #endif
-    if (ret < 1) UTIL_THROW(util::ErrnoException, "Write failed");
+    if (ret < 1) UTIL_THROW(util::ErrnoException, "Write failed to " << NameFromFD(fd));
     data += ret;
     size -= ret;
   }
 }
 
 void WriteOrThrow(FILE *to, const void *data, std::size_t size) {
-  assert(size);
+  if (!size) return;
   UTIL_THROW_IF(1 != std::fwrite(data, size, 1, to), util::ErrnoException, "Short write; requested size " << size);
 }
 
 void FSyncOrThrow(int fd) {
 // Apparently windows doesn't have fsync?  
 #if !defined(_WIN32) && !defined(_WIN64)
-  UTIL_THROW_IF(-1 == fsync(fd), ErrnoException, "Sync of " << fd << " failed.");
+  UTIL_THROW_IF(-1 == fsync(fd), ErrnoException, "Sync of " << NameFromFD(fd) << " failed.");
 #endif
 }
 
@@ -181,7 +214,7 @@ void InternalSeek(int fd, int64_t off, int whence) {
 #else
     (off_t)-1 == lseek(fd, off, whence),
 #endif
-    ErrnoException, "Seek failed");
+    ErrnoException, "Seek failed to " << off << " whence " << whence << " in " << NameFromFD(fd));
 }
 } // namespace
 
@@ -199,20 +232,16 @@ void SeekEnd(int fd) {
 
 std::FILE *FDOpenOrThrow(scoped_fd &file) {
   std::FILE *ret = fdopen(file.get(), "r+b");
-  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen descriptor " << file.get());
+  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen " << NameFromFD(file.get()) << " for write");
   file.release();
   return ret;
 }
 
 std::FILE *FDOpenReadOrThrow(scoped_fd &file) {
   std::FILE *ret = fdopen(file.get(), "rb");
-  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen descriptor " << file.get());
+  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen " << NameFromFD(file.get()) << " for read");
   file.release();
   return ret;
-}
-
-TempMaker::TempMaker(const std::string &prefix) : base_(prefix) {
-  base_ += "XXXXXX";
 }
 
 // Sigh.  Windows temporary file creation is full of race conditions.
@@ -337,17 +366,70 @@ mkstemp_and_unlink(char *tmpl) {
 }
 #endif
 
-int TempMaker::Make() const {
-  std::string name(base_);
+int MakeTemp(const std::string &base) {
+  std::string name(base);
+  name += "XXXXXX";
   name.push_back(0);
   int ret;
-  UTIL_THROW_IF(-1 == (ret = mkstemp_and_unlink(&name[0])), util::ErrnoException, "Failed to make a temporary based on " << base_);
+  UTIL_THROW_IF(-1 == (ret = mkstemp_and_unlink(&name[0])), util::ErrnoException, "Failed to make a temporary based on " << base);
   return ret;
 }
 
-std::FILE *TempMaker::MakeFile() const {
-  util::scoped_fd file(Make());
+std::FILE *FMakeTemp(const std::string &base) {
+  util::scoped_fd file(MakeTemp(base));
   return FDOpenOrThrow(file);
+}
+
+int DupOrThrow(int fd) {
+  int ret = dup(fd);
+  UTIL_THROW_IF(ret == -1, ErrnoException, "Duplicating " << NameFromFD(fd));
+  return ret;
+}
+
+namespace {
+// Try to name things but be willing to fail too.
+bool TryName(int fd, std::string &out) {
+#if defined(_WIN32) || defined(_WIN64)
+  return false;
+#else
+  std::string name("/proc/self/fd/");
+  std::ostringstream convert;
+  convert << fd;
+  name += convert.str();
+  
+  struct stat sb;
+  if (-1 == lstat(name.c_str(), &sb)) 
+    return false;
+  out.resize(sb.st_size + 1);
+  ssize_t ret = readlink(name.c_str(), &out[0], sb.st_size + 1);
+  if (-1 == ret)
+    return false;
+  if (ret > sb.st_size) {
+    // Increased in size?!
+    return false;
+  }
+  out.resize(ret);
+  // Don't use the non-file names.
+  if (!out.empty() && out[0] != '/') 
+    return false;
+  return true;
+#endif
+}
+} // namespace
+
+std::string NameFromFD(int fd) {
+  std::string ret;
+  if (TryName(fd, ret)) return ret;
+  switch (fd) {
+    case 0: return "stdin";
+    case 1: return "stdout";
+    case 2: return "stderr";
+  }
+  ret = "fd ";
+  std::ostringstream convert;
+  convert << fd;
+  ret += convert.str();
+  return ret;
 }
 
 } // namespace util

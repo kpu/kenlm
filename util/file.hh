@@ -17,7 +17,7 @@ class scoped_fd {
 
     ~scoped_fd();
 
-    void reset(int to) {
+    void reset(int to = -1) {
       scoped_fd other(fd_);
       fd_ = to;
     }
@@ -71,12 +71,15 @@ int CreateOrThrow(const char *name);
 // Return value for SizeFile when it can't size properly.  
 const uint64_t kBadSize = (uint64_t)-1;
 uint64_t SizeFile(int fd);
+uint64_t SizeOrThrow(int fd);
 
 void ResizeOrThrow(int fd, uint64_t to);
 
 std::size_t PartialRead(int fd, void *to, std::size_t size);
 void ReadOrThrow(int fd, void *to, std::size_t size);
 std::size_t ReadOrEOF(int fd, void *to_void, std::size_t size);
+// Positioned: unix only for now.  
+void PReadOrThrow(int fd, void *to, std::size_t size, uint64_t off);
 
 void WriteOrThrow(int fd, const void *data_void, std::size_t size);
 void WriteOrThrow(FILE *to, const void *data, std::size_t size);
@@ -91,17 +94,18 @@ void SeekEnd(int fd);
 std::FILE *FDOpenOrThrow(scoped_fd &file);
 std::FILE *FDOpenReadOrThrow(scoped_fd &file);
 
-class TempMaker {
-  public:
-    explicit TempMaker(const std::string &prefix);
+// Temporary files
+int MakeTemp(const std::string &prefix);
+std::FILE *FMakeTemp(const std::string &prefix);
 
-    // These will already be unlinked for you.  
-    int Make() const;
-    std::FILE *MakeFile() const;
+// dup an fd.
+int DupOrThrow(int fd);
 
-  private:
-    std::string base_;
-};
+/* Attempt get file name from fd.  This won't always work (i.e. on Windows or
+ * a pipe).  The file might have been renamed.  It's intended for diagnostics
+ * and logging only.
+ */
+std::string NameFromFD(int fd);
 
 } // namespace util
 
