@@ -42,6 +42,13 @@ scoped_FILE::~scoped_FILE() {
   }
 }
 
+// Note that ErrnoException records errno before NameFromFD is called.
+FDException::FDException(int fd) throw() : fd_(fd), name_guess_(NameFromFD(fd)) {
+  *this << "in " << name_guess_ << ' ';
+}
+
+FDException::~FDException() throw() {}
+
 int OpenReadOrThrow(const char *name) {
   int ret;
 #if defined(_WIN32) || defined(_WIN64)
@@ -82,12 +89,12 @@ uint64_t SizeFile(int fd) {
 
 uint64_t SizeOrThrow(int fd) {
   uint64_t ret = SizeFile(fd);
-  UTIL_THROW_IF(ret == kBadSize, ErrnoException, "Could not size " << NameFromFD(fd));
+  UTIL_THROW_IF_ARG(ret == kBadSize, FDException, (fd), "Failed to size");
   return ret;
 }
 
 void ResizeOrThrow(int fd, uint64_t to) {
-  UTIL_THROW_IF(
+  UTIL_THROW_IF_ARG(
 #if defined(_WIN32) || defined(_WIN64)
     _chsize_s
 #elif defined(OS_ANDROID)
@@ -95,7 +102,7 @@ void ResizeOrThrow(int fd, uint64_t to) {
 #else
     ftruncate
 #endif
-    (fd, to), ErrnoException, "Resizing to " << to << " bytes failed for " << NameFromFD(fd));
+    (fd, to), FDException, (fd), "while resizing to " << to << " bytes");
 }
 
 std::size_t PartialRead(int fd, void *to, std::size_t amount) {
@@ -109,7 +116,7 @@ std::size_t PartialRead(int fd, void *to, std::size_t amount) {
     ret = read(fd, to, amount);
   } while (ret == -1 && errno == EINTR);
 #endif
-  UTIL_THROW_IF(ret < 0, ErrnoException, "Reading " << amount << " from " << NameFromFD(fd) << " failed.");
+  UTIL_THROW_IF_ARG(ret < 0, FDException, (fd), "while reading " << amount << " bytes");
   return static_cast<std::size_t>(ret);
 }
 
@@ -152,7 +159,7 @@ void PReadOrThrow(int fd, void *to_void, std::size_t size, uint64_t off) {
     } while (ret == -1 && errno == EINTR);
     if (ret <= 0) {
       UTIL_THROW_IF(ret == 0, EndOfFileException, " for reading " << size << " bytes at " << off << " from " << NameFromFD(fd));
-      UTIL_THROW(ErrnoException, " while reading " << size << " bytes at offset " << off << " from " << NameFromFD(fd));
+      UTIL_THROW_ARG(FDException, (fd), "while reading " << size << " bytes at offset " << off);
     }
     size -= ret;
     off += ret;
@@ -173,7 +180,7 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
       ret = write(fd, data, size);
     } while (ret == -1 && errno == EINTR);
 #endif
-    if (ret < 1) UTIL_THROW(util::ErrnoException, "Write failed to " << NameFromFD(fd));
+    UTIL_THROW_IF_ARG(ret < 1, FDException, (fd), "while writing " << size << " bytes");
     data += ret;
     size -= ret;
   }
@@ -181,13 +188,13 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
 
 void WriteOrThrow(FILE *to, const void *data, std::size_t size) {
   if (!size) return;
-  UTIL_THROW_IF(1 != std::fwrite(data, size, 1, to), util::ErrnoException, "Short write; requested size " << size);
+  UTIL_THROW_IF(1 != std::fwrite(data, size, 1, to), ErrnoException, "Short write; requested size " << size);
 }
 
 void FSyncOrThrow(int fd) {
 // Apparently windows doesn't have fsync?  
 #if !defined(_WIN32) && !defined(_WIN64)
-  UTIL_THROW_IF(-1 == fsync(fd), ErrnoException, "Sync of " << NameFromFD(fd) << " failed.");
+  UTIL_THROW_IF_ARG(-1 == fsync(fd), FDException, (fd), "Syncing");
 #endif
 }
 
@@ -206,7 +213,7 @@ typedef CheckOffT<sizeof(off_t)>::True IgnoredType;
 
 // Can't we all just get along?  
 void InternalSeek(int fd, int64_t off, int whence) {
-  UTIL_THROW_IF(
+  UTIL_THROW_IF_ARG(
 #if defined(_WIN32) || defined(_WIN64)
     (__int64)-1 == _lseeki64(fd, off, whence),
 #elif defined(OS_ANDROID)
@@ -214,7 +221,7 @@ void InternalSeek(int fd, int64_t off, int whence) {
 #else
     (off_t)-1 == lseek(fd, off, whence),
 #endif
-    ErrnoException, "Seek failed to " << off << " whence " << whence << " in " << NameFromFD(fd));
+    FDException, (fd), "while seeking to " << off << " whence " << whence);
 }
 } // namespace
 
@@ -232,14 +239,14 @@ void SeekEnd(int fd) {
 
 std::FILE *FDOpenOrThrow(scoped_fd &file) {
   std::FILE *ret = fdopen(file.get(), "r+b");
-  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen " << NameFromFD(file.get()) << " for write");
+  UTIL_THROW_IF_ARG(!ret, FDException, (file.get()), "Could not fdopen for write");
   file.release();
   return ret;
 }
 
 std::FILE *FDOpenReadOrThrow(scoped_fd &file) {
   std::FILE *ret = fdopen(file.get(), "rb");
-  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen " << NameFromFD(file.get()) << " for read");
+  UTIL_THROW_IF_ARG(!ret, FDException, (file.get()), "Could not fdopen for read");
   file.release();
   return ret;
 }
@@ -360,7 +367,7 @@ int
 mkstemp_and_unlink(char *tmpl) {
   int ret = mkstemp(tmpl);
   if (ret != -1) {
-    UTIL_THROW_IF(unlink(tmpl), util::ErrnoException, "Failed to delete " << tmpl);
+    UTIL_THROW_IF(unlink(tmpl), ErrnoException, "while deleting delete " << tmpl);
   }
   return ret;
 }
@@ -371,7 +378,7 @@ int MakeTemp(const std::string &base) {
   name += "XXXXXX";
   name.push_back(0);
   int ret;
-  UTIL_THROW_IF(-1 == (ret = mkstemp_and_unlink(&name[0])), util::ErrnoException, "Failed to make a temporary based on " << base);
+  UTIL_THROW_IF(-1 == (ret = mkstemp_and_unlink(&name[0])), ErrnoException, "while making a temporary based on " << base);
   return ret;
 }
 
@@ -382,7 +389,7 @@ std::FILE *FMakeTemp(const std::string &base) {
 
 int DupOrThrow(int fd) {
   int ret = dup(fd);
-  UTIL_THROW_IF(ret == -1, ErrnoException, "Duplicating " << NameFromFD(fd));
+  UTIL_THROW_IF_ARG(ret == -1, FDException, (fd), "in duplicating the file descriptor");
   return ret;
 }
 
