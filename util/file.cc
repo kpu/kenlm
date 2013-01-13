@@ -10,6 +10,7 @@
 #include <iostream>
 
 #include <assert.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -95,7 +96,11 @@ std::size_t PartialRead(int fd, void *to, std::size_t amount) {
   amount = min(static_cast<std::size_t>(INT_MAX), amount);
   int ret = _read(fd, to, amount); 
 #else
-  ssize_t ret = read(fd, to, amount);
+  errno = 0;
+  ssize_t ret;
+  do {
+    ret = read(fd, to, amount);
+  } while (ret == -1 && errno == EINTR);
 #endif
   UTIL_THROW_IF(ret < 0, ErrnoException, "Reading " << amount << " from fd " << fd << " failed.");
   return static_cast<std::size_t>(ret);
@@ -129,7 +134,11 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
 #if defined(_WIN32) || defined(_WIN64)
     int ret = write(fd, data, min(static_cast<std::size_t>(INT_MAX), size));
 #else
-    ssize_t ret = write(fd, data, size);
+    errno = 0;
+    ssize_t ret;
+    do {
+      ret = write(fd, data, size);
+    } while (ret == -1 && errno == EINTR);
 #endif
     if (ret < 1) UTIL_THROW(util::ErrnoException, "Write failed");
     data += ret;
