@@ -98,8 +98,11 @@ std::FILE *FDOpenReadOrThrow(scoped_fd &file);
 int MakeTemp(const std::string &prefix);
 std::FILE *FMakeTemp(const std::string &prefix);
 
-
+// dup an fd.
 int DupOrThrow(int fd);
+
+// Attempt get file name from fd.  Returns lame description of fd on failure.
+std::string NameFromFD(int fd);
 
 } // namespace util
 

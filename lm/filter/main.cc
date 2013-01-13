@@ -238,7 +238,7 @@ int main(int argc, char *argv[]) {
     vocab = &cmd_file;
   }
 
-  util::FilePiece model(cmd_is_model ? util::OpenReadOrThrow(cmd_input) : 0, cmd_is_model ? cmd_input : "stdin", &std::cerr);
+  util::FilePiece model(cmd_is_model ? util::OpenReadOrThrow(cmd_input) : 0, cmd_is_model ? cmd_input : NULL, &std::cerr);
 
   if (config.format == lm::FORMAT_ARPA) {
     lm::DispatchFilterModes<lm::ARPAFormat>(config, *vocab, model, argv[argc - 1]);

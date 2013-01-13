@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
     initial.adder_out.block_count = 2;
     pipeline.read_backoffs = initial.adder_out;
 
-    util::FilePiece in(0, "stdin", &std::cerr);
+    util::FilePiece in(0, NULL, &std::cerr);
     lm::builder::Pipeline(pipeline, in, std::cout);
     util::PrintUsage(std::cerr);
 /*  } catch (const std::exception &e) {

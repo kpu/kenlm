@@ -7,6 +7,7 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <sstream>
 #include <iostream>
 
 #include <assert.h>
@@ -80,7 +81,7 @@ uint64_t SizeFile(int fd) {
 
 uint64_t SizeOrThrow(int fd) {
   uint64_t ret = SizeFile(fd);
-  UTIL_THROW_IF(ret == kBadSize, ErrnoException, "Could not size file with fd " << fd);
+  UTIL_THROW_IF(ret == kBadSize, ErrnoException, "Could not size " << NameFromFD(fd));
   return ret;
 }
 
@@ -93,7 +94,7 @@ void ResizeOrThrow(int fd, uint64_t to) {
 #else
     ftruncate
 #endif
-    (fd, to), ErrnoException, "Resizing to " << to << " bytes failed");
+    (fd, to), ErrnoException, "Resizing to " << to << " bytes failed for " << NameFromFD(fd));
 }
 
 std::size_t PartialRead(int fd, void *to, std::size_t amount) {
@@ -103,7 +104,7 @@ std::size_t PartialRead(int fd, void *to, std::size_t amount) {
 #else
   ssize_t ret = read(fd, to, amount);
 #endif
-  UTIL_THROW_IF(ret < 0, ErrnoException, "Reading " << amount << " from fd " << fd << " failed.");
+  UTIL_THROW_IF(ret < 0, ErrnoException, "Reading " << amount << " from " << NameFromFD(fd) << " failed.");
   return static_cast<std::size_t>(ret);
 }
 
@@ -111,7 +112,7 @@ void ReadOrThrow(int fd, void *to_void, std::size_t amount) {
   uint8_t *to = static_cast<uint8_t*>(to_void);
   while (amount) {
     std::size_t ret = PartialRead(fd, to, amount);
-    UTIL_THROW_IF(ret == 0, EndOfFileException, " in fd " << fd << " but there should be " << amount << " more bytes to read.");
+    UTIL_THROW_IF(ret == 0, EndOfFileException, " in " << NameFromFD(fd) << " but there should be " << amount << " more bytes to read.");
     amount -= ret;
     to += ret;
   }
@@ -141,8 +142,8 @@ void PReadOrThrow(int fd, void *to_void, std::size_t size, uint64_t off) {
     ssize_t ret = pread(fd, to, size, off);
 #endif
     if (ret <= 0) {
-      UTIL_THROW_IF(ret == 0, EndOfFileException, " for reading " << size << " bytes at " << off << " in fd " << fd);
-      UTIL_THROW(ErrnoException, " while reading " << size << " bytes at offset " << off);
+      UTIL_THROW_IF(ret == 0, EndOfFileException, " for reading " << size << " bytes at " << off << " from " << NameFromFD(fd));
+      UTIL_THROW(ErrnoException, " while reading " << size << " bytes at offset " << off << " from " << NameFromFD(fd));
     }
     size -= ret;
     off += ret;
@@ -159,21 +160,21 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
 #else
     ssize_t ret = write(fd, data, size);
 #endif
-    if (ret < 1) UTIL_THROW(util::ErrnoException, "Write failed");
+    if (ret < 1) UTIL_THROW(util::ErrnoException, "Write failed to " << NameFromFD(fd));
     data += ret;
     size -= ret;
   }
 }
 
 void WriteOrThrow(FILE *to, const void *data, std::size_t size) {
-  assert(size);
+  if (!size) return;
   UTIL_THROW_IF(1 != std::fwrite(data, size, 1, to), util::ErrnoException, "Short write; requested size " << size);
 }
 
 void FSyncOrThrow(int fd) {
 // Apparently windows doesn't have fsync?  
 #if !defined(_WIN32) && !defined(_WIN64)
-  UTIL_THROW_IF(-1 == fsync(fd), ErrnoException, "Sync of " << fd << " failed.");
+  UTIL_THROW_IF(-1 == fsync(fd), ErrnoException, "Sync of " << NameFromFD(fd) << " failed.");
 #endif
 }
 
@@ -200,7 +201,7 @@ void InternalSeek(int fd, int64_t off, int whence) {
 #else
     (off_t)-1 == lseek(fd, off, whence),
 #endif
-    ErrnoException, "Seek failed");
+    ErrnoException, "Seek failed to " << off << " whence " << whence << " in " << NameFromFD(fd));
 }
 } // namespace
 
@@ -218,14 +219,14 @@ void SeekEnd(int fd) {
 
 std::FILE *FDOpenOrThrow(scoped_fd &file) {
   std::FILE *ret = fdopen(file.get(), "r+b");
-  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen descriptor " << file.get());
+  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen " << NameFromFD(file.get()) << " for write");
   file.release();
   return ret;
 }
 
 std::FILE *FDOpenReadOrThrow(scoped_fd &file) {
   std::FILE *ret = fdopen(file.get(), "rb");
-  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen descriptor " << file.get());
+  if (!ret) UTIL_THROW(util::ErrnoException, "Could not fdopen " << NameFromFD(file.get()) << " for read");
   file.release();
   return ret;
 }
@@ -368,7 +369,53 @@ std::FILE *FMakeTemp(const std::string &base) {
 
 int DupOrThrow(int fd) {
   int ret = dup(fd);
-  UTIL_THROW_IF(ret == -1, ErrnoException, "Duplicating fd " << fd);
+  UTIL_THROW_IF(ret == -1, ErrnoException, "Duplicating " << NameFromFD(fd));
+  return ret;
+}
+
+namespace {
+// Try to name things but be willing to fail too.
+bool TryName(int fd, std::string &out) {
+#if defined(_WIN32) || defined(_WIN64)
+  return false;
+#else
+  std::string name("/proc/self/fd/");
+  std::ostringstream convert;
+  convert << fd;
+  name += convert.str();
+  
+  struct stat sb;
+  if (-1 == lstat(name.c_str(), &sb)) 
+    return false;
+  out.resize(sb.st_size + 1);
+  ssize_t ret = readlink(name.c_str(), &out[0], sb.st_size + 1);
+  if (-1 == ret)
+    return false;
+  if (ret > sb.st_size) {
+    // Increased in size?!
+    return false;
+  }
+  out.resize(ret);
+  // Don't use the non-file names.
+  if (!out.empty() && out[0] != '/') 
+    return false;
+  return true;
+#endif
+}
+} // namespace
+
+std::string NameFromFD(int fd) {
+  std::string ret;
+  if (TryName(fd, ret)) return ret;
+  switch (fd) {
+    case 0: return "stdin";
+    case 1: return "stdout";
+    case 2: return "stderr";
+  }
+  ret = "fd ";
+  std::ostringstream convert;
+  convert << fd;
+  ret += convert.str();
   return ret;
 }
 
