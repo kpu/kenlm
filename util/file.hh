@@ -101,7 +101,10 @@ std::FILE *FMakeTemp(const std::string &prefix);
 // dup an fd.
 int DupOrThrow(int fd);
 
-// Attempt get file name from fd.  Returns lame description of fd on failure.
+/* Attempt get file name from fd.  This won't always work (i.e. on Windows or
+ * a pipe).  The file might have been renamed.  It's intended for diagnostics
+ * and logging only.
+ */
 std::string NameFromFD(int fd);
 
 } // namespace util
