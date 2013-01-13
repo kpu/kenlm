@@ -111,13 +111,6 @@ class ErrnoException : public Exception {
     int errno_;
 };
 
-// End of file reached.
-class EndOfFileException : public Exception {
-  public:
-    EndOfFileException() throw();
-    ~EndOfFileException() throw();
-};
-
 // Utilities for overflow checking.  
 class OverflowException : public Exception {
   public:
