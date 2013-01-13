@@ -49,6 +49,11 @@ FDException::FDException(int fd) throw() : fd_(fd), name_guess_(NameFromFD(fd)) 
 
 FDException::~FDException() throw() {}
 
+EndOfFileException::EndOfFileException() throw() {
+  *this << "End of file";
+}
+EndOfFileException::~EndOfFileException() throw() {}
+
 int OpenReadOrThrow(const char *name) {
   int ret;
 #if defined(_WIN32) || defined(_WIN64)

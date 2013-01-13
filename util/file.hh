@@ -84,6 +84,13 @@ class FDException : public ErrnoException {
     std::string name_guess_;
 };
 
+// End of file reached.
+class EndOfFileException : public Exception {
+  public:
+    EndOfFileException() throw();
+    ~EndOfFileException() throw();
+};
+
 // Open for read only.  
 int OpenReadOrThrow(const char *name);
 // Create file if it doesn't exist, truncate if it does.  Opened for write.   
