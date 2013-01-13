@@ -7,7 +7,7 @@
 #include <boost/program_options.hpp>
 
 int main(int argc, char *argv[]) {
-  //try {
+  try {
     namespace po = boost::program_options;
     po::options_description options("Language model building options");
     lm::builder::PipelineConfig pipeline;
@@ -42,8 +42,8 @@ int main(int argc, char *argv[]) {
     util::FilePiece in(0, NULL, &std::cerr);
     lm::builder::Pipeline(pipeline, in, std::cout);
     util::PrintUsage(std::cerr);
-/*  } catch (const std::exception &e) {
+  } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;
     return 1;
-  }*/
+  }
 }
