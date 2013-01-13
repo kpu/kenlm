@@ -1,6 +1,8 @@
 #ifndef UTIL_FILE__
 #define UTIL_FILE__
 
+#include "util/exception.hh"
+
 #include <cstddef>
 #include <cstdio>
 #include <string>
@@ -61,6 +63,25 @@ class scoped_FILE {
 
   private:
     std::FILE *file_;
+};
+
+/* Thrown for any operation where the fd is known. */
+class FDException : public ErrnoException {
+  public:
+    explicit FDException(int fd) throw();
+
+    virtual ~FDException() throw();
+
+    // This may no longer be valid if the exception was thrown past open.
+    int FD() const { return fd_; }
+
+    // Guess from NameFromFD.
+    const std::string &NameGuess() const { return name_guess_; }
+
+  private:
+    int fd_;
+
+    std::string name_guess_;
 };
 
 // Open for read only.  
