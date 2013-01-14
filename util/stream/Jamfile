@@ -4,7 +4,7 @@ if $(BOOST-VERSION) >= 104800 {
     timer-link = ;
 }
 
-fakelib stream : io.cc chain.cc multi_progress.cc ..//kenutil /top//boost_thread : : : <library>/top//boost_thread $(timer-link) ;
+fakelib stream : chain.cc io.cc line_input.cc multi_progress.cc ..//kenutil /top//boost_thread : : : <library>/top//boost_thread $(timer-link) ;
 
 import testing ;
 unit-test io_test : io_test.cc stream /top//boost_unit_test_framework ;
