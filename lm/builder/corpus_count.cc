@@ -163,10 +163,11 @@ class Writer {
 
     NGram gram_;
 
+    // This is the memory behind the invalid value in dedupe_.
     std::vector<WordIndex> dedupe_invalid_;
     // Probing hash table doesn't own its memory, so this does.
     std::vector<uint8_t> dedupe_memory_;
-
+    // Hash table combiner implementation.
     Dedupe dedupe_;
 
     // Small buffer to hold existing ngrams when shifting across a block boundary.  
