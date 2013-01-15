@@ -126,6 +126,11 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
       }    
     }
 
+    void Clear(Entry invalid) {
+      std::fill(begin_, end_, invalid);
+      entries_ = 0;
+    }
+
   private:
     MutableIterator begin_;
     std::size_t buckets_;

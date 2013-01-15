@@ -6,12 +6,13 @@
 #include "util/file.hh"
 #include "util/file_piece.hh"
 #include "util/murmur_hash.hh"
+#include "util/probing_hash_table.hh"
 #include "util/stream/chain.hh"
+#include "util/stream/timer.hh"
 #include "util/tokenize_piece.hh"
 
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
-#include "util/stream/timer.hh"
 
 #include <functional>
 
@@ -76,13 +77,29 @@ class DedupeEquals : public std::binary_function<const WordIndex *, const WordIn
     const std::size_t size_;
 };
 
+struct DedupeEntry {
+  typedef WordIndex *Key;
+  Key GetKey() const { return key; }
+  Key key;
+  static DedupeEntry Construct(WordIndex *at) {
+    DedupeEntry ret;
+    ret.key = at;
+    return ret;
+  }
+};
+
+typedef util::ProbingHashTable<DedupeEntry, DedupeHash, DedupeEquals> Dedupe;
+
 class Writer {
   public:
     Writer(std::size_t order, const util::stream::ChainPosition &position) 
       : block_(position), gram_(block_->Get(), order),
-        cache_(position.GetChain().BlockSize() / NGram::TotalSize(order), DedupeHash(order), DedupeEquals(order)),
+        dedupe_invalid_(order, std::numeric_limits<WordIndex>::max()),
+        dedupe_memory_(Dedupe::Size(position.GetChain().BlockSize() / NGram::TotalSize(order), 1.5)),
+        dedupe_(&dedupe_memory_[0], dedupe_memory_.size(), &dedupe_invalid_[0], DedupeHash(order), DedupeEquals(order)),
         buffer_(new WordIndex[order - 1]),
         block_size_(position.GetChain().BlockSize()) {
+      dedupe_.Clear(DedupeEntry::Construct(&dedupe_invalid_[0]));
       if (order == 1) {
         // Add special words.  AdjustCounts is responsible if order != 1.    
         AddUnigramWord(kUNK);
@@ -104,10 +121,11 @@ class Writer {
 
     void Append(WordIndex word) {
       *(gram_.end() - 1) = word;
-      std::pair<Cache::iterator, bool> res(cache_.insert(gram_.begin()));
-      if (!res.second) {
-        // Already present.  
-        NGram already(*res.first, gram_.Order());
+      Dedupe::MutableIterator at;
+      bool found = dedupe_.FindOrInsert(DedupeEntry::Construct(gram_.begin()), at);
+      if (found) {
+        // Already present.
+        NGram already(at->key, gram_.Order());
         ++(already.Count());
         // Shift left by one.
         memmove(gram_.begin(), gram_.begin() + 1, sizeof(WordIndex) * (gram_.Order() - 1));
@@ -124,7 +142,7 @@ class Writer {
       }
       // Block end.  Need to store the context in a temporary buffer.  
       std::copy(gram_.begin() + 1, gram_.end(), buffer_.get());
-      cache_.clear();
+      dedupe_.Clear(DedupeEntry::Construct(&dedupe_invalid_[0]));
       block_->SetValidSize(block_size_);
       gram_.ReBase((++block_)->Get());
       std::copy(buffer_.get(), buffer_.get() + gram_.Order() - 1, gram_.begin());
@@ -145,9 +163,11 @@ class Writer {
 
     NGram gram_;
 
-    // TODO: use linear probing hash table to control memory usage?  
-    typedef boost::unordered_set<WordIndex *, DedupeHash, DedupeEquals> Cache;
-    Cache cache_;
+    std::vector<WordIndex> dedupe_invalid_;
+    // Probing hash table doesn't own its memory, so this does.
+    std::vector<uint8_t> dedupe_memory_;
+
+    Dedupe dedupe_;
 
     // Small buffer to hold existing ngrams when shifting across a block boundary.  
     boost::scoped_array<WordIndex> buffer_;
