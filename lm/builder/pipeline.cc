@@ -60,7 +60,7 @@ class Master {
       std::cerr << banner << std::endl;
       // Call merge first to prevent it from using memory at the same time as the chain.  
       for (std::size_t i = 1; i < config_.order; ++i) {
-        sorts[i - 1].Merge();
+        sorts[i - 1].Merge(sorts[i - 1].DefaultLazy());
       }
       chains_[0] >> files_[0].Source();
       for (std::size_t i = 1; i < config_.order; ++i) {
@@ -73,7 +73,7 @@ class Master {
     void SortAndReadTwice(Sorts<ContextOrder> &sorts, Chains &second, util::stream::ChainConfig second_config) {
       // Do merge first before allocating chain memory.
       for (std::size_t i = 1; i < config_.order; ++i) {
-        sorts[i - 1].Merge(true);
+        sorts[i - 1].Merge(0);
       }
       chains_[0] >> files_[0].Source();
       second_config.entry_size = NGram::TotalSize(1);

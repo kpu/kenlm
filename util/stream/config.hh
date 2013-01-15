@@ -21,11 +21,6 @@ struct SortConfig {
 
   // Total memory to use when running alone.
   std::size_t total_memory;
-  // Same thing when doing lazy merge.
-  std::size_t lazy_total_memory;
-
-  // Size of entries to be sorted.  Don't bother setting this; it's automatic.
-  std::size_t entry_size;
 };
 
 }} // namespaces
