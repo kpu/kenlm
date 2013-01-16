@@ -47,7 +47,6 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
   merge_config.temp_prefix = "sort_test_temp";
   merge_config.buffer_size = 800;
   merge_config.total_memory = 3300;
-  merge_config.lazy_total_memory = 1000;
 
   Chain chain(config);
   chain >> Putter(shuffled);
