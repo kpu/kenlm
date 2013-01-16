@@ -63,6 +63,10 @@ class FileBuffer {
       return PRead(file_.get());
     }
 
+    uint64_t Size() const {
+      return SizeOrThrow(file_.get());
+    }
+
   private:
     scoped_fd file_;
 };
