@@ -175,11 +175,12 @@ void Pipeline(const PipelineConfig &config, int text_file, std::ostream &out) {
   // TODO: Don't stick this in the middle of a progress bar
   std::cerr << "=== 1/5 Counting and sorting n-grams ===" << std::endl;
   uint64_t token_count;
+  WordIndex type_count;
   std::string file_name;
   {
     util::FilePiece text(text_file, NULL, &std::cerr);
     file_name = text.FileName();
-    master.MutableChains()[config.order - 1] >> CorpusCount(text, vocab_file.get(), token_count);
+    master.MutableChains()[config.order - 1] >> CorpusCount(text, vocab_file.get(), token_count, type_count);
     uint64_t corpus_count_bytes = BlockingSort(master.MutableChains()[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner());
     std::cerr << "[" << ToMB(corpus_count_bytes) << " MB] N-gram counts" << std::endl;
   }

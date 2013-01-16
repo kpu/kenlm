@@ -45,6 +45,10 @@ class VocabHandout {
       return ret.first->second;
     }
 
+    WordIndex Size() const {
+      return seen_.size();
+    }
+
   private:
     typedef boost::unordered_map<uint64_t, lm::WordIndex> Seen;
 
@@ -205,6 +209,7 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
     }
   } catch (const util::EndOfFileException &e) {}
   token_count_ = count;
+  type_count_ = vocab.Size();
 }
 
 } // namespace builder
