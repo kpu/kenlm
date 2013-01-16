@@ -20,6 +20,10 @@ struct PipelineConfig {
   util::stream::ChainConfig read_backoffs;
   bool verbose_header;
 
+  // Amount of memory to assume that the vocabulary hash table will use.  This
+  // is subtracted from total memory for CorpusCount.
+  std::size_t assume_vocab_hash_size;
+
   const std::string &TempPrefix() const { return sort.temp_prefix; }
   std::size_t TotalMemory() const { return sort.total_memory; }
 };

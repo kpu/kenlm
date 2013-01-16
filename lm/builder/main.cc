@@ -15,6 +15,7 @@ int main(int argc, char *argv[]) {
       ("order,o", po::value<std::size_t>(&pipeline.order)->required(), "Order of the model")
       ("temp_prefix,t", po::value<std::string>(&pipeline.sort.temp_prefix)->default_value("/tmp/lm"), "Temporary file prefix")
       ("vocab_file,v", po::value<std::string>(&pipeline.vocab_file)->default_value(""), "Location to write vocabulary file")
+      ("vocab_memory", po::value<std::size_t>(&pipeline.assume_vocab_hash_size)->default_value(1 << 24), "Assume that the vocabulary hash table will use this much memory for purposes of calculating total memory in the count step")
       ("chain_memory", po::value<std::size_t>(&pipeline.chain.total_memory)->default_value(1 << 27), "Memory for each chain")
       ("block_count", po::value<std::size_t>(&pipeline.chain.block_count)->default_value(2), "Block count (per order)")
       ("sort_memory,S", po::value<std::size_t>(&pipeline.sort.total_memory)->default_value(1 << 30), "Sorting memory")

@@ -35,17 +35,22 @@ uint64_t ToMB(uint64_t bytes) {
 class Master {
   public:
     explicit Master(const PipelineConfig &config) 
-      : config_(config), chains_(config.order), files_(config.order) {
-      util::stream::ChainConfig chain_config = config.chain;
-      for (std::size_t i = 0; i < config.order; ++i) {
-        chain_config.entry_size =  NGram::TotalSize(i + 1);
+      : config_(config), chains_(config.order), files_(config.order) {}
+
+    const PipelineConfig &Config() const { return config_; }
+
+    // TODO better memory allocation
+    void Init(util::stream::Sort<SuffixOrder, AddCombiner> &ngrams, WordIndex types) {
+      ngrams.Merge(ngrams.DefaultLazy());
+      util::stream::ChainConfig chain_config = config_.chain;
+      for (std::size_t i = 0; i < config_.order; ++i) {
+        chain_config.entry_size = NGram::TotalSize(i + 1);
         chains_.push_back(chain_config);
       }
       // Setup unigram file.  
       files_.push_back(util::MakeTemp(config_.TempPrefix()));
+      ngrams.Output(chains_.back());
     }
-
-    const PipelineConfig &Config() const { return config_; }
 
     Chains &MutableChains() { return chains_; }
 
@@ -175,14 +180,24 @@ void Pipeline(const PipelineConfig &config, int text_file, std::ostream &out) {
   // TODO: Don't stick this in the middle of a progress bar
   std::cerr << "=== 1/5 Counting and sorting n-grams ===" << std::endl;
   uint64_t token_count;
-  WordIndex type_count;
   std::string file_name;
   {
     util::FilePiece text(text_file, NULL, &std::cerr);
     file_name = text.FileName();
-    master.MutableChains()[config.order - 1] >> CorpusCount(text, vocab_file.get(), token_count, type_count);
-    uint64_t corpus_count_bytes = BlockingSort(master.MutableChains()[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner());
-    std::cerr << "[" << ToMB(corpus_count_bytes) << " MB] N-gram counts" << std::endl;
+    UTIL_THROW_IF(config.TotalMemory() < config.assume_vocab_hash_size, util::Exception, "Vocab hash size estimate " << config.assume_vocab_hash_size << " exceeds total memory " << config.TotalMemory());
+    std::size_t memory_for_chain = 
+      // This much memory to work with after vocab hash table.
+      static_cast<float>(config.TotalMemory() - config.assume_vocab_hash_size) /
+      // Solve for block size including the dedupe multiplier for one block.
+      (static_cast<float>(config.chain.block_count) + CorpusCount::DedupeMultiplier(config.order)) *
+      // Chain likes memory expressed in terms of total memory.
+      static_cast<float>(config.chain.block_count);
+    util::stream::Chain chain(util::stream::ChainConfig(NGram::TotalSize(config.order), config.chain.block_count, memory_for_chain));
+    WordIndex type_count;
+    chain >> CorpusCount(text, vocab_file.get(), token_count, type_count);
+    util::stream::Sort<SuffixOrder, AddCombiner> sorter(chain, config.sort, SuffixOrder(config.order), AddCombiner());
+    chain.Wait(true);
+    master.Init(sorter, type_count);
   }
 
   std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;
