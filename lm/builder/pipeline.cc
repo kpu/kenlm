@@ -223,6 +223,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
 
   util::stream::Sort<SuffixOrder, AddCombiner> sorter(chain, config.sort, SuffixOrder(config.order), AddCombiner());
   chain.Wait(true);
+  std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;
   master.InitForAdjust(sorter, type_count);
 }
 
@@ -282,7 +283,6 @@ void Pipeline(const PipelineConfig &config, int text_file, std::ostream &out) {
   std::string text_file_name;
   CountText(text_file, vocab_file.get(), master, token_count, text_file_name);
 
-  std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;
   std::vector<uint64_t> counts;
   std::vector<Discount> discounts;
   master >> AdjustCounts(counts, discounts);
