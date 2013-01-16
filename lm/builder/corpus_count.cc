@@ -90,12 +90,14 @@ struct DedupeEntry {
 
 typedef util::ProbingHashTable<DedupeEntry, DedupeHash, DedupeEquals> Dedupe;
 
+const float kProbingMultiplier = 1.5;
+
 class Writer {
   public:
     Writer(std::size_t order, const util::stream::ChainPosition &position) 
       : block_(position), gram_(block_->Get(), order),
         dedupe_invalid_(order, std::numeric_limits<WordIndex>::max()),
-        dedupe_memory_(Dedupe::Size(position.GetChain().BlockSize() / NGram::TotalSize(order), 1.5)),
+        dedupe_memory_(Dedupe::Size(position.GetChain().BlockSize() / NGram::TotalSize(order), kProbingMultiplier)),
         dedupe_(&dedupe_memory_[0], dedupe_memory_.size(), &dedupe_invalid_[0], DedupeHash(order), DedupeEquals(order)),
         buffer_(new WordIndex[order - 1]),
         block_size_(position.GetChain().BlockSize()) {
@@ -177,6 +179,10 @@ class Writer {
 };
 
 } // namespace
+
+float CorpusCount::DedupeMultiplier(std::size_t order) {
+  return kProbingMultiplier * static_cast<float>(sizeof(DedupeEntry)) / static_cast<float>(NGram::TotalSize(order));
+}
 
 void CorpusCount::Run(const util::stream::ChainPosition &position) {
   UTIL_TIMER("(%w s) Counted n-grams\n");

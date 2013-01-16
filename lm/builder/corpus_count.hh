@@ -17,6 +17,9 @@ namespace builder {
 
 class CorpusCount {
   public:
+    // Memory usage will be DedupeMultipler(order) * block_size + total_chain_size + unknown vocab_hash_size
+    static float DedupeMultiplier(std::size_t order);
+
     CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count)
       : from_(from), vocab_write_(vocab_write), token_count_(token_count) {
       token_count_ = 0;
