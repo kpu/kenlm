@@ -126,6 +126,30 @@ class Master {
     FixedArray<util::stream::FileBuffer> files_;
 };
 
+void CountText(int text_file /* input */, int vocab_file /* output */, Master &master, uint64_t &token_count, std::string &text_file_name) {
+  const PipelineConfig &config = master.Config();
+  std::cerr << "=== 1/5 Counting and sorting n-grams ===" << std::endl;
+
+  UTIL_THROW_IF(config.TotalMemory() < config.assume_vocab_hash_size, util::Exception, "Vocab hash size estimate " << config.assume_vocab_hash_size << " exceeds total memory " << config.TotalMemory());
+  std::size_t memory_for_chain = 
+    // This much memory to work with after vocab hash table.
+    static_cast<float>(config.TotalMemory() - config.assume_vocab_hash_size) /
+    // Solve for block size including the dedupe multiplier for one block.
+    (static_cast<float>(config.chain.block_count) + CorpusCount::DedupeMultiplier(config.order)) *
+    // Chain likes memory expressed in terms of total memory.
+    static_cast<float>(config.chain.block_count);
+  util::stream::Chain chain(util::stream::ChainConfig(NGram::TotalSize(config.order), config.chain.block_count, memory_for_chain));
+
+  WordIndex type_count;
+  util::FilePiece text(text_file, NULL, &std::cerr);
+  text_file_name = text.FileName();
+  chain >> CorpusCount(text, vocab_file, token_count, type_count);
+
+  util::stream::Sort<SuffixOrder, AddCombiner> sorter(chain, config.sort, SuffixOrder(config.order), AddCombiner());
+  chain.Wait(true);
+  master.Init(sorter, type_count);
+}
+
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts, Master &master, FixedArray<util::stream::FileBuffer> &gammas) {
   const PipelineConfig &config = master.Config();
   Chains second(config.order);
@@ -169,36 +193,14 @@ void InterpolateProbabilities(uint64_t unigram_count, Master &master, FixedArray
 
 void Pipeline(const PipelineConfig &config, int text_file, std::ostream &out) {
   UTIL_TIMER("[%w s] Total wall time elapsed\n");
+  Master master(config);
 
   util::scoped_fd vocab_file(config.vocab_file.empty() ? 
       util::MakeTemp(config.TempPrefix()) : 
       util::CreateOrThrow(config.vocab_file.c_str()));
-  Master master(config);
-
-  // initially, we only need counts for the highest order n-grams
-  // so we'll operate just on chains[config.order-1]
-  // TODO: Don't stick this in the middle of a progress bar
-  std::cerr << "=== 1/5 Counting and sorting n-grams ===" << std::endl;
   uint64_t token_count;
-  std::string file_name;
-  {
-    util::FilePiece text(text_file, NULL, &std::cerr);
-    file_name = text.FileName();
-    UTIL_THROW_IF(config.TotalMemory() < config.assume_vocab_hash_size, util::Exception, "Vocab hash size estimate " << config.assume_vocab_hash_size << " exceeds total memory " << config.TotalMemory());
-    std::size_t memory_for_chain = 
-      // This much memory to work with after vocab hash table.
-      static_cast<float>(config.TotalMemory() - config.assume_vocab_hash_size) /
-      // Solve for block size including the dedupe multiplier for one block.
-      (static_cast<float>(config.chain.block_count) + CorpusCount::DedupeMultiplier(config.order)) *
-      // Chain likes memory expressed in terms of total memory.
-      static_cast<float>(config.chain.block_count);
-    util::stream::Chain chain(util::stream::ChainConfig(NGram::TotalSize(config.order), config.chain.block_count, memory_for_chain));
-    WordIndex type_count;
-    chain >> CorpusCount(text, vocab_file.get(), token_count, type_count);
-    util::stream::Sort<SuffixOrder, AddCombiner> sorter(chain, config.sort, SuffixOrder(config.order), AddCombiner());
-    chain.Wait(true);
-    master.Init(sorter, type_count);
-  }
+  std::string text_file_name;
+  CountText(text_file, vocab_file.get(), master, token_count, text_file_name);
 
   std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;
   std::vector<uint64_t> counts;
@@ -214,7 +216,7 @@ void Pipeline(const PipelineConfig &config, int text_file, std::ostream &out) {
   std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
   bool interpolate_orders = true;
-  HeaderInfo header_info(file_name, token_count, config.order, interpolate_orders);
+  HeaderInfo header_info(text_file_name, token_count, config.order, interpolate_orders);
   master >> PrintARPA(vocab, counts, (config.verbose_header ? &header_info : NULL), out) >> util::stream::kRecycle;
   master.MutableChains().Wait(true);
 }
