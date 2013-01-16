@@ -1,11 +1,14 @@
 #include "lm/model.hh"
 #include "lm/sizes.hh"
 #include "util/file_piece.hh"
+#include "util/usage.hh"
 
+#include <algorithm>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
 #include <iomanip>
+#include <limits>
 
 #include <math.h>
 #include <stdlib.h>
@@ -20,7 +23,7 @@ namespace lm {
 namespace ngram {
 namespace {
 
-void Usage(const char *name) {
+void Usage(const char *name, const char *default_mem) {
   std::cerr << "Usage: " << name << " [-u log10_unknown_probability] [-s] [-i] [-w mmap|after] [-p probing_multiplier] [-t trie_temporary] [-m trie_building_megabytes] [-q bits] [-b bits] [-a bits] [type] input.arpa [output.mmap]\n\n"
 "-u sets the log10 probability for <unk> if the ARPA file does not have one.\n"
 "   Default is -100.  The ARPA file will always take precedence.\n"
@@ -40,7 +43,10 @@ void Usage(const char *name) {
 "memory and is still faster than SRI or IRST.  Building the trie format uses an\n"
 "on-disk sort to save memory.\n"
 "-T is the temporary directory prefix.  Default is the output file name.\n"
-"-S limits memory use for sorting.  Measured in MB.  Default is 1024MB.\n"
+"-S determines memory use for sorting.  Default is " << default_mem << ".  This is compatible\n"
+"   with GNU sort.  The number is followed by a unit: \% for percent of physical\n"
+"   memory, b for bytes, K for Kilobytes, M for megabytes, then G,T,P,E,Z,Y.  \n"
+"   Default unit is K for Kilobytes.\n"
 "-q turns quantization on and sets the number of bits (e.g. -q 8).\n"
 "-b sets backoff quantization bits.  Requires -q and defaults to that value.\n"
 "-a compresses pointers using an array of offsets.  The parameter is the\n"
@@ -96,6 +102,8 @@ void ProbingQuantizationUnsupported() {
 int main(int argc, char *argv[]) {
   using namespace lm::ngram;
 
+  const char *default_mem = util::GuessPhysicalMemory() ? "90%" : "1024M";
+
   try {
     bool quantize = false, set_backoff_bits = false, bhiksha = false, set_write_method = false, rest = false;
     lm::ngram::Config config;
@@ -126,8 +134,10 @@ int main(int argc, char *argv[]) {
           config.temporary_directory_prefix = optarg;
           break;
         case 'm': // legacy
-        case 'S':
           config.building_memory = ParseUInt(optarg) * 1048576;
+          break;
+        case 'S':
+          config.building_memory = std::min(static_cast<uint64_t>(std::numeric_limits<std::size_t>::max()), util::ParseSize(optarg));
           break;
         case 'w':
           set_write_method = true;
@@ -136,7 +146,7 @@ int main(int argc, char *argv[]) {
           } else if (!strcmp(optarg, "after")) {
             config.write_method = Config::WRITE_AFTER;
           } else {
-            Usage(argv[0]);
+            Usage(argv[0], default_mem);
           }
           break;
         case 's':
@@ -151,7 +161,7 @@ int main(int argc, char *argv[]) {
           config.rest_function = Config::REST_LOWER;
           break;
         default:
-          Usage(argv[0]);
+          Usage(argv[0], default_mem);
       }
     }
     if (!quantize && set_backoff_bits) {
@@ -174,7 +184,7 @@ int main(int argc, char *argv[]) {
       from_file = argv[optind + 1];
       config.write_mmap = argv[optind + 2];
     } else {
-      Usage(argv[0]);
+      Usage(argv[0], default_mem);
     }
     if (!strcmp(model_type, "probing")) {
       if (!set_write_method) config.write_method = Config::WRITE_AFTER;
@@ -204,7 +214,7 @@ int main(int argc, char *argv[]) {
         }
       }
     } else {
-      Usage(argv[0]);
+      Usage(argv[0], default_mem);
     }
   }
   catch (const std::exception &e) {
