@@ -7,6 +7,8 @@
 namespace util { namespace stream {
 
 struct ChainConfig {
+  ChainConfig() {}
+
   ChainConfig(std::size_t in_entry_size, std::size_t in_block_count, std::size_t in_total_memory)
     : entry_size(in_entry_size), block_count(in_block_count), total_memory(in_total_memory) {}
 

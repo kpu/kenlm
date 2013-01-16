@@ -23,7 +23,8 @@ struct PipelineConfig {
   const std::string &TempPrefix() const { return sort.temp_prefix; }
 };
 
-void Pipeline(PipelineConfig config, util::FilePiece &text, std::ostream &out);
+// Takes ownership of text_file.
+void Pipeline(PipelineConfig config, int text_file, std::ostream &out);
 
 }} // namespaces
 #endif // LM_BUILDER_PIPELINE__

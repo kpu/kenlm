@@ -162,7 +162,7 @@ void InterpolateProbabilities(uint64_t unigram_count, Master &master, FixedArray
 
 } // namespace
 
-void Pipeline(PipelineConfig config, util::FilePiece &text, std::ostream &out) {
+void Pipeline(PipelineConfig config, int text_file, std::ostream &out) {
   UTIL_TIMER("[%w s] Total wall time elapsed\n");
 
   config.read_backoffs.entry_size = sizeof(float);
@@ -177,9 +177,14 @@ void Pipeline(PipelineConfig config, util::FilePiece &text, std::ostream &out) {
   // TODO: Don't stick this in the middle of a progress bar
   std::cerr << "=== 1/5 Counting and sorting n-grams ===" << std::endl;
   uint64_t token_count;
-  master.MutableChains()[config.order - 1] >> CorpusCount(text, vocab_file.get(), token_count);
-  uint64_t corpus_count_bytes = BlockingSort(master.MutableChains()[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner());
-  std::cerr << "[" << ToMB(corpus_count_bytes) << " MB] N-gram counts" << std::endl;
+  std::string file_name;
+  {
+    util::FilePiece text(text_file, NULL, &std::cerr);
+    file_name = text.FileName();
+    master.MutableChains()[config.order - 1] >> CorpusCount(text, vocab_file.get(), token_count);
+    uint64_t corpus_count_bytes = BlockingSort(master.MutableChains()[config.order - 1], config.sort, SuffixOrder(config.order), AddCombiner());
+    std::cerr << "[" << ToMB(corpus_count_bytes) << " MB] N-gram counts" << std::endl;
+  }
 
   std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;
   std::vector<uint64_t> counts;
@@ -195,7 +200,7 @@ void Pipeline(PipelineConfig config, util::FilePiece &text, std::ostream &out) {
   std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
   bool interpolate_orders = true;
-  HeaderInfo header_info(text.FileName(), token_count, config.order, interpolate_orders);
+  HeaderInfo header_info(file_name, token_count, config.order, interpolate_orders);
   master >> PrintARPA(vocab, counts, (config.verbose_header ? &header_info : NULL), out) >> util::stream::kRecycle;
   master.MutableChains().Wait(true);
 }

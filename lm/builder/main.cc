@@ -38,8 +38,8 @@ int main(int argc, char *argv[]) {
     initial.adder_out.block_count = 2;
     pipeline.read_backoffs = initial.adder_out;
 
-    util::FilePiece in(0, NULL, &std::cerr);
-    lm::builder::Pipeline(pipeline, in, std::cout);
+    // Read from stdin
+    lm::builder::Pipeline(pipeline, 0, std::cout);
     util::PrintUsage(std::cerr);
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;
