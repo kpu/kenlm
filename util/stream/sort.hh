@@ -405,6 +405,7 @@ template <class Compare, class Combine = NeverCombine> class Sort {
     // Do merge sort, terminating when lazy merge could be done with the
     // specified memory.  Return the minimum memory necessary to do lazy merge.
     std::size_t Merge(std::size_t lazy_memory) {
+      if (offsets_.RemainingBlocks() <= 1) return 0;
       const uint64_t lazy_arity = std::max<uint64_t>(1, lazy_memory / config_.buffer_size);
       uint64_t size = Size();
       /* No overflow because
@@ -457,6 +458,7 @@ template <class Compare, class Combine = NeverCombine> class Sort {
         offsets_file_.reset(offsets2_file.release());
         offsets_ = offsets2;
       }
+      if (offsets_.RemainingBlocks() <= 1) return 0;
       // No overflow because the while loop exited.
       return std::min(size, offsets_.RemainingBlocks() * static_cast<uint64_t>(config_.buffer_size));
     }
