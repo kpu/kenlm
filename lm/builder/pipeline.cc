@@ -42,7 +42,7 @@ class Master {
     const PipelineConfig &Config() const { return config_; }
 
     // This takes the (partially) sorted ngrams and sets up for adjusted counts.
-    void Init(util::stream::Sort<SuffixOrder, AddCombiner> &ngrams, WordIndex types) {
+    void InitForAdjust(util::stream::Sort<SuffixOrder, AddCombiner> &ngrams, WordIndex types) {
       const std::size_t each_order_min = config_.minimum_block * config_.chain.block_count;
       // We know how many unigrams there are.  Don't allocate more than needed to them.
       const std::size_t min_chains = (config_.order - 1) * each_order_min +
@@ -82,11 +82,13 @@ class Master {
       //std::cerr << "[" << ToMB(bytes) << " MB] " << contents << std::endl;
     }
 
-    void SortAndReadTwice(Sorts<ContextOrder> &sorts, Chains &second, util::stream::ChainConfig second_config) {
+    void SortAndReadTwice(const std::vector<uint64_t> &counts, Sorts<ContextOrder> &sorts, Chains &second, util::stream::ChainConfig second_config) {
       // Do merge first before allocating chain memory.
       for (std::size_t i = 1; i < config_.order; ++i) {
         sorts[i - 1].Merge(0);
       }
+      // There's no lazy merge, so just divide memory amongst the chains.
+      CreateChains(config_.TotalMemory(), counts);
       chains_[0] >> files_[0].Source();
       second_config.entry_size = NGram::TotalSize(1);
       second.push_back(second_config);
@@ -154,6 +156,7 @@ class Master {
        */
       float sum;
       bool found_more;
+      std::vector<std::size_t> block_count(config_.order);
       do {
         sum = 0.0;
         for (std::size_t i = 0; i < unassigned.size(); ++i) {
@@ -164,6 +167,7 @@ class Master {
         for (std::vector<std::size_t>::iterator i = unassigned.begin(); i != unassigned.end();) {
           if (assignments[*i] <= remaining_mem * (portions[*i] / sum)) {
             remaining_mem -= assignments[*i];
+            block_count[*i] = 1;
             i = unassigned.erase(i);
             found_more = true;
           } else {
@@ -173,12 +177,13 @@ class Master {
       } while (found_more);
       for (std::vector<std::size_t>::iterator i = unassigned.begin(); i != unassigned.end(); ++i) {
         assignments[*i] = remaining_mem * (portions[*i] / sum);
+        block_count[*i] = config_.chain.block_count;
       }
       chains_.clear();
       std::cerr << "Assigning chain sizes";
       for (std::size_t i = 0; i < config_.order; ++i) {
         std::cerr << ' ' << (i+1) << ":" << assignments[i];
-        chains_.push_back(util::stream::ChainConfig(NGram::TotalSize(i + 1), config_.chain.block_count, assignments[i]));
+        chains_.push_back(util::stream::ChainConfig(NGram::TotalSize(i + 1), block_count[i], assignments[i]));
       }
       std::cerr << std::endl;
     }
@@ -211,7 +216,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
 
   util::stream::Sort<SuffixOrder, AddCombiner> sorter(chain, config.sort, SuffixOrder(config.order), AddCombiner());
   chain.Wait(true);
-  master.Init(sorter, type_count);
+  master.InitForAdjust(sorter, type_count);
 }
 
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts, Master &master, FixedArray<util::stream::FileBuffer> &gammas) {
@@ -224,7 +229,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
     PrintStatistics(counts, discounts);
     lm::ngram::ShowSizes(counts);
     std::cerr << "=== 3/5 Calculating and sorting initial probabilities ===" << std::endl;
-    master.SortAndReadTwice(sorts, second, config.initial_probs.adder_in);
+    master.SortAndReadTwice(counts, sorts, second, config.initial_probs.adder_in);
   }
 
   Chains gamma_chains(config.order);
