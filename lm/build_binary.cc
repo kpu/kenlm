@@ -39,8 +39,8 @@ void Usage(const char *name) {
 "trie is a straightforward trie with bit-level packing.  It uses the least\n"
 "memory and is still faster than SRI or IRST.  Building the trie format uses an\n"
 "on-disk sort to save memory.\n"
-"-t is the temporary directory prefix.  Default is the output file name.\n"
-"-m limits memory use for sorting.  Measured in MB.  Default is 1024MB.\n"
+"-T is the temporary directory prefix.  Default is the output file name.\n"
+"-S limits memory use for sorting.  Measured in MB.  Default is 1024MB.\n"
 "-q turns quantization on and sets the number of bits (e.g. -q 8).\n"
 "-b sets backoff quantization bits.  Requires -q and defaults to that value.\n"
 "-a compresses pointers using an array of offsets.  The parameter is the\n"
@@ -100,7 +100,7 @@ int main(int argc, char *argv[]) {
     bool quantize = false, set_backoff_bits = false, bhiksha = false, set_write_method = false, rest = false;
     lm::ngram::Config config;
     int opt;
-    while ((opt = getopt(argc, argv, "q:b:a:u:p:t:m:w:sir:")) != -1) {
+    while ((opt = getopt(argc, argv, "q:b:a:u:p:t:T:m:S:w:sir:")) != -1) {
       switch(opt) {
         case 'q':
           config.prob_bits = ParseBitCount(optarg);
@@ -121,10 +121,12 @@ int main(int argc, char *argv[]) {
         case 'p':
           config.probing_multiplier = ParseFloat(optarg);
           break;
-        case 't':
+        case 't': // legacy
+        case 'T':
           config.temporary_directory_prefix = optarg;
           break;
-        case 'm':
+        case 'm': // legacy
+        case 'S':
           config.building_memory = ParseUInt(optarg) * 1048576;
           break;
         case 'w':
