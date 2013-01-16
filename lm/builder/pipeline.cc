@@ -35,21 +35,28 @@ uint64_t ToMB(uint64_t bytes) {
 class Master {
   public:
     explicit Master(const PipelineConfig &config) 
-      : config_(config), chains_(config.order), files_(config.order) {}
+      : config_(config), chains_(config.order), files_(config.order) {
+      config_.minimum_block = std::max(NGram::TotalSize(config_.order), config_.minimum_block);
+    }
 
     const PipelineConfig &Config() const { return config_; }
 
-    // TODO better memory allocation
+    // This takes the (partially) sorted ngrams and sets up for adjusted counts.
     void Init(util::stream::Sort<SuffixOrder, AddCombiner> &ngrams, WordIndex types) {
-      ngrams.Merge(ngrams.DefaultLazy());
-      util::stream::ChainConfig chain_config = config_.chain;
-      for (std::size_t i = 0; i < config_.order; ++i) {
-        chain_config.entry_size = NGram::TotalSize(i + 1);
-        chains_.push_back(chain_config);
-      }
+      const std::size_t each_order_min = config_.minimum_block * config_.chain.block_count;
+      // We know how many unigrams there are.  Don't allocate more than needed to them.
+      const std::size_t min_chains = (config_.order - 1) * each_order_min +
+        std::min(types * NGram::TotalSize(1), each_order_min);
+      // Do merge sort, decide whether we're lazy, and calculate how much memory is left.
+      const std::size_t leftovers = config_.TotalMemory() - 
+        ngrams.Merge(std::min(config_.TotalMemory() - min_chains, ngrams.DefaultLazy()));
+
+      std::vector<uint64_t> count_bounds(1, types);
+      CreateChains(leftovers, count_bounds);
+      ngrams.Output(chains_.back());
+
       // Setup unigram file.  
       files_.push_back(util::MakeTemp(config_.TempPrefix()));
-      ngrams.Output(chains_.back());
     }
 
     Chains &MutableChains() { return chains_; }
@@ -119,6 +126,63 @@ class Master {
     }
 
   private:
+    // Create chains, allocating memory to them.  Totally heuristic.  Count
+    // bounds are upper bounds on the counts or not present.
+    void CreateChains(std::size_t remaining_mem, const std::vector<uint64_t> &count_bounds) {
+      std::vector<std::size_t> assignments;
+      assignments.reserve(config_.order);
+      // Start by assigning maximum memory usage (to be refined later).
+      for (std::size_t i = 0; i < count_bounds.size(); ++i) {
+        assignments.push_back(static_cast<std::size_t>(std::min(
+            static_cast<uint64_t>(remaining_mem),
+            count_bounds[i] * static_cast<uint64_t>(NGram::TotalSize(i + 1)))));
+      }
+      assignments.resize(config_.order, remaining_mem);
+
+      // Now we know how much memory everybody wants.  How much will they get?
+      // Proportional to this.
+      std::vector<float> portions;
+      // Indices of orders that have yet to be assigned.
+      std::vector<std::size_t> unassigned;
+      for (std::size_t i = 0; i < config_.order; ++i) {
+        portions.push_back(static_cast<float>((i+1) * NGram::TotalSize(i+1)));
+        unassigned.push_back(i);
+      }
+      /*If somebody doesn't eat their full dinner, give it to the rest of the
+       * family.  Then somebody else might not eat their full dinner etc.  Ends
+       * when everybody unassigned is hungry.
+       */
+      float sum;
+      bool found_more;
+      do {
+        sum = 0.0;
+        for (std::size_t i = 0; i < unassigned.size(); ++i) {
+          sum += portions[unassigned[i]];
+        }
+        found_more = false;
+        // If the proportional assignment is more than needed, give it just what it needs.
+        for (std::vector<std::size_t>::iterator i = unassigned.begin(); i != unassigned.end();) {
+          if (assignments[*i] <= remaining_mem * (portions[*i] / sum)) {
+            remaining_mem -= assignments[*i];
+            i = unassigned.erase(i);
+            found_more = true;
+          } else {
+            ++i;
+          }
+        }
+      } while (found_more);
+      for (std::vector<std::size_t>::iterator i = unassigned.begin(); i != unassigned.end(); ++i) {
+        assignments[*i] = remaining_mem * (portions[*i] / sum);
+      }
+      chains_.clear();
+      std::cerr << "Assigning chain sizes";
+      for (std::size_t i = 0; i < config_.order; ++i) {
+        std::cerr << ' ' << (i+1) << ":" << assignments[i];
+        chains_.push_back(util::stream::ChainConfig(NGram::TotalSize(i + 1), config_.chain.block_count, assignments[i]));
+      }
+      std::cerr << std::endl;
+    }
+
     PipelineConfig config_;
 
     Chains chains_;

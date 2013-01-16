@@ -24,6 +24,9 @@ struct PipelineConfig {
   // is subtracted from total memory for CorpusCount.
   std::size_t assume_vocab_hash_size;
 
+  // Minimum block size to tolerate.
+  std::size_t minimum_block;
+
   const std::string &TempPrefix() const { return sort.temp_prefix; }
   std::size_t TotalMemory() const { return sort.total_memory; }
 };
