@@ -35,7 +35,7 @@ uint64_t ToMB(uint64_t bytes) {
 class Master {
   public:
     explicit Master(const PipelineConfig &config) 
-      : config_(config), chains_(config.order), files_(config.order), in_memory_(config.order, false) {
+      : config_(config), chains_(config.order), files_(config.order) {
       util::stream::ChainConfig chain_config = config.chain;
       for (std::size_t i = 0; i < config.order; ++i) {
         chain_config.entry_size =  NGram::TotalSize(i + 1);
@@ -119,8 +119,6 @@ class Master {
     Chains chains_;
     // Often only unigrams, but sometimes all orders.  
     FixedArray<util::stream::FileBuffer> files_;
-
-    std::vector<bool> in_memory_;
 };
 
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts, Master &master, FixedArray<util::stream::FileBuffer> &gammas) {
@@ -151,8 +149,10 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
 void InterpolateProbabilities(uint64_t unigram_count, Master &master, FixedArray<util::stream::FileBuffer> &gammas) {
   const PipelineConfig &config = master.Config();
   Chains gamma_chains(config.order - 1);
+  util::stream::ChainConfig read_backoffs(config.read_backoffs);
+  read_backoffs.entry_size = sizeof(float);
   for (std::size_t i = 0; i < config.order - 1; ++i) {
-    gamma_chains.push_back(config.read_backoffs);
+    gamma_chains.push_back(read_backoffs);
     gamma_chains.back() >> gammas[i].Source();
   }
   master >> Interpolate(unigram_count, ChainPositions(gamma_chains));
@@ -162,10 +162,8 @@ void InterpolateProbabilities(uint64_t unigram_count, Master &master, FixedArray
 
 } // namespace
 
-void Pipeline(PipelineConfig config, int text_file, std::ostream &out) {
+void Pipeline(const PipelineConfig &config, int text_file, std::ostream &out) {
   UTIL_TIMER("[%w s] Total wall time elapsed\n");
-
-  config.read_backoffs.entry_size = sizeof(float);
 
   util::scoped_fd vocab_file(config.vocab_file.empty() ? 
       util::MakeTemp(config.TempPrefix()) : 

@@ -21,10 +21,11 @@ struct PipelineConfig {
   bool verbose_header;
 
   const std::string &TempPrefix() const { return sort.temp_prefix; }
+  std::size_t TotalMemory() const { return sort.total_memory; }
 };
 
 // Takes ownership of text_file.
-void Pipeline(PipelineConfig config, int text_file, std::ostream &out);
+void Pipeline(const PipelineConfig &config, int text_file, std::ostream &out);
 
 }} // namespaces
 #endif // LM_BUILDER_PIPELINE__
