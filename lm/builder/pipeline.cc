@@ -47,7 +47,7 @@ class Master {
 
     // This takes the (partially) sorted ngrams and sets up for adjusted counts.
     void InitForAdjust(util::stream::Sort<SuffixOrder, AddCombiner> &ngrams, WordIndex types) {
-      const std::size_t each_order_min = config_.minimum_block * config_.chain.block_count;
+      const std::size_t each_order_min = config_.minimum_block * config_.block_count;
       // We know how many unigrams there are.  Don't allocate more than needed to them.
       const std::size_t min_chains = (config_.order - 1) * each_order_min +
         std::min(types * NGram::TotalSize(1), each_order_min);
@@ -184,7 +184,7 @@ class Master {
       } while (found_more);
       for (std::vector<std::size_t>::iterator i = unassigned.begin(); i != unassigned.end(); ++i) {
         assignments[*i] = remaining_mem * (portions[*i] / sum);
-        block_count[*i] = config_.chain.block_count;
+        block_count[*i] = config_.block_count;
       }
       chains_.clear();
       std::cerr << "Chain sizes:";
@@ -211,10 +211,10 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
     // This much memory to work with after vocab hash table.
     static_cast<float>(config.TotalMemory() - config.assume_vocab_hash_size) /
     // Solve for block size including the dedupe multiplier for one block.
-    (static_cast<float>(config.chain.block_count) + CorpusCount::DedupeMultiplier(config.order)) *
+    (static_cast<float>(config.block_count) + CorpusCount::DedupeMultiplier(config.order)) *
     // Chain likes memory expressed in terms of total memory.
-    static_cast<float>(config.chain.block_count);
-  util::stream::Chain chain(util::stream::ChainConfig(NGram::TotalSize(config.order), config.chain.block_count, memory_for_chain));
+    static_cast<float>(config.block_count);
+  util::stream::Chain chain(util::stream::ChainConfig(NGram::TotalSize(config.order), config.block_count, memory_for_chain));
 
   WordIndex type_count;
   util::FilePiece text(text_file, NULL, &std::cerr);

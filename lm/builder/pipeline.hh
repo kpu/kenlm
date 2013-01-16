@@ -14,7 +14,6 @@ namespace lm { namespace builder {
 struct PipelineConfig {
   std::size_t order;
   std::string vocab_file;
-  util::stream::ChainConfig chain;
   util::stream::SortConfig sort;
   InitialProbabilitiesConfig initial_probs;
   util::stream::ChainConfig read_backoffs;
@@ -26,6 +25,9 @@ struct PipelineConfig {
 
   // Minimum block size to tolerate.
   std::size_t minimum_block;
+
+  // Number of blocks to use.  This will be overridden to 1 if everything fits.
+  std::size_t block_count;
 
   const std::string &TempPrefix() const { return sort.temp_prefix; }
   std::size_t TotalMemory() const { return sort.total_memory; }

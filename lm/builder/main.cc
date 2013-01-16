@@ -13,16 +13,15 @@ int main(int argc, char *argv[]) {
     lm::builder::PipelineConfig pipeline;
     options.add_options()
       ("order,o", po::value<std::size_t>(&pipeline.order)->required(), "Order of the model")
-      ("temp_prefix,t", po::value<std::string>(&pipeline.sort.temp_prefix)->default_value("/tmp/lm"), "Temporary file prefix")
+      ("interpolate_unigrams", po::bool_switch(&pipeline.initial_probs.interpolate_unigrams), "Interpolate the unigrams (default: emulate SRILM by not interpolating)")
+      ("verbose_header,V", po::bool_switch(&pipeline.verbose_header), "Add a verbose header to the ARPA file that includes information such as token count, smoothing type, etc.")
+      ("temp_prefix,T", po::value<std::string>(&pipeline.sort.temp_prefix)->default_value("/tmp/lm"), "Temporary file prefix")
+      ("memory,S", po::value<std::size_t>(&pipeline.sort.total_memory)->default_value(1 << 30), "Sorting memory")
       ("vocab_file,v", po::value<std::string>(&pipeline.vocab_file)->default_value(""), "Location to write vocabulary file")
       ("vocab_memory", po::value<std::size_t>(&pipeline.assume_vocab_hash_size)->default_value(1 << 24), "Assume that the vocabulary hash table will use this much memory for purposes of calculating total memory in the count step")
-      ("chain_memory", po::value<std::size_t>(&pipeline.chain.total_memory)->default_value(1 << 27), "Memory for each chain")
-      ("block_count", po::value<std::size_t>(&pipeline.chain.block_count)->default_value(2), "Block count (per order)")
+      ("block_count", po::value<std::size_t>(&pipeline.block_count)->default_value(2), "Block count (per order)")
       ("minimum_block", po::value<std::size_t>(&pipeline.minimum_block)->default_value(1 << 13), "Minimum block size to allow")
-      ("sort_memory,S", po::value<std::size_t>(&pipeline.sort.total_memory)->default_value(1 << 30), "Sorting memory")
-      ("sort_block", po::value<std::size_t>(&pipeline.sort.buffer_size)->default_value(1 << 26), "Size of IO operations for sort (determines arity)")
-      ("interpolate_unigrams", po::bool_switch(&pipeline.initial_probs.interpolate_unigrams), "Interpolate the unigrams (default: emulate SRILM by not interpolating)")
-      ("verbose_header,V", po::bool_switch(&pipeline.verbose_header), "Add a verbose header to the ARPA file that includes information such as token count, smoothing type, etc.");
+      ("sort_block", po::value<std::size_t>(&pipeline.sort.buffer_size)->default_value(1 << 26), "Size of IO operations for sort (determines arity)");
     if (argc == 1) {
       std::cerr << options << std::endl;
       return 1;
@@ -30,7 +29,6 @@ int main(int argc, char *argv[]) {
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, options), vm);
     po::notify(vm);
-    pipeline.chain.entry_size = 0;
 
     lm::builder::InitialProbabilitiesConfig &initial = pipeline.initial_probs;
     // TODO: evaluate options for these.  
