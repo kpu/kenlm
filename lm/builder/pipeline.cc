@@ -140,7 +140,6 @@ class Master {
     // Create chains, allocating memory to them.  Totally heuristic.  Count
     // bounds are upper bounds on the counts or not present.
     void CreateChains(std::size_t remaining_mem, const std::vector<uint64_t> &count_bounds) {
-      std::cerr << "Create chains was given " << remaining_mem << " to work with." << std::endl;
       std::vector<std::size_t> assignments;
       assignments.reserve(config_.order);
       // Start by assigning maximum memory usage (to be refined later).
