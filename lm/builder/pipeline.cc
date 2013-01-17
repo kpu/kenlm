@@ -258,7 +258,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
 }
 
 void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &master, Sorts<SuffixOrder> &primary, FixedArray<util::stream::FileBuffer> &gammas) {
-  std::cerr << "=== 4/5 Calculating and sorting order-interpolated probabilities ===" << std::endl;
+  std::cerr << "=== 4/5 Calculating and writing order-interpolated probabilities ===" << std::endl;
   const PipelineConfig &config = master.Config();
   master.MaximumLazyInput(counts, primary);
 
