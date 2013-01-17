@@ -276,7 +276,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
 
 } // namespace
 
-void Pipeline(const PipelineConfig &config, int text_file, std::ostream &out) {
+void Pipeline(const PipelineConfig &config, int text_file, int out_arpa) {
   UTIL_TIMER("(%w s) Total wall time elapsed\n");
   Master master(config);
 
@@ -301,9 +301,8 @@ void Pipeline(const PipelineConfig &config, int text_file, std::ostream &out) {
   std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
   UTIL_THROW_IF(vocab.Size() != counts[0], util::Exception, "Vocab words don't match up.  Is there a null byte in the input?");
-  bool interpolate_orders = true;
-  HeaderInfo header_info(text_file_name, token_count, config.order, interpolate_orders);
-  master >> PrintARPA(vocab, counts, (config.verbose_header ? &header_info : NULL), out) >> util::stream::kRecycle;
+  HeaderInfo header_info(text_file_name, token_count);
+  master >> PrintARPA(vocab, counts, (config.verbose_header ? &header_info : NULL), out_arpa) >> util::stream::kRecycle;
   master.MutableChains().Wait(true);
 }
 

@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
 
     // Read from stdin
     try {
-      lm::builder::Pipeline(pipeline, 0, std::cout);
+      lm::builder::Pipeline(pipeline, 0, 1);
     } catch (const util::MallocException &e) {
       std::cerr << e.what() << std::endl;
       std::cerr << "Try rerunning with a more conservative -S setting than " << vm["memory"].as<std::string>() << std::endl;

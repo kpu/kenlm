@@ -6,6 +6,7 @@
 #include "lm/builder/header_info.hh"
 #include "util/file.hh"
 #include "util/mmap.hh"
+#include "util/string_piece.hh"
 
 #include <ostream>
 
@@ -23,11 +24,18 @@ class VocabReconstitute {
     explicit VocabReconstitute(int fd);
 
     const char *Lookup(WordIndex index) const {
-      assert(index < map_.size());
+      assert(index < map_.size() - 1);
       return map_[index];
     }
 
-    std::size_t Size() const { return map_.size(); }
+    StringPiece LookupPiece(WordIndex index) const {
+      return StringPiece(map_[index], map_[index + 1] - 1 - map_[index]);
+    }
+
+    std::size_t Size() const {
+      // There's an extra entry to support StringPiece lengths.
+      return map_.size() - 1;
+    }
 
   private:
     util::scoped_memory memory_;
@@ -81,13 +89,13 @@ template <class V> class Print {
 class PrintARPA {
   public:
     // header_info may be NULL to disable the header
-    explicit PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> &counts, const HeaderInfo* header_info, std::ostream &out);
+    explicit PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> &counts, const HeaderInfo* header_info, int out_fd);
 
     void Run(const ChainPositions &positions);
 
   private:
     const VocabReconstitute &vocab_;
-    std::ostream &out_;
+    int out_fd_;
 };
 
 }} // namespaces
