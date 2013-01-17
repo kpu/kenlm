@@ -76,7 +76,13 @@ int main(int argc, char *argv[]) {
     pipeline.read_backoffs = initial.adder_out;
 
     // Read from stdin
-    lm::builder::Pipeline(pipeline, 0, std::cout);
+    try {
+      lm::builder::Pipeline(pipeline, 0, std::cout);
+    } catch (const util::MallocException &e) {
+      std::cerr << e.what() << std::endl;
+      std::cerr << "Try rerunning with a more conservative -S setting than " << vm["memory"].as<std::string>() << std::endl;
+      return 1;
+    }
     util::PrintUsage(std::cerr);
   } catch (const std::exception &e) {
     std::cerr << e.what() << std::endl;
