@@ -34,7 +34,7 @@ struct PipelineConfig {
 };
 
 // Takes ownership of text_file.
-void Pipeline(const PipelineConfig &config, int text_file, int out_arpa);
+void Pipeline(PipelineConfig config, int text_file, int out_arpa);
 
 }} // namespaces
 #endif // LM_BUILDER_PIPELINE__
