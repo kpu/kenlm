@@ -45,7 +45,8 @@ BOOST_AUTO_TEST_CASE(Short) {
   NGramStream stream;
   uint64_t token_count;
   WordIndex type_count;
-  chain >> CorpusCount(input_piece, vocab.get(), token_count, type_count) >> stream >> util::stream::kRecycle;
+  CorpusCount counter(input_piece, vocab.get(), token_count, type_count, chain.BlockSize() / chain.EntrySize());
+  chain >> boost::ref(counter) >> stream >> util::stream::kRecycle;
 
   const char *v[] = {"<unk>", "<s>", "</s>", "looking", "on", "a", "little", "more", "loin", "foo", "bar"};
 
