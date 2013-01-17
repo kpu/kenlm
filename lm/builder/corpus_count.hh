@@ -2,6 +2,7 @@
 #define LM_BUILDER_CORPUS_COUNT__
 
 #include "lm/word_index.hh"
+#include "util/scoped.hh"
 
 #include <cstddef>
 #include <string>
@@ -22,11 +23,7 @@ class CorpusCount {
     // Memory usage will be DedupeMultipler(order) * block_size + total_chain_size + unknown vocab_hash_size
     static float DedupeMultiplier(std::size_t order);
 
-    CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count, WordIndex &type_count)
-      : from_(from), vocab_write_(vocab_write), token_count_(token_count), type_count_(type_count) {
-      token_count_ = 0;
-      type_count_ = 0;
-    }
+    CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count, WordIndex &type_count, std::size_t entries_per_block);
 
     void Run(const util::stream::ChainPosition &position);
 
@@ -35,6 +32,9 @@ class CorpusCount {
     int vocab_write_;
     uint64_t &token_count_;
     WordIndex &type_count_;
+
+    std::size_t dedupe_mem_size_;
+    util::scoped_malloc dedupe_mem_;
 };
 
 } // namespace builder

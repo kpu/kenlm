@@ -4,9 +4,16 @@
 
 #include "util/exception.hh"
 #include <cstddef>
-#include <cstdlib>
 
 namespace util {
+
+class MallocException : public ErrnoException {
+  public:
+    explicit MallocException(std::size_t requested) throw();
+    ~MallocException() throw();
+};
+
+void *MallocOrThrow(std::size_t requested);
 
 class scoped_malloc {
   public:
@@ -14,18 +21,14 @@ class scoped_malloc {
 
     scoped_malloc(void *p) : p_(p) {}
 
-    ~scoped_malloc() { std::free(p_); }
+    ~scoped_malloc();
 
     void reset(void *p = NULL) {
       scoped_malloc other(p_);
       p_ = p;
     }
 
-    void call_realloc(std::size_t to) {
-      void *ret;
-      UTIL_THROW_IF(!(ret = std::realloc(p_, to)) && to, ErrnoException, "realloc to " << to << " bytes failed.");
-      p_ = ret;
-    }
+    void call_realloc(std::size_t to);
 
     void *get() { return p_; }
     const void *get() const { return p_; }

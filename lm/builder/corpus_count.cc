@@ -7,6 +7,7 @@
 #include "util/file_piece.hh"
 #include "util/murmur_hash.hh"
 #include "util/probing_hash_table.hh"
+#include "util/scoped.hh"
 #include "util/stream/chain.hh"
 #include "util/stream/timer.hh"
 #include "util/tokenize_piece.hh"
@@ -98,14 +99,14 @@ const float kProbingMultiplier = 1.5;
 
 class Writer {
   public:
-    Writer(std::size_t order, const util::stream::ChainPosition &position) 
+    Writer(std::size_t order, const util::stream::ChainPosition &position, void *dedupe_mem, std::size_t dedupe_mem_size) 
       : block_(position), gram_(block_->Get(), order),
         dedupe_invalid_(order, std::numeric_limits<WordIndex>::max()),
-        dedupe_memory_(Dedupe::Size(position.GetChain().BlockSize() / NGram::TotalSize(order), kProbingMultiplier)),
-        dedupe_(&dedupe_memory_[0], dedupe_memory_.size(), &dedupe_invalid_[0], DedupeHash(order), DedupeEquals(order)),
+        dedupe_(dedupe_mem, dedupe_mem_size, &dedupe_invalid_[0], DedupeHash(order), DedupeEquals(order)),
         buffer_(new WordIndex[order - 1]),
         block_size_(position.GetChain().BlockSize()) {
       dedupe_.Clear(DedupeEntry::Construct(&dedupe_invalid_[0]));
+      assert(Dedupe::Size(position.GetChain().BlockSize() / position.GetChain().EntrySize(), kProbingMultiplier) == dedupe_mem_size);
       if (order == 1) {
         // Add special words.  AdjustCounts is responsible if order != 1.    
         AddUnigramWord(kUNK);
@@ -171,8 +172,6 @@ class Writer {
 
     // This is the memory behind the invalid value in dedupe_.
     std::vector<WordIndex> dedupe_invalid_;
-    // Probing hash table doesn't own its memory, so this does.
-    std::vector<uint8_t> dedupe_memory_;
     // Hash table combiner implementation.
     Dedupe dedupe_;
 
@@ -188,12 +187,20 @@ float CorpusCount::DedupeMultiplier(std::size_t order) {
   return kProbingMultiplier * static_cast<float>(sizeof(DedupeEntry)) / static_cast<float>(NGram::TotalSize(order));
 }
 
+CorpusCount::CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count, WordIndex &type_count, std::size_t entries_per_block) 
+  : from_(from), vocab_write_(vocab_write), token_count_(token_count), type_count_(type_count),
+    dedupe_mem_size_(Dedupe::Size(entries_per_block, kProbingMultiplier)),
+    dedupe_mem_(util::MallocOrThrow(dedupe_mem_size_)) {
+  token_count_ = 0;
+  type_count_ = 0;
+}
+
 void CorpusCount::Run(const util::stream::ChainPosition &position) {
   UTIL_TIMER("(%w s) Counted n-grams\n");
 
   VocabHandout vocab(vocab_write_);
   const WordIndex end_sentence = vocab.Lookup("</s>");
-  Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position);
+  Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_);
   uint64_t count = 0;
   try {
     while(true) {

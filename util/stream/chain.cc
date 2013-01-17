@@ -85,8 +85,7 @@ void Chain::Start() {
     assert(threads_.empty());
     assert(queues_.empty());
     std::size_t malloc_size = block_size_ * config_.block_count;
-    memory_.reset(malloc(malloc_size));
-    UTIL_THROW_IF(!memory_.get(), util::ErrnoException, "Failed to allocate " << malloc_size << " bytes for " << config_.block_count << " blocks each of size " << block_size_);
+    memory_.reset(MallocOrThrow(malloc_size));
   }
   // This queue can accomodate all blocks.    
   queues_.push_back(new PCQueue<Block>(config_.block_count));

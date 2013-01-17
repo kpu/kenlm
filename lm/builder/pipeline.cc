@@ -219,7 +219,8 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
   WordIndex type_count;
   util::FilePiece text(text_file, NULL, &std::cerr);
   text_file_name = text.FileName();
-  chain >> CorpusCount(text, vocab_file, token_count, type_count);
+  CorpusCount counter(text, vocab_file, token_count, type_count, chain.BlockSize() / chain.EntrySize());
+  chain >> boost::ref(counter);
 
   util::stream::Sort<SuffixOrder, AddCombiner> sorter(chain, config.sort, SuffixOrder(config.order), AddCombiner());
   chain.Wait(true);
