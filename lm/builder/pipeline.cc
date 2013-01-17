@@ -52,13 +52,12 @@ class Master {
       // We know how many unigrams there are.  Don't allocate more than needed to them.
       const std::size_t min_chains = (config_.order - 1) * each_order_min +
         std::min(types * NGram::TotalSize(1), each_order_min);
-      // Do merge sort, decide whether we're lazy, and calculate how much memory is left.
-      const std::size_t leftovers = config_.TotalMemory() - 
-        ngrams.Merge(std::min(config_.TotalMemory() - min_chains, ngrams.DefaultLazy()));
+      // Do merge sort with calculated laziness.
+      const std::size_t merge_using = ngrams.Merge(std::min(config_.TotalMemory() - min_chains, ngrams.DefaultLazy()));
 
       std::vector<uint64_t> count_bounds(1, types);
-      CreateChains(leftovers, count_bounds);
-      ngrams.Output(chains_.back());
+      CreateChains(config_.TotalMemory() - merge_using, count_bounds);
+      ngrams.Output(chains_.back(), merge_using);
 
       // Setup unigram file.  
       files_.push_back(util::MakeTemp(config_.TempPrefix()));
