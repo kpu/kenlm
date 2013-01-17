@@ -10,8 +10,7 @@
 namespace lm { namespace builder {
 
 VocabReconstitute::VocabReconstitute(int fd) {
-  uint64_t size = util::SizeFile(fd);
-  UTIL_THROW_IF(util::kBadSize == size, util::ErrnoException, "Vocabulary file should be sizeable");
+  uint64_t size = util::SizeOrThrow(fd);
   util::MapRead(util::POPULATE_OR_READ, fd, 0, size, memory_);
   const char *const start = static_cast<const char*>(memory_.get());
   for (const char *i = start; i != start + size; i += strlen(i) + 1) {
@@ -19,7 +18,7 @@ VocabReconstitute::VocabReconstitute(int fd) {
   }
 }
 
-PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> counts, const HeaderInfo* header_info, std::ostream &out) 
+PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> &counts, const HeaderInfo* header_info, std::ostream &out) 
   : vocab_(vocab), out_(out) {
 
   if (header_info) {
@@ -38,6 +37,7 @@ PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t>
 
 void PrintARPA::Run(const ChainPositions &positions) {
   UTIL_TIMER("(%w s) Wrote ARPA file\n");
+//  double_conversion::DoubleToStringConverter converter(EcmaScriptConverter());
   for (unsigned order = 1; order <= positions.size(); ++order) {
     out_ << "\\" << order << "-grams:" << '\n';
     for (NGramStream stream(positions[order - 1]); stream; ++stream) {

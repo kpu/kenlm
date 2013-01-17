@@ -27,6 +27,8 @@ class VocabReconstitute {
       return map_[index];
     }
 
+    std::size_t Size() const { return map_.size(); }
+
   private:
     util::scoped_memory memory_;
     std::vector<const char*> map_;
@@ -79,7 +81,7 @@ template <class V> class Print {
 class PrintARPA {
   public:
     // header_info may be NULL to disable the header
-    explicit PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> counts, const HeaderInfo* header_info, std::ostream &out);
+    explicit PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> &counts, const HeaderInfo* header_info, std::ostream &out);
 
     void Run(const ChainPositions &positions);
 

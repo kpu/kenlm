@@ -9,6 +9,7 @@
 
 #include "lm/sizes.hh"
 
+#include "util/exception.hh"
 #include "util/file.hh"
 #include "util/stream/io.hh"
 
@@ -112,13 +113,15 @@ class Master {
       }
     }
 
-    void BufferFinal() {
+    void BufferFinal(const std::vector<uint64_t> &counts) {
       chains_[0] >> files_[0].Sink();
       for (std::size_t i = 1; i < config_.order; ++i) {
         files_.push_back(util::MakeTemp(config_.TempPrefix()));
         chains_[i] >> files_[i].Sink();
       }
       chains_.Wait(true);
+      // Use less memory.  Because we can.
+      CreateChains(std::min(config_.sort.buffer_size * config_.order, config_.TotalMemory()), counts);
       for (std::size_t i = 0; i < config_.order; ++i) {
         chains_[i] >> files_[i].Source();
       }
@@ -268,7 +271,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
   }
   master >> Interpolate(counts[0], ChainPositions(gamma_chains));
   gamma_chains >> util::stream::kRecycle;
-  master.BufferFinal();
+  master.BufferFinal(counts);
 }
 
 } // namespace
@@ -297,6 +300,7 @@ void Pipeline(const PipelineConfig &config, int text_file, std::ostream &out) {
 
   std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
+  UTIL_THROW_IF(vocab.Size() != counts[0], util::Exception, "Vocab words don't match up.  Is there a null byte in the input?");
   bool interpolate_orders = true;
   HeaderInfo header_info(text_file_name, token_count, config.order, interpolate_orders);
   master >> PrintARPA(vocab, counts, (config.verbose_header ? &header_info : NULL), out) >> util::stream::kRecycle;
