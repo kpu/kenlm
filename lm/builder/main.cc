@@ -1,4 +1,5 @@
 #include "lm/builder/pipeline.hh"
+#include "util/file.hh"
 #include "util/file_piece.hh"
 #include "util/usage.hh"
 
@@ -66,6 +67,8 @@ int main(int argc, char *argv[]) {
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, options), vm);
     po::notify(vm);
+
+    util::NormalizeTempPrefix(pipeline.sort.temp_prefix);
 
     lm::builder::InitialProbabilitiesConfig &initial = pipeline.initial_probs;
     // TODO: evaluate options for these.  

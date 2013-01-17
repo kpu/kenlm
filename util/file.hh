@@ -123,6 +123,8 @@ std::FILE *FDOpenOrThrow(scoped_fd &file);
 std::FILE *FDOpenReadOrThrow(scoped_fd &file);
 
 // Temporary files
+// Append a / if base is a directory.
+void NormalizeTempPrefix(std::string &base);
 int MakeTemp(const std::string &prefix);
 std::FILE *FMakeTemp(const std::string &prefix);
 

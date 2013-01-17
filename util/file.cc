@@ -378,6 +378,17 @@ mkstemp_and_unlink(char *tmpl) {
 }
 #endif
 
+// If it's a directory, add a /.  This lets users say -T /tmp without creating
+// /tmpAAAAAA
+void NormalizeTempPrefix(std::string &base) {
+  if (base.empty()) return;
+  if (base[base.size() - 1] == '/') return;
+  struct stat sb;
+  // It's fine for it to not exist.
+  if (-1 == stat(base.c_str(), &sb)) return;
+  if (S_ISDIR(sb.st_mode)) base += '/';
+}
+
 int MakeTemp(const std::string &base) {
   std::string name(base);
   name += "XXXXXX";
