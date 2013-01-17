@@ -93,8 +93,7 @@ class Master {
       for (std::size_t i = 0; i < config_.order; ++i) {
         min_chains += std::min(counts[i] * NGram::TotalSize(i + 1), static_cast<uint64_t>(config_.minimum_block));
       }
-      assert(min_chains <= config_.TotalMemory());
-      std::size_t for_merge = config_.TotalMemory() - min_chains;
+      std::size_t for_merge = min_chains > config_.TotalMemory() ? 0 : (config_.TotalMemory() - min_chains);
       std::vector<std::size_t> laziness;
       // Prioritize longer n-grams.
       for (util::stream::Sort<SuffixOrder> *i = sorts.end() - 1; i >= sorts.begin(); --i) {
@@ -257,7 +256,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
 }
 
 void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &master, Sorts<SuffixOrder> &primary, FixedArray<util::stream::FileBuffer> &gammas) {
-  std::cerr << "=== 4/5 Calculating and sorting order-interpolated probabilities ===" << std::endl;
+  std::cerr << "=== 4/5 Calculating and writing order-interpolated probabilities ===" << std::endl;
   const PipelineConfig &config = master.Config();
   master.MaximumLazyInput(counts, primary);
 
@@ -275,7 +274,20 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
 
 } // namespace
 
-void Pipeline(const PipelineConfig &config, int text_file, int out_arpa) {
+void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
+  // Some fail-fast sanity checks.
+  if (config.sort.buffer_size * 4 > config.TotalMemory()) {
+    config.sort.buffer_size = config.TotalMemory() / 4;
+    std::cerr << "Warning: changing sort block size to " << config.sort.buffer_size << " bytes due to low total memory." << std::endl;
+  }
+  if (config.minimum_block < NGram::TotalSize(config.order)) {
+    config.minimum_block = NGram::TotalSize(config.order);
+    std::cerr << "Warning: raising minimum block to " << config.minimum_block << " to fit an ngram in every block." << std::endl;
+  }
+  UTIL_THROW_IF(config.sort.buffer_size < config.minimum_block, util::Exception, "Sort block size " << config.sort.buffer_size << " is below the minimum block size " << config.minimum_block << ".");
+  UTIL_THROW_IF(config.TotalMemory() < config.minimum_block * config.order * config.block_count, util::Exception,
+      "Not enough memory to fit " << (config.order * config.block_count) << " blocks with minimum size " << config.minimum_block << ".  Increase memory to " << (config.minimum_block * config.order * config.block_count) << " bytes or decrease the minimum block size.");
+
   UTIL_TIMER("(%w s) Total wall time elapsed\n");
   Master master(config);
 

@@ -107,6 +107,7 @@ int main(int argc, char *argv[]) {
   try {
     bool quantize = false, set_backoff_bits = false, bhiksha = false, set_write_method = false, rest = false;
     lm::ngram::Config config;
+    config.building_memory = util::ParseSize(default_mem);
     int opt;
     while ((opt = getopt(argc, argv, "q:b:a:u:p:t:T:m:S:w:sir:")) != -1) {
       switch(opt) {
