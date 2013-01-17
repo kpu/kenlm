@@ -13,7 +13,6 @@ class SizeNotify {
 
     void operator()(const std::string &from) {
       behind_ = util::ParseSize(from);
-      std::cerr << "Notified with " << behind_ << std::endl;
     }
 
   private:
@@ -36,7 +35,7 @@ int main(int argc, char *argv[]) {
       ("order,o", po::value<std::size_t>(&pipeline.order)->required(), "Order of the model")
       ("interpolate_unigrams", po::bool_switch(&pipeline.initial_probs.interpolate_unigrams), "Interpolate the unigrams (default: emulate SRILM by not interpolating)")
       ("temp_prefix,T", po::value<std::string>(&pipeline.sort.temp_prefix)->default_value("/tmp/lm"), "Temporary file prefix")
-      ("memory,S", SizeOption(pipeline.sort.total_memory, util::GuessPhysicalMemory() ? "90%" : "1G"), "Sorting memory")
+      ("memory,S", SizeOption(pipeline.sort.total_memory, util::GuessPhysicalMemory() ? "80%" : "1G"), "Sorting memory")
       ("vocab_memory", SizeOption(pipeline.assume_vocab_hash_size, "50M"), "Assume that the vocabulary hash table will use this much memory for purposes of calculating total memory in the count step")
       ("minimum_block", SizeOption(pipeline.minimum_block, "8K"), "Minimum block size to allow")
       ("sort_block", SizeOption(pipeline.sort.buffer_size, "64M"), "Size of IO operations for sort (determines arity)")

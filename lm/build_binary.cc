@@ -102,7 +102,7 @@ void ProbingQuantizationUnsupported() {
 int main(int argc, char *argv[]) {
   using namespace lm::ngram;
 
-  const char *default_mem = util::GuessPhysicalMemory() ? "90%" : "1024M";
+  const char *default_mem = util::GuessPhysicalMemory() ? "80%" : "1G";
 
   try {
     bool quantize = false, set_backoff_bits = false, bhiksha = false, set_write_method = false, rest = false;

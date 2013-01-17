@@ -25,6 +25,7 @@
 #include "util/stream/timer.hh"
 
 #include "util/file.hh"
+#include "util/scoped.hh"
 #include "util/sized_iterator.hh"
 
 #include <algorithm>
@@ -251,8 +252,7 @@ template <class Compare, class Combine> class MergingReader {
       }
 
       Stream str(position);
-      scoped_malloc buffer(malloc(total_memory_));
-      UTIL_THROW_IF(!buffer.get(), ErrnoException, " while trying to malloc " << total_memory_ << " bytes");
+      scoped_malloc buffer(MallocOrThrow(total_memory_));
       uint8_t *const buffer_end = static_cast<uint8_t*>(buffer.get()) + total_memory_;
 
       const std::size_t entry_size = position.GetChain().EntrySize();
