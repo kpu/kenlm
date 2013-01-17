@@ -37,8 +37,8 @@ class OutputManager {
     explicit OutputManager(int out)
       : buf_(util::MallocOrThrow(kOutBuf)),
         builder_(static_cast<char*>(buf_.get()), kOutBuf),
-        // Mostly the default but with inf and nan instead.
-        convert_(double_conversion::DoubleToStringConverter::NO_FLAGS, "inf", "nan", 'e', -6, 21, 6, 0),
+        // Mostly the default but with inf instead.  And no flags.
+        convert_(double_conversion::DoubleToStringConverter::NO_FLAGS, "inf", "NaN", 'e', -6, 21, 6, 0),
         fd_(out) {}
 
     ~OutputManager() {
@@ -46,7 +46,8 @@ class OutputManager {
     }
 
     OutputManager &operator<<(float value) {
-      EnsureRemaining(double_conversion::DoubleToStringConverter::kMaxPrecisionDigits);
+      // Odd, but this is the largest number found in the comments.
+      EnsureRemaining(double_conversion::DoubleToStringConverter::kMaxPrecisionDigits + 8);
       convert_.ToShortestSingle(value, &builder_);
       return *this;
     }

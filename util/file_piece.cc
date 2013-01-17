@@ -1,13 +1,15 @@
 #include "util/file_piece.hh"
 
+#include "util/double-conversion/double-conversion.h"
 #include "util/exception.hh"
 #include "util/file.hh"
 #include "util/mmap.hh"
-#ifdef WIN32
+
+#if defined(_WIN32) || defined(_WIN64)
 #include <io.h>
 #else
 #include <unistd.h>
-#endif // WIN32
+#endif
 
 #include <iostream>
 #include <string>
@@ -110,21 +112,33 @@ void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::s
 }
 
 namespace {
-void ParseNumber(const char *begin, char *&end, float &out) {
-#if defined(sun) || defined(WIN32)
-  out = static_cast<float>(strtod(begin, &end));
-#else
-  out = strtof(begin, &end);
-#endif
+
+static const double_conversion::StringToDoubleConverter kConverter(
+    double_conversion::StringToDoubleConverter::ALLOW_TRAILING_JUNK | double_conversion::StringToDoubleConverter::ALLOW_LEADING_SPACES,
+    std::numeric_limits<double>::quiet_NaN(),
+    std::numeric_limits<double>::quiet_NaN(),
+    "inf",
+    "NaN");
+
+void ParseNumber(const char *begin, const char *&end, float &out) {
+  int count;
+  out = kConverter.StringToFloat(begin, end - begin, &count);
+  end = begin + count;
 }
-void ParseNumber(const char *begin, char *&end, double &out) {
-  out = strtod(begin, &end);
+void ParseNumber(const char *begin, const char *&end, double &out) {
+  int count;
+  out = kConverter.StringToDouble(begin, end - begin, &count);
+  end = begin + count;
 }
-void ParseNumber(const char *begin, char *&end, long int &out) {
-  out = strtol(begin, &end, 10);
+void ParseNumber(const char *begin, const char *&end, long int &out) {
+  char *silly_end;
+  out = strtol(begin, &silly_end, 10);
+  end = silly_end;
 }
-void ParseNumber(const char *begin, char *&end, unsigned long int &out) {
-  out = strtoul(begin, &end, 10);
+void ParseNumber(const char *begin, const char *&end, unsigned long int &out) {
+  char *silly_end;
+  out = strtoul(begin, &silly_end, 10);
+  end = silly_end;
 }
 } // namespace
 
@@ -134,16 +148,17 @@ template <class T> T FilePiece::ReadNumber() {
     if (at_end_) {
       // Hallucinate a null off the end of the file.
       std::string buffer(position_, position_end_);
-      char *end;
+      const char *buf = buffer.c_str();
+      const char *end = buf + buffer.size();
       T ret;
-      ParseNumber(buffer.c_str(), end, ret);
-      if (buffer.c_str() == end) throw ParseNumberException(buffer);
-      position_ += end - buffer.c_str();
+      ParseNumber(buf, end, ret);
+      if (buf == end) throw ParseNumberException(buffer);
+      position_ += end - buf;
       return ret;
     }
     Shift();
   }
-  char *end;
+  const char *end = last_space_;
   T ret;
   ParseNumber(position_, end, ret);
   if (end == position_) throw ParseNumberException(ReadDelimited());
