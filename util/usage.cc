@@ -85,7 +85,7 @@ template <class Num> uint64_t ParseNum(const std::string &arg) {
   if (after == "%") {
     uint64_t mem = GuessPhysicalMemory();
     UTIL_THROW_IF_ARG(!mem, SizeParseError, (arg), "because % was specified but the physical memory size could not be determined.");
-    return value * mem;
+    return static_cast<double>(value) * static_cast<double>(mem) / 100.0;
   }
   
   std::string units("bKMGTPEZY");
