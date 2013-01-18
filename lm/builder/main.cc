@@ -55,9 +55,9 @@ int main(int argc, char *argv[]) {
         "address   = {Edinburgh, UK},\n"
         "publisher = {Association for Computational Linguistics},\n"
         "}\n\n"
-        "Order of the model (-o) is the only mandatory option.  As this is an on-disk\n"
-        "program, setting the temporary file location (-T) and sorting memory (-S) is\n"
-        "highly recommended.  \n\n"
+        "Provide the corpus on stdin.  The ARPA file will be written to stdout.  Order of\n"
+        "the model (-o) is the only mandatory option.  As this is an on-disk program,\n"
+        "setting the temporary file location (-T) and sorting memory (-S) is recommended.\n\n"
         "Memory sizes are specified like GNU sort: a number followed by a unit character.\n"
         "Valid units are \% for percentage of memory (supported platforms only) and (in\n"
         "increasing powers of 1024): b, K, M, G, T, P, E, Z, Y.  Default is K (*1024).\n\n";
