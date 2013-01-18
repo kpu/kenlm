@@ -6,6 +6,36 @@ I do development in master on https://github.com/kpu/kenlm/.  Normally, it works
 
 The website http://kheafield.com/code/kenlm/ has more documentation.  If you're a decoder developer, please download the latest version from there instead of copying from another decoder.  
 
+## Compiling
+
+For estimating and filtering, you need Boost >= 1.36.0 (and preferably newer).  Compile with
+```bash
+./bjam
+```
+If you don't have boost and only need the query code, compile with
+```bash
+./compile.sh
+```
+
+## Estimation
+lmplz estimates unpruned language models with modified Kneser-Ney smoothing.  After compiling with bjam, run
+```bash
+bin/lmplz -o 5 <text >text.arpa
+```
+The algorithm is on-disk, using an amount of memory that you specify.  See http://kheafield.com/code/kenlm/estimation/ for more.  
+
+MT Marathon 2012 team members Ivan Pouzyrevsky and Mohammed Mediani contributed to the computation design and early implementation. Jon Clark contributed to the design, clarified points about smoothing, and added logging. 
+
+## Filtering
+
+filter takes an ARPA or count file and removes entries that will never be queried.  The filter criterion can be corpus-level vocabulary, sentence-level vocabulary, or sentence-level phrases.  Run
+```bash
+bin/filter
+```
+See http://kheafield.com/code/kenlm/filter.html for more.
+
+## Querying
+
 Two data structures are supported: probing and trie.  Probing is a probing hash table with keys that are 64-bit hashes of n-grams and floats as values.  Trie is a fairly standard trie but with bit-level packing so it uses the minimum number of bits to store word indices and pointers.  The trie node entries are sorted by word index.  Probing is the fastest and uses the most memory.  Trie uses the least memory and a bit slower.  
 
 With trie, resident memory is 58% of IRST's smallest version and 21% of SRI's compact version.  Simultaneously, trie CPU's use is 81% of IRST's fastest version and 84% of SRI's fast version.  KenLM's probing hash table implementation goes even faster at the expense of using more memory.  See http://kheafield.com/code/kenlm/benchmark/.  
