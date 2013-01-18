@@ -3,6 +3,8 @@
 #If your code uses ICU, define HAVE_ICU
 #I use zlib by default.  If you don't want to depend on zlib, remove -DHAVE_ZLIB and -lz.  
 
+echo Note: You must use ./bjam if you want language model estimation or filtering 1>&2
+
 rm {lm,util}/*.o 2>/dev/null
 set -e
 
