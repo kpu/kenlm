@@ -32,7 +32,7 @@ filter takes an ARPA or count file and removes entries that will never be querie
 ```bash
 bin/filter
 ```
-See http://kheafield.com/code/kenlm/filter.html for more.
+and see http://kheafield.com/code/kenlm/filter.html for more documentation.
 
 ## Querying
 
