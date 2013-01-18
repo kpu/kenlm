@@ -14,7 +14,7 @@ For estimating and filtering, you need Boost >= 1.36.0 (and preferably newer).  
 ```
 If you don't have boost and only need the query code, compile with
 ```bash
-./compile.sh
+./compile_query_only.sh
 ```
 
 ## Estimation
