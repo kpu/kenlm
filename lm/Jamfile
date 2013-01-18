@@ -26,4 +26,4 @@ exe build_binary : build_binary.cc kenlm ../util//kenutil ;
 exe kenlm_max_order : max_order.cc : <include>.. $(max-order) ;
 exe fragment : fragment.cc kenlm ;
 
-alias programs : query build_binary kenlm_max_order fragment ;
+alias programs : query build_binary kenlm_max_order fragment filter//filter : <threading>multi:<source>builder//lmplz ;
