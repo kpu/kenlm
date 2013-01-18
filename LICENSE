@@ -1,17 +1,18 @@
 Most of the code here is licensed under the LGPL.  There are exceptions which have their own licenses, listed below.  See comments in those files for more details.  
 
 util/murmur_hash.cc is under the MIT license.  
-util/string_piece.hh and util/string_piece.cc are Google code.  
+util/string_piece.hh, util/string_piece.cc, and util/double-conversion are from Google; see the licenses in the code or util/double-conversion/LICENSE
 util/file.cc contains a modified implementation of mkstemp under the LGPL. 
+jam-files/LICENSE_1_0.txt covers most of that directory (except sanity.jam which is mine).
 
 For the rest:
 
-    Avenue code is free software: you can redistribute it and/or modify
+    KenLM is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
     by the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    Avenue code is distributed in the hope that it will be useful,
+    KenLM is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU Lesser General Public License for more details.
