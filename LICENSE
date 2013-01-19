@@ -1,9 +1,12 @@
-Most of the code here is licensed under the LGPL.  There are exceptions which have their own licenses, listed below.  See comments in those files for more details.  
+Most of the code here is licensed under the LGPL.  There are exceptions that
+have their own licenses, listed below.  See comments in those files for more
+details.  
 
-util/murmur_hash.cc is under the MIT license.  
-util/string_piece.hh, util/string_piece.cc, and util/double-conversion are from Google; see the licenses in the code or util/double-conversion/LICENSE
-util/file.cc contains a modified implementation of mkstemp under the LGPL. 
-jam-files/LICENSE_1_0.txt covers most of that directory (except sanity.jam which is mine).
+util/murmur_hash.cc
+util/string_piece.hh and util/string_piece.cc
+util/double-conversion/LICENSE covers util/double-conversion except Jamfile
+util/file.cc contains a modified implementation of mkstemp under the LGPL
+jam-files/LICENSE_1_0.txt covers jam-files except Jamroot
 
 For the rest:
 
