@@ -3,7 +3,7 @@ If you have Boost >= 1.36.0 installed:
    ./bjam install --prefix=/usr #optional
 
 If you only want the query code:
-  ./compile.sh
+  ./compile_query_only.sh
 
 Windows:
   The windows directory has visual studio files.  Note that you need to compile

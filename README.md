@@ -7,15 +7,7 @@ I do development in master on https://github.com/kpu/kenlm/.  Normally, it works
 The website http://kheafield.com/code/kenlm/ has more documentation.  If you're a decoder developer, please download the latest version from there instead of copying from another decoder.  
 
 ## Compiling
-
-For estimating and filtering, you need Boost >= 1.36.0 (and preferably newer).  Compile with
-```bash
-./bjam
-```
-If you don't have boost and only need the query code, compile with
-```bash
-./compile_query_only.sh
-```
+See BUILDING. 
 
 ## Estimation
 lmplz estimates unpruned language models with modified Kneser-Ney smoothing.  After compiling with bjam, run
