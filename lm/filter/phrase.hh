@@ -62,6 +62,7 @@ class Substrings {
       // Iterate over all substrings.  
       for (Iterator start = begin; start != end; ++start) {
         Hash hash = 0;
+#pragma GCC diagnostic ignored "-Wuninitialized" // end != finish so there's always an initialization
         SentenceRelation *relation;
         for (Iterator finish = start; finish != end; ++finish) {
           hash = util::MurmurHashNative(&hash, sizeof(uint64_t), *finish);
