@@ -25,25 +25,17 @@ class ARPAInputException : public util::Exception {
   public:
     explicit ARPAInputException(const StringPiece &message) throw();
     explicit ARPAInputException(const StringPiece &message, const StringPiece &line) throw();
-    virtual ~ARPAInputException() throw() {}
-
-    const char *what() const throw() { return what_.c_str(); }
-
-  private:
-    std::string what_;
+    virtual ~ARPAInputException() throw();
 };
 
-class ARPAOutputException : public std::exception {
+class ARPAOutputException : public util::ErrnoException {
   public:
     ARPAOutputException(const char *prefix, const std::string &file_name) throw();
-    virtual ~ARPAOutputException() throw() {}
-
-    const char *what() const throw() { return what_.c_str(); }
+    virtual ~ARPAOutputException() throw();
 
     const std::string &File() const throw() { return file_name_; }
 
   private:
-    std::string what_;
     const std::string file_name_;
 };
 

@@ -12,35 +12,21 @@
 
 namespace lm {
 
-ARPAInputException::ARPAInputException(const StringPiece &message) throw() : what_("Error: ") {
-  what_.append(message.data(), message.size());
+ARPAInputException::ARPAInputException(const StringPiece &message) throw() {
+  *this << message;
 }
 
 ARPAInputException::ARPAInputException(const StringPiece &message, const StringPiece &line) throw() {
-  what_ = "Error: ";
-  what_.append(message.data(), message.size());
-  what_ += " in line '";
-  what_.append(line.data(), line.size());
-  what_ += "'.";
+  *this << message << " in line " << line;
 }
 
-ARPAOutputException::ARPAOutputException(const char *message, const std::string &file_name) throw()
-  : what_(std::string(message) + " file " + file_name), file_name_(file_name) {
-  if (errno) {
-    char buf[1024];
-    buf[0] = 0;
-#if (_POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE >= 600) && ! _GNU_SOURCE
-    const char *add = buf;
-    if (!strerror_r(errno, buf, 1024)) {
-#else
-    const char *add = strerror_r(errno, buf, 1024);
-    if (add) {
-#endif
-      what_ += " :";
-      what_ += add;
-    }
-  }
+ARPAInputException::~ARPAInputException() throw() {}
+
+ARPAOutputException::ARPAOutputException(const char *message, const std::string &file_name) throw() {
+  *this << message << " in file " << file_name;
 }
+
+ARPAOutputException::~ARPAOutputException() throw() {}
 
 // Seeking is the responsibility of the caller.
 void WriteCounts(std::ostream &out, const std::vector<size_t> &number) {
