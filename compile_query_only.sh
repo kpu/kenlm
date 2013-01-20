@@ -12,6 +12,6 @@ for i in util/{bit_packing,ersatz_progress,exception,file,file_piece,murmur_hash
   g++ $CXXFLAGS -c $i.cc -o $i.o
 done
 mkdir -p bin
-g++ $CXXFLAGS lm/build_binary.cc {lm,util,util/double-conversion}/*.o -o bin/build_binary
-g++ $CXXFLAGS lm/ngram_query.cc {lm,util,util/double-conversion}/*.o -o bin/query
-g++ $CXXFLAGS lm/max_order.cc -o bin/kenlm_max_order
+g++ $CXXFLAGS lm/build_binary_main.cc {lm,util,util/double-conversion}/*.o -o bin/build_binary
+g++ $CXXFLAGS lm/query_main.cc {lm,util,util/double-conversion}/*.o -o bin/query
+g++ $CXXFLAGS lm/kenlm_max_order_main.cc -o bin/kenlm_max_order
