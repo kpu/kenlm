@@ -57,12 +57,12 @@ class Substrings {
     LM_FILTER_PHRASE_METHOD(Right, right)
     LM_FILTER_PHRASE_METHOD(Phrase, phrase)
 
+#pragma GCC diagnostic ignored "-Wuninitialized" // end != finish so there's always an initialization
     // sentence_id must be non-decreasing.  Iterators are over words in the phrase.  
     template <class Iterator> void AddPhrase(unsigned int sentence_id, const Iterator &begin, const Iterator &end) {
       // Iterate over all substrings.  
       for (Iterator start = begin; start != end; ++start) {
         Hash hash = 0;
-#pragma GCC diagnostic ignored "-Wuninitialized" // end != finish so there's always an initialization
         SentenceRelation *relation;
         for (Iterator finish = start; finish != end; ++finish) {
           hash = util::MurmurHashNative(&hash, sizeof(uint64_t), *finish);
