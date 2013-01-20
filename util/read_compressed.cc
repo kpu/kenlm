@@ -320,6 +320,23 @@ class XZip : public ReadBase {
 };
 #endif // HAVE_XZLIB
 
+class IStreamReader : public ReadBase {
+  public:
+    explicit IStreamReader(std::istream &stream) : stream_(stream) {}
+
+    std::size_t Read(void *to, std::size_t amount, ReadCompressed &thunk) {
+      if (!stream_.read(static_cast<char*>(to), amount)) {
+        UTIL_THROW_IF(!stream_.eof(), ErrnoException, "istream error");
+        amount = stream_.gcount();
+      }
+      ReadCount(thunk) += amount;
+      return amount;
+    }
+
+  private:
+    std::istream &stream_;
+};
+
 enum MagicResult {
   UNKNOWN, GZIP, BZIP, XZIP
 };
@@ -329,7 +346,7 @@ MagicResult DetectMagic(const void *from_void) {
   if (header[0] == 0x1f && header[1] == 0x8b) {
     return GZIP;
   }
-  if (header[0] == 'B' && header[1] == 'Z') {
+  if (header[0] == 'B' && header[1] == 'Z' && header[2] == 'h') {
     return BZIP;
   }
   const uint8_t xzmagic[6] = { 0xFD, '7', 'z', 'X', 'Z', 0x00 };
@@ -387,6 +404,10 @@ ReadCompressed::ReadCompressed(int fd) {
   Reset(fd);
 }
 
+ReadCompressed::ReadCompressed(std::istream &in) {
+  Reset(in);
+}
+
 ReadCompressed::ReadCompressed() {}
 
 ReadCompressed::~ReadCompressed() {}
@@ -394,6 +415,11 @@ ReadCompressed::~ReadCompressed() {}
 void ReadCompressed::Reset(int fd) {
   internal_.reset();
   internal_.reset(ReadFactory(fd, raw_amount_));
+}
+
+void ReadCompressed::Reset(std::istream &in) {
+  internal_.reset();
+  internal_.reset(new IStreamReader(in));
 }
 
 std::size_t ReadCompressed::Read(void *to, std::size_t amount) {

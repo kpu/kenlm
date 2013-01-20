@@ -45,6 +45,10 @@ class ReadCompressed {
     // Takes ownership of fd.   
     explicit ReadCompressed(int fd);
 
+    // Try to avoid using this.  Use the fd instead.
+    // There is no decompression support for istreams.
+    explicit ReadCompressed(std::istream &in);
+
     // Must call Reset later.
     ReadCompressed();
 
@@ -52,6 +56,9 @@ class ReadCompressed {
 
     // Takes ownership of fd.  
     void Reset(int fd);
+
+    // Same advice as the constructor.
+    void Reset(std::istream &in);
 
     std::size_t Read(void *to, std::size_t amount);
 
