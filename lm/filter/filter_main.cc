@@ -53,7 +53,7 @@ void DisplayHelp(const char *name) {
     "    stream i.e. /dev/stdout\n";
 }
 
-typedef enum {MODE_COPY, MODE_SINGLE, MODE_MULTIPLE, MODE_UNION} FilterMode;
+typedef enum {MODE_COPY, MODE_SINGLE, MODE_MULTIPLE, MODE_UNION, MODE_UNSET} FilterMode;
 typedef enum {FORMAT_ARPA, FORMAT_COUNT} Format;
 
 struct Config {
@@ -162,19 +162,19 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // I used to have boost::program_options, but some users didn't want to compile boost.  
+  // I used to have boost::program_options, but some users didn't want to compile boost.
   lm::Config config;
-  boost::optional<lm::FilterMode> mode;
+  config.mode = lm::MODE_UNSET;
   for (int i = 1; i < argc - 2; ++i) {
     const char *str = argv[i];
     if (!std::strcmp(str, "copy")) {
-      mode = lm::MODE_COPY;
+      config.mode = lm::MODE_COPY;
     } else if (!std::strcmp(str, "single")) {
-      mode = lm::MODE_SINGLE;
+      config.mode = lm::MODE_SINGLE;
     } else if (!std::strcmp(str, "multiple")) {
-      mode = lm::MODE_MULTIPLE;
+      config.mode = lm::MODE_MULTIPLE;
     } else if (!std::strcmp(str, "union")) {
-      mode = lm::MODE_UNION;
+      config.mode = lm::MODE_UNION;
     } else if (!std::strcmp(str, "phrase")) {
       config.phrase = true;
     } else if (!std::strcmp(str, "context")) {
@@ -203,13 +203,12 @@ int main(int argc, char *argv[]) {
     }
   }
   
-  if (!mode) {
+  if (config.mode == lm::MODE_UNSET) {
     lm::DisplayHelp(argv[0]);
     return 1;
   }
-  config.mode = *mode;
 
-  if (config.phrase && config.mode != lm::MODE_UNION && mode != lm::MODE_MULTIPLE) {
+  if (config.phrase && config.mode != lm::MODE_UNION && config.mode != lm::MODE_MULTIPLE) {
     std::cerr << "Phrase constraint currently only works in multiple or union mode.  If you really need it for single, put everything on one line and use union." << std::endl;
     return 1;
   }
