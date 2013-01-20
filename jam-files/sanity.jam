@@ -160,10 +160,10 @@ rule boost ( min-version ) {
   boost-lib unit_test_framework TEST_DYN_LINK ;
   boost-lib iostreams IOSTREAMS_DYN_LINK ;
   boost-lib filesystem FILE_SYSTEM_DYN_LINK ;
-  if $(BOOST-VERSION) >= 104800 {
-    boost-lib chrono CHRONO_DYN_LINK ;
-    boost-lib timer TIMER_DYN_LINK : boost_chrono ;
-  }
+#  if $(BOOST-VERSION) >= 104800 {
+#    boost-lib chrono CHRONO_DYN_LINK ;
+#    boost-lib timer TIMER_DYN_LINK : boost_chrono ;
+#  }
 }
  
 #Link normally to a library, but sometimes static isn't installed so fall back to dynamic.
