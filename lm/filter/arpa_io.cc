@@ -29,7 +29,7 @@ ARPAOutputException::ARPAOutputException(const char *message, const std::string 
 ARPAOutputException::~ARPAOutputException() throw() {}
 
 // Seeking is the responsibility of the caller.
-void WriteCounts(std::ostream &out, const std::vector<size_t> &number) {
+void WriteCounts(std::ostream &out, const std::vector<uint64_t> &number) {
   out << "\n\\data\\\n";
   for (unsigned int i = 0; i < number.size(); ++i) {
     out << "ngram " << i+1 << "=" << number[i] << '\n';
@@ -37,7 +37,7 @@ void WriteCounts(std::ostream &out, const std::vector<size_t> &number) {
   out << '\n';
 }
 
-size_t SizeNeededForCounts(const std::vector<size_t> &number) {
+size_t SizeNeededForCounts(const std::vector<uint64_t> &number) {
   std::ostringstream buf;
   WriteCounts(buf, number);
   return buf.tellp();
