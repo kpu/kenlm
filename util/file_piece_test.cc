@@ -24,6 +24,20 @@ std::string FileLocation() {
   return ret;
 }
 
+/* istream */
+BOOST_AUTO_TEST_CASE(IStream) {
+  std::fstream ref(FileLocation().c_str(), std::ios::in);
+  std::fstream backing(FileLocation().c_str(), std::ios::in);
+  FilePiece test(backing);
+  std::string ref_line;
+  while (getline(ref, ref_line)) {
+    StringPiece test_line(test.ReadLine());
+    BOOST_CHECK_EQUAL(ref_line, test_line);
+  }
+  BOOST_CHECK_THROW(test.get(), EndOfFileException);
+  BOOST_CHECK_THROW(test.get(), EndOfFileException);
+}
+
 /* mmap implementation */
 BOOST_AUTO_TEST_CASE(MMapReadLine) {
   std::fstream ref(FileLocation().c_str(), std::ios::in);
