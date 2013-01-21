@@ -18,3 +18,6 @@ util/probing_hash_table_test
 util/read_compressed_test
 util/sorted_uniform_test
 previous.sh
+jam-files/bjam
+jam-files/engine/bin.linuxx86/
+jam-files/engine/bootstrap/
