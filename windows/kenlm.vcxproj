@@ -170,7 +170,6 @@
     <None Include="..\lm\vocab.hh" />
     <None Include="..\lm\weights.hh" />
     <None Include="..\lm\word_index.hh" />
-    <None Include="..\ReadMe.txt" />
     <None Include="..\util\bit_packing.hh" />
     <None Include="..\util\ersatz_progress.hh" />
     <None Include="..\util\exception.hh" />
@@ -192,8 +191,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\lm\value_build.cc" />
+    <ClCompile Include="..\util\double-conversion\bignum-dtoa.cc" />
+    <ClCompile Include="..\util\double-conversion\bignum.cc" />
+    <ClCompile Include="..\util\double-conversion\cached-powers.cc" />
+    <ClCompile Include="..\util\double-conversion\diy-fp.cc" />
+    <ClCompile Include="..\util\double-conversion\double-conversion.cc" />
+    <ClCompile Include="..\util\double-conversion\fast-dtoa.cc" />
+    <ClCompile Include="..\util\double-conversion\fixed-dtoa.cc" />
+    <ClCompile Include="..\util\double-conversion\strtod.cc" />
     <ClCompile Include="..\util\pool.cc" />
     <ClCompile Include="..\util\read_compressed.cc" />
+    <ClCompile Include="..\util\scoped.cc" />
     <ClCompile Include="..\util\usage.cc" />
     <ClCompile Include="..\lm\bhiksha.cc" />
     <ClCompile Include="..\lm\binary_format.cc" />
@@ -204,6 +212,7 @@
     <ClCompile Include="..\lm\read_arpa.cc" />
     <ClCompile Include="..\lm\search_hashed.cc" />
     <ClCompile Include="..\lm\search_trie.cc" />
+    <ClCompile Include="..\lm\sizes.cc" />
     <ClCompile Include="..\lm\trie.cc" />
     <ClCompile Include="..\lm\trie_sort.cc" />
     <ClCompile Include="..\lm\virtual_interface.cc" />
@@ -216,6 +225,18 @@
     <ClCompile Include="..\util\getopt.c" />
     <ClCompile Include="..\util\mmap.cc" />
     <ClCompile Include="..\util\murmur_hash.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\util\double-conversion\bignum-dtoa.h" />
+    <ClInclude Include="..\util\double-conversion\bignum.h" />
+    <ClInclude Include="..\util\double-conversion\cached-powers.h" />
+    <ClInclude Include="..\util\double-conversion\diy-fp.h" />
+    <ClInclude Include="..\util\double-conversion\double-conversion.h" />
+    <ClInclude Include="..\util\double-conversion\fast-dtoa.h" />
+    <ClInclude Include="..\util\double-conversion\fixed-dtoa.h" />
+    <ClInclude Include="..\util\double-conversion\ieee.h" />
+    <ClInclude Include="..\util\double-conversion\strtod.h" />
+    <ClInclude Include="..\util\double-conversion\utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

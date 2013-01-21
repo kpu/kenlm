@@ -19,9 +19,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{826B8049-7E58-4415-BD64-9EDECDF1402B}</ProjectGuid>
+    <ProjectGuid>{926B8049-7E58-4415-BD64-9EDECDF1502C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>ngram_query</RootNamespace>
+    <RootNamespace>lmplz</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -71,6 +71,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>C:\Program Files\boost\boost_1_51;$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(WindowsSdkDir)include;$(FrameworkSDKDir)\include;</IncludePath>
+    <LibraryPath>C:\Program Files\boost\boost_1_51\lib;$(VCInstallDir)lib;$(VCInstallDir)atlmfc\lib;$(WindowsSdkDir)lib;$(FrameworkSDKDir)\lib</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -145,10 +147,41 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="..\lm\ngram_query.hh" />
+    <None Include="..\lm\builder\adjust_counts.hh" />
+    <None Include="..\lm\builder\corpus_count.hh" />
+    <None Include="..\lm\builder\discount.hh" />
+    <None Include="..\lm\builder\header_info.hh" />
+    <None Include="..\lm\builder\initial_probabilities.hh" />
+    <None Include="..\lm\builder\interpolate.hh" />
+    <None Include="..\lm\builder\joint_order.hh" />
+    <None Include="..\lm\builder\multi_stream.hh" />
+    <None Include="..\lm\builder\ngram.hh" />
+    <None Include="..\lm\builder\ngram_stream.hh" />
+    <None Include="..\lm\builder\pipeline.hh" />
+    <None Include="..\lm\builder\print.hh" />
+    <None Include="..\lm\builder\sort.hh" />
+    <None Include="..\util\stream\block.hh" />
+    <None Include="..\util\stream\chain.hh" />
+    <None Include="..\util\stream\config.hh" />
+    <None Include="..\util\stream\io.hh" />
+    <None Include="..\util\stream\line_input.hh" />
+    <None Include="..\util\stream\multi_progress.hh" />
+    <None Include="..\util\stream\sort.hh" />
+    <None Include="..\util\stream\stream.hh" />
+    <None Include="..\util\stream\timer.hh" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\lm\query_main.cc" />
+    <ClCompile Include="..\lm\builder\adjust_counts.cc" />
+    <ClCompile Include="..\lm\builder\corpus_count.cc" />
+    <ClCompile Include="..\lm\builder\initial_probabilities.cc" />
+    <ClCompile Include="..\lm\builder\interpolate.cc" />
+    <ClCompile Include="..\lm\builder\pipeline.cc" />
+    <ClCompile Include="..\lm\builder\print.cc" />
+    <ClCompile Include="..\lm\builder\lmplz_main.cc" />
+    <ClCompile Include="..\util\stream\chain.cc" />
+    <ClCompile Include="..\util\stream\io.cc" />
+    <ClCompile Include="..\util\stream\line_input.cc" />
+    <ClCompile Include="..\util\stream\multi_progress.cc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
