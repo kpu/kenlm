@@ -95,6 +95,7 @@ if $(with-macports) {
   boost-search = <search>$(with-macports)/lib ;
   I-boost-include = -I$(with-macports)/include ;
   boost-include = <include>$(with-macports)/include ;
+  requirements += $(boost-include) ;
 } else {
   with-boost = [ option.get "with-boost" ] ;
   with-boost ?= [ os.environ "BOOST_ROOT" ] ;
@@ -103,6 +104,7 @@ if $(with-macports) {
     boost-search = <search>$(with-boost)/lib <search>$(with-boost)/lib64 ;
     I-boost-include = -I$(with-boost)/include ;
     boost-include = <include>$(with-boost)/include ;
+    requirements += $(boost-include) ;
   } else {
     L-boost-search = "" ;
     boost-search = ;
@@ -127,7 +129,8 @@ rule boost-lib ( name macro : deps * ) {
     lib inner_boost_$(name) : : $(boost-search) <name>boost_$(name)$(boost-lib-version) : : <library>$(deps) ;
   }
 
-  alias boost_$(name) : inner_boost_$(name) : $(boost-auto-shared) : : <link>shared:<define>BOOST_$(macro) $(boost-include) ;
+  alias boost_$(name) : inner_boost_$(name) : $(boost-auto-shared) : : <link>shared:<define>BOOST_$(macro) ;
+  requirements += <link>shared:<define>BOOST_$(macro) ;
 }
 
 #Argument is e.g. 103600

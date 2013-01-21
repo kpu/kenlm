@@ -47,7 +47,6 @@ Hideo Okuma and Tomoyuki Yoshimura from NICT contributed ports to ARM and MinGW.
 There are a number of macros you can set on the g++ command line or in util/have.hh .  
 
 * `KENLM_MAX_ORDER` is the maximum order that can be loaded.  This is done to make state an efficient POD rather than a vector.  
-* `HAVE_BOOST` enables Boost-style hashing of StringPiece.  This is only needed if you intend to hash StringPiece in your code.  
 * `HAVE_ICU` If your code links against ICU, define this to disable the internal StringPiece and replace it with ICU's copy of StringPiece, avoiding naming conflicts.  
 
 ARPA files can be read in compressed format with these options:

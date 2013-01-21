@@ -51,7 +51,7 @@ path-constant TOP : . ;
 include $(TOP)/jam-files/sanity.jam ;
 
 boost 103600 ;
-project : requirements $(requirements) <define>HAVE_BOOST <include>. ;
+project : requirements $(requirements) <include>. ;
 project : default-build <threading>multi <warnings>on <variant>release ;
 
 external-lib z ;

@@ -10,8 +10,4 @@
 //#define HAVE_ICU
 #endif
 
-#ifndef HAVE_BOOST
-//#define HAVE_BOOST
-#endif
-
 #endif // UTIL_HAVE__
