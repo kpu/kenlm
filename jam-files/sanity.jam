@@ -175,7 +175,7 @@ rule external-lib ( name : search-path * ) {
 {
   local build-log = $(TOP)/previous.sh ;
   if ! [ path.exists $(build-log) ] {
-    SHELL "touch $(build-log) && chmod +x $(build-log)" ;
+    SHELL "touch \"$(build-log)\" && chmod +x \"$(build-log)\"" ;
   }
   local script = [ modules.peek : ARGV ] ;
   if $(script[1]) = "./jam-files/bjam" {
