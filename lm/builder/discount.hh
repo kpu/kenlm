@@ -3,7 +3,7 @@
 
 #include <algorithm>
 
-#include <inttypes.h>
+#include <stdint.h>
 
 namespace lm {
 namespace builder {
