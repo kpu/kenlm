@@ -162,7 +162,7 @@ void PReadOrThrow(int fd, void *to_void, std::size_t size, uint64_t off) {
     memset(&overlapped, 0, sizeof(OVERLAPPED));
     overlapped.Offset = static_cast<DWORD>(off);
     overlapped.OffsetHigh = static_cast<DWORD>(off >> 32);
-    UTIL_THROW_IF(!ReadFile((HANDLE)_get_osfhandle(fd), to_void, reading, &ret, &overlapped), Exception, "ReadFile failed for offset " << off);
+    UTIL_THROW_IF(!ReadFile((HANDLE)_get_osfhandle(fd), to, reading, &ret, &overlapped), Exception, "ReadFile failed for offset " << off);
 #else
     ssize_t ret;
     errno = 0;
@@ -229,7 +229,6 @@ typedef CheckOffT<sizeof(off_t)>::True IgnoredType;
 
 // Can't we all just get along?  
 void InternalSeek(int fd, int64_t off, int whence) {
-  
   if (
 #if defined(_WIN32) || defined(_WIN64)
     (__int64)-1 == _lseeki64(fd, off, whence)
@@ -402,9 +401,9 @@ void NormalizeTempPrefix(std::string &base) {
 #if defined(_WIN32) || defined(_WIN64)
     sb.st_mode & _S_IFDIR
 #else
-	S_ISDIR(sb.st_mode)
+    S_ISDIR(sb.st_mode)
 #endif
-	) base += '/';
+    ) base += '/';
 }
 
 int MakeTemp(const std::string &base) {
