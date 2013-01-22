@@ -17,7 +17,8 @@ void StringPiece::CopyToString(std::string* target) const {
 }
 
 size_type StringPiece::find(const StringPiece& s, size_type pos) const {
-  if (length_ < 0 || pos > static_cast<size_type>(length_))
+  // Not sure why length_ < 0 was here since it's std::size_t.
+  if (/*length_ < 0 || */pos > static_cast<size_type>(length_))
     return npos;
 
   const char* result = std::search(ptr_ + pos, ptr_ + length_,
