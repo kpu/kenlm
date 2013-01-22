@@ -1,20 +1,21 @@
 #include "util/file_piece.hh"
 
+#include "util/double-conversion/double-conversion.h"
 #include "util/exception.hh"
 #include "util/file.hh"
 #include "util/mmap.hh"
-#ifdef WIN32
+
+#if defined(_WIN32) || defined(_WIN64)
 #include <io.h>
 #else
 #include <unistd.h>
-#endif // WIN32
+#endif
 
 #include <iostream>
 #include <string>
 #include <limits>
 
 #include <assert.h>
-#include <ctype.h>
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -26,13 +27,6 @@ ParseNumberException::ParseNumberException(StringPiece value) throw() {
   *this << "Could not parse \"" << value << "\" into a number";
 }
 
-#ifdef HAVE_ZLIB
-GZException::GZException(gzFile file) {
-  int num;
-  *this << gzerror(file, &num) << " from zlib";
-}
-#endif // HAVE_ZLIB
-
 // Sigh this is the only way I could come up with to do a _const_ bool.  It has ' ', '\f', '\n', '\r', '\t', and '\v' (same as isspace on C locale). 
 const bool kSpaces[256] = {0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
@@ -42,25 +36,32 @@ FilePiece::FilePiece(const char *name, std::ostream *show_progress, std::size_t 
   Initialize(name, show_progress, min_buffer);
 }
 
-FilePiece::FilePiece(int fd, const char *name, std::ostream *show_progress, std::size_t min_buffer)  : 
+namespace {
+std::string NamePossiblyFind(int fd, const char *name) {
+  if (name) return name;
+  return NameFromFD(fd);
+}
+} // namespace
+
+FilePiece::FilePiece(int fd, const char *name, std::ostream *show_progress, std::size_t min_buffer) : 
   file_(fd), total_size_(SizeFile(file_.get())), page_(SizePage()),
-  progress_(total_size_, total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + name) {
-  Initialize(name, show_progress, min_buffer);
+  progress_(total_size_, total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + NamePossiblyFind(fd, name)) {
+  Initialize(NamePossiblyFind(fd, name).c_str(), show_progress, min_buffer);
 }
 
-FilePiece::~FilePiece() {
-#ifdef HAVE_ZLIB
-  if (gz_file_) {
-    // zlib took ownership
-    file_.release();
-    int ret;
-    if (Z_OK != (ret = gzclose(gz_file_))) {
-      std::cerr << "could not close file " << file_name_ << " using zlib" << std::endl;
-      abort();
-    }
-  }
-#endif
+FilePiece::FilePiece(std::istream &stream, const char *name, std::size_t min_buffer) :
+  total_size_(kBadSize), page_(SizePage()) {
+  InitializeNoRead("istream", min_buffer);
+
+  fallback_to_read_ = true;
+  data_.reset(MallocOrThrow(default_map_size_), default_map_size_, scoped_memory::MALLOC_ALLOCATED);
+  position_ = data_.begin();
+  position_end_ = position_;
+  
+  fell_back_.Reset(stream);
 }
+
+FilePiece::~FilePiece() {}
 
 StringPiece FilePiece::ReadLine(char delim) {
   std::size_t skip = 0;
@@ -94,10 +95,8 @@ unsigned long int FilePiece::ReadULong() {
   return ReadNumber<unsigned long int>();
 }
 
-void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::size_t min_buffer)  {
-#ifdef HAVE_ZLIB
-  gz_file_ = NULL;
-#endif
+// Factored out so that istream can call this.
+void FilePiece::InitializeNoRead(const char *name, std::size_t min_buffer) {
   file_name_ = name;
 
   default_map_size_ = page_ * std::max<std::size_t>((min_buffer / page_ + 1), 2);
@@ -105,6 +104,10 @@ void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::s
   position_end_ = NULL;
   mapped_offset_ = 0;
   at_end_ = false;
+}
+
+void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::size_t min_buffer) {
+  InitializeNoRead(name, min_buffer);
 
   if (total_size_ == kBadSize) {
     // So the assertion passes.  
@@ -117,10 +120,7 @@ void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::s
   }
   Shift();
   // gzip detect.
-  if ((position_end_ - position_) > 2 && *position_ == 0x1f && static_cast<unsigned char>(*(position_ + 1)) == 0x8b) {
-#ifndef HAVE_ZLIB
-    UTIL_THROW(GZException, "Looks like a gzip file but support was not compiled in.");
-#endif
+  if ((position_end_ - position_) >= ReadCompressed::kMagicSize && ReadCompressed::DetectCompressedMagic(position_)) {
     if (!fallback_to_read_) {
       at_end_ = false;
       TransitionToRead();
@@ -129,21 +129,33 @@ void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::s
 }
 
 namespace {
-void ParseNumber(const char *begin, char *&end, float &out) {
-#if defined(sun) || defined(WIN32)
-  out = static_cast<float>(strtod(begin, &end));
-#else
-  out = strtof(begin, &end);
-#endif
+
+static const double_conversion::StringToDoubleConverter kConverter(
+    double_conversion::StringToDoubleConverter::ALLOW_TRAILING_JUNK | double_conversion::StringToDoubleConverter::ALLOW_LEADING_SPACES,
+    std::numeric_limits<double>::quiet_NaN(),
+    std::numeric_limits<double>::quiet_NaN(),
+    "inf",
+    "NaN");
+
+void ParseNumber(const char *begin, const char *&end, float &out) {
+  int count;
+  out = kConverter.StringToFloat(begin, end - begin, &count);
+  end = begin + count;
 }
-void ParseNumber(const char *begin, char *&end, double &out) {
-  out = strtod(begin, &end);
+void ParseNumber(const char *begin, const char *&end, double &out) {
+  int count;
+  out = kConverter.StringToDouble(begin, end - begin, &count);
+  end = begin + count;
 }
-void ParseNumber(const char *begin, char *&end, long int &out) {
-  out = strtol(begin, &end, 10);
+void ParseNumber(const char *begin, const char *&end, long int &out) {
+  char *silly_end;
+  out = strtol(begin, &silly_end, 10);
+  end = silly_end;
 }
-void ParseNumber(const char *begin, char *&end, unsigned long int &out) {
-  out = strtoul(begin, &end, 10);
+void ParseNumber(const char *begin, const char *&end, unsigned long int &out) {
+  char *silly_end;
+  out = strtoul(begin, &silly_end, 10);
+  end = silly_end;
 }
 } // namespace
 
@@ -153,16 +165,17 @@ template <class T> T FilePiece::ReadNumber() {
     if (at_end_) {
       // Hallucinate a null off the end of the file.
       std::string buffer(position_, position_end_);
-      char *end;
+      const char *buf = buffer.c_str();
+      const char *end = buf + buffer.size();
       T ret;
-      ParseNumber(buffer.c_str(), end, ret);
-      if (buffer.c_str() == end) throw ParseNumberException(buffer);
-      position_ += end - buffer.c_str();
+      ParseNumber(buf, end, ret);
+      if (buf == end) throw ParseNumberException(buffer);
+      position_ += end - buf;
       return ret;
     }
     Shift();
   }
-  char *end;
+  const char *end = last_space_;
   T ret;
   ParseNumber(position_, end, ret);
   if (end == position_) throw ParseNumberException(ReadDelimited());
@@ -197,7 +210,7 @@ void FilePiece::Shift() {
   if (fallback_to_read_) ReadShift();
 
   for (last_space_ = position_end_ - 1; last_space_ >= position_; --last_space_) {
-    if (isspace(*last_space_))  break;
+    if (kSpaces[static_cast<unsigned char>(*last_space_)])  break;
   }
 }
 
@@ -243,21 +256,17 @@ void FilePiece::TransitionToRead() {
   assert(!fallback_to_read_);
   fallback_to_read_ = true;
   data_.reset();
-  data_.reset(malloc(default_map_size_), default_map_size_, scoped_memory::MALLOC_ALLOCATED);
-  UTIL_THROW_IF(!data_.get(), ErrnoException, "malloc failed for " << default_map_size_);
+  data_.reset(MallocOrThrow(default_map_size_), default_map_size_, scoped_memory::MALLOC_ALLOCATED);
   position_ = data_.begin();
   position_end_ = position_;
 
-#ifdef HAVE_ZLIB
-  assert(!gz_file_);
-  gz_file_ = gzdopen(file_.get(), "r");
-  UTIL_THROW_IF(!gz_file_, GZException, "zlib failed to open " << file_name_);
-#endif
+  try {
+    fell_back_.Reset(file_.release());
+  } catch (util::Exception &e) {
+    e << " in file " << file_name_;
+    throw;
+  }
 }
-
-#ifdef WIN32
-typedef int ssize_t;
-#endif
 
 void FilePiece::ReadShift() {
   assert(fallback_to_read_);
@@ -283,7 +292,7 @@ void FilePiece::ReadShift() {
       position_ = data_.begin();
       position_end_ = position_ + valid_length;
     } else {
-      size_t moving = position_end_ - position_;
+      std::size_t moving = position_end_ - position_;
       memmove(data_.get(), position_, moving);
       position_ = data_.begin();
       position_end_ = position_ + moving;
@@ -291,20 +300,9 @@ void FilePiece::ReadShift() {
     }
   }
 
-  ssize_t read_return;
-#ifdef HAVE_ZLIB
-  read_return = gzread(gz_file_, static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
-  if (read_return == -1) throw GZException(gz_file_);
-  if (total_size_ != kBadSize) {
-    // Just get the position, don't actually seek.  Apparently this is how you do it. . . 
-    off_t ret = lseek(file_.get(), 0, SEEK_CUR);
-    if (ret != -1) progress_.Set(ret);
-  }
-#else
-  read_return = read(file_.get(), static_cast<char*>(data_.get()) + already_read, default_map_size_ - already_read);
-  UTIL_THROW_IF(read_return == -1, ErrnoException, "read failed");
-  progress_.Set(mapped_offset_);
-#endif
+  std::size_t read_return = fell_back_.Read(static_cast<uint8_t*>(data_.get()) + already_read, default_map_size_ - already_read);
+  progress_.Set(fell_back_.RawAmount());
+
   if (read_return == 0) {
     at_end_ = true;
   }

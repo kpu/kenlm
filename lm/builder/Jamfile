@@ -1,0 +1,9 @@
+fakelib builder : [ glob *.cc : *test.cc *main.cc ] 
+  ../../util//kenutil ../../util/stream//stream ../../util/double-conversion//double-conversion ..//kenlm
+  : : : <library>/top//boost_thread $(timer-link) ;
+
+exe lmplz : lmplz_main.cc builder /top//boost_program_options ;
+
+import testing ;
+unit-test corpus_count_test : corpus_count_test.cc builder /top//boost_unit_test_framework ;
+unit-test adjust_counts_test : adjust_counts_test.cc builder /top//boost_unit_test_framework ;

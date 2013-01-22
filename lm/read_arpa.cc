@@ -1,6 +1,7 @@
 #include "lm/read_arpa.hh"
 
 #include "lm/blank.hh"
+#include "util/file.hh"
 
 #include <cmath>
 #include <cstdlib>
@@ -45,8 +46,14 @@ uint64_t ReadCount(const std::string &from) {
 
 void ReadARPACounts(util::FilePiece &in, std::vector<uint64_t> &number) {
   number.clear();
-  StringPiece line;
-  while (IsEntirelyWhiteSpace(line = in.ReadLine())) {}
+  StringPiece line = in.ReadLine();
+  // In general, ARPA files can have arbitrary text before "\data\"
+  // But in KenLM, we require such lines to start with "#", so that
+  // we can do stricter error checking
+  while (IsEntirelyWhiteSpace(line) || line.starts_with("#")) {
+    line = in.ReadLine();
+  }
+
   if (line != "\\data\\") {
     if ((line.size() >= 2) && (line.data()[0] == 0x1f) && (static_cast<unsigned char>(line.data()[1]) == 0x8b)) {
       UTIL_THROW(FormatLoadException, "Looks like a gzip file.  If this is an ARPA file, pipe " << in.FileName() << " through zcat.  If this already in binary format, you need to decompress it because mmap doesn't work on top of gzip.");

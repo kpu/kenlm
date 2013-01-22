@@ -1,6 +1,7 @@
 #include "lm/model.hh"
 
 #include <stdlib.h>
+#include <string.h>
 
 #define BOOST_TEST_MODULE ModelTest
 #include <boost/test/unit_test.hpp>
@@ -22,17 +23,20 @@ std::ostream &operator<<(std::ostream &o, const State &state) {
 
 namespace {
 
+// Stupid bjam reverses the command line arguments randomly.
 const char *TestLocation() {
-  if (boost::unit_test::framework::master_test_suite().argc < 2) {
+  if (boost::unit_test::framework::master_test_suite().argc < 3) {
     return "test.arpa";
   }
-  return boost::unit_test::framework::master_test_suite().argv[1];
+  char **argv = boost::unit_test::framework::master_test_suite().argv;
+  return argv[strstr(argv[1], "nounk") ? 2 : 1];
 }
 const char *TestNoUnkLocation() {
   if (boost::unit_test::framework::master_test_suite().argc < 3) {
     return "test_nounk.arpa";
   }
-  return boost::unit_test::framework::master_test_suite().argv[2];
+  char **argv = boost::unit_test::framework::master_test_suite().argv;
+  return argv[strstr(argv[1], "nounk") ? 1 : 2];
 }
 
 template <class Model> State GetState(const Model &model, const char *word, const State &in) {

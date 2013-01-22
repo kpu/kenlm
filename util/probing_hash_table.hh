@@ -8,7 +8,7 @@
 #include <functional>
 
 #include <assert.h>
-#include <inttypes.h>
+#include <stdint.h>
 
 namespace util {
 
@@ -124,6 +124,11 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
         if (equal_(got, invalid_)) return false;
         if (++i == end_) i = begin_;
       }    
+    }
+
+    void Clear(Entry invalid) {
+      std::fill(begin_, end_, invalid);
+      entries_ = 0;
     }
 
   private:

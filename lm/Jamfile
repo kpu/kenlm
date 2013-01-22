@@ -8,16 +8,22 @@ if ( $(max-order) != 6 ) {
 }
 max-order = <define>KENLM_MAX_ORDER=$(max-order) ;
 
-lib kenlm : bhiksha.cc binary_format.cc config.cc lm_exception.cc model.cc quantize.cc read_arpa.cc search_hashed.cc search_trie.cc trie.cc trie_sort.cc value_build.cc virtual_interface.cc vocab.cc ../util//kenutil : <include>.. $(max-order) : : <include>.. <library>../util//kenutil $(max-order) ;
+path-constant ORDER-LOG : bin/order.log ;
+update-if-changed $(ORDER-LOG) $(max-order) ;
+
+max-order += <dependency>$(ORDER-LOG) ;
+
+fakelib kenlm : [ glob *.cc : *main.cc *test.cc ] ../util//kenutil : <include>.. $(max-order) : : <include>.. $(max-order) ;
 
 import testing ;
 
-run left_test.cc ../util//kenutil kenlm ..//boost_unit_test_framework : : test.arpa ;
-run model_test.cc ../util//kenutil kenlm ..//boost_unit_test_framework : : test.arpa test_nounk.arpa ;
+run left_test.cc kenlm /top//boost_unit_test_framework : : test.arpa ;
+run model_test.cc kenlm /top//boost_unit_test_framework : : test.arpa test_nounk.arpa ;
+run partial_test.cc kenlm /top//boost_unit_test_framework : : test.arpa ;
 
-exe query : ngram_query.cc kenlm ../util//kenutil ;
-exe build_binary : build_binary.cc kenlm ../util//kenutil ;
-exe kenlm_max_order : max_order.cc : <include>.. $(max-order) ;
-exe fragment : fragment.cc kenlm ;
+exe query : query_main.cc kenlm ../util//kenutil ;
+exe build_binary : build_binary_main.cc kenlm ../util//kenutil ;
+exe kenlm_max_order : kenlm_max_order_main.cc : <include>.. $(max-order) ;
+exe fragment : fragment_main.cc kenlm ;
 
-alias programs : query build_binary kenlm_max_order fragment ;
+alias programs : query build_binary kenlm_max_order fragment filter//filter : <threading>multi:<source>builder//lmplz ;

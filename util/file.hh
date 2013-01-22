@@ -1,6 +1,8 @@
 #ifndef UTIL_FILE__
 #define UTIL_FILE__
 
+#include "util/exception.hh"
+
 #include <cstddef>
 #include <cstdio>
 #include <string>
@@ -17,7 +19,7 @@ class scoped_fd {
 
     ~scoped_fd();
 
-    void reset(int to) {
+    void reset(int to = -1) {
       scoped_fd other(fd_);
       fd_ = to;
     }
@@ -31,8 +33,6 @@ class scoped_fd {
       fd_ = -1;
       return ret;
     }
-
-    operator bool() { return fd_ != -1; }
 
   private:
     int fd_;
@@ -65,6 +65,32 @@ class scoped_FILE {
     std::FILE *file_;
 };
 
+/* Thrown for any operation where the fd is known. */
+class FDException : public ErrnoException {
+  public:
+    explicit FDException(int fd) throw();
+
+    virtual ~FDException() throw();
+
+    // This may no longer be valid if the exception was thrown past open.
+    int FD() const { return fd_; }
+
+    // Guess from NameFromFD.
+    const std::string &NameGuess() const { return name_guess_; }
+
+  private:
+    int fd_;
+
+    std::string name_guess_;
+};
+
+// End of file reached.
+class EndOfFileException : public Exception {
+  public:
+    EndOfFileException() throw();
+    ~EndOfFileException() throw();
+};
+
 // Open for read only.  
 int OpenReadOrThrow(const char *name);
 // Create file if it doesn't exist, truncate if it does.  Opened for write.   
@@ -73,11 +99,15 @@ int CreateOrThrow(const char *name);
 // Return value for SizeFile when it can't size properly.  
 const uint64_t kBadSize = (uint64_t)-1;
 uint64_t SizeFile(int fd);
+uint64_t SizeOrThrow(int fd);
 
 void ResizeOrThrow(int fd, uint64_t to);
 
+std::size_t PartialRead(int fd, void *to, std::size_t size);
 void ReadOrThrow(int fd, void *to, std::size_t size);
-std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount);
+std::size_t ReadOrEOF(int fd, void *to_void, std::size_t size);
+// Positioned: unix only for now.  
+void PReadOrThrow(int fd, void *to, std::size_t size, uint64_t off);
 
 void WriteOrThrow(int fd, const void *data_void, std::size_t size);
 void WriteOrThrow(FILE *to, const void *data, std::size_t size);
@@ -90,20 +120,22 @@ void AdvanceOrThrow(int fd, int64_t off);
 void SeekEnd(int fd);
 
 std::FILE *FDOpenOrThrow(scoped_fd &file);
+std::FILE *FDOpenReadOrThrow(scoped_fd &file);
 
-std::FILE *FOpenOrThrow(const char *path, const char *mode);
+// Temporary files
+// Append a / if base is a directory.
+void NormalizeTempPrefix(std::string &base);
+int MakeTemp(const std::string &prefix);
+std::FILE *FMakeTemp(const std::string &prefix);
 
-class TempMaker {
-  public:
-    explicit TempMaker(const std::string &prefix);
+// dup an fd.
+int DupOrThrow(int fd);
 
-    // These will already be unlinked for you.  
-    int Make() const;
-    std::FILE *MakeFile() const;
-
-  private:
-    std::string base_;
-};
+/* Attempt get file name from fd.  This won't always work (i.e. on Windows or
+ * a pipe).  The file might have been renamed.  It's intended for diagnostics
+ * and logging only.
+ */
+std::string NameFromFD(int fd);
 
 } // namespace util
 

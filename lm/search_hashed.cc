@@ -231,7 +231,7 @@ template <class Value> void HashedSearch<Value>::InitializeFromARPA(const char *
 
 template <> void HashedSearch<BackoffValue>::DispatchBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, const ProbingVocabulary &vocab, PositiveProbWarn &warn) {
   NoRestBuild build;
-  ApplyBuild(f, counts, config, vocab, warn, build);
+  ApplyBuild(f, counts, vocab, warn, build);
 }
 
 template <> void HashedSearch<RestValue>::DispatchBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, const ProbingVocabulary &vocab, PositiveProbWarn &warn) {
@@ -239,19 +239,19 @@ template <> void HashedSearch<RestValue>::DispatchBuild(util::FilePiece &f, cons
     case Config::REST_MAX:
       {
         MaxRestBuild build;
-        ApplyBuild(f, counts, config, vocab, warn, build);
+        ApplyBuild(f, counts, vocab, warn, build);
       }
       break;
     case Config::REST_LOWER:
       {
         LowerRestBuild<ProbingModel> build(config, counts.size(), vocab);
-        ApplyBuild(f, counts, config, vocab, warn, build);
+        ApplyBuild(f, counts, vocab, warn, build);
       }
       break;
   }
 }
 
-template <class Value> template <class Build> void HashedSearch<Value>::ApplyBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, const ProbingVocabulary &vocab, PositiveProbWarn &warn, const Build &build) {
+template <class Value> template <class Build> void HashedSearch<Value>::ApplyBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const ProbingVocabulary &vocab, PositiveProbWarn &warn, const Build &build) {
   for (WordIndex i = 0; i < counts[0]; ++i) {
     build.SetRest(&i, (unsigned int)1, unigram_.Raw()[i]);
   }

@@ -1,0 +1,23 @@
+#!/bin/bash
+set -e
+if
+  bjam="$(which bjam 2>/dev/null)" && #exists
+  [ ${#bjam} != 0 ] && #paranoia about which printing nothing then returning true
+  ! grep UFIHGUFIHBDJKNCFZXAEVA "${bjam}" </dev/null >/dev/null && #bjam in path isn't this script
+  "${bjam}" --sanity-test 2>/dev/null |grep Sane >/dev/null && #The test in jam-files/sanity.jam passes
+  (cd jam-files/fail && ! "${bjam}") >/dev/null #Returns non-zero on failure
+then
+  #Delegate to system bjam
+  exec "${bjam}" "$@"
+fi
+
+top="$(dirname "$0")"
+if [ ! -x "$top"/jam-files/bjam ] || "$top"/jam-files/bjam -v |grep 2011.4 >/dev/null; then
+  pushd "$top/jam-files/engine"
+  ./build.sh
+  cp -f bin.*/bjam ../bjam
+  popd
+fi
+
+export BOOST_BUILD_PATH="$top"/jam-files/boost-build 
+exec "$top"/jam-files/bjam "$@"

@@ -1,10 +1,30 @@
-lib kenutil : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc mmap.cc murmur_hash.cc usage.cc ..//z : <include>.. : : <include>.. ;
+local compressed_flags = <include>.. <define>HAVE_ZLIB ;
+local compressed_deps = /top//z ;
+if [ test_library "bz2" ] && [ test_header "bzlib.h" ] {
+  external-lib bz2 ;
+  compressed_flags += <define>HAVE_BZLIB ;
+  compressed_deps += bz2 ;
+}
+if [ test_library "lzma" ] && [ test_header "lzma.h" ] {
+  external-lib lzma ;
+  compressed_flags += <define>HAVE_XZLIB ;
+  compressed_deps += lzma ;
+}
+
+obj read_compressed.o : read_compressed.cc : $(compressed_flags) ;
+alias read_compressed : read_compressed.o $(compressed_deps) ;
+obj read_compressed_test.o : read_compressed_test.cc /top//boost_unit_test_framework : $(compressed_flags) ;
+obj file_piece_test.o : file_piece_test.cc /top//boost_unit_test_framework : $(compressed_flags) ;
+
+fakelib kenutil : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc mmap.cc murmur_hash.cc pool.cc read_compressed scoped.cc string_piece.cc usage.cc double-conversion//double-conversion : <include>.. : : <include>.. ;
 
 import testing ;
 
-unit-test bit_packing_test : bit_packing_test.cc kenutil ..//boost_unit_test_framework ;
-run file_piece_test.cc kenutil ..//boost_unit_test_framework : : file_piece.cc ;
-unit-test joint_sort_test : joint_sort_test.cc kenutil ..//boost_unit_test_framework ;
-unit-test probing_hash_table_test : probing_hash_table_test.cc kenutil ..//boost_unit_test_framework ;
-unit-test sorted_uniform_test : sorted_uniform_test.cc kenutil ..//boost_unit_test_framework ;
-unit-test tokenize_piece_test : tokenize_piece_test.cc kenutil ..//boost_unit_test_framework ;
+unit-test bit_packing_test : bit_packing_test.cc kenutil /top//boost_unit_test_framework ;
+run file_piece_test.o kenutil /top//boost_unit_test_framework : : file_piece.cc ;
+unit-test read_compressed_test : read_compressed_test.o kenutil /top//boost_unit_test_framework ;
+unit-test joint_sort_test : joint_sort_test.cc kenutil /top//boost_unit_test_framework ;
+unit-test probing_hash_table_test : probing_hash_table_test.cc kenutil /top//boost_unit_test_framework ;
+unit-test sorted_uniform_test : sorted_uniform_test.cc kenutil /top//boost_unit_test_framework ;
+unit-test tokenize_piece_test : tokenize_piece_test.cc kenutil /top//boost_unit_test_framework ;
+unit-test multi_intersection_test : multi_intersection_test.cc kenutil /top//boost_unit_test_framework ;

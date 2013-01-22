@@ -1,9 +1,10 @@
-If you have boost build installed:
-   bjam
-   bjam install --prefix=/usr
+If you have Boost >= 1.36.0 installed:
+   ./bjam
+   ./bjam install --prefix=/usr #optional
 
-UNIX-like without boost build:
-  ./compile.sh
+If you only want the query code:
+  ./compile_query_only.sh
 
 Windows:
-  See the .vcxproj files
+  The windows directory has visual studio files.  Note that you need to compile
+  the kenlm project before build_binary and ngram_query projects.  

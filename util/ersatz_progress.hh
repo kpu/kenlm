@@ -4,12 +4,15 @@
 #include <iostream>
 #include <string>
 
-#include <inttypes.h>
+#include <stdint.h>
 
 // Ersatz version of boost::progress so core language model doesn't depend on
 // boost.  Also adds option to print nothing.  
 
 namespace util {
+
+extern const char kProgressBanner[];
+
 class ErsatzProgress {
   public:
     // No output.  
@@ -32,7 +35,6 @@ class ErsatzProgress {
 
     void Set(uint64_t to) {
       if ((current_ = to) >= next_) Milestone();
-      Milestone();
     }
 
     void Finished() {

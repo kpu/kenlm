@@ -4,6 +4,7 @@
 #include "lm/enumerate_vocab.hh"
 #include "lm/lm_exception.hh"
 #include "lm/virtual_interface.hh"
+#include "util/pool.hh"
 #include "util/probing_hash_table.hh"
 #include "util/sorted_uniform.hh"
 #include "util/string_piece.hh"
@@ -35,7 +36,7 @@ class WriteWordsWrapper : public EnumerateVocab {
     
     void Add(WordIndex index, const StringPiece &str);
 
-    void Write(int fd);
+    void Write(int fd, uint64_t start);
 
   private:
     EnumerateVocab *inner_;
@@ -96,7 +97,9 @@ class SortedVocabulary : public base::Vocabulary {
     EnumerateVocab *enumerate_;
 
     // Actual strings.  Used only when loading from ARPA and enumerate_ != NULL 
-    std::vector<std::string> strings_to_enumerate_;
+    util::Pool string_backing_;
+
+    std::vector<StringPiece> strings_to_enumerate_;
 };
 
 #pragma pack(push)

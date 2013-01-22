@@ -6,7 +6,7 @@
 #include <sstream>
 #include <string>
 
-#include <inttypes.h>
+#include <stdint.h>
 
 namespace util {
 
@@ -44,7 +44,7 @@ class Exception : public std::exception {
 };
 
 /* This implements the normal operator<< for Exception and all its children. 
- * SNIFAE means it only applies to Exception.  Think of this as an ersatz
+ * SFINAE means it only applies to Exception.  Think of this as an ersatz
  * boost::enable_if.  
  */
 template <class Except, class Data> typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const Data &data) {
@@ -62,40 +62,43 @@ template <class Except, class Data> typename Except::template ExceptionTag<Excep
 #endif
 #endif
 
-#define UTIL_SET_LOCATION(UTIL_e, child, condition) do { \
-  (UTIL_e).SetLocation(__FILE__, __LINE__, UTIL_FUNC_NAME, (child), (condition)); \
-} while (0)
-
 /* Create an instance of Exception, add the message Modify, and throw it.
  * Modify is appended to the what() message and can contain << for ostream
  * operations.  
  *
  * do .. while kludge to swallow trailing ; character
  * http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html .  
+ * Arg can be a constructor argument to the exception.
  */
-#define UTIL_THROW(Exception, Modify) do { \
-  Exception UTIL_e; \
-  UTIL_SET_LOCATION(UTIL_e, #Exception, NULL); \
+#define UTIL_THROW_BACKEND(Condition, Exception, Arg, Modify) do { \
+  Exception UTIL_e Arg; \
+  UTIL_e.SetLocation(__FILE__, __LINE__, UTIL_FUNC_NAME, #Exception, Condition); \
   UTIL_e << Modify; \
   throw UTIL_e; \
 } while (0)
 
-#define UTIL_THROW_VAR(Var, Modify) do { \
-  Exception &UTIL_e = (Var); \
-  UTIL_SET_LOCATION(UTIL_e, NULL, NULL); \
-  UTIL_e << Modify; \
-  throw UTIL_e; \
-} while (0)
+#define UTIL_THROW_ARG(Exception, Arg, Modify) \
+  UTIL_THROW_BACKEND(NULL, Exception, Arg, Modify)
 
-#define UTIL_THROW_IF(Condition, Exception, Modify) do { \
-  if (Condition) { \
-    Exception UTIL_e; \
-    UTIL_SET_LOCATION(UTIL_e, #Exception, #Condition); \
-    UTIL_e << Modify; \
-    throw UTIL_e; \
+#define UTIL_THROW(Exception, Modify) \
+  UTIL_THROW_BACKEND(NULL, Exception, , Modify);
+
+#if __GNUC__ >= 3
+#define UTIL_UNLIKELY(x) __builtin_expect (!!(x), 0)
+#else
+#define UTIL_UNLIKELY(x) (x)
+#endif
+
+#define UTIL_THROW_IF_ARG(Condition, Exception, Arg, Modify) do { \
+  if (UTIL_UNLIKELY(Condition)) { \
+    UTIL_THROW_BACKEND(#Condition, Exception, Arg, Modify); \
   } \
 } while (0)
 
+#define UTIL_THROW_IF(Condition, Exception, Modify) \
+  UTIL_THROW_IF_ARG(Condition, Exception, , Modify)
+
+// Exception that records errno and adds it to the message.
 class ErrnoException : public Exception {
   public:
     ErrnoException() throw();
@@ -108,12 +111,7 @@ class ErrnoException : public Exception {
     int errno_;
 };
 
-class EndOfFileException : public Exception {
-  public:
-    EndOfFileException() throw();
-    ~EndOfFileException() throw();
-};
-
+// Utilities for overflow checking.  
 class OverflowException : public Exception {
   public:
     OverflowException() throw();
