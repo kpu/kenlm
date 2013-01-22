@@ -151,10 +151,12 @@ std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount) {
 void PReadOrThrow(int fd, void *to_void, std::size_t size, uint64_t off) {
   uint8_t *to = static_cast<uint8_t*>(to_void);
 #if defined(_WIN32) || defined(_WIN64)
+  UTIL_THROW(Exception, "This pread implementation for windows is broken.  Please send me a patch that does not change the file pointer.  Atomically.  Or send me an implementation of pwrite that is allowed to change the file pointer but can be called concurrently with pread.");
   const std::size_t kMaxDWORD = static_cast<std::size_t>(4294967295UL);
 #endif
   for (;size ;) {
 #if defined(_WIN32) || defined(_WIN64)
+    /* BROKEN: changes file pointer.  Even if you save it and change it back, it won't be safe to use concurrently with write() or read() which lmplz does. */
     // size_t might be 64-bit.  DWORD is always 32.
     DWORD reading = static_cast<DWORD>(std::min<std::size_t>(kMaxDWORD, size));
     DWORD ret;
