@@ -1,3 +1,5 @@
+import os
+
 cdef bytes as_str(data):
     if isinstance(data, bytes):
         return data
@@ -7,15 +9,16 @@ cdef bytes as_str(data):
 
 cdef class LanguageModel:
     cdef Model* model
-    cdef Vocabulary* vocab
+    cdef public bytes path
+    cdef const_Vocabulary* vocab
 
-    def __cinit__(self, path):
-        cdef bytes path_str = as_str(path)
+    def __init__(self, path):
+        self.path = os.path.abspath(as_str(path))
         try:
-            self.model = new Model(path_str)
+            self.model = new Model(self.path)
         except RuntimeError as exception:
             raise IOError('Cannot read model \'%s\'' % path) from exception
-        self.vocab = &self.model.BaseVocabulary()
+        self.vocab = &self.model.GetVocabulary()
 
     def __dealloc__(self):
         del self.model
@@ -63,3 +66,9 @@ cdef class LanguageModel:
     def __contains__(self, word):
         cdef bytes w = as_str(word)
         return (self.vocab.Index(w) != 0)
+
+    def __repr__(self):
+        return '<LanguageModel from {0}>'.format(os.path.basename(self.path))
+
+    def __reduce__(self):
+        return (LanguageModel, (self.path,))
