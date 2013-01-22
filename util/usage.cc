@@ -81,7 +81,7 @@ template <class Num> uint64_t ParseNum(const std::string &arg) {
   UTIL_THROW_IF_ARG(stream >> throwaway, SizeParseError, (arg), "because there was more cruft " << throwaway << " after the number.");
 
   // Silly sort, using kilobytes as your default unit.  
-  if (after.empty()) after == "K";
+  if (after.empty()) after = "K";
   if (after == "%") {
     uint64_t mem = GuessPhysicalMemory();
     UTIL_THROW_IF_ARG(!mem, SizeParseError, (arg), "because % was specified but the physical memory size could not be determined.");
