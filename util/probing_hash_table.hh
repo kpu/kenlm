@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <functional>
+#include <vector>
 
 #include <assert.h>
 #include <stdint.h>
@@ -73,10 +74,7 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
       assert(initialized_);
 #endif
       UTIL_THROW_IF(++entries_ >= buckets_, ProbingSizeException, "Hash table with " << buckets_ << " buckets is full.");
-      for (MutableIterator i(begin_ + (hash_(t.GetKey()) % buckets_));;) {
-        if (equal_(i->GetKey(), invalid_)) { *i = t; return i; }
-        if (++i == end_) { i = begin_; }
-      }
+      return UncheckedInsert(t);
     }
 
     // Return true if the value was found (and not inserted).  This is consistent with Find but the opposite if hash_map!
@@ -126,12 +124,91 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
       }    
     }
 
-    void Clear(Entry invalid) {
+    void Clear() {
+      Entry invalid;
+      invalid.SetKey(invalid_);
       std::fill(begin_, end_, invalid);
       entries_ = 0;
     }
 
+    // Return memory size expected by Double.
+    std::size_t DoubleTo() const {
+      return buckets_ * 2 * sizeof(Entry);
+    }
+
+    // Inform the table that it has double the amount of memory.
+    // Pass clear_new = false if you are sure the new memory is initialized
+    // properly (to invalid_) i.e. by mremap.
+    void Double(void *new_base, bool clear_new = true) {
+      begin_ = static_cast<MutableIterator>(new_base);
+      MutableIterator old_end = begin_ + buckets_;
+      buckets_ *= 2;
+      end_ = begin_ + buckets_;
+      if (clear_new) {
+        Entry invalid;
+        invalid.SetKey(invalid_);
+        std::fill(old_end, end_, invalid);
+      }
+      std::vector<Entry> rolled_over;
+      // Move roll-over entries to a buffer because they might not roll over anymore.  This should be small.
+      for (MutableIterator i = begin_; i != old_end && !equal_(i->GetKey(), invalid_); ++i) {
+        rolled_over.push_back(*i);
+        i->SetKey(invalid_);
+      }
+      /* Re-insert everything.  Entries might go backwards to take over a
+       * recently opened gap, stay, move to new territory, or wrap around.   If
+       * an entry wraps around, it might go to a pointer greater than i (which
+       * can happen at the beginning) and it will be revisited to possibly fill
+       * in a gap created later.
+       */
+      Entry temp;
+      for (MutableIterator i = begin_; i != old_end; ++i) {
+        if (!equal_(i->GetKey(), invalid_)) {
+          temp = *i;
+          i->SetKey(invalid_);
+          UncheckedInsert(temp);
+        }
+      }
+      // Put the roll-over entries back in.
+      for (typename std::vector<Entry>::const_iterator i(rolled_over.begin()); i != rolled_over.end(); ++i) {
+        UncheckedInsert(*i);
+      }
+    }
+
+    // Mostly for tests, check consistency of every entry.
+    void CheckConsistency() {
+      MutableIterator last;
+      for (last = end_ - 1; last >= begin_ && !equal_(last->GetKey(), invalid_); --last) {}
+      UTIL_THROW_IF(last == begin_, ProbingSizeException, "Completely full");
+      MutableIterator i;
+      // Beginning can be wrap-arounds.
+      for (i = begin_; !equal_(i->GetKey(), invalid_); ++i) {
+        MutableIterator ideal = Ideal(*i);
+        UTIL_THROW_IF(ideal > i && ideal <= last, Exception, "Inconsistency at position " << (i - begin_) << " should be at " << (ideal - begin_));
+      }
+      MutableIterator pre_gap = i;
+      for (; i != end_; ++i) {
+        if (equal_(i->GetKey(), invalid_)) {
+          pre_gap = i;
+          continue;
+        }
+        MutableIterator ideal = Ideal(*i);
+        UTIL_THROW_IF(ideal > i || ideal <= pre_gap, Exception, "Inconsistency at position " << (i - begin_) << " with ideal " << (ideal - begin_));
+      }
+    }
+
   private:
+    template <class T> MutableIterator Ideal(const T &t) {
+      return begin_ + (hash_(t.GetKey()) % buckets_);
+    }
+
+    template <class T> MutableIterator UncheckedInsert(const T &t) {
+      for (MutableIterator i(Ideal(t));;) {
+        if (equal_(i->GetKey(), invalid_)) { *i = t; return i; }
+        if (++i == end_) { i = begin_; }
+      }
+    }
+
     MutableIterator begin_;
     std::size_t buckets_;
     MutableIterator end_;

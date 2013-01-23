@@ -1,10 +1,14 @@
 #include "util/probing_hash_table.hh"
 
+#include "util/murmur_hash.hh"
+#include "util/scoped.hh"
+
 #define BOOST_TEST_MODULE ProbingHashTableTest
 #include <boost/test/unit_test.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/functional/hash.hpp>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 
@@ -17,6 +21,10 @@ struct Entry {
 
   unsigned char GetKey() const {
     return key;
+  }
+
+  void SetKey(unsigned char to) {
+    key = to;
   }
 
   uint64_t GetValue() const {
@@ -44,6 +52,50 @@ BOOST_AUTO_TEST_CASE(simple) {
   BOOST_CHECK_EQUAL(3, i->GetKey());
   BOOST_CHECK_EQUAL(static_cast<uint64_t>(328920), i->GetValue());
   BOOST_CHECK(!table.Find(2, i));
+}
+
+struct Entry64 {
+  uint64_t key;
+  typedef uint64_t Key;
+
+  Entry64() {}
+
+  explicit Entry64(uint64_t key_in) {
+    key = key_in;
+  }
+
+  Key GetKey() const { return key; }
+  void SetKey(uint64_t to) { key = to; }
+};
+
+struct MurmurHashEntry64 {
+  std::size_t operator()(uint64_t value) const {
+    return util::MurmurHash64A(&value, 8);
+  }
+};
+
+typedef ProbingHashTable<Entry64, MurmurHashEntry64> Table64;
+
+BOOST_AUTO_TEST_CASE(Double) {
+  for (std::size_t initial = 19; initial < 30; ++initial) {
+    size_t size = Table64::Size(initial, 1.2);
+    scoped_malloc mem(MallocOrThrow(size));
+    Table64 table(mem.get(), size, std::numeric_limits<uint64_t>::max());
+    table.Clear();
+    for (uint64_t i = 0; i < 19; ++i) {
+      table.Insert(Entry64(i));
+    }
+    table.CheckConsistency();
+    mem.call_realloc(table.DoubleTo());
+    table.Double(mem.get());
+    table.CheckConsistency();
+    for (uint64_t i = 20; i < 40 ; ++i) {
+      table.Insert(Entry64(i));
+    }
+    mem.call_realloc(table.DoubleTo());
+    table.Double(mem.get());
+    table.CheckConsistency();
+  }
 }
 
 } // namespace
