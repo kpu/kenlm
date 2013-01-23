@@ -6,6 +6,7 @@
 #include <iostream>
 
 #include <boost/program_options.hpp>
+#include <boost/version.hpp>
 
 namespace {
 class SizeNotify {
@@ -33,7 +34,11 @@ int main(int argc, char *argv[]) {
     lm::builder::PipelineConfig pipeline;
 
     options.add_options()
-      ("order,o", po::value<std::size_t>(&pipeline.order)->required(), "Order of the model")
+      ("order,o", po::value<std::size_t>(&pipeline.order)
+#if BOOST_VERSION >= 104200
+         ->required()
+#endif
+         , "Order of the model")
       ("interpolate_unigrams", po::bool_switch(&pipeline.initial_probs.interpolate_unigrams), "Interpolate the unigrams (default: emulate SRILM by not interpolating)")
       ("temp_prefix,T", po::value<std::string>(&pipeline.sort.temp_prefix)->default_value("/tmp/lm"), "Temporary file prefix")
       ("memory,S", SizeOption(pipeline.sort.total_memory, util::GuessPhysicalMemory() ? "80%" : "1G"), "Sorting memory")
@@ -67,6 +72,14 @@ int main(int argc, char *argv[]) {
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, options), vm);
     po::notify(vm);
+
+    // required() appeared in Boost 1.42.0.
+#if BOOST_VERSION < 104200
+    if (!vm.count("order")) {
+      std::cerr << "the option '--order' is required but missing" << std::endl;
+      return 1;
+    }
+#endif
 
     util::NormalizeTempPrefix(pipeline.sort.temp_prefix);
 
