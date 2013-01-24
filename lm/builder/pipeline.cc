@@ -207,17 +207,18 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
   const PipelineConfig &config = master.Config();
   std::cerr << "=== 1/5 Counting and sorting n-grams ===" << std::endl;
 
-  UTIL_THROW_IF(config.TotalMemory() < config.assume_vocab_hash_size, util::Exception, "Vocab hash size estimate " << config.assume_vocab_hash_size << " exceeds total memory " << config.TotalMemory());
+  const std::size_t vocab_usage = CorpusCount::VocabUsage(config.vocab_estimate);
+  UTIL_THROW_IF(config.TotalMemory() < vocab_usage, util::Exception, "Vocab hash size estimate " << vocab_usage << " exceeds total memory " << config.TotalMemory());
   std::size_t memory_for_chain = 
     // This much memory to work with after vocab hash table.
-    static_cast<float>(config.TotalMemory() - config.assume_vocab_hash_size) /
+    static_cast<float>(config.TotalMemory() - vocab_usage) /
     // Solve for block size including the dedupe multiplier for one block.
     (static_cast<float>(config.block_count) + CorpusCount::DedupeMultiplier(config.order)) *
     // Chain likes memory expressed in terms of total memory.
     static_cast<float>(config.block_count);
   util::stream::Chain chain(util::stream::ChainConfig(NGram::TotalSize(config.order), config.block_count, memory_for_chain));
 
-  WordIndex type_count;
+  WordIndex type_count = config.vocab_estimate;
   util::FilePiece text(text_file, NULL, &std::cerr);
   text_file_name = text.FileName();
   CorpusCount counter(text, vocab_file, token_count, type_count, chain.BlockSize() / chain.EntrySize());

@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(Short) {
   util::stream::Chain chain(config);
   NGramStream stream;
   uint64_t token_count;
-  WordIndex type_count;
+  WordIndex type_count = 10;
   CorpusCount counter(input_piece, vocab.get(), token_count, type_count, chain.BlockSize() / chain.EntrySize());
   chain >> boost::ref(counter) >> stream >> util::stream::kRecycle;
 

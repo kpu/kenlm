@@ -23,14 +23,32 @@ namespace lm {
 namespace builder {
 namespace {
 
+#pragma pack(push)
+#pragma pack(4)
+struct VocabEntry {
+  typedef uint64_t Key;
+
+  uint64_t GetKey() const { return key; }
+  void SetKey(uint64_t to) { key = to; }
+
+  uint64_t key;
+  lm::WordIndex value;
+};
+#pragma pack(pop)
+
+const float kProbingMultiplier = 1.5;
+
 class VocabHandout {
-  private:
-    static const float kProbingMultiplier = 1.5;
   public:
-    explicit VocabHandout(int fd, std::size_t initial_guess = 1000000) :
-        table_backing_(util::CallocOrThrow(Table::Size(initial_guess, kProbingMultiplier))),
-        table_(table_backing_.get(), Table::Size(initial_guess, kProbingMultiplier)),
-        double_cutoff_(initial_guess * 1.1) {
+    static std::size_t MemUsage(WordIndex initial_guess) {
+      if (initial_guess < 2) initial_guess = 2;
+      return util::CheckOverflow(Table::Size(initial_guess, kProbingMultiplier));
+    }
+
+    explicit VocabHandout(int fd, WordIndex initial_guess) :
+        table_backing_(util::CallocOrThrow(MemUsage(initial_guess))),
+        table_(table_backing_.get(), MemUsage(initial_guess)),
+        double_cutoff_(std::max<std::size_t>(initial_guess * 1.1, 1)) {
       util::scoped_fd duped(util::DupOrThrow(fd));
       word_list_.reset(util::FDOpenOrThrow(duped));
       
@@ -40,7 +58,7 @@ class VocabHandout {
     }
 
     WordIndex Lookup(const StringPiece &word) {
-      Entry entry;
+      VocabEntry entry;
       entry.key = util::MurmurHashNative(word.data(), word.size());
       entry.value = table_.SizeNoSerialization();
 
@@ -50,7 +68,7 @@ class VocabHandout {
         util::WriteOrThrow(word_list_.get(), word.data(), word.size());
         util::WriteOrThrow(word_list_.get(), &null_delimit, 1);
         UTIL_THROW_IF(Size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh.");
-        if (Size() > double_cutoff_) {
+        if (Size() >= double_cutoff_) {
           table_backing_.call_realloc(table_.DoubleTo());
           table_.Double(table_backing_.get());
           double_cutoff_ *= 2;
@@ -64,20 +82,11 @@ class VocabHandout {
     }
 
   private:
+    // TODO: factor out a resizable probing hash table.
+    // TODO: use mremap on linux to get all zeros on resizes.
     util::scoped_malloc table_backing_;
 
-    struct Entry {
-      typedef uint64_t Key;
-
-      uint64_t GetKey() const { return key; }
-      void SetKey(uint64_t to) { key = to; }
-
-      uint64_t key;
-      lm::WordIndex value;
-    };
-
-    typedef util::ProbingHashTable<Entry, util::IdentityHash> Table;
-
+    typedef util::ProbingHashTable<VocabEntry, util::IdentityHash> Table;
     Table table_;
 
     std::size_t double_cutoff_;
@@ -122,8 +131,6 @@ struct DedupeEntry {
 };
 
 typedef util::ProbingHashTable<DedupeEntry, DedupeHash, DedupeEquals> Dedupe;
-
-const float kProbingMultiplier = 1.5;
 
 class Writer {
   public:
@@ -215,6 +222,10 @@ float CorpusCount::DedupeMultiplier(std::size_t order) {
   return kProbingMultiplier * static_cast<float>(sizeof(DedupeEntry)) / static_cast<float>(NGram::TotalSize(order));
 }
 
+std::size_t CorpusCount::VocabUsage(std::size_t vocab_estimate) {
+  return VocabHandout::MemUsage(vocab_estimate);
+}
+
 CorpusCount::CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count, WordIndex &type_count, std::size_t entries_per_block) 
   : from_(from), vocab_write_(vocab_write), token_count_(token_count), type_count_(type_count),
     dedupe_mem_size_(Dedupe::Size(entries_per_block, kProbingMultiplier)),
@@ -226,7 +237,7 @@ CorpusCount::CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token
 void CorpusCount::Run(const util::stream::ChainPosition &position) {
   UTIL_TIMER("(%w s) Counted n-grams\n");
 
-  VocabHandout vocab(vocab_write_);
+  VocabHandout vocab(vocab_write_, type_count_);
   const WordIndex end_sentence = vocab.Lookup("</s>");
   Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_);
   uint64_t count = 0;

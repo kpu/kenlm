@@ -23,6 +23,11 @@ class CorpusCount {
     // Memory usage will be DedupeMultipler(order) * block_size + total_chain_size + unknown vocab_hash_size
     static float DedupeMultiplier(std::size_t order);
 
+    // How much memory vocabulary will use based on estimated size of the vocab.
+    static std::size_t VocabUsage(std::size_t vocab_estimate);
+
+    // token_count: out.
+    // type_count aka vocabulary size.  Initialize to an estimate.  It is set to the exact value.
     CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count, WordIndex &type_count, std::size_t entries_per_block);
 
     void Run(const util::stream::ChainPosition &position);
