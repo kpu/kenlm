@@ -120,7 +120,7 @@ void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::s
   }
   Shift();
   // gzip detect.
-  if ((position_end_ - position_) >= ReadCompressed::kMagicSize && ReadCompressed::DetectCompressedMagic(position_)) {
+  if ((position_end_ >= position_ + ReadCompressed::kMagicSize) && ReadCompressed::DetectCompressedMagic(position_)) {
     if (!fallback_to_read_) {
       at_end_ = false;
       TransitionToRead();
