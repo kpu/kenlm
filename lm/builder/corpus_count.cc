@@ -70,7 +70,6 @@ class VocabHandout {
       util::WriteOrThrow(word_list_.get(), &null_delimit, 1);
       UTIL_THROW_IF(Size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh.");
       if (Size() >= double_cutoff_) {
-        WordIndex ret = it->value;
         table_backing_.call_realloc(table_.DoubleTo());
         table_.Double(table_backing_.get());
         double_cutoff_ *= 2;
@@ -231,14 +230,14 @@ CorpusCount::CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token
   : from_(from), vocab_write_(vocab_write), token_count_(token_count), type_count_(type_count),
     dedupe_mem_size_(Dedupe::Size(entries_per_block, kProbingMultiplier)),
     dedupe_mem_(util::MallocOrThrow(dedupe_mem_size_)) {
-  token_count_ = 0;
-  type_count_ = 0;
 }
 
 void CorpusCount::Run(const util::stream::ChainPosition &position) {
   UTIL_TIMER("(%w s) Counted n-grams\n");
 
   VocabHandout vocab(vocab_write_, type_count_);
+  token_count_ = 0;
+  type_count_ = 0;
   const WordIndex end_sentence = vocab.Lookup("</s>");
   Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_);
   uint64_t count = 0;
