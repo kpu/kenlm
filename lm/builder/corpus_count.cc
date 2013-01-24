@@ -63,18 +63,19 @@ class VocabHandout {
       entry.value = table_.SizeNoSerialization();
 
       Table::MutableIterator it;
-      if (!table_.FindOrInsert(entry, it)) {
-        char null_delimit = 0;
-        util::WriteOrThrow(word_list_.get(), word.data(), word.size());
-        util::WriteOrThrow(word_list_.get(), &null_delimit, 1);
-        UTIL_THROW_IF(Size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh.");
-        if (Size() >= double_cutoff_) {
-          table_backing_.call_realloc(table_.DoubleTo());
-          table_.Double(table_backing_.get());
-          double_cutoff_ *= 2;
-        }
+      if (table_.FindOrInsert(entry, it))
+        return it->value;
+      char null_delimit = 0;
+      util::WriteOrThrow(word_list_.get(), word.data(), word.size());
+      util::WriteOrThrow(word_list_.get(), &null_delimit, 1);
+      UTIL_THROW_IF(Size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh.");
+      if (Size() >= double_cutoff_) {
+        WordIndex ret = it->value;
+        table_backing_.call_realloc(table_.DoubleTo());
+        table_.Double(table_backing_.get());
+        double_cutoff_ *= 2;
       }
-      return it->value;
+      return entry.value;
     }
 
     WordIndex Size() const {
