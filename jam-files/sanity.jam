@@ -27,9 +27,12 @@ cflags = [ os.environ "CFLAGS" ] ;
 ldflags = [ os.environ "LDFLAGS" ] ;
 
 #Run g++ with empty main and these arguments to see if it passes.  
-rule test_flags ( flags * ) {
+rule test_flags ( flags * : main ? ) {
   flags = $(cxxflags) $(ldflags) $(flags) ;
-  local cmd = "bash -c \"g++ "$(flags:J=" ")" -x c++ - <<<'int main() {}' -o $(TOP)/dummy >/dev/null 2>/dev/null && rm $(TOP)/dummy 2>/dev/null\"" ;
+  if ! $(main) {
+    main = "int main() {}" ;
+  }
+  local cmd = "bash -c \"g++ "$(flags:J=" ")" -x c++ - <<<'$(main)' -o $(TOP)/dummy >/dev/null 2>/dev/null && rm $(TOP)/dummy 2>/dev/null\"" ;
   local ret = [ SHELL $(cmd) : exit-status ] ;
   if --debug-configuration in [ modules.peek : ARGV ] {
     echo $(cmd) ;
@@ -119,18 +122,29 @@ rule boost-lib ( name macro : deps * ) {
   #versions of boost do not have -mt tagged versions of all libraries.   Sadly,
   #boost.jam does not handle this correctly.  
   flags = $(L-boost-search)" -lboost_"$(name)"-mt$(boost-lib-version)" ;
-  if $(boost-auto-shared) != "<link>shared" {
+  local main ;
+  if $(name) = "unit_test_framework" {
+    main = "BOOST_AUTO_TEST_CASE(foo) {}" ;
+    flags += " -DBOOST_TEST_MODULE=CompileTest $(I-boost-include) -include boost/test/unit_test.hpp" ;
+  }
+  if $(boost-auto-shared) = "<link>shared" {
+    flags += " -DBOOST_$(macro)" ;
+  } else {
     flags += " -static" ;
   }
-  if [ test_flags $(flags) ] {
+  if [ test_flags $(flags) : $(main) ] {
     lib inner_boost_$(name) : : <threading>single $(boost-search) <name>boost_$(name)$(boost-lib-version) : : <library>$(deps) ;
     lib inner_boost_$(name) : : <threading>multi $(boost-search) <name>boost_$(name)-mt$(boost-lib-version) : : <library>$(deps) ;
   } else {
     lib inner_boost_$(name) : : $(boost-search) <name>boost_$(name)$(boost-lib-version) : : <library>$(deps) ;
   }
 
-  alias boost_$(name) : inner_boost_$(name) : $(boost-auto-shared) : : <link>shared:<define>BOOST_$(macro) ;
-  requirements += <link>shared:<define>BOOST_$(macro) ;
+  if $(boost-auto-shared) = "<link>shared" {
+    alias boost_$(name) : inner_boost_$(name) : <link>shared ;
+    requirements += <define>BOOST_$(macro) ;
+  } else {
+    alias boost_$(name) : inner_boost_$(name) ;
+  }
 }
 
 #Argument is e.g. 103600
