@@ -131,6 +131,11 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
       entries_ = 0;
     }
 
+    // Return number of entries assuming no serialization went on.
+    std::size_t SizeNoSerialization() const {
+      return entries_;
+    }
+
     // Return memory size expected by Double.
     std::size_t DoubleTo() const {
       return buckets_ * 2 * sizeof(Entry);

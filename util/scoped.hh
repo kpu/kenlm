@@ -14,6 +14,7 @@ class MallocException : public ErrnoException {
 };
 
 void *MallocOrThrow(std::size_t requested);
+void *CallocOrThrow(std::size_t requested);
 
 class scoped_malloc {
   public:

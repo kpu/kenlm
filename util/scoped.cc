@@ -16,6 +16,12 @@ void *MallocOrThrow(std::size_t requested) {
   return ret;
 }
 
+void *CallocOrThrow(std::size_t requested) {
+  void *ret;
+  UTIL_THROW_IF_ARG(!(ret = std::calloc(1, requested)), MallocException, (requested), "in calloc");
+  return ret;
+}
+
 scoped_malloc::~scoped_malloc() {
   std::free(p_);
 }

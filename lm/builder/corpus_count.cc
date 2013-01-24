@@ -24,8 +24,13 @@ namespace builder {
 namespace {
 
 class VocabHandout {
+  private:
+    static const float kProbingMultiplier = 1.5;
   public:
-    explicit VocabHandout(int fd) {
+    explicit VocabHandout(int fd, std::size_t initial_guess = 1000000) :
+        table_backing_(util::CallocOrThrow(Table::Size(initial_guess, kProbingMultiplier))),
+        table_(table_backing_.get(), Table::Size(initial_guess, kProbingMultiplier)),
+        double_cutoff_(initial_guess * 1.1) {
       util::scoped_fd duped(util::DupOrThrow(fd));
       word_list_.reset(util::FDOpenOrThrow(duped));
       
@@ -35,25 +40,47 @@ class VocabHandout {
     }
 
     WordIndex Lookup(const StringPiece &word) {
-      uint64_t hashed = util::MurmurHashNative(word.data(), word.size());
-      std::pair<Seen::iterator, bool> ret(seen_.insert(std::pair<uint64_t, lm::WordIndex>(hashed, seen_.size())));
-      if (ret.second) {
+      Entry entry;
+      entry.key = util::MurmurHashNative(word.data(), word.size());
+      entry.value = table_.SizeNoSerialization();
+
+      Table::MutableIterator it;
+      if (!table_.FindOrInsert(entry, it)) {
         char null_delimit = 0;
         util::WriteOrThrow(word_list_.get(), word.data(), word.size());
         util::WriteOrThrow(word_list_.get(), &null_delimit, 1);
-        UTIL_THROW_IF(seen_.size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh.");
+        UTIL_THROW_IF(Size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh.");
+        if (Size() > double_cutoff_) {
+          table_backing_.call_realloc(table_.DoubleTo());
+          table_.Double(table_backing_.get());
+          double_cutoff_ *= 2;
+        }
       }
-      return ret.first->second;
+      return it->value;
     }
 
     WordIndex Size() const {
-      return seen_.size();
+      return table_.SizeNoSerialization();
     }
 
   private:
-    typedef boost::unordered_map<uint64_t, lm::WordIndex> Seen;
+    util::scoped_malloc table_backing_;
 
-    Seen seen_;
+    struct Entry {
+      typedef uint64_t Key;
+
+      uint64_t GetKey() const { return key; }
+      void SetKey(uint64_t to) { key = to; }
+
+      uint64_t key;
+      lm::WordIndex value;
+    };
+
+    typedef util::ProbingHashTable<Entry, util::IdentityHash> Table;
+
+    Table table_;
+
+    std::size_t double_cutoff_;
 
     util::scoped_FILE word_list_;
 };
@@ -85,6 +112,7 @@ class DedupeEquals : public std::binary_function<const WordIndex *, const WordIn
 struct DedupeEntry {
   typedef WordIndex *Key;
   Key GetKey() const { return key; }
+  void SetKey(WordIndex *to) { key = to; }
   Key key;
   static DedupeEntry Construct(WordIndex *at) {
     DedupeEntry ret;
@@ -105,7 +133,7 @@ class Writer {
         dedupe_(dedupe_mem, dedupe_mem_size, &dedupe_invalid_[0], DedupeHash(order), DedupeEquals(order)),
         buffer_(new WordIndex[order - 1]),
         block_size_(position.GetChain().BlockSize()) {
-      dedupe_.Clear(DedupeEntry::Construct(&dedupe_invalid_[0]));
+      dedupe_.Clear();
       assert(Dedupe::Size(position.GetChain().BlockSize() / position.GetChain().EntrySize(), kProbingMultiplier) == dedupe_mem_size);
       if (order == 1) {
         // Add special words.  AdjustCounts is responsible if order != 1.    
@@ -149,7 +177,7 @@ class Writer {
       }
       // Block end.  Need to store the context in a temporary buffer.  
       std::copy(gram_.begin() + 1, gram_.end(), buffer_.get());
-      dedupe_.Clear(DedupeEntry::Construct(&dedupe_invalid_[0]));
+      dedupe_.Clear();
       block_->SetValidSize(block_size_);
       gram_.ReBase((++block_)->Get());
       std::copy(buffer_.get(), buffer_.get() + gram_.Order() - 1, gram_.begin());
