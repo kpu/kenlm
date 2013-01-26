@@ -1,14 +1,9 @@
 #include "lm/builder/print.hh"
 
-#include "util/double-conversion/double-conversion.h"
-#include "util/double-conversion/utils.h"
-#include "util/file.hh"
+#include "util/fake_ofstream.hh"
 #include "util/mmap.hh"
 #include "util/scoped.hh"
 #include "util/stream/timer.hh"
-
-#define BOOST_LEXICAL_CAST_ASSUME_C_LOCALE
-#include <boost/lexical_cast.hpp>
 
 #include <sstream>
 
@@ -27,71 +22,6 @@ VocabReconstitute::VocabReconstitute(int fd) {
   // Last one for LookupPiece.
   map_.push_back(i);
 }
-
-namespace {
-class OutputManager {
-  public:
-    static const std::size_t kOutBuf = 1048576;
-
-    // Does not take ownership of out.
-    explicit OutputManager(int out)
-      : buf_(util::MallocOrThrow(kOutBuf)),
-        builder_(static_cast<char*>(buf_.get()), kOutBuf),
-        // Mostly the default but with inf instead.  And no flags.
-        convert_(double_conversion::DoubleToStringConverter::NO_FLAGS, "inf", "NaN", 'e', -6, 21, 6, 0),
-        fd_(out) {}
-
-    ~OutputManager() {
-      Flush();
-    }
-
-    OutputManager &operator<<(float value) {
-      // Odd, but this is the largest number found in the comments.
-      EnsureRemaining(double_conversion::DoubleToStringConverter::kMaxPrecisionDigits + 8);
-      convert_.ToShortestSingle(value, &builder_);
-      return *this;
-    }
-
-    OutputManager &operator<<(StringPiece str) {
-      if (str.size() > kOutBuf) {
-        Flush();
-        util::WriteOrThrow(fd_, str.data(), str.size());
-      } else {
-        EnsureRemaining(str.size());
-        builder_.AddSubstring(str.data(), str.size());
-      }
-      return *this;
-    }
-
-    // Inefficient!
-    OutputManager &operator<<(unsigned val) {
-      return *this << boost::lexical_cast<std::string>(val);
-    }
-
-    OutputManager &operator<<(char c) {
-      EnsureRemaining(1);
-      builder_.AddCharacter(c);
-      return *this;
-    }
-
-    void Flush() {
-      util::WriteOrThrow(fd_, buf_.get(), builder_.position());
-      builder_.Reset();
-    }
-
-  private:
-    void EnsureRemaining(std::size_t amount) {
-      if (static_cast<std::size_t>(builder_.size() - builder_.position()) < amount) {
-        Flush();
-      }
-    }
-
-    util::scoped_malloc buf_;
-    double_conversion::StringBuilder builder_;
-    double_conversion::DoubleToStringConverter convert_;
-    int fd_;
-};
-} // namespace
 
 PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> &counts, const HeaderInfo* header_info, int out_fd) 
   : vocab_(vocab), out_fd_(out_fd) {
@@ -113,7 +43,7 @@ PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t>
 
 void PrintARPA::Run(const ChainPositions &positions) {
   UTIL_TIMER("(%w s) Wrote ARPA file\n");
-  OutputManager out(out_fd_);
+  util::FakeOFStream out(out_fd_);
   for (unsigned order = 1; order <= positions.size(); ++order) {
     out << "\\" << order << "-grams:" << '\n';
     for (NGramStream stream(positions[order - 1]); stream; ++stream) {

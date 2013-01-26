@@ -88,7 +88,8 @@ template <class V> class Print {
 
 class PrintARPA {
   public:
-    // header_info may be NULL to disable the header
+    // header_info may be NULL to disable the header.
+    // Takes ownership of out_fd upon Run().
     explicit PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> &counts, const HeaderInfo* header_info, int out_fd);
 
     void Run(const ChainPositions &positions);
