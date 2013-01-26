@@ -1,6 +1,9 @@
 #include "util/scoped.hh"
 
 #include <cstdlib>
+#if !defined(_WIN32) && !defined(_WIN64)
+#include <sys/mman.h>
+#endif
 
 namespace util {
 
@@ -10,26 +13,31 @@ MallocException::MallocException(std::size_t requested) throw() {
 
 MallocException::~MallocException() throw() {}
 
+namespace {
+void *InspectAddr(void *addr, std::size_t requested, const char *func_name) {
+  UTIL_THROW_IF_ARG(!addr && requested, MallocException, (requested), "in " << func_name);
+  // These routines are often used for large chunks of memory where huge pages help.
+#if MADV_HUGEPAGE
+  madvise(addr, requested, MADV_HUGEPAGE);
+#endif
+  return addr;
+}
+} // namespace
+
 void *MallocOrThrow(std::size_t requested) {
-  void *ret;
-  UTIL_THROW_IF_ARG(!(ret = std::malloc(requested)), MallocException, (requested), "in malloc");
-  return ret;
+  return InspectAddr(std::malloc(requested), requested, "malloc");
 }
 
 void *CallocOrThrow(std::size_t requested) {
-  void *ret;
-  UTIL_THROW_IF_ARG(!(ret = std::calloc(1, requested)), MallocException, (requested), "in calloc");
-  return ret;
+  return InspectAddr(std::calloc(1, requested), requested, "calloc");
 }
 
 scoped_malloc::~scoped_malloc() {
   std::free(p_);
 }
 
-void scoped_malloc::call_realloc(std::size_t to) {
-  void *ret;
-  UTIL_THROW_IF_ARG(!(ret = std::realloc(p_, to)) && to, MallocException, (to), "in realloc");
-  p_ = ret;
+void scoped_malloc::call_realloc(std::size_t requested) {
+  p_ = InspectAddr(std::realloc(p_, requested), requested, "realloc");
 }
 
 } // namespace util

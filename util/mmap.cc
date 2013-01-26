@@ -6,6 +6,7 @@
 
 #include "util/exception.hh"
 #include "util/file.hh"
+#include "util/scoped.hh"
 
 #include <iostream>
 
@@ -113,7 +114,9 @@ void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int
   void *ret;
   UTIL_THROW_IF((ret = mmap(NULL, size, protect, flags, fd, offset)) == MAP_FAILED, ErrnoException, "mmap failed for size " << size << " at offset " << offset);
 #  ifdef MADV_HUGEPAGE
-  // We like huge pages but it's fine if we can't have them.
+  /* We like huge pages but it's fine if we can't have them.  Note that huge
+   * pages are not supported for file-backed mmap on linux.
+   */
   madvise(ret, size, MADV_HUGEPAGE);
 #  endif
 #endif
@@ -145,8 +148,7 @@ void MapRead(LoadMethod method, int fd, uint64_t offset, std::size_t size, scope
     case POPULATE_OR_READ:
 #endif
     case READ:
-      out.reset(malloc(size), size, scoped_memory::MALLOC_ALLOCATED);
-      if (!out.get()) UTIL_THROW(util::ErrnoException, "Allocating " << size << " bytes with malloc");
+      out.reset(MallocOrThrow(size), size, scoped_memory::MALLOC_ALLOCATED);
       SeekOrThrow(fd, offset);
       ReadOrThrow(fd, out.get(), size);
       break;
