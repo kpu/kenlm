@@ -218,7 +218,7 @@ void FilePiece::MMapShift(uint64_t desired_begin) {
   // Use mmap.  
   uint64_t ignore = desired_begin % page_;
   // Duplicate request for Shift means give more data.  
-  if (position_ == data_.begin() + ignore) {
+  if (position_ == data_.begin() + ignore && position_) {
     default_map_size_ *= 2;
   }
   // Local version so that in case of failure it doesn't overwrite the class variable.  
