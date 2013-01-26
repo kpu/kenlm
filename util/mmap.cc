@@ -110,8 +110,12 @@ void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int
   UTIL_THROW_IF(!ret, ErrnoException, "MapViewOfFile failed");
 #else
   int protect = for_write ? (PROT_READ | PROT_WRITE) : PROT_READ;
-  void *ret = mmap(NULL, size, protect, flags, fd, offset);
-  UTIL_THROW_IF(ret == MAP_FAILED, ErrnoException, "mmap failed for size " << size << " at offset " << offset);
+  void *ret;
+  UTIL_THROW_IF((ret = mmap(NULL, size, protect, flags, fd, offset)) == MAP_FAILED, ErrnoException, "mmap failed for size " << size << " at offset " << offset);
+#  ifdef MADV_HUGEPAGE
+  // We like huge pages but it's fine if we can't have them.
+  madvise(ret, size, MADV_HUGEPAGE);
+#  endif
 #endif
   return ret;
 }
