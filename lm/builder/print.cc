@@ -1,6 +1,7 @@
 #include "lm/builder/print.hh"
 
 #include "util/fake_ofstream.hh"
+#include "util/file.hh"
 #include "util/mmap.hh"
 #include "util/scoped.hh"
 #include "util/stream/timer.hh"
@@ -42,6 +43,7 @@ PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t>
 }
 
 void PrintARPA::Run(const ChainPositions &positions) {
+  util::scoped_fd closer(out_fd_);
   UTIL_TIMER("(%w s) Wrote ARPA file\n");
   util::FakeOFStream out(out_fd_);
   for (unsigned order = 1; order <= positions.size(); ++order) {

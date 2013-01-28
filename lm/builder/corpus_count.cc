@@ -3,6 +3,7 @@
 #include "lm/builder/ngram.hh"
 #include "lm/lm_exception.hh"
 #include "lm/word_index.hh"
+#include "util/fake_ofstream.hh"
 #include "util/file.hh"
 #include "util/file_piece.hh"
 #include "util/murmur_hash.hh"
@@ -48,10 +49,8 @@ class VocabHandout {
     explicit VocabHandout(int fd, WordIndex initial_guess) :
         table_backing_(util::CallocOrThrow(MemUsage(initial_guess))),
         table_(table_backing_.get(), MemUsage(initial_guess)),
-        double_cutoff_(std::max<std::size_t>(initial_guess * 1.1, 1)) {
-      util::scoped_fd duped(util::DupOrThrow(fd));
-      word_list_.reset(util::FDOpenOrThrow(duped));
-      
+        double_cutoff_(std::max<std::size_t>(initial_guess * 1.1, 1)),
+        word_list_(fd) {
       Lookup("<unk>"); // Force 0
       Lookup("<s>"); // Force 1
       Lookup("</s>"); // Force 2
@@ -65,9 +64,7 @@ class VocabHandout {
       Table::MutableIterator it;
       if (table_.FindOrInsert(entry, it))
         return it->value;
-      char null_delimit = 0;
-      util::WriteOrThrow(word_list_.get(), word.data(), word.size());
-      util::WriteOrThrow(word_list_.get(), &null_delimit, 1);
+      word_list_ << word << '\0';
       UTIL_THROW_IF(Size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh.");
       if (Size() >= double_cutoff_) {
         table_backing_.call_realloc(table_.DoubleTo());
@@ -90,8 +87,8 @@ class VocabHandout {
     Table table_;
 
     std::size_t double_cutoff_;
-
-    util::scoped_FILE word_list_;
+    
+    util::FakeOFStream word_list_;
 };
 
 class DedupeHash : public std::unary_function<const WordIndex *, bool> {

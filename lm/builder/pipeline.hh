@@ -34,7 +34,7 @@ struct PipelineConfig {
   std::size_t TotalMemory() const { return sort.total_memory; }
 };
 
-// Takes ownership of text_file.
+// Takes ownership of text_file and out_arpa.
 void Pipeline(PipelineConfig config, int text_file, int out_arpa);
 
 }} // namespaces
