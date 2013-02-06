@@ -23,7 +23,6 @@ run partial_test.cc kenlm /top//boost_unit_test_framework : : test.arpa ;
 
 exe query : query_main.cc kenlm ../util//kenutil ;
 exe build_binary : build_binary_main.cc kenlm ../util//kenutil ;
-exe kenlm_max_order : kenlm_max_order_main.cc : <include>.. $(max-order) ;
 exe fragment : fragment_main.cc kenlm ;
 
-alias programs : query build_binary kenlm_max_order fragment filter//filter : <threading>multi:<source>builder//lmplz ;
+alias programs : query build_binary fragment filter//filter : <threading>multi:<source>builder//lmplz ;

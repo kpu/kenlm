@@ -2,6 +2,7 @@
 
 int main(int argc, char *argv[]) {
   if (!(argc == 2 || (argc == 3 && !strcmp(argv[2], "null")))) {
+    std::cerr << "KenLM was compiled with maximum order " << KENLM_MAX_ORDER << "." << std::endl;
     std::cerr << "Usage: " << argv[0] << " lm_file [null]" << std::endl;
     std::cerr << "Input is wrapped in <s> and </s> unless null is passed." << std::endl;
     return 1;
