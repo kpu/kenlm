@@ -6,12 +6,12 @@
 #include "lm/builder/interpolate.hh"
 #include "lm/builder/print.hh"
 #include "lm/builder/sort.hh"
-
 #include "lm/sizes.hh"
-
 #include "util/exception.hh"
 #include "util/file.hh"
 #include "util/stream/io.hh"
+
+#include <boost/lexical_cast.hpp>
 
 #include <algorithm>
 #include <iostream>
@@ -111,8 +111,8 @@ class Master {
       }
     }
 
-    void BufferFinal(const std::vector<uint64_t> &counts) {
-      chains_[0] >> files_[0].Sink();
+    void BufferFinal(const std::vector<uint64_t> &/*counts*/) {
+/*      chains_[0] >> files_[0].Sink();
       for (std::size_t i = 1; i < config_.order; ++i) {
         files_.push_back(util::MakeTemp(config_.TempPrefix()));
         chains_[i] >> files_[i].Sink();
@@ -122,7 +122,15 @@ class Master {
       CreateChains(std::min(config_.sort.buffer_size * config_.order, config_.TotalMemory()), counts);
       for (std::size_t i = 0; i < config_.order; ++i) {
         chains_[i] >> files_[i].Source();
+      }*/
+      FixedArray<util::scoped_fd> files(config_.order);
+      for (std::size_t i = 0; i < config_.order; ++i) {
+        std::string name(config_.TempPrefix());
+        name += boost::lexical_cast<std::string>(i + 1);
+        files.push_back(util::CreateOrThrow(name.c_str()));
+        chains_[i] >> util::stream::WriteAndRecycle(files.back().get());
       }
+      chains_.Wait(true);
     }
 
     template <class Compare> void SetupSorts(Sorts<Compare> &sorts) {
@@ -310,12 +318,12 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
     InterpolateProbabilities(counts, master, primary, gammas);
   }
 
-  std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
+/*  std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
   UTIL_THROW_IF(vocab.Size() != counts[0], util::Exception, "Vocab words don't match up.  Is there a null byte in the input?");
   HeaderInfo header_info(text_file_name, token_count);
   master >> PrintARPA(vocab, counts, (config.verbose_header ? &header_info : NULL), out_arpa) >> util::stream::kRecycle;
-  master.MutableChains().Wait(true);
+  master.MutableChains().Wait(true);*/
 }
 
 }} // namespaces
