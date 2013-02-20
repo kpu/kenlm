@@ -69,6 +69,25 @@ inline Chain &operator>>(Chain &chain, Stream &stream) {
   return chain;
 }
 
+template <class T> class TypedStream : public Stream {
+  public:
+    TypedStream() {}
+    explicit TypedStream(const ChainPosition &position) : Stream(position) {}
+
+    T &operator*() {
+      return *static_cast<T*>(Get());
+    }
+    const T &operator*() const {
+      return *static_cast<T*>(Get());
+    }
+    T *operator->() {
+      return static_cast<T*>(Get());
+    }
+    const T *operator->() const {
+      return static_cast<T*>(Get());
+    }
+};
+
 } // namespace stream
 } // namespace util
 #endif // UTIL_STREAM_STREAM__
