@@ -31,6 +31,7 @@ namespace {
 const uint64_t kUnknownHash = detail::HashForVocab("<unk>", 5);
 // Sadly some LMs have <UNK>.  
 const uint64_t kUnknownCapHash = detail::HashForVocab("<UNK>", 5);
+} // namespace
 
 void ReadWords(int fd, EnumerateVocab *enumerate, WordIndex expected_count) {
   // Check that we're at the right place by reading <unk> which is always first.
@@ -68,8 +69,6 @@ void ReadWords(int fd, EnumerateVocab *enumerate, WordIndex expected_count) {
 
   UTIL_THROW_IF(expected_count != index, FormatLoadException, "The binary file has the wrong number of words at the end.  This could be caused by a truncated binary file.");
 }
-
-} // namespace
 
 WriteWordsWrapper::WriteWordsWrapper(EnumerateVocab *inner) : inner_(inner) {}
 WriteWordsWrapper::~WriteWordsWrapper() {}
@@ -125,10 +124,53 @@ WordIndex SortedVocabulary::Insert(const StringPiece &str) {
   return end_ - begin_;
 }
 
-void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
+void SortedVocabulary::FinishedLoading(ProbBackoff *reorder) {
+  GenericFinished(reorder);
+}
+
+void SortedVocabulary::BuildFromFile(int fd, std::vector<WordIndex> &mapping) {
+  mapping.clear();
+
+  uint64_t file_size = util::SizeOrThrow(fd);
+  util::scoped_memory strings;
+  util::MapRead(util::POPULATE_OR_READ, fd, 0, file_size, strings);
+  const char *const start = static_cast<const char*>(strings.get());
+  UTIL_THROW_IF(memcmp(start, "<unk>", 6), FormatLoadException, "Vocab file does not begin with <unk> followed by null");
+  
+  strings_to_enumerate_.clear();
+  for (const char *i = start + 6 /* skip <unk>\0 */; i < start + file_size;) {
+    StringPiece str(i, strlen(i));
+    strings_to_enumerate_.push_back(str);
+    *(end_++) = detail::HashForVocab(str.data(), str.size());
+    i += str.size() + 1;
+  }
+  saw_unk_ = true;
+
+  std::vector<WordIndex> permuted;
+  const WordIndex size = end_ - begin_ + 1;
+  permuted.reserve(size);
+  for (WordIndex i = 0; i < size; ++i) {
+    permuted.push_back(i);
+  }
+  GenericFinished(&*permuted.begin());
+  // permuted maps from new to old.  We need old to new.
+  mapping.resize(permuted.size());
+  for (WordIndex i = 0; i < size; ++i) {
+    mapping[permuted[i]] = i;
+  } 
+}
+
+void SortedVocabulary::LoadedBinary(bool have_words, int fd, EnumerateVocab *to) {
+  end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
+  SetSpecial(Index("<s>"), Index("</s>"), 0);
+  bound_ = end_ - begin_ + 1;
+  if (have_words) ReadWords(fd, to, bound_);
+}
+
+template <class T> void SortedVocabulary::GenericFinished(T *reorder) {
   if (enumerate_) {
     if (!strings_to_enumerate_.empty()) {
-      util::PairedIterator<ProbBackoff*, StringPiece*> values(reorder_vocab + 1, &*strings_to_enumerate_.begin());
+      util::PairedIterator<T*, StringPiece*> values(reorder + 1, &*strings_to_enumerate_.begin());
       util::JointSort(begin_, end_, values);
     }
     for (WordIndex i = 0; i < static_cast<WordIndex>(end_ - begin_); ++i) {
@@ -138,20 +180,13 @@ void SortedVocabulary::FinishedLoading(ProbBackoff *reorder_vocab) {
     strings_to_enumerate_.clear();
     string_backing_.FreeAll();
   } else {
-    util::JointSort(begin_, end_, reorder_vocab + 1);
+    util::JointSort(begin_, end_, reorder + 1);
   }
   SetSpecial(Index("<s>"), Index("</s>"), 0);
   // Save size.  Excludes UNK.  
   *(reinterpret_cast<uint64_t*>(begin_) - 1) = end_ - begin_;
   // Includes UNK.
   bound_ = end_ - begin_ + 1;
-}
-
-void SortedVocabulary::LoadedBinary(bool have_words, int fd, EnumerateVocab *to) {
-  end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
-  SetSpecial(Index("<s>"), Index("</s>"), 0);
-  bound_ = end_ - begin_ + 1;
-  if (have_words) ReadWords(fd, to, bound_);
 }
 
 namespace {

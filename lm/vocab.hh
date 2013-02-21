@@ -28,6 +28,9 @@ inline uint64_t HashForVocab(const StringPiece &str) {
 class ProbingVocabularyHeader;
 } // namespace detail
 
+// For internal use.  Assumes the file has been seeked appropriately.
+void ReadWords(int fd, EnumerateVocab *enumerate, WordIndex expected_count);
+
 class WriteWordsWrapper : public EnumerateVocab {
   public:
     WriteWordsWrapper(EnumerateVocab *inner);
@@ -73,10 +76,16 @@ class SortedVocabulary : public base::Vocabulary {
 
     void ConfigureEnumerate(EnumerateVocab *to, std::size_t max_entries);
 
+    // Insert and FinishedLoading go together.
     WordIndex Insert(const StringPiece &str);
-
     // Reorders reorder_vocab so that the IDs are sorted.  
     void FinishedLoading(ProbBackoff *reorder_vocab);
+
+    /* Read null-delimited words from a file, initialize the vocabulary, and
+     * generate a mapping from old order to new order.  The 0th vocab word must
+     * be <unk>.
+     */
+    void BuildFromFile(int fd, std::vector<WordIndex> &mapping);
 
     // Trie stores the correct counts including <unk> in the header.  If this was previously sized based on a count exluding <unk>, padding with 8 bytes will make it the correct size based on a count including <unk>.
     std::size_t UnkCountChangePadding() const { return SawUnk() ? 0 : sizeof(uint64_t); }
@@ -86,6 +95,8 @@ class SortedVocabulary : public base::Vocabulary {
     void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);
 
   private:
+    template <class T> void GenericFinished(T *reorder);
+
     uint64_t *begin_, *end_;
 
     WordIndex bound_;
