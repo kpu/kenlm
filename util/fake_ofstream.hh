@@ -25,7 +25,7 @@ class FakeOFStream {
         fd_(out) {}
 
     ~FakeOFStream() {
-      Flush();
+      if (buf_.get()) Flush();
     }
 
     FakeOFStream &operator<<(float value) {
@@ -67,6 +67,15 @@ class FakeOFStream {
     void Flush() {
       util::WriteOrThrow(fd_, buf_.get(), builder_.position());
       builder_.Reset();
+    }
+
+    // Not necessary, but does assure the data is cleared.
+    void Finish() {
+      Flush();
+      // It will segfault trying to null terminate otherwise.
+      builder_.Finalize();
+      buf_.reset();
+      util::FSyncOrThrow(fd_);
     }
 
   private:

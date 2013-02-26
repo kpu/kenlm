@@ -218,7 +218,7 @@ class StringBuilder {
   // 0-characters; use the Finalize() method to terminate the string
   // instead.
   void AddCharacter(char c) {
-    ASSERT(c != '\0');
+    //ASSERT(c != '\0');
     ASSERT(!is_finalized() && position_ < buffer_.length());
     buffer_[position_++] = c;
   }
