@@ -23,6 +23,9 @@
 namespace util { class FilePiece; }
 
 namespace lm {
+// For friend declaration.
+namespace builder { class Binarize; }
+
 namespace ngram {
 namespace detail {
 
@@ -103,8 +106,13 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
       return Search::kDifferentRest ? InternalUnRest(pointers_begin, pointers_end, first_length) : 0.0;
     }
 
+  protected:
+    // This is used by the external Binarize class to make a Model from text.
+    GenericModel(const std::vector<uint64_t> &counts, const Config &config);
+
   private:
     friend void lm::ngram::LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);
+    friend class lm::builder::Binarize;
 
     static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config);
 
@@ -112,6 +120,8 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 
     // Score bigrams and above.  Do not include backoff.   
     void ResumeScore(const WordIndex *context_rbegin, const WordIndex *const context_rend, unsigned char starting_order_minus_2, typename Search::Node &node, float *backoff_out, unsigned char &next_use, FullScoreReturn &ret) const;
+    
+    float InternalUnRest(const uint64_t *pointers_begin, const uint64_t *pointers_end, unsigned char first_length) const;
 
     // Appears after Size in the cc file.
     void SetupMemory(void *start, const std::vector<uint64_t> &counts, const Config &config);
@@ -120,7 +130,11 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 
     void InitializeFromARPA(const char *file, const Config &config);
 
-    float InternalUnRest(const uint64_t *pointers_begin, const uint64_t *pointers_end, unsigned char first_length) const;
+    // Finish the binary file.  Usualy called by InitializeFromARPA but also called externally.
+    void ExternalFinish(const Config &config, const std::vector<uint64_t> &counts);
+
+    // Initialize parent/setup BeginSentence() etc. after values are initialized.
+    void InitParent();
 
     Backing &MutableBacking() { return backing_; }
 
@@ -140,6 +154,9 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 class name : public from {\
   public:\
     name(const char *file, const Config &config = Config()) : from(file, config) {}\
+  private:\
+    friend class lm::builder::Binarize;\
+    name(const std::vector<uint64_t> &counts, const Config &config) : from(counts, config) {}\
 };
 
 LM_NAME_MODEL(ProbingModel, detail::GenericModel<detail::HashedSearch<BackoffValue> LM_COMMA() ProbingVocabulary>);

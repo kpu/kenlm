@@ -70,6 +70,17 @@ void ReadWords(int fd, EnumerateVocab *enumerate, WordIndex expected_count) {
   UTIL_THROW_IF(expected_count != index, FormatLoadException, "The binary file has the wrong number of words at the end.  This could be caused by a truncated binary file.");
 }
 
+// Constructor ordering madness.
+namespace {
+int SeekAndReturn(int fd, uint64_t start) {
+  util::SeekOrThrow(fd, start);
+  return fd;
+}
+} // namespace
+
+SizedWriteWordsWrapper::SizedWriteWordsWrapper(EnumerateVocab *inner, int fd, uint64_t start) 
+  : inner_(inner), stream_(SeekAndReturn(fd, start)) {}
+
 WriteWordsWrapper::WriteWordsWrapper(EnumerateVocab *inner) : inner_(inner) {}
 WriteWordsWrapper::~WriteWordsWrapper() {}
 
@@ -82,6 +93,9 @@ void WriteWordsWrapper::Add(WordIndex index, const StringPiece &str) {
 void WriteWordsWrapper::Write(int fd, uint64_t start) {
   util::SeekOrThrow(fd, start);
   util::WriteOrThrow(fd, buffer_.data(), buffer_.size());
+  // Free memory from the string.
+  std::string for_swap;
+  std::swap(buffer_, for_swap);
 }
 
 SortedVocabulary::SortedVocabulary() : begin_(NULL), end_(NULL), enumerate_(NULL) {}

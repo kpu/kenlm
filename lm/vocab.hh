@@ -4,6 +4,7 @@
 #include "lm/enumerate_vocab.hh"
 #include "lm/lm_exception.hh"
 #include "lm/virtual_interface.hh"
+#include "util/fake_ofstream.hh"
 #include "util/pool.hh"
 #include "util/probing_hash_table.hh"
 #include "util/sorted_uniform.hh"
@@ -31,6 +32,24 @@ class ProbingVocabularyHeader;
 // For internal use.  Assumes the file has been seeked appropriately.
 void ReadWords(int fd, EnumerateVocab *enumerate, WordIndex expected_count);
 
+class SizedWriteWordsWrapper : public EnumerateVocab {
+  public:
+    SizedWriteWordsWrapper(EnumerateVocab *inner, int fd, uint64_t start);
+
+    ~SizedWriteWordsWrapper() {}
+
+    void Add(WordIndex index, const StringPiece &str) {
+      stream_ << str << '\0';
+      if (inner_) inner_->Add(index, str);
+    }
+
+  private:
+    EnumerateVocab *inner_;
+
+    util::FakeOFStream stream_;
+};
+
+// When the binary size isn't known yet.
 class WriteWordsWrapper : public EnumerateVocab {
   public:
     WriteWordsWrapper(EnumerateVocab *inner);

@@ -36,18 +36,14 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
 
 template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) {
   LoadLM(file, config, *this);
+  InitParent();
+}
 
-  // g++ prints warnings unless these are fully initialized.
-  State begin_sentence = State();
-  begin_sentence.length = 1;
-  begin_sentence.words[0] = vocab_.BeginSentence();
-  typename Search::Node ignored_node;
-  bool ignored_independent_left;
-  uint64_t ignored_extend_left;
-  begin_sentence.backoff[0] = search_.LookupUnigram(begin_sentence.words[0], ignored_node, ignored_independent_left, ignored_extend_left).Backoff();
-  State null_context = State();
-  null_context.length = 0;
-  P::Init(begin_sentence, null_context, vocab_, search_.Order());
+template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const std::vector<uint64_t> &counts, const Config &config) {
+  std::size_t vocab_size = util::CheckOverflow(VocabularyT::Size(counts[0], config));
+  // Setup the binary file for writing the vocab lookup table.  The search_ is responsible for growing the binary file to its needs.
+  vocab_.SetupMemory(SetupJustVocab(config, counts.size(), vocab_size, backing_), vocab_size, counts[0], config);
+  //search_.SetupMemory(GrowForSearch(config, 0, Search::Size(counts, config), backing_), counts, config);
 }
 
 namespace {
@@ -104,6 +100,25 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     e << " Byte: " << f.Offset();
     throw;
   }
+}
+
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::ExternalFinish(const Config &config, const std::vector<uint64_t> &counts) {
+  FinishFile(config, kModelType, kVersion, counts, vocab_.UnkCountChangePadding(), backing_);
+  InitParent();
+}
+
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitParent() {
+  // g++ prints warnings unless these are fully initialized.
+  State begin_sentence = State();
+  begin_sentence.length = 1;
+  begin_sentence.words[0] = vocab_.BeginSentence();
+  typename Search::Node ignored_node;
+  bool ignored_independent_left;
+  uint64_t ignored_extend_left;
+  begin_sentence.backoff[0] = search_.LookupUnigram(begin_sentence.words[0], ignored_node, ignored_independent_left, ignored_extend_left).Backoff();
+  State null_context = State();
+  null_context.length = 0;
+  P::Init(begin_sentence, null_context, vocab_, search_.Order());
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {

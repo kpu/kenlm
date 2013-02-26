@@ -3,6 +3,7 @@ fakelib builder : [ glob *.cc : *test.cc *main.cc ]
   : : : <library>/top//boost_thread $(timer-link) ;
 
 exe lmplz : lmplz_main.cc builder /top//boost_program_options ;
+exe make_trie : make_trie_main.cc builder ;
 
 import testing ;
 unit-test corpus_count_test : corpus_count_test.cc builder /top//boost_unit_test_framework ;

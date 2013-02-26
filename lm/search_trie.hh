@@ -15,6 +15,9 @@
 #include <assert.h>
 
 namespace lm {
+
+namespace builder { class Binarize; }
+
 namespace ngram {
 struct Backing;
 class SortedVocabulary;
@@ -100,8 +103,13 @@ template <class Quant, class Bhiksha> class TrieSearch {
       return true;
     }
 
+    // For building directly from text.
+    void ExternalInsert(unsigned int order, WordIndex last_word, const ProbBackoff &payload);
+    void ExternalFinished(const Config &config, WordIndex unigram_count_inc_unk);
+
   private:
     friend void BuildTrie<Quant, Bhiksha>(SortedFiles &files, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing);
+    friend class lm::builder::Binarize;
 
     // Middles are managed manually so we can delay construction and they don't have to be copyable.  
     void FreeMiddles() {
