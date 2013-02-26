@@ -1,5 +1,6 @@
 #include "lm/builder/interpolate.hh"
 
+#include "lm/blank.hh"
 #include "lm/builder/joint_order.hh"
 #include "lm/builder/multi_stream.hh"
 #include "lm/builder/sort.hh"
@@ -36,10 +37,11 @@ class Callback {
       // TODO: this is a hack to skip n-grams that don't appear as context.  Pruning will require some different handling.  
       if (order_minus_1 < backoffs_.size() && *(gram.end() - 1) != kUNK && *(gram.end() - 1) != kEOS) {
         pay.complete.backoff = log10(*static_cast<const float*>(backoffs_[order_minus_1].Get()));
+        ngram::SetExtension(pay.complete.backoff);
         ++backoffs_[order_minus_1];
       } else {
         // Not a context.  
-        pay.complete.backoff = 0.0;
+        pay.complete.backoff = ngram::kNoExtensionBackoff;
       }
     }
 
