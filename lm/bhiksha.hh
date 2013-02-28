@@ -40,7 +40,7 @@ class DontBhiksha {
       return util::RequiredBits(max_next);
     }
 
-    DontBhiksha(const void *base, uint64_t max_offset, uint64_t max_next, const Config &config);
+    DontBhiksha(const util::Rolling &mem, uint64_t max_offset, uint64_t max_next, const Config &config);
 
     void ReadNext(const void *base, uint64_t bit_offset, uint64_t /*index*/, uint8_t total_bits, NodeRange &out) const {
       out.begin = util::ReadInt57(base, bit_offset, next_.bits, next_.mask);
@@ -72,7 +72,7 @@ class ArrayBhiksha {
 
     static uint8_t InlineBits(uint64_t max_offset, uint64_t max_next, const Config &config);
 
-    ArrayBhiksha(void *base, uint64_t max_offset, uint64_t max_value, const Config &config);
+    ArrayBhiksha(const util::Rolling &mem, uint64_t max_offset, uint64_t max_value, const Config &config);
 
     void ReadNext(const void *base, uint64_t bit_offset, uint64_t index, uint8_t total_bits, NodeRange &out) const {
       const uint64_t *begin_it = util::BinaryBelow(util::IdentityAccessor<uint64_t>(), offset_begin_, offset_end_, index);
@@ -89,7 +89,7 @@ class ArrayBhiksha {
     void WriteNext(void *base, uint64_t bit_offset, uint64_t index, uint64_t value) {
       uint64_t encode = value >> next_inline_.bits;
       for (; write_index_ <= encode; ++write_index_) {
-        *static_cast<uint64_t*>(mem_.checked_index(write_index_ * sizeof(uint64_t))) = index;
+        *static_cast<uint64_t*>(mem_.CheckedIndex(write_index_ * sizeof(uint64_t))) = index;
       }
       util::WriteInt57(base, bit_offset, next_inline_.bits, value & next_inline_.mask);
     }
@@ -103,12 +103,12 @@ class ArrayBhiksha {
   private:
     const util::BitsMask next_inline_;
 
+    util::Rolling mem_;
+
     const uint64_t *const offset_begin_;
     const uint64_t *const offset_end_;
 
     uint64_t write_index_;
-
-    util::Rolling mem_;
 };
 
 } // namespace trie

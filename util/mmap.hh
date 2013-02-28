@@ -117,7 +117,7 @@ class Rolling {
   public:
     Rolling() {}
 
-    Rolling(const Rolling &copy_from);
+    Rolling(const Rolling &copy_from, uint64_t increase = 0);
 
     explicit Rolling(void *data) { Init(data); }
 
@@ -125,28 +125,40 @@ class Rolling {
     void Init(void *data) {
       ptr_ = data;
       current_end_ = std::numeric_limits<uint64_t>::max();
+      // Mark as a pass-through.
+      fd_ = -1;
     }
 
     // For an actual rolling mmap.
     void Init(int fd, bool for_write, std::size_t block, uint64_t amount, uint64_t offset = 0);
 
+    void IncreaseBase(uint64_t by) {
+      file_begin_ += by;
+      ptr_ = static_cast<uint8_t*>(ptr_) + by;
+      if (!IsPassthrough()) current_end_ = 0;
+    }
+
     // Returns base pointer
     void *get() const { return ptr_; }
 
     // Returns base pointer.
-    void *checked_get(uint64_t index) {
+    void *CheckedGet(uint64_t index) {
       if (index >= current_end_) {
         Roll(index);
       }
       return ptr_;
     }
-
-    void *checked_index(uint64_t index) {
-      return static_cast<uint8_t*>(checked_get(index)) + index;
+    
+    // Returns indexed pointer.
+    void *CheckedIndex(uint64_t index) {
+      return static_cast<uint8_t*>(CheckedGet(index)) + index;
     }
 
   private:
     void Roll(uint64_t index);
+
+    // True if this is just a thin wrapper on a pointer.
+    bool IsPassthrough() const { return fd_ == -1; }
 
     void *ptr_;
     uint64_t current_end_;

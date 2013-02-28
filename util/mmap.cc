@@ -187,9 +187,9 @@ void *MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file) {
   }
 }
 
-Rolling::Rolling(const Rolling &copy_from) {
+Rolling::Rolling(const Rolling &copy_from, uint64_t increase) {
   // Force map on next checked_get.
-  current_end_ = 0;
+  current_end_ = copy_from.IsPassthrough() ? copy_from.current_end_ : 0;
   // If this is just a reference, copy the same reference.
   ptr_ = copy_from.ptr_;
   fd_ = copy_from.fd_;
@@ -197,6 +197,7 @@ Rolling::Rolling(const Rolling &copy_from) {
   file_end_ = copy_from.file_end_;
   for_write_ = copy_from.for_write_;
   block_ = copy_from.block_;
+  IncreaseBase(increase);
 }
 
 void Rolling::Init(int fd, bool for_write, std::size_t block, uint64_t amount, uint64_t offset) {
@@ -209,6 +210,8 @@ void Rolling::Init(int fd, bool for_write, std::size_t block, uint64_t amount, u
 }
 
 void Rolling::Roll(uint64_t index) {
+  std::cerr << "Roll " << index << std::endl;
+  assert(!IsPassthrough());
   mem_.reset();
 
   uint64_t offset = index + file_begin_;

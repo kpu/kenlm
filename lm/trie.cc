@@ -64,7 +64,7 @@ template <class Bhiksha> BitPackedMiddle<Bhiksha>::BitPackedMiddle(void *base, u
   BitPacked(),
   quant_bits_(quant_bits),
   // If the offset of the method changes, also change TrieSearch::UpdateConfigFromBinary.
-  bhiksha_(base, entries + 1, max_next, config),
+  bhiksha_(util::Rolling(base), entries + 1, max_next, config),
   next_source_(&next_source) {
   if (entries + 1 >= (1ULL << 57) || (max_next >= (1ULL << 57)))  UTIL_THROW(util::Exception, "Sorry, this does not support more than " << (1ULL << 57) << " n-grams of a particular order.  Edit util/bit_packing.hh and fix the bit packing functions.");
   base_.Init(reinterpret_cast<uint8_t*>(base) + Bhiksha::Size(entries + 1, max_next, config));
@@ -74,7 +74,7 @@ template <class Bhiksha> BitPackedMiddle<Bhiksha>::BitPackedMiddle(void *base, u
 template <class Bhiksha> util::BitAddress BitPackedMiddle<Bhiksha>::Insert(WordIndex word) {
   assert(word <= word_mask_);
   uint64_t at_pointer = insert_index_ * total_bits_;
-  base_.checked_get(at_pointer >> 3);
+  base_.CheckedGet(at_pointer >> 3);
   util::WriteInt57(base_.get(), at_pointer, word_bits_, word);
   at_pointer += word_bits_;
   util::BitAddress ret(base_.get(), at_pointer);
@@ -100,7 +100,7 @@ template <class Bhiksha> util::BitAddress BitPackedMiddle<Bhiksha>::Find(WordInd
 
 template <class Bhiksha> void BitPackedMiddle<Bhiksha>::FinishedLoading(uint64_t next_end, const Config &config) {
   uint64_t last_next_write = (insert_index_ + 1) * total_bits_ - bhiksha_.InlineBits();
-  base_.checked_get(last_next_write);
+  base_.CheckedGet(last_next_write);
   bhiksha_.WriteNext(base_.get(), last_next_write, insert_index_ + 1, next_end);
   bhiksha_.FinishedLoading(config);
 }
@@ -108,7 +108,7 @@ template <class Bhiksha> void BitPackedMiddle<Bhiksha>::FinishedLoading(uint64_t
 util::BitAddress BitPackedLongest::Insert(WordIndex index) {
   assert(index <= word_mask_);
   uint64_t at_pointer = insert_index_ * total_bits_;
-  base_.checked_get(at_pointer >> 3);
+  base_.CheckedGet(at_pointer >> 3);
   util::WriteInt57(base_.get(), at_pointer, word_bits_, index);
   at_pointer += word_bits_;
   ++insert_index_;

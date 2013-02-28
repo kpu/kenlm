@@ -9,7 +9,7 @@ namespace lm {
 namespace ngram {
 namespace trie {
 
-DontBhiksha::DontBhiksha(const void * /*base*/, uint64_t /*max_offset*/, uint64_t max_next, const Config &/*config*/) : 
+DontBhiksha::DontBhiksha(const util::Rolling & /*base*/, uint64_t /*max_offset*/, uint64_t max_next, const Config &/*config*/) : 
   next_(util::BitsMask::ByMax(max_next)) {}
 
 const uint8_t kArrayBhikshaVersion = 0;
@@ -60,29 +60,29 @@ uint8_t ArrayBhiksha::InlineBits(uint64_t max_offset, uint64_t max_next, const C
 
 namespace {
 
-void *AlignTo8(void *from) {
+std::size_t AlignTo8(void *from) {
   uint8_t *val = reinterpret_cast<uint8_t*>(from);
   std::size_t remainder = reinterpret_cast<std::size_t>(val) & 7;
-  if (!remainder) return val;
-  return val + 8 - remainder;
+  if (!remainder) return 0;
+  return 8 - remainder;
 }
 
 } // namespace
 
-ArrayBhiksha::ArrayBhiksha(void *base, uint64_t max_offset, uint64_t max_next, const Config &config)
+ArrayBhiksha::ArrayBhiksha(const util::Rolling &mem, uint64_t max_offset, uint64_t max_next, const Config &config)
   : next_inline_(util::BitsMask::ByBits(InlineBits(max_offset, max_next, config))),
-    offset_begin_(reinterpret_cast<const uint64_t*>(AlignTo8(base)) + 1 /* 8-byte header */),
+    mem_(mem, AlignTo8(mem.get())),
+    offset_begin_(static_cast<uint64_t*>(mem_.CheckedIndex(8 /* 8-byte header */))),
     offset_end_(offset_begin_ + ArrayCount(max_offset, max_next, config)),
-    write_index_(2), // 8-byte header and first entry is 0.
-    mem_(AlignTo8(base)) {}
+    write_index_(2) {} // 8-byte header and first entry is 0.
 
 void ArrayBhiksha::FinishedLoading(const Config &config) {
   // Two byte header padded to 8 bytes.
-  uint8_t *head_write = reinterpret_cast<uint8_t*>(mem_.checked_index(0));
+  uint8_t *head_write = reinterpret_cast<uint8_t*>(mem_.CheckedIndex(0));
   *(head_write++) = kArrayBhikshaVersion;
   *(head_write++) = config.pointer_bhiksha_bits;
   // First entry is 0.
-  *static_cast<uint64_t*>(mem_.checked_index(8)) = 0;
+  *static_cast<uint64_t*>(mem_.CheckedIndex(8)) = 0;
 }
 
 } // namespace trie
