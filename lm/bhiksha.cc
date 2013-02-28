@@ -73,21 +73,16 @@ ArrayBhiksha::ArrayBhiksha(void *base, uint64_t max_offset, uint64_t max_next, c
   : next_inline_(util::BitsMask::ByBits(InlineBits(max_offset, max_next, config))),
     offset_begin_(reinterpret_cast<const uint64_t*>(AlignTo8(base)) + 1 /* 8-byte header */),
     offset_end_(offset_begin_ + ArrayCount(max_offset, max_next, config)),
-    write_to_(reinterpret_cast<uint64_t*>(AlignTo8(base)) + 1 /* 8-byte header */ + 1 /* first entry is 0 */),
-    original_base_(base) {}
+    write_index_(2), // 8-byte header and first entry is 0.
+    mem_(AlignTo8(base)) {}
 
 void ArrayBhiksha::FinishedLoading(const Config &config) {
-  // *offset_begin_ = 0 but without a const_cast.
-  *(write_to_ - (write_to_ - offset_begin_)) = 0;
-
-  if (write_to_ != offset_end_) UTIL_THROW(util::Exception, "Did not get all the array entries that were expected.");
-
-  uint8_t *head_write = reinterpret_cast<uint8_t*>(original_base_);
+  // Two byte header padded to 8 bytes.
+  uint8_t *head_write = reinterpret_cast<uint8_t*>(mem_.checked_index(0));
   *(head_write++) = kArrayBhikshaVersion;
   *(head_write++) = config.pointer_bhiksha_bits;
-}
-
-void ArrayBhiksha::LoadedBinary() {
+  // First entry is 0.
+  *static_cast<uint64_t*>(mem_.checked_index(8)) = 0;
 }
 
 } // namespace trie

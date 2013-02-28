@@ -19,6 +19,7 @@
 #include "lm/model_type.hh"
 #include "lm/trie.hh"
 #include "util/bit_packing.hh"
+#include "util/mmap.hh"
 #include "util/sorted_uniform.hh"
 
 namespace lm {
@@ -87,13 +88,15 @@ class ArrayBhiksha {
 
     void WriteNext(void *base, uint64_t bit_offset, uint64_t index, uint64_t value) {
       uint64_t encode = value >> next_inline_.bits;
-      for (; write_to_ <= offset_begin_ + encode; ++write_to_) *write_to_ = index;
+      for (; write_index_ <= encode; ++write_index_) {
+        *static_cast<uint64_t*>(mem_.checked_index(write_index_ * sizeof(uint64_t))) = index;
+      }
       util::WriteInt57(base, bit_offset, next_inline_.bits, value & next_inline_.mask);
     }
 
     void FinishedLoading(const Config &config);
 
-    void LoadedBinary();
+    void LoadedBinary() {}
 
     uint8_t InlineBits() const { return next_inline_.bits; }
 
@@ -103,9 +106,9 @@ class ArrayBhiksha {
     const uint64_t *const offset_begin_;
     const uint64_t *const offset_end_;
 
-    uint64_t *write_to_;
+    uint64_t write_index_;
 
-    void *original_base_;
+    util::Rolling mem_;
 };
 
 } // namespace trie

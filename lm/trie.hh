@@ -4,6 +4,7 @@
 #include "lm/weights.hh"
 #include "lm/word_index.hh"
 #include "util/bit_packing.hh"
+#include "util/mmap.hh"
 
 #include <cstddef>
 
@@ -86,13 +87,13 @@ class BitPacked {
   protected:
     static uint64_t BaseSize(uint64_t entries, uint64_t max_vocab, uint8_t remaining_bits);
 
-    void BaseInit(void *base, uint64_t max_vocab, uint8_t remaining_bits);
+    void BaseInit(uint64_t max_vocab, uint8_t remaining_bits);
 
     uint8_t word_bits_;
     uint8_t total_bits_;
     uint64_t word_mask_;
 
-    uint8_t *base_;
+    util::Rolling base_;
 
     uint64_t insert_index_, max_vocab_;
 };
@@ -115,8 +116,8 @@ template <class Bhiksha> class BitPackedMiddle : public BitPacked {
     util::BitAddress ReadEntry(uint64_t pointer, NodeRange &range) {
       uint64_t addr = pointer * total_bits_;
       addr += word_bits_;
-      bhiksha_.ReadNext(base_, addr + quant_bits_, pointer, total_bits_, range);
-      return util::BitAddress(base_, addr);
+      bhiksha_.ReadNext(base_.get(), addr + quant_bits_, pointer, total_bits_, range);
+      return util::BitAddress(base_.get(), addr);
     }
 
   private:
@@ -135,7 +136,8 @@ class BitPackedLongest : public BitPacked {
     BitPackedLongest() {}
 
     void Init(void *base, uint8_t quant_bits, uint64_t max_vocab) {
-      BaseInit(base, max_vocab, quant_bits);
+      base_.Init(base);
+      BaseInit(max_vocab, quant_bits);
     }
 
     void LoadedBinary() {}

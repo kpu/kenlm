@@ -187,4 +187,38 @@ void *MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file) {
   }
 }
 
+Rolling::Rolling(const Rolling &copy_from) {
+  // Force map on next checked_get.
+  current_end_ = 0;
+  // If this is just a reference, copy the same reference.
+  ptr_ = copy_from.ptr_;
+  fd_ = copy_from.fd_;
+  file_begin_ = copy_from.file_begin_;
+  file_end_ = copy_from.file_end_;
+  for_write_ = copy_from.for_write_;
+  block_ = copy_from.block_;
+}
+
+void Rolling::Init(int fd, bool for_write, std::size_t block, uint64_t amount, uint64_t offset) {
+  current_end_ = 0;
+  fd_ = fd;
+  file_begin_ = offset;
+  file_end_ = offset + amount;
+  for_write_ = for_write;
+  block_ = block;
+}
+
+void Rolling::Roll(uint64_t index) {
+  mem_.reset();
+
+  uint64_t offset = index + file_begin_;
+  uint64_t amount = static_cast<std::size_t>(std::min<uint64_t>(static_cast<uint64_t>(block_), file_end_ - offset));
+  // Round down to multiple of page size.
+  uint64_t cruft = offset % static_cast<uint64_t>(SizePage());
+  std::size_t map_size = static_cast<std::size_t>(amount + cruft);
+  mem_.reset(MapOrThrow(map_size, for_write_, kFileFlags, true, fd_, offset - cruft), map_size, scoped_memory::MMAP_ALLOCATED);
+  ptr_ = static_cast<uint8_t*>(mem_.get()) + static_cast<std::size_t>(cruft) - index;
+  current_end_ = index + amount;
+}
+
 } // namespace util

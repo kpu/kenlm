@@ -43,7 +43,6 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   std::size_t vocab_size = util::CheckOverflow(VocabularyT::Size(counts[0], config));
   // Setup the binary file for writing the vocab lookup table.  The search_ is responsible for growing the binary file to its needs.
   vocab_.SetupMemory(SetupJustVocab(config, counts.size(), vocab_size, backing_), vocab_size, counts[0], config);
-  //search_.SetupMemory(GrowForSearch(config, 0, Search::Size(counts, config), backing_), counts, config);
 }
 
 namespace {
