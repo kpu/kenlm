@@ -25,7 +25,7 @@ class FakeOFStream {
         fd_(out) {}
 
     ~FakeOFStream() {
-      Flush();
+      if (buf_.get()) Flush();
     }
 
     FakeOFStream &operator<<(float value) {
@@ -69,9 +69,18 @@ class FakeOFStream {
       builder_.Reset();
     }
 
+    // Not necessary, but does assure the data is cleared.
+    void Finish() {
+      Flush();
+      // It will segfault trying to null terminate otherwise.
+      builder_.Finalize();
+      buf_.reset();
+      util::FSyncOrThrow(fd_);
+    }
+
   private:
     void EnsureRemaining(std::size_t amount) {
-      if (static_cast<std::size_t>(builder_.size() - builder_.position()) < amount) {
+      if (static_cast<std::size_t>(builder_.size() - builder_.position()) <= amount) {
         Flush();
       }
     }
