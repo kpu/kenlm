@@ -59,7 +59,11 @@ template <class Quant, class Bhiksha> class TrieSearch {
 
     ~TrieSearch() { FreeMiddles(); }
 
-    uint8_t *SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config);
+    void SetupMemory(uint8_t *mem, const std::vector<uint64_t> &counts, const Config &config) {
+      SetupMemory(util::Rolling(mem), counts, config);
+    }
+
+    void SetupMemory(util::Rolling mem, const std::vector<uint64_t> &counts, const Config &config);
 
     void LoadedBinary();
 
@@ -120,14 +124,17 @@ template <class Quant, class Bhiksha> class TrieSearch {
     }
 
     typedef trie::BitPackedMiddle<Bhiksha> Middle;
-
     typedef trie::BitPackedLongest Longest;
+    typedef ::lm::ngram::trie::Unigram Unigram;
+
+    // Used to keep the fixed mappings if SetupMemory was provided with a rolling map.
+    util::scoped_memory unigram_quant_backing_;
+
     Longest longest_;
 
     Middle *middle_begin_, *middle_end_;
     Quant quant_;
 
-    typedef ::lm::ngram::trie::Unigram Unigram;
     Unigram unigram_;
 };
 

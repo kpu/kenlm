@@ -25,13 +25,12 @@ template <class Search, class VocabularyT> uint64_t GenericModel<Search, Vocabul
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(void *base, const std::vector<uint64_t> &counts, const Config &config) {
-  size_t goal_size = util::CheckOverflow(Size(counts, config));
+  util::CheckOverflow(Size(counts, config));
   uint8_t *start = static_cast<uint8_t*>(base);
   size_t allocated = VocabularyT::Size(counts[0], config);
   vocab_.SetupMemory(start, allocated, counts[0], config);
   start += allocated;
-  start = search_.SetupMemory(start, counts, config);
-  if (static_cast<std::size_t>(start - static_cast<uint8_t*>(base)) != goal_size) UTIL_THROW(FormatLoadException, "The data structures took " << (start - static_cast<uint8_t*>(base)) << " but Size says they should take " << goal_size);
+  search_.SetupMemory(start, counts, config);
 }
 
 template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) {

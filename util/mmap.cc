@@ -193,6 +193,7 @@ Rolling::Rolling(const Rolling &copy_from, uint64_t increase) {
 }
 
 Rolling &Rolling::operator=(const Rolling &copy_from) {
+  current_begin_ = 0;
   // Force map on next checked_get.
   current_end_ = copy_from.IsPassthrough() ? copy_from.current_end_ : 0;
   // If this is just a reference, copy the same reference.
@@ -205,7 +206,8 @@ Rolling &Rolling::operator=(const Rolling &copy_from) {
   return *this;
 }
 
-void Rolling::Init(int fd, bool for_write, std::size_t block, std::size_t read_bound, uint64_t amount, uint64_t offset) {
+void Rolling::Init(int fd, bool for_write, std::size_t block, std::size_t read_bound, uint64_t offset, uint64_t amount) {
+  current_begin_ = 0;
   current_end_ = 0;
   fd_ = fd;
   file_begin_ = offset;
@@ -215,24 +217,30 @@ void Rolling::Init(int fd, bool for_write, std::size_t block, std::size_t read_b
   read_bound_ = read_bound;
 }
 
+void *Rolling::ExtractNonRolling(scoped_memory &out, uint64_t index, std::size_t size) {
+  out.reset();
+  if (IsPassthrough()) return static_cast<uint8_t*>(get()) + index;
+  uint64_t offset = index + file_begin_;
+  // Round down to multiple of page size.
+  uint64_t cruft = offset % static_cast<uint64_t>(SizePage());
+  std::size_t map_size = static_cast<std::size_t>(size + cruft);
+  out.reset(MapOrThrow(map_size, for_write_, kFileFlags, true, fd_, offset - cruft), map_size, scoped_memory::MMAP_ALLOCATED);
+  return static_cast<uint8_t*>(out.get()) + static_cast<std::size_t>(cruft);
+}
+
 void Rolling::Roll(uint64_t index) {
   assert(!IsPassthrough());
-  mem_.reset();
-
-  uint64_t offset = index + file_begin_;
-  uint64_t amount;
-  if (file_end_ - offset > static_cast<uint64_t>(block_)) {
+  std::size_t amount;
+  if (file_end_ - (index + file_begin_) > static_cast<uint64_t>(block_)) {
     amount = block_;
     current_end_ = index + amount - read_bound_;
   } else {
-    amount = file_end_ - offset;
+    amount = file_end_ - (index + file_begin_);
     current_end_ = index + amount;
   }
-  // Round down to multiple of page size.
-  uint64_t cruft = offset % static_cast<uint64_t>(SizePage());
-  std::size_t map_size = static_cast<std::size_t>(amount + cruft);
-  mem_.reset(MapOrThrow(map_size, for_write_, kFileFlags, true, fd_, offset - cruft), map_size, scoped_memory::MMAP_ALLOCATED);
-  ptr_ = static_cast<uint8_t*>(mem_.get()) + static_cast<std::size_t>(cruft) - index;
+  ptr_ = static_cast<uint8_t*>(ExtractNonRolling(mem_, index, amount)) - index;
+
+  current_begin_ = index;
 }
 
 } // namespace util

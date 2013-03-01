@@ -547,18 +547,20 @@ template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::ve
   out.ExternalFinished(config, counts[0]);
 }
 
-template <class Quant, class Bhiksha> uint8_t *TrieSearch<Quant, Bhiksha>::SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
+template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::SetupMemory(util::Rolling mem, const std::vector<uint64_t> &counts, const Config &config) {
+  std::size_t quant_size = Quant::Size(counts.size(), config);
+  std::size_t unigram_size = Unigram::Size(counts[0]);
+  uint8_t *start = static_cast<uint8_t*>(mem.ExtractNonRolling(unigram_quant_backing_, 0, quant_size + unigram_size));
   quant_.SetupMemory(start, counts.size(), config);
-  start += Quant::Size(counts.size(), config);
-  unigram_.Init(start);
-  start += Unigram::Size(counts[0]);
+  unigram_.Init(start + quant_size);
+  mem.IncreaseBase(quant_size + unigram_size);
   FreeMiddles();
   middle_begin_ = static_cast<Middle*>(malloc(sizeof(Middle) * (counts.size() - 2)));
   middle_end_ = middle_begin_ + (counts.size() - 2);
-  std::vector<uint8_t*> middle_starts(counts.size() - 2);
+  std::vector<util::Rolling> middle_starts(counts.size() - 2);
   for (unsigned char i = 2; i < counts.size(); ++i) {
-    middle_starts[i-2] = start;
-    start += Middle::Size(Quant::MiddleBits(config), counts[i-1], counts[0], counts[i], config);
+    middle_starts[i-2] = mem;
+    mem.IncreaseBase(Middle::Size(Quant::MiddleBits(config), counts[i-1], counts[0], counts[i], config));
   }
   // Crazy backwards thing so we initialize using pointers to ones that have already been initialized
   for (unsigned char i = counts.size() - 1; i >= 2; --i) {
@@ -571,8 +573,7 @@ template <class Quant, class Bhiksha> uint8_t *TrieSearch<Quant, Bhiksha>::Setup
         (i == counts.size() - 1) ? static_cast<const BitPacked&>(longest_) : static_cast<const BitPacked &>(middle_begin_[i-1]),
         config);
   }
-  longest_.Init(util::Rolling(start), quant_.LongestBits(config), counts[0]);
-  return start + Longest::Size(Quant::LongestBits(config), counts.back(), counts[0]);
+  longest_.Init(mem, quant_.LongestBits(config), counts[0]);
 }
 
 template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::LoadedBinary() {

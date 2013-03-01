@@ -126,12 +126,13 @@ class Rolling {
     void Init(void *data) {
       ptr_ = data;
       current_end_ = std::numeric_limits<uint64_t>::max();
+      current_begin_ = 0;
       // Mark as a pass-through.
       fd_ = -1;
     }
 
     // For an actual rolling mmap.
-    void Init(int fd, bool for_write, std::size_t block, std::size_t read_bound, uint64_t amount, uint64_t offset = 0);
+    void Init(int fd, bool for_write, std::size_t block, std::size_t read_bound, uint64_t offset, uint64_t amount);
 
     void IncreaseBase(uint64_t by) {
       file_begin_ += by;
@@ -139,12 +140,14 @@ class Rolling {
       if (!IsPassthrough()) current_end_ = 0;
     }
 
+    void *ExtractNonRolling(scoped_memory &out, uint64_t index, std::size_t size);
+
     // Returns base pointer
     void *get() const { return ptr_; }
 
     // Returns base pointer.
     void *CheckedGet(uint64_t index) {
-      if (index >= current_end_) {
+      if (index >= current_end_ || index < current_begin_) {
         Roll(index);
       }
       return ptr_;
@@ -162,6 +165,7 @@ class Rolling {
     bool IsPassthrough() const { return fd_ == -1; }
 
     void *ptr_;
+    uint64_t current_begin_;
     uint64_t current_end_;
     
     scoped_memory mem_;
