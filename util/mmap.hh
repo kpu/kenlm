@@ -122,6 +122,9 @@ class Rolling {
     Rolling(const Rolling &copy_from, uint64_t increase = 0);
     Rolling &operator=(const Rolling &copy_from);
 
+    // For an actual rolling mmap.
+    explicit Rolling(int fd, bool for_write, std::size_t block, std::size_t read_bound, uint64_t offset, uint64_t amount);
+
     // For a static mapping
     void Init(void *data) {
       ptr_ = data;
@@ -130,9 +133,6 @@ class Rolling {
       // Mark as a pass-through.
       fd_ = -1;
     }
-
-    // For an actual rolling mmap.
-    void Init(int fd, bool for_write, std::size_t block, std::size_t read_bound, uint64_t offset, uint64_t amount);
 
     void IncreaseBase(uint64_t by) {
       file_begin_ += by;

@@ -206,7 +206,7 @@ Rolling &Rolling::operator=(const Rolling &copy_from) {
   return *this;
 }
 
-void Rolling::Init(int fd, bool for_write, std::size_t block, std::size_t read_bound, uint64_t offset, uint64_t amount) {
+Rolling::Rolling(int fd, bool for_write, std::size_t block, std::size_t read_bound, uint64_t offset, uint64_t amount) {
   current_begin_ = 0;
   current_end_ = 0;
   fd_ = fd;

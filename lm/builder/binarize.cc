@@ -49,7 +49,10 @@ class Callback {
 void Binarize::Run(const ChainPositions &positions) {
   //// No need for unk padding space.
   //uint64_t write_words = model_.backing_.vocab.size() + Search::Size(counts, config);
-  model_.search_.SetupMemory(ngram::GrowForSearch(config_, 0, Search::Size(counts_, config_), model_.backing_), counts_, config_);
+  uint64_t search_size = Search::Size(counts_, config_);
+  util::ResizeOrThrow(model_.backing_.file.get(), model_.backing_.vocab.size() + search_size);
+  util::Rolling mem(model_.backing_.file.get(), true, 64 << 20, 24, model_.backing_.vocab.size(), search_size);
+  model_.search_.SetupMemory(mem, counts_, config_);
   Callback callback(model_.search_, end_sentence_);
   JointOrder<Callback, SuffixOrder>(positions, callback);
   model_.search_.ExternalFinished(config_, counts_[0]);

@@ -101,7 +101,7 @@ template <class Bhiksha> util::BitAddress BitPackedMiddle<Bhiksha>::Find(WordInd
 
 template <class Bhiksha> void BitPackedMiddle<Bhiksha>::FinishedLoading(uint64_t next_end, const Config &config) {
   uint64_t last_next_write = (insert_index_ + 1) * total_bits_ - bhiksha_.InlineBits();
-  base_.CheckedGet(last_next_write);
+  base_.CheckedGet(last_next_write >> 3);
   bhiksha_.WriteNext(base_.get(), last_next_write, insert_index_ + 1, next_end);
   bhiksha_.FinishedLoading(config);
 }
