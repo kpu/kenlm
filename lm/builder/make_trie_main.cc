@@ -32,6 +32,9 @@ int main() {
   for (unsigned i = 0; i < 5; ++i) {
     util::stream::ChainConfig config(lm::builder::NGram::TotalSize(i + 1), 2, sort_config.total_memory);
     util::stream::Chain chain(config);
+    std::cerr << "Reading order " << (i+1) << std::endl;
+    chain.ActivateProgress();
+    chain.SetProgressTarget(counts[i] * (8 + 4 * i));
     chain >> util::stream::Read(files[i].get()) >> lm::builder::Renumber(&mapping[0]);
     sorts.push_back(chain, sort_config, lm::builder::SuffixOrder(i + 1));
     chain.Wait();
@@ -40,8 +43,10 @@ int main() {
 
   std::size_t individual_memory = 1048576;
   lm::builder::Chains chains(5);
+  std::cerr << "Converting to trie." << std::endl;
   for (unsigned i = 0; i < 5; ++i) {
     chains.push_back(util::stream::ChainConfig(lm::builder::NGram::TotalSize(i + 1), 2, individual_memory));
+    if (i == 4) chains.back().ActivateProgress();
     sorts[i].Output(chains[i], lazy_memory);
   }
   chains >> boost::ref(binarize) >> util::stream::kRecycle;
