@@ -140,6 +140,12 @@ class Rolling {
       if (!IsPassthrough()) current_end_ = 0;
     }
 
+    void DecreaseBase(uint64_t by) {
+      file_begin_ -= by;
+      ptr_ = static_cast<uint8_t*>(ptr_) - by;
+      if (!IsPassthrough()) current_end_ = 0;
+    }
+
     void *ExtractNonRolling(scoped_memory &out, uint64_t index, std::size_t size);
 
     // Returns base pointer

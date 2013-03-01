@@ -88,8 +88,8 @@ class ArrayBhiksha {
 
     void WriteNext(void *base, uint64_t bit_offset, uint64_t index, uint64_t value) {
       uint64_t encode = value >> next_inline_.bits;
-      for (; write_index_ <= encode; ++write_index_) {
-        *static_cast<uint64_t*>(mem_.CheckedIndex(write_index_ * sizeof(uint64_t))) = index;
+      for (; write_index_ <= (encode + 1) * sizeof(uint64_t); write_index_ += sizeof(uint64_t)) {
+        *static_cast<uint64_t*>(mem_.CheckedIndex(write_index_)) = index;
       }
       util::WriteInt57(base, bit_offset, next_inline_.bits, value & next_inline_.mask);
     }
@@ -109,6 +109,8 @@ class ArrayBhiksha {
     const uint64_t *const offset_end_;
 
     uint64_t write_index_;
+
+    std::size_t aligned_;
 };
 
 } // namespace trie

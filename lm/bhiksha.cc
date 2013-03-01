@@ -74,15 +74,17 @@ ArrayBhiksha::ArrayBhiksha(const util::Rolling &mem, uint64_t max_offset, uint64
     mem_(mem, AlignTo8(mem.get())),
     offset_begin_(static_cast<uint64_t*>(mem_.CheckedIndex(8 /* 8-byte header */))),
     offset_end_(offset_begin_ + ArrayCount(max_offset, max_next, config)),
-    write_index_(2) {} // 8-byte header and first entry is 0.
+    write_index_(16),
+    aligned_(AlignTo8(mem.get())) {} // 8-byte header and first entry is 0.
 
 void ArrayBhiksha::FinishedLoading(const Config &config) {
+  mem_.DecreaseBase(aligned_);
   // Two byte header padded to 8 bytes.
   uint8_t *head_write = reinterpret_cast<uint8_t*>(mem_.CheckedIndex(0));
   *(head_write++) = kArrayBhikshaVersion;
   *(head_write++) = config.pointer_bhiksha_bits;
   // First entry is 0.
-  *static_cast<uint64_t*>(mem_.CheckedIndex(8)) = 0;
+  *static_cast<uint64_t*>(mem_.CheckedIndex(8 + aligned_)) = 0;
 }
 
 } // namespace trie
