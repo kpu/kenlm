@@ -116,10 +116,11 @@ void SyncOrThrow(void *start, size_t length);
 class Rolling {
   public:
     Rolling() {}
+    
+    explicit Rolling(void *data) { Init(data); }
 
     Rolling(const Rolling &copy_from, uint64_t increase = 0);
-
-    explicit Rolling(void *data) { Init(data); }
+    Rolling &operator=(const Rolling &copy_from);
 
     // For a static mapping
     void Init(void *data) {
@@ -130,7 +131,7 @@ class Rolling {
     }
 
     // For an actual rolling mmap.
-    void Init(int fd, bool for_write, std::size_t block, uint64_t amount, uint64_t offset = 0);
+    void Init(int fd, bool for_write, std::size_t block, std::size_t read_bound, uint64_t amount, uint64_t offset = 0);
 
     void IncreaseBase(uint64_t by) {
       file_begin_ += by;
@@ -171,6 +172,7 @@ class Rolling {
 
     bool for_write_;
     std::size_t block_;
+    std::size_t read_bound_;
 };
 
 } // namespace util

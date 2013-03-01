@@ -103,7 +103,7 @@ template <class Bhiksha> class BitPackedMiddle : public BitPacked {
     static uint64_t Size(uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const Config &config);
 
     // next_source need not be initialized.  
-    BitPackedMiddle(void *base, uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const BitPacked &next_source, const Config &config);
+    BitPackedMiddle(const util::Rolling &mem, uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const BitPacked &next_source, const Config &config);
 
     util::BitAddress Insert(WordIndex word);
 
@@ -135,8 +135,8 @@ class BitPackedLongest : public BitPacked {
 
     BitPackedLongest() {}
 
-    void Init(void *base, uint8_t quant_bits, uint64_t max_vocab) {
-      base_.Init(base);
+    void Init(const util::Rolling &mem, uint8_t quant_bits, uint64_t max_vocab) {
+      base_ = mem;
       BaseInit(max_vocab, quant_bits);
     }
 

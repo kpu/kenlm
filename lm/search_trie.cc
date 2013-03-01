@@ -563,7 +563,7 @@ template <class Quant, class Bhiksha> uint8_t *TrieSearch<Quant, Bhiksha>::Setup
   // Crazy backwards thing so we initialize using pointers to ones that have already been initialized
   for (unsigned char i = counts.size() - 1; i >= 2; --i) {
     new (middle_begin_ + i - 2) Middle(
-        middle_starts[i-2],
+        util::Rolling(middle_starts[i-2]),
         quant_.MiddleBits(config),
         counts[i-1],
         counts[0],
@@ -571,7 +571,7 @@ template <class Quant, class Bhiksha> uint8_t *TrieSearch<Quant, Bhiksha>::Setup
         (i == counts.size() - 1) ? static_cast<const BitPacked&>(longest_) : static_cast<const BitPacked &>(middle_begin_[i-1]),
         config);
   }
-  longest_.Init(start, quant_.LongestBits(config), counts[0]);
+  longest_.Init(util::Rolling(start), quant_.LongestBits(config), counts[0]);
   return start + Longest::Size(Quant::LongestBits(config), counts.back(), counts[0]);
 }
 

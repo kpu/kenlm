@@ -60,14 +60,15 @@ template <class Bhiksha> uint64_t BitPackedMiddle<Bhiksha>::Size(uint8_t quant_b
   return Bhiksha::Size(entries + 1, max_ptr, config) + BaseSize(entries, max_vocab, quant_bits + Bhiksha::InlineBits(entries + 1, max_ptr, config));
 }
 
-template <class Bhiksha> BitPackedMiddle<Bhiksha>::BitPackedMiddle(void *base, uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const BitPacked &next_source, const Config &config) :
+template <class Bhiksha> BitPackedMiddle<Bhiksha>::BitPackedMiddle(const util::Rolling &rolling, uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const BitPacked &next_source, const Config &config) :
   BitPacked(),
   quant_bits_(quant_bits),
   // If the offset of the method changes, also change TrieSearch::UpdateConfigFromBinary.
-  bhiksha_(util::Rolling(base), entries + 1, max_next, config),
+  bhiksha_(rolling, entries + 1, max_next, config),
   next_source_(&next_source) {
   if (entries + 1 >= (1ULL << 57) || (max_next >= (1ULL << 57)))  UTIL_THROW(util::Exception, "Sorry, this does not support more than " << (1ULL << 57) << " n-grams of a particular order.  Edit util/bit_packing.hh and fix the bit packing functions.");
-  base_.Init(reinterpret_cast<uint8_t*>(base) + Bhiksha::Size(entries + 1, max_next, config));
+  base_ = rolling;
+  base_.IncreaseBase(Bhiksha::Size(entries + 1, max_next, config));
   BaseInit(max_vocab, quant_bits_ + bhiksha_.InlineBits());
 }
 
