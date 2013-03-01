@@ -6,7 +6,7 @@
 #
 #zlib and Boost >= 1.36.0 are required.  Don't have Boost?  You can compile the
 #queries part with ./compile_query_only.sh .  
-#--with=boost=/path/to/boost uses a Boost install from a custom path.
+#--with-boost=/path/to/boost uses a Boost install from a custom path.
 #
 #The following optional packages are autodetected:
 #libtcmalloc_minimal from google-perftools

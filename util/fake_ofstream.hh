@@ -80,7 +80,7 @@ class FakeOFStream {
 
   private:
     void EnsureRemaining(std::size_t amount) {
-      if (static_cast<std::size_t>(builder_.size() - builder_.position()) < amount) {
+      if (static_cast<std::size_t>(builder_.size() - builder_.position()) <= amount) {
         Flush();
       }
     }
