@@ -18,7 +18,14 @@ cdef extern from "lm/model.hh" namespace "lm::ngram":
         WordIndex EndSentence()
         WordIndex NotFound()
 
+    cdef cppclass SortedVocabulary:
+        WordIndex Index(char*)
+        WordIndex BeginSentence() 
+        WordIndex EndSentence()
+        WordIndex NotFound()
+
     ctypedef Vocabulary const_Vocabulary "const lm::ngram::Vocabulary"
+    ctypedef SortedVocabulary const_SortedVocabulary "const lm::ngram::SortedVocabulary"
 
     cdef cppclass Model:
         Model(char*) except +
@@ -26,5 +33,14 @@ cdef extern from "lm/model.hh" namespace "lm::ngram":
         State &NullContextState()
         unsigned int Order()
         const_Vocabulary& GetVocabulary()
+        float Score(State &in_state, WordIndex new_word, State &out_state)
+        FullScoreReturn FullScore(State &in_state, WordIndex new_word, State &out_state)
+
+    cdef cppclass QuantArrayTrieModel:
+        QuantArrayTrieModel(char*) except +
+        State &BeginSentenceState()
+        State &NullContextState()
+        unsigned int Order()
+        const_SortedVocabulary& GetVocabulary()
         float Score(State &in_state, WordIndex new_word, State &out_state)
         FullScoreReturn FullScore(State &in_state, WordIndex new_word, State &out_state)
