@@ -3,11 +3,12 @@
 #include "lm/builder/joint_order.hh"
 #include "lm/builder/ngram.hh"
 #include "lm/builder/sort.hh"
+#include "lm/quantize.hh"
 
 namespace lm { namespace builder {
 
 namespace {
-typedef ngram::trie::TrieSearch<ngram::DontQuantize, ngram::trie::ArrayBhiksha> Search;
+typedef ngram::trie::TrieSearch<ngram::SeparatelyQuantize, ngram::trie::ArrayBhiksha> Search;
 } // namespace
 
 Binarize::Binarize(const std::vector<uint64_t> &counts, const ngram::Config &config, int vocab_file, std::vector<WordIndex> &mapping)
@@ -20,6 +21,10 @@ Binarize::Binarize(const std::vector<uint64_t> &counts, const ngram::Config &con
   }
   end_sentence_ = model_.vocab_.EndSentence();
   // TODO: forget vocab?
+  uint64_t search_size = Search::Size(counts_, config_);
+  util::ResizeOrThrow(model_.backing_.file.get(), model_.backing_.vocab.size() + search_size);
+  util::Rolling mem(model_.backing_.file.get(), true, 64 << 20, 24, model_.backing_.vocab.size(), search_size);
+  model_.search_.SetupMemory(mem, counts_, config_);
 }
 
 namespace {
@@ -47,12 +52,6 @@ class Callback {
 } // namespace
 
 void Binarize::Run(const ChainPositions &positions) {
-  //// No need for unk padding space.
-  //uint64_t write_words = model_.backing_.vocab.size() + Search::Size(counts, config);
-  uint64_t search_size = Search::Size(counts_, config_);
-  util::ResizeOrThrow(model_.backing_.file.get(), model_.backing_.vocab.size() + search_size);
-  util::Rolling mem(model_.backing_.file.get(), true, 64 << 20, 24, model_.backing_.vocab.size(), search_size);
-  model_.search_.SetupMemory(mem, counts_, config_);
   Callback callback(model_.search_, end_sentence_);
   JointOrder<Callback, SuffixOrder>(positions, callback);
   model_.search_.ExternalFinished(config_, counts_[0]);

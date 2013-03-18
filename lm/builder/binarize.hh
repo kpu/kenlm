@@ -17,9 +17,11 @@ class ChainPositions;
 
 class Binarize {
   private:
-    typedef ngram::ArrayTrieModel Model;
+    typedef ngram::QuantArrayTrieModel Model;
   public:
     Binarize(const std::vector<uint64_t> &counts, const ngram::Config &config, int vocab_file, std::vector<WordIndex> &mapping);
+
+    ngram::SeparatelyQuantize &Quantizer() { return model_.search_.quant_; }
 
     void Run(const ChainPositions &positions);
 

@@ -92,7 +92,7 @@ class DontQuantize {
 };
 
 class SeparatelyQuantize {
-  private:
+  public:
     class Bins {
       public:
         // Sigh C++ default constructor
@@ -100,7 +100,7 @@ class SeparatelyQuantize {
 
         Bins(uint8_t bits, float *begin) : begin_(begin), end_(begin_ + (1ULL << bits)), bits_(bits), mask_((1ULL << bits) - 1) {}
 
-        float *Populate() { return begin_; }
+        float *Populate() const { return begin_; }
 
         uint64_t EncodeProb(float value) const {
           return Encode(value, 0);
@@ -133,7 +133,6 @@ class SeparatelyQuantize {
         uint64_t mask_;
     };
 
-  public:
     static const ModelType kModelTypeAdd = kQuantAdd;
 
     static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config);
@@ -150,7 +149,7 @@ class SeparatelyQuantize {
 
     class MiddlePointer {
       public:
-        MiddlePointer(const SeparatelyQuantize &quant, unsigned char order_minus_2, const util::BitAddress &address) : bins_(quant.GetTables(order_minus_2)), address_(address) {}
+        MiddlePointer(const SeparatelyQuantize &quant, unsigned char order_minus_2, const util::BitAddress &address) : bins_(quant.MiddleTable(order_minus_2)), address_(address) {}
 
         MiddlePointer() : address_(NULL, 0) {}
 
@@ -212,9 +211,11 @@ class SeparatelyQuantize {
 
     void FinishedLoading(const Config &config);
 
-    const Bins *GetTables(unsigned char order_minus_2) const { return tables_[order_minus_2]; }
+    const Bins *MiddleTable(unsigned char order_minus_2) const { return tables_[order_minus_2]; }
+    Bins *MiddleTable(unsigned char order_minus_2) { return tables_[order_minus_2]; }
 
     const Bins &LongestTable() const { return longest_; }
+    Bins &LongestTable() { return longest_; }
 
   private:
     Bins tables_[KENLM_MAX_ORDER - 1][2];

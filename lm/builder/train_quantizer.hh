@@ -2,15 +2,18 @@
 #ifndef LM_BUILDER_TRAIN_QUANTIZER_H__
 #define LM_BUILDER_TRAIN_QUANTIZER_H__
 
+#include "lm/quantize.hh"
 #include "util/probing_hash_table.hh"
 #include "util/scoped.hh"
 #include "util/stream/chain.hh"
 #include "util/stream/sort.hh"
 
+#include <boost/noncopyable.hpp>
 #include <boost/functional/hash/hash.hpp>
 
 #include <functional>
 
+#include <math.h>
 #include <stdint.h>
 
 namespace lm { namespace builder {
@@ -43,7 +46,7 @@ struct CombineFloatCount {
 };
 
 // Deduplicate numbers and write them to a chain.
-class QuantizeCollector {
+class QuantizeCollector : boost::noncopyable {
   private:
     struct TableEntry {
       typedef FloatCount *Key;
@@ -81,11 +84,12 @@ class QuantizeCollector {
       entry.key = current_;
       Table::MutableIterator found;
       if (table_.FindOrInsert(entry, found)) {
+        ++(found->key->count);
+      } else {
         current_->count = 1;
         ++current_;
-      } else {
-        ++(found->key->count);
       }
+      ++count_;
     }
 
     void Finish() {
@@ -93,6 +97,8 @@ class QuantizeCollector {
       table_backing_.reset();
       block_.Poison();
     }
+
+    uint64_t Count() const { return count_; }
 
   private:
     void Flush();
@@ -105,28 +111,35 @@ class QuantizeCollector {
     FloatCount *current_, *end_;
 
     util::stream::Link block_;
+
+    uint64_t count_;
 };
 
-class QuantizeTrainer {
+class QuantizeTrainer : boost::noncopyable {
   public:
-    QuantizeTrainer(
-        const util::stream::SortConfig &sort,
-        std::size_t adding_memory, // Amount of memory to use in the Add phase.
-        std::size_t block_count);
+    struct Config {
+      util::stream::SortConfig sort;
+      std::size_t adding_memory; // Amount of memory to use in the Add phase.
+      std::size_t block_count;
+
+      Config HalfAdding() const {
+        Config ret;
+        ret.sort = sort;
+        ret.adding_memory = adding_memory / 2;
+        ret.block_count = block_count;
+        return ret;
+      }
+    };
+
+    explicit QuantizeTrainer(const Config &config);
 
     void Add(float value) {
       collector_.Add(value);
-      ++count_;
     }
 
     void FinishedAdding() {
       collector_.Finish();
       chain_.Wait(true);
-    }
-
-    std::size_t Merge(std::size_t lazy_memory) {
-      lazy_memory_ = sort_.Merge(lazy_memory);
-      return lazy_memory_;
     }
 
     void Train(float *centers, std::size_t center_count);
@@ -138,9 +151,31 @@ class QuantizeTrainer {
 
     util::stream::Sort<CompareFloatCount, CombineFloatCount> sort_;
 
-    uint64_t count_;
-
     std::size_t lazy_memory_;
+};
+
+class QuantizeProbBackoff {
+  public:
+    QuantizeProbBackoff(const QuantizeTrainer::Config &config);
+
+    void Run(const util::stream::ChainPosition &position);
+
+    void Train(ngram::SeparatelyQuantize::Bins *out);
+
+  private:
+    QuantizeTrainer prob_, backoff_;
+};
+
+class QuantizeProb {
+  public:
+    QuantizeProb(const QuantizeTrainer::Config &config);
+
+    void Run(const util::stream::ChainPosition &position);
+
+    void Train(ngram::SeparatelyQuantize::Bins &out);
+
+  private:
+    QuantizeTrainer prob_;
 };
 
 }} // namespaces
