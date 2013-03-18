@@ -152,7 +152,7 @@ class Rolling {
     void *get() const { return ptr_; }
 
     // Returns base pointer.
-    void *CheckedGet(uint64_t index) {
+    void *CheckedBase(uint64_t index) {
       if (index >= current_end_ || index < current_begin_) {
         Roll(index);
       }
@@ -161,7 +161,7 @@ class Rolling {
     
     // Returns indexed pointer.
     void *CheckedIndex(uint64_t index) {
-      return static_cast<uint8_t*>(CheckedGet(index)) + index;
+      return static_cast<uint8_t*>(CheckedBase(index)) + index;
     }
 
   private:

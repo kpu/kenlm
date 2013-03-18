@@ -75,7 +75,7 @@ template <class Bhiksha> BitPackedMiddle<Bhiksha>::BitPackedMiddle(const util::R
 template <class Bhiksha> util::BitAddress BitPackedMiddle<Bhiksha>::Insert(WordIndex word) {
   assert(word <= word_mask_);
   uint64_t at_pointer = insert_index_ * total_bits_;
-  base_.CheckedGet(at_pointer >> 3);
+  base_.CheckedBase(at_pointer >> 3);
   util::WriteInt57(base_.get(), at_pointer, word_bits_, word);
   at_pointer += word_bits_;
   util::BitAddress ret(base_.get(), at_pointer);
@@ -101,7 +101,7 @@ template <class Bhiksha> util::BitAddress BitPackedMiddle<Bhiksha>::Find(WordInd
 
 template <class Bhiksha> void BitPackedMiddle<Bhiksha>::FinishedLoading(uint64_t next_end, const Config &config) {
   uint64_t last_next_write = (insert_index_ + 1) * total_bits_ - bhiksha_.InlineBits();
-  base_.CheckedGet(last_next_write >> 3);
+  base_.CheckedBase(last_next_write >> 3);
   bhiksha_.WriteNext(base_.get(), last_next_write, insert_index_ + 1, next_end);
   bhiksha_.FinishedLoading(config);
 }
@@ -109,7 +109,7 @@ template <class Bhiksha> void BitPackedMiddle<Bhiksha>::FinishedLoading(uint64_t
 util::BitAddress BitPackedLongest::Insert(WordIndex index) {
   assert(index <= word_mask_);
   uint64_t at_pointer = insert_index_ * total_bits_;
-  base_.CheckedGet(at_pointer >> 3);
+  base_.CheckedBase(at_pointer >> 3);
   util::WriteInt57(base_.get(), at_pointer, word_bits_, index);
   at_pointer += word_bits_;
   ++insert_index_;

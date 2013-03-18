@@ -549,11 +549,12 @@ template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::ve
 
 template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::SetupMemory(util::Rolling mem, const std::vector<uint64_t> &counts, const Config &config) {
   std::size_t quant_size = Quant::Size(counts.size(), config);
-  std::size_t unigram_size = Unigram::Size(counts[0]);
-  uint8_t *start = static_cast<uint8_t*>(mem.ExtractNonRolling(unigram_quant_backing_, 0, quant_size + unigram_size));
-  quant_.SetupMemory(start, counts.size(), config);
-  unigram_.Init(start + quant_size);
-  mem.IncreaseBase(quant_size + unigram_size);
+  quant_.SetupMemory(static_cast<uint8_t*>(mem.ExtractNonRolling(quant_backing_, 0, quant_size)), counts.size(), config);
+  mem.IncreaseBase(quant_size);
+
+  unigram_.Init(mem);
+  mem.IncreaseBase(Unigram::Size(counts[0]));
+
   FreeMiddles();
   middle_begin_ = static_cast<Middle*>(malloc(sizeof(Middle) * (counts.size() - 2)));
   middle_end_ = middle_begin_ + (counts.size() - 2);
@@ -601,7 +602,7 @@ template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::Initializ
 
 template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::ExternalInsert(unsigned int order, WordIndex last_word, const ProbBackoff &weights) {
   if (order == 1) {
-    UnigramValue &value = unigram_.Raw()[last_word];
+    UnigramValue &value = unigram_.CheckedIndex(last_word);
     value.next = (middle_begin_ == middle_end_) ? longest_.InsertIndex() : middle_begin_->InsertIndex();
     value.weights = weights;
     return;
@@ -617,7 +618,7 @@ template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::ExternalI
 
 template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::ExternalFinished(const Config &config, WordIndex unigram_count_inc_unk) {
   uint64_t unigram_next = (middle_begin_ == middle_end_) ? longest_.InsertIndex() : middle_begin_->InsertIndex();
-  unigram_.Raw()[unigram_count_inc_unk].next = unigram_next;
+  unigram_.CheckedIndex(unigram_count_inc_unk).next = unigram_next;
   if (middle_begin_ != middle_end_) {
     for (typename TrieSearch<Quant, Bhiksha>::Middle *i = middle_begin_; i != middle_end_ - 1; ++i) {
       i->FinishedLoading((i+1)->InsertIndex(), config);

@@ -46,8 +46,8 @@ class Unigram {
   public:
     Unigram() {}
     
-    void Init(void *start) {
-      unigram_ = static_cast<UnigramValue*>(start);
+    void Init(const util::Rolling &mem) {
+      base_ = mem;
     }
     
     static uint64_t Size(uint64_t count) {
@@ -55,25 +55,38 @@ class Unigram {
       return (count + 2) * sizeof(UnigramValue);
     }
     
-    const ProbBackoff &Lookup(WordIndex index) const { return unigram_[index].weights; }
+    const ProbBackoff &Lookup(WordIndex word) const {
+      return UncheckedIndex(word).weights;
+    }
     
-    ProbBackoff &Unknown() { return unigram_[0].weights; }
+    ProbBackoff &Unknown() {
+      return CheckedIndex(0).weights;
+    }
 
     UnigramValue *Raw() {
-      return unigram_;
+      return static_cast<UnigramValue*>(base_.get());
+    }
+
+    UnigramValue &CheckedIndex(WordIndex word) {
+      return *static_cast<UnigramValue*>(base_.CheckedIndex(sizeof(UnigramValue) * word));
     }
     
     void LoadedBinary() {}
 
     UnigramPointer Find(WordIndex word, NodeRange &next) const {
-      UnigramValue *val = unigram_ + word;
+      const UnigramValue *val = &UncheckedIndex(word);
       next.begin = val->next;
       next.end = (val+1)->next;
+      assert(next.end >= next.begin);
       return UnigramPointer(val->weights);
     }
 
   private:
-    UnigramValue *unigram_;
+    const UnigramValue &UncheckedIndex(WordIndex word) const {
+      return *(static_cast<const UnigramValue*>(base_.get()) + word);
+    }
+
+    util::Rolling base_;
 };  
 
 class BitPacked {

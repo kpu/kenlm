@@ -128,7 +128,7 @@ template <class Quant, class Bhiksha> class TrieSearch {
     typedef ::lm::ngram::trie::Unigram Unigram;
 
     // Used to keep the fixed mappings if SetupMemory was provided with a rolling map.
-    util::scoped_memory unigram_quant_backing_;
+    util::scoped_memory quant_backing_;
 
     Longest longest_;
 
