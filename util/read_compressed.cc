@@ -180,12 +180,73 @@ class GZip : public ReadBase {
 };
 #endif // HAVE_ZLIB
 
+const uint8_t kBZMagic[3] = {'B', 'Z', 'h'};
+
 #ifdef HAVE_BZLIB
 class BZip : public ReadBase {
   public:
-    explicit BZip(int fd, void *already_data, std::size_t already_size) {
+    BZip(int fd, void *already_data, std::size_t already_size) {
       scoped_fd hold(fd);
       closer_.reset(FDOpenReadOrThrow(hold));
+      file_ = NULL;
+      Open(already_data, already_size);
+    }
+
+    BZip(FILE *file, void *already_data, std::size_t already_size) {
+      closer_.reset(file);
+      file_ = NULL;
+      Open(already_data, already_size);
+    }
+
+    ~BZip() {
+      Close(file_);
+    }
+
+    std::size_t Read(void *to, std::size_t amount, ReadCompressed &thunk) {
+      assert(file_);
+      int bzerror = BZ_OK;
+      int ret = BZ2_bzRead(&bzerror, file_, to, std::min<std::size_t>(static_cast<std::size_t>(INT_MAX), amount));
+      long pos = ftell(closer_.get());
+      if (pos != -1) ReadCount(thunk) = pos;
+      switch (bzerror) {
+        case BZ_STREAM_END:
+          /* bzip2 files can be concatenated by e.g. pbzip2.  Annoyingly, the
+           * library doesn't handle this internally.  This gets the trailing
+           * data, grows it up to magic as needed, validates the magic, and
+           * reopens.
+           */
+          {
+            bzerror = BZ_OK;
+            void *trailing_data;
+            int trailing_size;
+            BZ2_bzReadGetUnused(&bzerror, file_, &trailing_data, &trailing_size);
+            UTIL_THROW_IF(bzerror != BZ_OK, BZException, "bzip2 error in BZ2_bzReadGetUnused " << BZ2_bzerror(file_, &bzerror) << " code " << bzerror);
+            std::string trailing(static_cast<const char*>(trailing_data), trailing_size);
+            Close(file_);
+
+            if (trailing_size < (int)sizeof(kBZMagic)) {
+              trailing.resize(sizeof(kBZMagic));
+              if (1 != fread(&trailing[trailing_size], sizeof(kBZMagic) - trailing_size, 1, closer_.get())) {
+                UTIL_THROW_IF(trailing_size, BZException, "File has trailing cruft");
+                // Legitimate end of file.
+                ReplaceThis(new Complete(), thunk);
+                return ret;
+              }
+            }
+            UTIL_THROW_IF(memcmp(trailing.data(), kBZMagic, sizeof(kBZMagic)), BZException, "Trailing cruft is not another bzip2 stream");
+            Open(&trailing[0], trailing.size());
+          }
+          return ret;
+        case BZ_OK:
+          return ret;
+        default:
+          UTIL_THROW(BZException, "bzip2 error " << BZ2_bzerror(file_, &bzerror) << " code " << bzerror);
+      }
+    }
+
+  private:
+    void Open(void *already_data, std::size_t already_size) {
+      assert(!file_);
       int bzerror = BZ_OK;
       file_ = BZ2_bzReadOpen(&bzerror, closer_.get(), 0, 0, already_data, already_size);
       switch (bzerror) {
@@ -199,38 +260,23 @@ class BZip : public ReadBase {
           UTIL_THROW(BZException, "IO error reading file");
         case BZ_MEM_ERROR:
           throw std::bad_alloc();
+        default:
+          UTIL_THROW(BZException, "Unknown bzip2 error code " << bzerror);
       }
+      assert(file_);
     }
 
-    ~BZip() {
+    static void Close(BZFILE *&file) {
+      if (file == NULL) return;
       int bzerror = BZ_OK;
-      BZ2_bzReadClose(&bzerror, file_);
+      BZ2_bzReadClose(&bzerror, file);
       if (bzerror != BZ_OK) {
-        std::cerr << "bz2 readclose error" << std::endl;
+        std::cerr << "bz2 readclose error number " << bzerror << std::endl;
         abort();
       }
+      file = NULL;
     }
 
-    std::size_t Read(void *to, std::size_t amount, ReadCompressed &thunk) {
-      int bzerror = BZ_OK;
-      int ret = BZ2_bzRead(&bzerror, file_, to, std::min<std::size_t>(static_cast<std::size_t>(INT_MAX), amount));
-      long pos;
-      switch (bzerror) {
-        case BZ_STREAM_END:
-          pos = ftell(closer_.get());
-          if (pos != -1) ReadCount(thunk) = pos;
-          ReplaceThis(new Complete(), thunk);
-          return ret;
-        case BZ_OK:
-          pos = ftell(closer_.get());
-          if (pos != -1) ReadCount(thunk) = pos;
-          return ret;
-        default:
-          UTIL_THROW(BZException, "bzip2 error " << BZ2_bzerror(file_, &bzerror) << " code " << bzerror);
-      }
-    }
-
-  private:
     scoped_FILE closer_;
     BZFILE *file_;
 };
@@ -346,11 +392,11 @@ MagicResult DetectMagic(const void *from_void) {
   if (header[0] == 0x1f && header[1] == 0x8b) {
     return GZIP;
   }
-  if (header[0] == 'B' && header[1] == 'Z' && header[2] == 'h') {
+  if (!memcmp(header, kBZMagic, sizeof(kBZMagic))) {
     return BZIP;
   }
-  const uint8_t xzmagic[6] = { 0xFD, '7', 'z', 'X', 'Z', 0x00 };
-  if (!memcmp(header, xzmagic, 6)) {
+  const uint8_t kXZMagic[6] = { 0xFD, '7', 'z', 'X', 'Z', 0x00 };
+  if (!memcmp(header, kXZMagic, sizeof(kXZMagic))) {
     return XZIP;
   }
   return UNKNOWN;
