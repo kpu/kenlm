@@ -102,7 +102,8 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::ExternalFinish(const Config &config, const std::vector<uint64_t> &counts) {
   FinishFile(config, kModelType, kVersion, counts, vocab_.UnkCountChangePadding(), backing_);
-  InitParent();
+  // We can't actually query this since it may be a rolling mmap.
+  // InitParent();
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitParent() {
