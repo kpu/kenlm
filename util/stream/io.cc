@@ -1,6 +1,7 @@
 #include "util/stream/io.hh"
 
 #include "util/file.hh"
+#include "util/read_compressed.hh"
 #include "util/stream/chain.hh"
 
 #include <cstddef>
@@ -23,6 +24,27 @@ void Read::Run(const ChainPosition &position) {
     } else {
       link->SetValidSize(got);
     }
+  }
+}
+
+void Decompress::Run(const ChainPosition &position) {
+  const std::size_t block_size = position.GetChain().BlockSize();
+  ReadCompressed reader(file_);
+  for (Link link(position); link; ++link) {
+    uint8_t *start = static_cast<uint8_t*>(link->Get());
+    std::size_t remaining = block_size;
+    while (remaining) {
+      std::size_t ret = reader.Read(start, remaining);
+      if (!ret) {
+        UTIL_THROW_IF(remaining % position.GetChain().EntrySize(), ReadSizeException, "Decompressed file size not a multiple of " << position.GetChain().EntrySize());
+        link->SetValidSize(block_size - remaining);
+        (++link).Poison();
+        return;
+      }
+      start += ret;
+      remaining -= ret;
+    }
+    link->SetValidSize(block_size);
   }
 }
 
