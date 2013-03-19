@@ -11,17 +11,23 @@
 
 int main() {
   const unsigned int order = 5;
-  const std::size_t lazy_memory = 1048576;
-  const std::size_t individual_memory = 1048576;
+  const std::size_t lazy_memory = 10ULL << 30;
+  const std::size_t individual_memory = 1 << 30;
 
   util::scoped_fd vocab(util::OpenReadOrThrow("vocab"));
   lm::builder::FixedArray<util::scoped_fd> files(order);
   std::vector<uint64_t> counts;
   for (unsigned i = 1; i <= order; ++i) {
     files.push_back(util::OpenReadOrThrow(boost::lexical_cast<std::string>(i).c_str()));
-    uint64_t size = util::SizeOrThrow(files.back().get());
-    counts.push_back(size / (8 + 4 * i));
+//    uint64_t size = util::SizeOrThrow(files.back().get());
+//    counts.push_back(size / (8 + 4 * i));
   }
+  counts.push_back(393633486);
+  counts.push_back(3732525120);
+  counts.push_back(17521360103ULL);
+  counts.push_back(39878926366ULL);
+  counts.push_back(59847204733ULL);
+
   lm::ngram::Config config;
   config.pointer_bhiksha_bits = 64;
   config.write_mmap = "trie";
@@ -30,9 +36,9 @@ int main() {
   lm::builder::Binarize binarize(counts, config, vocab.get(), mapping);
 
   util::stream::SortConfig sort_config;
-  sort_config.temp_prefix = ".";
+  sort_config.temp_prefix = "/disk2/";
   sort_config.buffer_size = 64 << 20;
-  sort_config.total_memory = 1 << 30;
+  sort_config.total_memory = 90ULL << 30;
   lm::builder::Sorts<lm::builder::SuffixOrder> sorts;
   sorts.Init(order);
 
@@ -47,8 +53,8 @@ int main() {
     util::stream::Chain chain(config);
     std::cerr << "Reading order " << (i+1) << std::endl;
     chain.ActivateProgress();
-    chain.SetProgressTarget(counts[i] * (8 + 4 * i));
-    chain >> util::stream::Read(files[i].get()) >> lm::builder::Renumber(&mapping[0]);
+    chain.SetProgressTarget(counts[i] * (8 + 4 * (i + 1)));
+    chain >> util::stream::Decompress(files[i].release()) >> lm::builder::Renumber(&mapping[0]);
     boost::scoped_ptr<lm::builder::QuantizeProbBackoff> quant_middle;
     if (i == order - 1) {
       chain >> boost::ref(quant_longest);
