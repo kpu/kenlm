@@ -25,6 +25,7 @@ int main() {
   lm::ngram::Config config;
   config.pointer_bhiksha_bits = 64;
   config.write_mmap = "trie";
+  config.prob_bits = config.backoff_bits = 10;
   std::vector<lm::WordIndex> mapping;
   lm::builder::Binarize binarize(counts, config, vocab.get(), mapping);
 
