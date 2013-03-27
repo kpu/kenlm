@@ -203,6 +203,7 @@ Rolling &Rolling::operator=(const Rolling &copy_from) {
   file_end_ = copy_from.file_end_;
   for_write_ = copy_from.for_write_;
   block_ = copy_from.block_;
+  read_bound_ = copy_from.read_bound_;
   return *this;
 }
 
