@@ -19,15 +19,9 @@ int main() {
   std::vector<uint64_t> counts;
   for (unsigned i = 1; i <= order; ++i) {
     files.push_back(util::OpenReadOrThrow(boost::lexical_cast<std::string>(i).c_str()));
-//    uint64_t size = util::SizeOrThrow(files.back().get());
-//    counts.push_back(size / (8 + 4 * i));
+    uint64_t size = util::SizeOrThrow(files.back().get());
+    counts.push_back(size / (8 + 4 * i));
   }
-  counts.push_back(393633486);
-  counts.push_back(3732525120);
-  counts.push_back(17521360103ULL);
-  counts.push_back(39878926366ULL);
-  counts.push_back(59847204733ULL);
-
   lm::ngram::Config config;
   config.pointer_bhiksha_bits = 64;
   config.write_mmap = "trie";
@@ -36,40 +30,46 @@ int main() {
   lm::builder::Binarize binarize(counts, config, vocab.get(), mapping);
 
   util::stream::SortConfig sort_config;
-  sort_config.temp_prefix = "/disk2/";
+  sort_config.temp_prefix = "/disk1/heafield/";
   sort_config.buffer_size = 64 << 20;
   sort_config.total_memory = 90ULL << 30;
   lm::builder::Sorts<lm::builder::SuffixOrder> sorts;
   sorts.Init(order);
 
-  lm::builder::QuantizeTrainer::Config quant_config;
+/*  lm::builder::QuantizeTrainer::Config quant_config;
   quant_config.sort = sort_config;
   quant_config.adding_memory = 64 << 20;
   quant_config.block_count = 2;
-  lm::builder::QuantizeProb quant_longest(quant_config);
+  lm::builder::QuantizeProb quant_longest(quant_config);*/
 
   for (unsigned i = 0; i < order; ++i) {
-    util::stream::ChainConfig config(lm::builder::NGram::TotalSize(i + 1), 2, sort_config.total_memory);
-    util::stream::Chain chain(config);
+    util::stream::Chain chain(util::stream::ChainConfig(lm::builder::NGram::TotalSize(i + 1), 2, sort_config.total_memory));
     std::cerr << "Reading order " << (i+1) << std::endl;
     chain.ActivateProgress();
-    chain.SetProgressTarget(counts[i] * (8 + 4 * (i + 1)));
-    chain >> util::stream::Decompress(files[i].release()) >> lm::builder::Renumber(&mapping[0]);
+    chain.SetProgressTarget(counts[i] * (8 + 4 * i));
+    chain >> util::stream::Read(files[i].get()) >> lm::builder::Renumber(&mapping[0]);
     boost::scoped_ptr<lm::builder::QuantizeProbBackoff> quant_middle;
-    if (i == order - 1) {
+/*    if (i == order - 1) {
+//      sort_config.temp_prefix = "/disk6/heafield/";
       chain >> boost::ref(quant_longest);
     } else if (i != 0) {
       quant_middle.reset(new lm::builder::QuantizeProbBackoff(quant_config));
       chain >> boost::ref(*quant_middle);
-    }
-    sorts.push_back(chain, sort_config, lm::builder::SuffixOrder(i + 1));
+    }*/
+    util::stream::SortConfig copied(sort_config);
+    copied.temp_prefix += boost::lexical_cast<std::string>(i + 1);
+    sorts.push_back(chain, copied, lm::builder::SuffixOrder(i + 1));
     chain.Wait();
     sorts.back().Merge(lazy_memory);
     std::cerr << "Training quantizer" << std::endl;
     if (i == order - 1) {
-      quant_longest.Train(binarize.Quantizer().LongestTable());
+//      quant_longest.Train(binarize.Quantizer().LongestTable());
+      util::ReadOrThrow(util::scoped_fd(util::OpenReadOrThrow("quant_prob_5")).get(), binarize.Quantizer().LongestTable().Populate(), sizeof(float) << config.prob_bits);
     } else if (i != 0) {
-      quant_middle->Train(binarize.Quantizer().MiddleTable(i - 1));
+//      quant_middle->Train(binarize.Quantizer().MiddleTable(i - 1));
+      std::string number = boost::lexical_cast<std::string>(i + 1);
+      util::ReadOrThrow(util::scoped_fd(util::OpenReadOrThrow((std::string("quant_prob_") + number).c_str())).get(), binarize.Quantizer().MiddleTable(i-1)[0].Populate(), sizeof(float) << config.prob_bits); 
+      util::ReadOrThrow(util::scoped_fd(util::OpenReadOrThrow((std::string("quant_backoff_") + number).c_str())).get(), binarize.Quantizer().MiddleTable(i-1)[1].Populate(), sizeof(float) << config.backoff_bits); 
     }
   }
   binarize.Quantizer().FinishedLoading(config);
