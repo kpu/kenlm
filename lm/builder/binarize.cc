@@ -23,7 +23,7 @@ Binarize::Binarize(const std::vector<uint64_t> &counts, const ngram::Config &con
   // TODO: forget vocab?
   uint64_t search_size = Search::Size(counts_, config_);
   util::ResizeOrThrow(model_.backing_.file.get(), model_.backing_.vocab.size() + search_size);
-  util::Rolling mem(model_.backing_.file.get(), true, 64 << 20, 24, model_.backing_.vocab.size(), search_size);
+  util::Rolling mem(model_.backing_.file.get(), true, 64 << 20, 1024, model_.backing_.vocab.size(), search_size);
   model_.search_.SetupMemory(mem, counts_, config_);
 }
 
