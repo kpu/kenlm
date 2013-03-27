@@ -101,6 +101,8 @@ class ArrayBhiksha {
     uint8_t InlineBits() const { return next_inline_.bits; }
 
   private:
+    uint64_t *ConfigureMem();
+
     const util::BitsMask next_inline_;
 
     util::Rolling mem_;

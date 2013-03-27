@@ -71,11 +71,10 @@ std::size_t AlignTo8(void *from) {
 
 ArrayBhiksha::ArrayBhiksha(const util::Rolling &mem, uint64_t max_offset, uint64_t max_next, const Config &config)
   : next_inline_(util::BitsMask::ByBits(InlineBits(max_offset, max_next, config))),
-    mem_(mem, 8 + AlignTo8(mem.get())),
-    offset_begin_(static_cast<uint64_t*>(mem_.CheckedIndex(0 /* 8-byte header */))),
+    mem_(mem),
+    offset_begin_(ConfigureMem()),
     offset_end_(offset_begin_ + ArrayCount(max_offset, max_next, config)),
-    write_index_(8),
-    aligned_(8 + AlignTo8(mem.get())) {} // 8-byte header and first entry is 0.
+    write_index_(8) {} // 8-byte header and first entry is 0.
 
 void ArrayBhiksha::FinishedLoading(const Config &config) {
   mem_.DecreaseBase(aligned_);
@@ -85,6 +84,12 @@ void ArrayBhiksha::FinishedLoading(const Config &config) {
   *(head_write++) = config.pointer_bhiksha_bits;
   // First entry is 0.
   *static_cast<uint64_t*>(mem_.CheckedIndex(aligned_)) = 0;
+}
+
+uint64_t *ArrayBhiksha::ConfigureMem() {
+  aligned_ = 8 + AlignTo8(mem_.CheckedIndex(0));
+  mem_.IncreaseBase(aligned_);
+  return static_cast<uint64_t*>(mem_.CheckedIndex(0));
 }
 
 } // namespace trie

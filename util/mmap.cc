@@ -193,17 +193,22 @@ Rolling::Rolling(const Rolling &copy_from, uint64_t increase) {
 }
 
 Rolling &Rolling::operator=(const Rolling &copy_from) {
-  current_begin_ = 0;
-  // Force map on next checked_get.
-  current_end_ = copy_from.IsPassthrough() ? copy_from.current_end_ : 0;
-  // If this is just a reference, copy the same reference.
-  ptr_ = copy_from.ptr_;
   fd_ = copy_from.fd_;
   file_begin_ = copy_from.file_begin_;
   file_end_ = copy_from.file_end_;
   for_write_ = copy_from.for_write_;
   block_ = copy_from.block_;
   read_bound_ = copy_from.read_bound_;
+
+  current_begin_ = 0;
+  if (copy_from.IsPassthrough()) {
+    current_end_ = copy_from.current_end_;
+    ptr_ = copy_from.ptr_;
+  } else {
+    // Force call on next mmap.
+    current_end_ = 0;
+    ptr_ = NULL;
+  }
   return *this;
 }
 
