@@ -111,15 +111,26 @@ void ResizeOrThrow(int fd, uint64_t to) {
   UTIL_THROW_IF_ARG(ret, FDException, (fd), "while resizing to " << to << " bytes");
 }
 
+namespace {
+std::size_t GuardLarge(std::size_t size) {
+  // The following operating systems have broken read/write/pread/pwrite that
+  // only supports up to 2^31.
+#if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__) || defined(OS_ANDROID)
+  return std::min(static_cast<std::size_t>(INT_MAX), size);
+#else
+  return size;
+#endif
+}
+}
+
 std::size_t PartialRead(int fd, void *to, std::size_t amount) {
 #if defined(_WIN32) || defined(_WIN64)
-  amount = min(static_cast<std::size_t>(INT_MAX), amount);
-  int ret = _read(fd, to, amount); 
+  int ret = _read(fd, to, GuardLarge(amount));
 #else
   errno = 0;
   ssize_t ret;
   do {
-    ret = read(fd, to, amount);
+    ret = read(fd, to, GuardLarge(amount));
   } while (ret == -1 && errno == EINTR);
 #endif
   UTIL_THROW_IF_ARG(ret < 0, FDException, (fd), "while reading " << amount << " bytes");
@@ -169,11 +180,13 @@ void PReadOrThrow(int fd, void *to_void, std::size_t size, uint64_t off) {
     ssize_t ret;
     errno = 0;
     do {
+      ret =
 #ifdef OS_ANDROID
-      ret = pread64(fd, to, size, off);
+        pread64
 #else
-      ret = pread(fd, to, size, off);
+        pread
 #endif
+        (fd, to, GuardLarge(size), off);
     } while (ret == -1 && errno == EINTR);
     if (ret <= 0) {
       UTIL_THROW_IF(ret == 0, EndOfFileException, " for reading " << size << " bytes at " << off << " from " << NameFromFD(fd));
@@ -190,14 +203,20 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
   const uint8_t *data = static_cast<const uint8_t*>(data_void);
   while (size) {
 #if defined(_WIN32) || defined(_WIN64)
-    int ret = write(fd, data, min(static_cast<std::size_t>(INT_MAX), size));
+    int ret;
 #else
-    errno = 0;
     ssize_t ret;
-    do {
-      ret = write(fd, data, size);
-    } while (ret == -1 && errno == EINTR);
 #endif
+    errno = 0;
+    do {
+      ret = 
+#if defined(_WIN32) || defined(_WIN64)
+        _write
+#else
+        write
+#endif
+        (fd, data, GuardLarge(size));
+    } while (ret == -1 && errno == EINTR);
     UTIL_THROW_IF_ARG(ret < 1, FDException, (fd), "while writing " << size << " bytes");
     data += ret;
     size -= ret;
