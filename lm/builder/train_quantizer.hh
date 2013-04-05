@@ -57,7 +57,7 @@ class QuantizeCollector : boost::noncopyable {
 
     struct Hash : public std::unary_function<const FloatCount *, std::size_t> {
       std::size_t operator()(const FloatCount *entry) const {
-        return boost::hash_value(entry->number);
+        return util::MurmurHashNative(&entry->number, sizeof(float));
       }
     };
 
