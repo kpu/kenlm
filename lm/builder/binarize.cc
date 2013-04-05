@@ -34,12 +34,6 @@ class Callback {
       : search_(search), end_sentence_(end_sentence) {}
 
     void Enter(unsigned int, NGram &gram) {
-      // TODO: remove this when no intermediate file does this anymore, because it's interpolation's responsibility.
-      if (gram.Value().complete.backoff == 0.0) {
-        WordIndex final_word = *(gram.end() - 1);
-        // backoff is ignored for the longest order anyway.
-        gram.Value().complete.backoff = (final_word == end_sentence_ || final_word == kUNK) ? ngram::kNoExtensionBackoff : ngram::kExtensionBackoff;
-      }
       search_.ExternalInsert(gram.Order(), *gram.begin(), gram.Value().complete);
     }
 
