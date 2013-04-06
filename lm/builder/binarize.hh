@@ -30,6 +30,7 @@ class Binarize {
     WordIndex end_sentence_;
     const std::vector<uint64_t> counts_;
     const ngram::Config config_;
+    std::size_t vocab_size_;
 };
 }} // namespaces
 

@@ -3,6 +3,7 @@
 #define LM_BUILDER_TRAIN_QUANTIZER_H__
 
 #include "lm/quantize.hh"
+#include "util/murmur_hash.hh"
 #include "util/probing_hash_table.hh"
 #include "util/scoped.hh"
 #include "util/stream/chain.hh"
