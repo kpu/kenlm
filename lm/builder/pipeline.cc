@@ -1,10 +1,12 @@
 #include "lm/builder/pipeline.hh"
 
 #include "lm/builder/adjust_counts.hh"
+#include "lm/builder/binarize.hh"
 #include "lm/builder/corpus_count.hh"
 #include "lm/builder/initial_probabilities.hh"
 #include "lm/builder/interpolate.hh"
 #include "lm/builder/print.hh"
+#include "lm/builder/renumber.hh"
 #include "lm/builder/sort.hh"
 #include "lm/sizes.hh"
 #include "util/exception.hh"
@@ -12,6 +14,7 @@
 #include "util/stream/io.hh"
 
 #include <boost/lexical_cast.hpp>
+#include <boost/scoped_ptr.hpp>
 
 #include <algorithm>
 #include <iostream>
@@ -56,7 +59,7 @@ class Master {
       const std::size_t merge_using = ngrams.Merge(std::min(config_.TotalMemory() - min_chains, ngrams.DefaultLazy()));
 
       std::vector<uint64_t> count_bounds(1, types);
-      CreateChains(config_.TotalMemory() - merge_using, count_bounds);
+      CreateChains(config_.TotalMemory() - merge_using - types * sizeof(lm::WordIndex) /* for renumbering */, count_bounds);
       ngrams.Output(chains_.back(), merge_using);
 
       // Setup unigram file.  
@@ -66,18 +69,18 @@ class Master {
     // For initial probabilities, but this is generic.
     void SortAndReadTwice(const std::vector<uint64_t> &counts, Sorts<ContextOrder> &sorts, Chains &second, util::stream::ChainConfig second_config) {
       // Do merge first before allocating chain memory.
-      for (std::size_t i = 1; i < config_.order; ++i) {
-        sorts[i - 1].Merge(0);
+      for (std::size_t i = 0; i < sorts.size(); ++i) {
+        sorts[i].Merge(0);
       }
       // There's no lazy merge, so just divide memory amongst the chains.
       CreateChains(config_.TotalMemory(), counts);
       chains_.back().ActivateProgress();
-      chains_[0] >> files_[0].Source();
+      //chains_[0] >> files_[0].Source();
       second_config.entry_size = NGram::TotalSize(1);
-      second.push_back(second_config);
-      second.back() >> files_[0].Source();
-      for (std::size_t i = 1; i < config_.order; ++i) {
-        util::scoped_fd fd(sorts[i - 1].StealCompleted());
+      //second.push_back(second_config);
+      //second.back() >> files_[0].Source();
+      for (std::size_t i = 0; i < config_.order; ++i) {
+        util::scoped_fd fd(sorts[i].StealCompleted());
         chains_[i].SetProgressTarget(util::SizeOrThrow(fd.get()));
         chains_[i] >> util::stream::PRead(util::DupOrThrow(fd.get()), true);
         second_config.entry_size = NGram::TotalSize(i + 1);
@@ -123,12 +126,21 @@ class Master {
       for (std::size_t i = 0; i < config_.order; ++i) {
         chains_[i] >> files_[i].Source();
       }*/
-      FixedArray<util::scoped_fd> files(config_.order);
+/*      FixedArray<util::scoped_fd> files(config_.order);
       for (std::size_t i = 0; i < config_.order; ++i) {
         std::string name(config_.TempPrefix());
         name += boost::lexical_cast<std::string>(i + 1);
         files.push_back(util::CreateOrThrow(name.c_str()));
         chains_[i] >> util::stream::WriteAndRecycle(files.back().get());
+      }
+      chains_.Wait(true);*/
+    }
+
+    template <class Compare> void SetupSortsAll(Sorts<Compare> &sorts) {
+      sorts.Init(config_.order);
+      // Unigrams don't get sorted because their order is always the same.
+      for (std::size_t i = 0; i < config_.order; ++i) {
+        sorts.push_back(chains_[i], config_.sort, Compare(i + 1));
       }
       chains_.Wait(true);
     }
@@ -211,7 +223,7 @@ class Master {
     FixedArray<util::stream::FileBuffer> files_;
 };
 
-void CountText(int text_file /* input */, int vocab_file /* output */, Master &master, uint64_t &token_count, std::string &text_file_name) {
+util::stream::Sort<SuffixOrder, AddCombiner> *CountText(int text_file /* input */, int vocab_file /* output */, Master &master, WordIndex &type_count, uint64_t &token_count, std::string &text_file_name) {
   const PipelineConfig &config = master.Config();
   std::cerr << "=== 1/5 Counting and sorting n-grams ===" << std::endl;
 
@@ -226,16 +238,15 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
     static_cast<float>(config.block_count);
   util::stream::Chain chain(util::stream::ChainConfig(NGram::TotalSize(config.order), config.block_count, memory_for_chain));
 
-  WordIndex type_count = config.vocab_estimate;
+  type_count = config.vocab_estimate;
   util::FilePiece text(text_file, NULL, &std::cerr);
   text_file_name = text.FileName();
   CorpusCount counter(text, vocab_file, token_count, type_count, chain.BlockSize() / chain.EntrySize());
   chain >> boost::ref(counter);
 
-  util::stream::Sort<SuffixOrder, AddCombiner> sorter(chain, config.sort, SuffixOrder(config.order), AddCombiner());
+  std::auto_ptr<util::stream::Sort<SuffixOrder, AddCombiner> > sorter(new util::stream::Sort<SuffixOrder, AddCombiner>(chain, config.sort, SuffixOrder(config.order), AddCombiner()));
   chain.Wait(true);
-  std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;
-  master.InitForAdjust(sorter, type_count);
+  return sorter.release();
 }
 
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary, FixedArray<util::stream::FileBuffer> &gammas) {
@@ -244,7 +255,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
 
   {
     Sorts<ContextOrder> sorts;
-    master.SetupSorts(sorts);
+    master.SetupSortsAll(sorts);
     PrintStatistics(counts, discounts);
     lm::ngram::ShowSizes(counts);
     std::cerr << "=== 3/5 Calculating and sorting initial probabilities ===" << std::endl;
@@ -264,7 +275,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
   master.SetupSorts(primary);
 }
 
-void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &master, Sorts<SuffixOrder> &primary, FixedArray<util::stream::FileBuffer> &gammas) {
+void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &master, Binarize &binarize, Sorts<SuffixOrder> &primary, FixedArray<util::stream::FileBuffer> &gammas) {
   std::cerr << "=== 4/5 Calculating and writing order-interpolated probabilities ===" << std::endl;
   const PipelineConfig &config = master.Config();
   master.MaximumLazyInput(counts, primary);
@@ -276,9 +287,13 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
     gamma_chains.push_back(read_backoffs);
     gamma_chains.back() >> gammas[i].Source();
   }
-  master >> Interpolate(counts[0], ChainPositions(gamma_chains));
+  binarize.SetupSearch(counts);
+  master >> Interpolate(counts[0], binarize, ChainPositions(gamma_chains));
   gamma_chains >> util::stream::kRecycle;
-  master.BufferFinal(counts);
+/*  master.BufferFinal(counts);*/
+  master >> util::stream::kRecycle;
+  master.MutableChains().Wait(true);
+  binarize.Finish();
 }
 
 } // namespace
@@ -303,19 +318,37 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
   util::scoped_fd vocab_file(config.vocab_file.empty() ? 
       util::MakeTemp(config.TempPrefix()) : 
       util::CreateOrThrow(config.vocab_file.c_str()));
+  WordIndex type_count;
   uint64_t token_count;
   std::string text_file_name;
-  CountText(text_file, vocab_file.get(), master, token_count, text_file_name);
+  boost::scoped_ptr<util::stream::Sort<SuffixOrder, AddCombiner> > adjust_in(CountText(text_file, vocab_file.get(), master, type_count, token_count, text_file_name));
+
+  std::cerr << "=== Building vocabulary ===" << std::endl;
+  std::vector<lm::WordIndex> mapping;
+  ngram::Config out_config;
+//  out_config.pointer_bhiksha_bits = 64;
+  out_config.write_mmap = "trie";
+//  out_config.prob_bits = out_config.backoff_bits = 10;
+  out_config.write_method = ngram::Config::WRITE_MMAP;
+  lm::builder::Binarize binarize(type_count, config.order, out_config, vocab_file.get(), mapping);
+
+  std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;
+  master.InitForAdjust(*adjust_in, type_count);
+  adjust_in.reset();
 
   std::vector<uint64_t> counts;
   std::vector<Discount> discounts;
   master >> AdjustCounts(counts, discounts);
 
+  for (unsigned int i = 0; i < config.order; ++i) {
+    master.MutableChains()[i] >> lm::builder::Renumber(&mapping[0]);
+  }
+
   {
     FixedArray<util::stream::FileBuffer> gammas;
     Sorts<SuffixOrder> primary;
     InitialProbabilities(counts, discounts, master, primary, gammas);
-    InterpolateProbabilities(counts, master, primary, gammas);
+    InterpolateProbabilities(counts, master, binarize, primary, gammas);
   }
 
 /*  std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;

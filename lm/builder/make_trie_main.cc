@@ -9,14 +9,10 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/scoped_ptr.hpp>
 
-std::size_t LazyMemory(unsigned int order_minus_1) {
-  if (order_minus_1 == 0) return 4717440456ULL;
-  if (order_minus_1 == 4) return 30ULL << 30;
-  return 20ULL << 30;
-}
-
 int main() {
   const unsigned int order = 5;
+  const std::size_t lazy_memory = 10ULL << 30;
+  const std::size_t individual_memory = 1 << 30;
 
   util::scoped_fd vocab(util::OpenReadOrThrow("vocab"));
   lm::builder::FixedArray<util::scoped_fd> files(order);
@@ -26,6 +22,12 @@ int main() {
     uint64_t size = util::SizeOrThrow(files.back().get());
     counts.push_back(size / (8 + 4 * i));
   }
+/*  counts.push_back(393633486);
+  counts.push_back(3732525120);
+  counts.push_back(17521360103ULL);
+  counts.push_back(39878926366ULL);
+  counts.push_back(59847204733ULL);*/
+
   lm::ngram::Config config;
   config.pointer_bhiksha_bits = 64;
   config.write_mmap = "trie";
@@ -34,52 +36,50 @@ int main() {
   lm::builder::Binarize binarize(counts, config, vocab.get(), mapping);
 
   util::stream::SortConfig sort_config;
-  sort_config.temp_prefix = "/disk2/heafield/";
+  sort_config.temp_prefix = "/raid0/heafield/";
   sort_config.buffer_size = 64 << 20;
-  sort_config.total_memory = 100ULL << 30;
+  sort_config.total_memory = 90ULL << 30;
   lm::builder::Sorts<lm::builder::SuffixOrder> sorts;
   sorts.Init(order);
 
-  lm::builder::Chains chains(5);
+  lm::builder::QuantizeTrainer::Config quant_config;
+  quant_config.sort = sort_config;
+  quant_config.adding_memory = 64 << 20;
+  quant_config.block_count = 2;
+  lm::builder::QuantizeProb quant_longest(quant_config);
+
   for (unsigned i = 0; i < order; ++i) {
-    std::size_t chain_mem;
-    if (i == 0) {
-      chain_mem = 2ULL << 30;
-    } else if (i == 1) {
-      chain_mem = 18ULL << 30;
-    } else if (i == order - 1) {
-      chain_mem = 50ULL << 30;
-    } else {
-      chain_mem = 20ULL << 30;
-    }
-    chains.push_back(util::stream::ChainConfig(lm::builder::NGram::TotalSize(i + 1), 2, chain_mem));
+    util::stream::ChainConfig config(lm::builder::NGram::TotalSize(i + 1), 2, sort_config.total_memory);
+    util::stream::Chain chain(config);
+    std::cerr << "Reading order " << (i+1) << std::endl;
+    chain.ActivateProgress();
+    chain.SetProgressTarget(counts[i] * (8 + 4 * (i + 1)));
+    chain >> util::stream::Decompress(files[i].release()) >> lm::builder::Renumber(&mapping[0]);
+    boost::scoped_ptr<lm::builder::QuantizeProbBackoff> quant_middle;
     if (i == order - 1) {
-      sort_config.temp_prefix = "/disk6/heafield/";
-      chains.back().ActivateProgress();
-      chains.back().SetProgressTarget(counts[i] * (8 + 4 * (i + 1)));
-    }
-    chains.back() >> util::stream::Read(files[i].get()) >> lm::builder::Renumber(&mapping[0]);
-    sorts.push_back(chains.back(), sort_config, lm::builder::SuffixOrder(i + 1));
-    if (i == order - 1) {
-      util::ReadOrThrow(util::scoped_fd(util::OpenReadOrThrow("quant_prob_5")).get(), binarize.Quantizer().LongestTable().Populate(), sizeof(float) << config.prob_bits);
+      chain >> boost::ref(quant_longest);
     } else if (i != 0) {
-      std::string number = boost::lexical_cast<std::string>(i + 1);
-      util::ReadOrThrow(util::scoped_fd(util::OpenReadOrThrow((std::string("quant_prob_") + number).c_str())).get(), binarize.Quantizer().MiddleTable(i-1)[0].Populate(), sizeof(float) << config.prob_bits); 
-      util::ReadOrThrow(util::scoped_fd(util::OpenReadOrThrow((std::string("quant_backoff_") + number).c_str())).get(), binarize.Quantizer().MiddleTable(i-1)[1].Populate(), sizeof(float) << config.backoff_bits); 
+      quant_middle.reset(new lm::builder::QuantizeProbBackoff(quant_config));
+      chain >> boost::ref(*quant_middle);
+    }
+    sorts.push_back(chain, sort_config, lm::builder::SuffixOrder(i + 1));
+    chain.Wait();
+    sorts.back().Merge(lazy_memory);
+    std::cerr << "Training quantizer" << std::endl;
+    if (i == order - 1) {
+      quant_longest.Train(binarize.Quantizer().LongestTable());
+    } else if (i != 0) {
+      quant_middle->Train(binarize.Quantizer().MiddleTable(i - 1));
     }
   }
   binarize.Quantizer().FinishedLoading(config);
-  chains.Wait();
-  for (unsigned i = 0; i < order; ++i) {
-    sorts[i].Merge(LazyMemory(i));
-  }
 
+  lm::builder::Chains chains(5);
   std::cerr << "Converting to trie." << std::endl;
-  chains.clear();
   for (unsigned i = 0; i < 5; ++i) {
-    chains.push_back(util::stream::ChainConfig(lm::builder::NGram::TotalSize(i + 1), 2, 512ULL << 20));
+    chains.push_back(util::stream::ChainConfig(lm::builder::NGram::TotalSize(i + 1), 2, individual_memory));
     if (i == 4) chains.back().ActivateProgress();
-    sorts[i].Output(chains[i], LazyMemory(i));
+    sorts[i].Output(chains[i], lazy_memory);
   }
   chains >> boost::ref(binarize) >> util::stream::kRecycle;
   chains.Wait();
