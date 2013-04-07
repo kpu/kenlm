@@ -40,7 +40,7 @@ void SyncOrThrow(void *start, size_t length) {
 #if defined(_WIN32) || defined(_WIN64)
   UTIL_THROW_IF(!::FlushViewOfFile(start, length), ErrnoException, "Failed to sync mmap");
 #else
-  UTIL_THROW_IF(msync(start, length, MS_SYNC), ErrnoException, "Failed to sync mmap");
+  UTIL_THROW_IF(length && msync(start, length, MS_SYNC), ErrnoException, "Failed to sync mmap");
 #endif
 }
 

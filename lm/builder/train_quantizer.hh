@@ -3,6 +3,7 @@
 #define LM_BUILDER_TRAIN_QUANTIZER_H__
 
 #include "lm/quantize.hh"
+#include "util/murmur_hash.hh"
 #include "util/probing_hash_table.hh"
 #include "util/scoped.hh"
 #include "util/stream/chain.hh"
@@ -57,7 +58,7 @@ class QuantizeCollector : boost::noncopyable {
 
     struct Hash : public std::unary_function<const FloatCount *, std::size_t> {
       std::size_t operator()(const FloatCount *entry) const {
-        return boost::hash_value(entry->number);
+        return util::MurmurHashNative(&entry->number, sizeof(float));
       }
     };
 

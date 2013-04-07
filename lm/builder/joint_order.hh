@@ -29,8 +29,10 @@ template <class Callback, class Compare> void JointOrder(const ChainPositions &p
     while(true) {
       assert(current > 0);
       --current;
-      callback.Exit(current, *streams[current]);
+      // Nothing was using Exit.
+      //callback.Exit(current, *streams[current]);
       if (++streams[current]) break;
+      assert(order == current + 1);
       UTIL_THROW_IF(order != current + 1, FormatLoadException, "Detected n-gram without matching suffix");
       order = current;
       if (!order) return;

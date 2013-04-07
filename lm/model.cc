@@ -38,10 +38,10 @@ template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::Ge
   InitParent();
 }
 
-template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const std::vector<uint64_t> &counts, const Config &config) {
-  std::size_t vocab_size = util::CheckOverflow(VocabularyT::Size(counts[0], config));
+template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(uint64_t unigram_count, uint8_t order, const Config &config) {
+  std::size_t vocab_size = util::CheckOverflow(VocabularyT::Size(unigram_count, config));
   // Setup the binary file for writing the vocab lookup table.  The search_ is responsible for growing the binary file to its needs.
-  vocab_.SetupMemory(SetupJustVocab(config, counts.size(), vocab_size, backing_), vocab_size, counts[0], config);
+  vocab_.SetupMemory(SetupJustVocab(config, order, vocab_size, backing_), vocab_size, unigram_count, config);
 }
 
 namespace {

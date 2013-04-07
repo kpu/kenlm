@@ -30,6 +30,7 @@ template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::ve
 template <class Quant, class Bhiksha> class TrieSearch {
   public:
     typedef NodeRange Node;
+    typedef Quant Quantizer;
 
     typedef ::lm::ngram::trie::UnigramPointer UnigramPointer;
     typedef typename Quant::MiddlePointer MiddlePointer;

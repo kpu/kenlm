@@ -107,8 +107,9 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     }
 
   protected:
+    typedef Search SearchBackend;
     // This is used by the external Binarize class to make a Model from text.
-    GenericModel(const std::vector<uint64_t> &counts, const Config &config);
+    GenericModel(uint64_t unigram_count, uint8_t order, const Config &config);
 
   private:
     friend void lm::ngram::LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);
@@ -156,7 +157,7 @@ class name : public from {\
     name(const char *file, const Config &config = Config()) : from(file, config) {}\
   private:\
     friend class lm::builder::Binarize;\
-    name(const std::vector<uint64_t> &counts, const Config &config) : from(counts, config) {}\
+    name(uint64_t unigram_count, uint8_t order, const Config &config) : from(unigram_count, order, config) {}\
 };
 
 LM_NAME_MODEL(ProbingModel, detail::GenericModel<detail::HashedSearch<BackoffValue> LM_COMMA() ProbingVocabulary>);
