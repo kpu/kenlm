@@ -76,7 +76,7 @@ class Master {
       CreateChains(config_.TotalMemory(), counts);
       chains_.back().ActivateProgress();
       //chains_[0] >> files_[0].Source();
-      second_config.entry_size = NGram::TotalSize(1);
+      //second_config.entry_size = NGram::TotalSize(1);
       //second.push_back(second_config);
       //second.back() >> files_[0].Source();
       for (std::size_t i = 0; i < config_.order; ++i) {
