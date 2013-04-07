@@ -22,6 +22,11 @@ float FloatSec(const struct timeval &tv) {
   return static_cast<float>(tv.tv_sec) + (static_cast<float>(tv.tv_usec) / 1000000.0);
 }
 #endif
+
+const char *SkipSpaces(const char *at) {
+  for (; *at == ' '; ++at) {}
+  return at;
+}
 } // namespace
 
 void PrintUsage(std::ostream &out) {
@@ -32,18 +37,19 @@ void PrintUsage(std::ostream &out) {
     return;
   }
   out << "user\t" << FloatSec(usage.ru_utime) << "\nsys\t" << FloatSec(usage.ru_stime) << '\n';
-
+  out << "CPU\t" << (FloatSec(usage.ru_utime) + FloatSec(usage.ru_stime)) << '\n';
   // Linux doesn't set memory usage :-(.  
   std::ifstream status("/proc/self/status", std::ios::in);
   std::string line;
   while (getline(status, line)) {
     if (!strncmp(line.c_str(), "VmRSS:\t", 7)) {
-      out << "VmRSS:  " << (line.c_str() + 7) << '\n';
+      out << "RSSCur\t" << SkipSpaces(line.c_str() + 7) << '\n';
       break;
     } else if (!strncmp(line.c_str(), "VmPeak:\t", 8)) {
-      out << "VmPeak: " << (line.c_str() + 8) << '\n';
+      out << "VmPeak\t" << SkipSpaces(line.c_str() + 8) << '\n';
     }
   }
+  out << "RSSMax\t" << usage.ru_maxrss << " kB" << '\n';
 #endif
 }
 
