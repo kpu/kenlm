@@ -17,7 +17,9 @@ cdef class LanguageModel:
         try:
             self.model = new Model(self.path)
         except RuntimeError as exception:
-            raise IOError('Cannot read model \'%s\'' % path) from exception
+            exception_message = str(exception_message).replace('\n', ' ')
+            raise IOError('Cannot read model \'{}\' ({})'.format(path, exception_message))\
+                    from exception
         self.vocab = &self.model.GetVocabulary()
 
     def __dealloc__(self):
