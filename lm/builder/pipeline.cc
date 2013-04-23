@@ -8,6 +8,7 @@
 #include "lm/builder/print.hh"
 #include "lm/builder/renumber.hh"
 #include "lm/builder/sort.hh"
+#include "lm/builder/train_quantizer.hh"
 #include "lm/sizes.hh"
 #include "util/exception.hh"
 #include "util/file.hh"
@@ -114,26 +115,21 @@ class Master {
       }
     }
 
-    void BufferFinal(const std::vector<uint64_t> &/*counts*/) {
-/*      chains_[0] >> files_[0].Sink();
+    void Sink() {
+      chains_[0] >> files_[0].Sink();
       for (std::size_t i = 1; i < config_.order; ++i) {
         files_.push_back(util::MakeTemp(config_.TempPrefix()));
         chains_[i] >> files_[i].Sink();
       }
       chains_.Wait(true);
+    }
+
+    void Source(const std::vector<uint64_t> &counts) {
       // Use less memory.  Because we can.
       CreateChains(std::min(config_.sort.buffer_size * config_.order, config_.TotalMemory()), counts);
       for (std::size_t i = 0; i < config_.order; ++i) {
         chains_[i] >> files_[i].Source();
-      }*/
-/*      FixedArray<util::scoped_fd> files(config_.order);
-      for (std::size_t i = 0; i < config_.order; ++i) {
-        std::string name(config_.TempPrefix());
-        name += boost::lexical_cast<std::string>(i + 1);
-        files.push_back(util::CreateOrThrow(name.c_str()));
-        chains_[i] >> util::stream::WriteAndRecycle(files.back().get());
       }
-      chains_.Wait(true);*/
     }
 
     template <class Compare> void SetupSortsAll(Sorts<Compare> &sorts) {
@@ -288,12 +284,29 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
     gamma_chains.back() >> gammas[i].Source();
   }
   binarize.SetupSearch(counts);
-  master >> Interpolate(counts[0], binarize, ChainPositions(gamma_chains));
+  master >> Interpolate(counts[0], binarize.EndSentence(), ChainPositions(gamma_chains));
   gamma_chains >> util::stream::kRecycle;
-/*  master.BufferFinal(counts);*/
-  master >> util::stream::kRecycle;
+
+  lm::builder::QuantizeTrainer::Config quant_config;
+  quant_config.sort = master.Config().sort;
+  quant_config.adding_memory = 64 << 20;
+  quant_config.block_count = 2;
+  FixedArray<QuantizeProbBackoff> middles(counts.size() - 2);
+  for (unsigned int i = 0; i < counts.size() - 2; ++i) {
+    middles.push_back(quant_config);
+    master.MutableChains()[i + 1] >> boost::ref(middles[i]);
+  }
+  QuantizeProb longest(quant_config);
+  master.MutableChains().back() >> boost::ref(longest);
+  master.Sink();
+  longest.Train(binarize.Quantizer().LongestTable());
+  for (unsigned i = 0; i < counts.size() - 2; ++i) {
+    middles[i].Train(binarize.Quantizer().MiddleTable(i));
+  }
+  master.Source(counts);
+/*  master >> util::stream::kRecycle;
   master.MutableChains().Wait(true);
-  binarize.Finish();
+  binarize.Finish();*/
 }
 
 } // namespace
@@ -326,9 +339,9 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
   std::cerr << "=== Building vocabulary ===" << std::endl;
   std::vector<lm::WordIndex> mapping;
   ngram::Config out_config;
-//  out_config.pointer_bhiksha_bits = 64;
+  out_config.pointer_bhiksha_bits = 15;
   out_config.write_mmap = "trie";
-//  out_config.prob_bits = out_config.backoff_bits = 10;
+  out_config.prob_bits = out_config.backoff_bits = 10;
   out_config.write_method = ngram::Config::WRITE_MMAP;
   lm::builder::Binarize binarize(type_count, config.order, out_config, vocab_file.get(), mapping);
 
@@ -350,13 +363,12 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
     InitialProbabilities(counts, discounts, master, primary, gammas);
     InterpolateProbabilities(counts, master, binarize, primary, gammas);
   }
+  binarize.Quantizer().FinishedLoading(out_config);
 
-/*  std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
-  VocabReconstitute vocab(vocab_file.get());
-  UTIL_THROW_IF(vocab.Size() != counts[0], util::Exception, "Vocab words don't match up.  Is there a null byte in the input?");
-  HeaderInfo header_info(text_file_name, token_count);
-  master >> PrintARPA(vocab, counts, (config.verbose_header ? &header_info : NULL), out_arpa) >> util::stream::kRecycle;
-  master.MutableChains().Wait(true);*/
+  std::cerr << "=== 5/5 Writing binary model ===" << std::endl;
+  master >> boost::ref(binarize) >> util::stream::kRecycle;
+  master.MutableChains().Wait(true);
+  binarize.Finish();
 }
 
 }} // namespaces
