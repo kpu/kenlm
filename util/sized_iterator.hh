@@ -3,6 +3,7 @@
 
 #include "util/proxy_iterator.hh"
 
+#include <algorithm>
 #include <functional>
 #include <string>
 
@@ -62,6 +63,13 @@ class SizedProxy {
 
     const void *Data() const { return inner_.Data(); }
     void *Data() { return inner_.Data(); }
+
+    friend void swap(SizedProxy &first, SizedProxy &second) {
+      std::swap_ranges(
+          static_cast<char*>(first.inner_.Data()), 
+          static_cast<char*>(first.inner_.Data()) + first.inner_.EntrySize(),
+          static_cast<char*>(second.inner_.Data()));
+    }
 
   private:
     friend class util::ProxyIterator<SizedProxy>;
