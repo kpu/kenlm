@@ -8,8 +8,6 @@
 
 namespace lm { namespace builder {
 
-class Binarize;
- 
 /* Interpolate step.  
  * Input: suffix sorted n-grams with (p_uninterpolated, gamma) from
  * InitialProbabilities.
@@ -17,13 +15,13 @@ class Binarize;
  */
 class Interpolate {
   public:
-    explicit Interpolate(uint64_t unigram_count, Binarize &binarize, const ChainPositions &backoffs);
+    explicit Interpolate(uint64_t unigram_count, WordIndex end_sentence, const ChainPositions &backoffs);
 
     void Run(const ChainPositions &positions);
 
   private:
     float uniform_prob_;
-    Binarize &binarize_;
+    WordIndex end_sentence_;
     ChainPositions backoffs_;
 };
 

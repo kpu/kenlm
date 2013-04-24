@@ -18,7 +18,7 @@ class ChainPositions;
 
 class Binarize {
   private:
-    typedef ngram::TrieModel Model;
+    typedef ngram::QuantArrayTrieModel Model;
   public:
     Binarize(uint64_t unigram_count, uint8_t order, const ngram::Config &config, int vocab_file, std::vector<WordIndex> &mapping);
 
