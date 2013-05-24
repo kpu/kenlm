@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
         "  title = {Scalable Modified {Kneser-Ney} Language Model Estimation},\n"
         "  year = {2013},\n"
         "  month = {8},\n"
-        "  booktitle = {Proceedings of the The 51st Annual Meeting of the Association for Computational Linguistics},\n"
+        "  booktitle = {Proceedings of the 51st Annual Meeting of the Association for Computational Linguistics},\n"
         "  address = {Sofia, Bulgaria},\n"
         "  url = {http://kheafield.com/professional/edinburgh/estimate\\_paper.pdf},\n"
         "}\n\n"
