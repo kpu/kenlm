@@ -18,6 +18,5 @@ for i in util/double-conversion/*.cc util/*.cc lm/*.cc; do
 done
 
 mkdir -p bin
-g++ $CXXFLAGS lm/build_binary_main.cc $objects -o bin/build_binary
-g++ $CXXFLAGS lm/query_main.cc $objects -o bin/query
-g++ $CXXFLAGS lm/kenlm_max_order_main.cc -o bin/kenlm_max_order
+g++ $CXXFLAGS lm/build_binary_main.cc $objects -lrt -o bin/build_binary
+g++ $CXXFLAGS lm/query_main.cc $objects -lrt -o bin/query
