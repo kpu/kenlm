@@ -12,7 +12,7 @@ ext_modules = [
         language='C++', 
         include_dirs=['.'],
         libraries=['z', 'stdc++'], 
-        extra_compile_args=['-O3', '-DNDEBUG', '-DKENLM_MAX_ORDER=6'])
+        extra_compile_args=['-O3', '-DNDEBUG', '-DKENLM_MAX_ORDER=6', '-DHAVE_ZLIB'])
 ]
 
 setup(
