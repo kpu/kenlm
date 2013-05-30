@@ -14,8 +14,8 @@ cdef class LanguageModel:
 
     def __init__(self, path):
         self.path = os.path.abspath(as_str(path))
-        self.model = new Model(self.path)
-        self.vocab = &self.model.GetVocabulary()
+        self.model = LoadVirtual(self.path)
+        self.vocab = &self.model.BaseVocabulary()
 
     def __dealloc__(self):
         del self.model
@@ -26,38 +26,31 @@ cdef class LanguageModel:
     
     def score(self, sentence):
         cdef list words = as_str(sentence).split()
-        cdef State state = self.model.BeginSentenceState()
+        cdef State state
+        self.model.BeginSentenceWrite(&state)
         cdef State out_state
         cdef float total = 0
         for word in words:
-            total += self.model.Score(state, self.vocab.Index(word), out_state)
+            total += self.model.Score(&state, self.vocab.Index(word), &out_state)
             state = out_state
-        total += self.model.Score(state, self.vocab.EndSentence(), out_state)
+        total += self.model.Score(&state, self.vocab.EndSentence(), &out_state)
         return total
 
     def full_scores(self, sentence):
         cdef list words = as_str(sentence).split()
-        cdef State* state = new State(self.model.BeginSentenceState())
-        cdef State* out_state = new State()
-        cdef FullScoreReturn* ret
+        cdef State state
+        self.model.BeginSentenceWrite(&state)
+        cdef State out_state
+        cdef FullScoreReturn ret
         cdef float total = 0
-        try:
-            for word in words:
-                ret = new FullScoreReturn(self.model.FullScore(state[0],
-                    self.vocab.Index(word), out_state[0]))
-                try:
-                    yield (ret.prob, ret.ngram_length)
-                finally:
-                    del ret
-                state[0] = out_state[0]
-            ret = new FullScoreReturn(self.model.FullScore(state[0], 
-                self.vocab.EndSentence(), out_state[0]))
-            try:
-                yield (ret.prob, ret.ngram_length)
-            finally:
-                del ret
-        finally:
-            del state, out_state
+        for word in words:
+            ret = self.model.FullScore(&state,
+                self.vocab.Index(word), &out_state)
+            yield (ret.prob, ret.ngram_length)
+            state = out_state
+        ret = self.model.FullScore(&state,
+            self.vocab.EndSentence(), &out_state)
+        yield (ret.prob, ret.ngram_length)
     
     def __contains__(self, word):
         cdef bytes w = as_str(word)
