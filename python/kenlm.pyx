@@ -14,10 +14,7 @@ cdef class LanguageModel:
 
     def __init__(self, path):
         self.path = os.path.abspath(as_str(path))
-        try:
-            self.model = new Model(self.path)
-        except RuntimeError as exception:
-            raise IOError('Cannot read model \'%s\'' % path) from exception
+        self.model = new Model(self.path)
         self.vocab = &self.model.GetVocabulary()
 
     def __dealloc__(self):
@@ -29,14 +26,13 @@ cdef class LanguageModel:
     
     def score(self, sentence):
         cdef list words = as_str(sentence).split()
-        cdef State* state = new State(self.model.BeginSentenceState())
-        cdef State* out_state = new State()
+        cdef State state = self.model.BeginSentenceState()
+        cdef State out_state
         cdef float total = 0
         for word in words:
-            total += self.model.Score(state[0], self.vocab.Index(word), out_state[0])
-            state[0] = out_state[0]
-        total += self.model.Score(state[0], self.vocab.EndSentence(), out_state[0])
-        del state, out_state
+            total += self.model.Score(state, self.vocab.Index(word), out_state)
+            state = out_state
+        total += self.model.Score(state, self.vocab.EndSentence(), out_state)
         return total
 
     def full_scores(self, sentence):
