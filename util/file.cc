@@ -116,7 +116,7 @@ std::size_t GuardLarge(std::size_t size) {
   // The following operating systems have broken read/write/pread/pwrite that
   // only supports up to 2^31.
 #if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__) || defined(OS_ANDROID)
-  return std::min(static_cast<std::size_t>(INT_MAX), size);
+  return std::min(static_cast<std::size_t>(static_cast<unsigned>(-1)), size);
 #else
   return size;
 #endif
@@ -209,7 +209,7 @@ void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
 #endif
     errno = 0;
     do {
-      ret = 
+      ret =
 #if defined(_WIN32) || defined(_WIN64)
         _write
 #else
@@ -229,7 +229,7 @@ void WriteOrThrow(FILE *to, const void *data, std::size_t size) {
 }
 
 void FSyncOrThrow(int fd) {
-// Apparently windows doesn't have fsync?  
+// Apparently windows doesn't have fsync?
 #if !defined(_WIN32) && !defined(_WIN64)
   UTIL_THROW_IF_ARG(-1 == fsync(fd), FDException, (fd), "while syncing");
 #endif
@@ -248,7 +248,7 @@ template <> struct CheckOffT<8> {
 typedef CheckOffT<sizeof(off_t)>::True IgnoredType;
 #endif
 
-// Can't we all just get along?  
+// Can't we all just get along?
 void InternalSeek(int fd, int64_t off, int whence) {
   if (
 #if defined(_WIN32) || defined(_WIN64)
@@ -457,9 +457,9 @@ bool TryName(int fd, std::string &out) {
   std::ostringstream convert;
   convert << fd;
   name += convert.str();
-  
+
   struct stat sb;
-  if (-1 == lstat(name.c_str(), &sb)) 
+  if (-1 == lstat(name.c_str(), &sb))
     return false;
   out.resize(sb.st_size + 1);
   ssize_t ret = readlink(name.c_str(), &out[0], sb.st_size + 1);
@@ -471,7 +471,7 @@ bool TryName(int fd, std::string &out) {
   }
   out.resize(ret);
   // Don't use the non-file names.
-  if (!out.empty() && out[0] != '/') 
+  if (!out.empty() && out[0] != '/')
     return false;
   return true;
 #endif
