@@ -6,11 +6,11 @@
 
 /* This is a RandomAccessIterator that uses a proxy to access the underlying
  * data.  Useful for packing data at bit offsets but still using STL
- * algorithms.  
+ * algorithms.
  *
  * Normally I would use boost::iterator_facade but some people are too lazy to
  * install boost and still want to use my language model.  It's amazing how
- * many operators an iterator has. 
+ * many operators an iterator has.
  *
  * The Proxy needs to provide:
  *   class InnerIterator;
@@ -22,15 +22,15 @@
  *   operator<(InnerIterator)
  *   operator+=(std::ptrdiff_t)
  *   operator-(InnerIterator)
- * and of course whatever Proxy needs to dereference it.  
+ * and of course whatever Proxy needs to dereference it.
  *
- * It's also a good idea to specialize std::swap for Proxy.  
+ * It's also a good idea to specialize std::swap for Proxy.
  */
 
 namespace util {
 template <class Proxy> class ProxyIterator {
   private:
-    // Self.  
+    // Self.
     typedef ProxyIterator<Proxy> S;
     typedef typename Proxy::InnerIterator InnerIterator;
 
@@ -38,16 +38,21 @@ template <class Proxy> class ProxyIterator {
     typedef std::random_access_iterator_tag iterator_category;
     typedef typename Proxy::value_type value_type;
     typedef std::ptrdiff_t difference_type;
-    typedef Proxy reference;
+    typedef Proxy & reference;
     typedef Proxy * pointer;
 
     ProxyIterator() {}
 
-    // For cast from non const to const.  
+    // For cast from non const to const.
     template <class AlternateProxy> ProxyIterator(const ProxyIterator<AlternateProxy> &in) : p_(*in) {}
     explicit ProxyIterator(const Proxy &p) : p_(p) {}
 
-    // p_'s operator= does value copying, but here we want iterator copying.  
+    // p_'s swap does value swapping, but here we want iterator swapping
+    friend inline void swap(ProxyIterator<Proxy> &first, ProxyIterator<Proxy> &second) {
+      swap(first.I(), second.I());
+    }
+
+    // p_'s operator= does value copying, but here we want iterator copying.
     S &operator=(const S &other) {
       I() = other.I();
       return *this;
@@ -72,8 +77,8 @@ template <class Proxy> class ProxyIterator {
 
     std::ptrdiff_t operator-(const S &other) const { return I() - other.I(); }
 
-    Proxy operator*() { return p_; }
-    const Proxy operator*() const { return p_; }
+    Proxy &operator*() { return p_; }
+    const Proxy &operator*() const { return p_; }
     Proxy *operator->() { return &p_; }
     const Proxy *operator->() const { return &p_; }
     Proxy operator[](std::ptrdiff_t amount) const { return *(*this + amount); }
