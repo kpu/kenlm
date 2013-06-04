@@ -22,5 +22,5 @@ done
 
 mkdir -p bin
 [[ `uname` = Darwin ]] || CXXFLAGS+=" -lrt"
-$CXX $CXXFLAGS lm/build_binary_main.cc $objects $lrt -o bin/build_binary
-$CXX $CXXFLAGS lm/query_main.cc $objects $lrt -o bin/query
+$CXX $CXXFLAGS lm/build_binary_main.cc $objects -o bin/build_binary
+$CXX $CXXFLAGS lm/query_main.cc $objects -o bin/query
