@@ -71,7 +71,7 @@ template <class Value> class HashedSearch {
     static const bool kDifferentRest = Value::kDifferentRest;
     static const unsigned int kVersion = 0;
 
-    // TODO: move probing_multiplier here with next binary file format update.  
+    // TODO: move probing_multiplier here with next binary file format update.
     static void UpdateConfigFromBinary(int, const std::vector<uint64_t> &, Config &) {}
 
     static uint64_t Size(const std::vector<uint64_t> &counts, const Config &config) {
@@ -103,6 +103,7 @@ template <class Value> class HashedSearch {
     }
 
 #pragma GCC diagnostic ignored "-Wuninitialized"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
     MiddlePointer Unpack(uint64_t extend_pointer, unsigned char extend_length, Node &node) const {
       node = extend_pointer;
       typename Middle::ConstIterator found;
@@ -126,14 +127,14 @@ template <class Value> class HashedSearch {
     }
 
     LongestPointer LookupLongest(WordIndex word, const Node &node) const {
-      // Sign bit is always on because longest n-grams do not extend left.  
+      // Sign bit is always on because longest n-grams do not extend left.
       typename Longest::ConstIterator found;
       if (!longest_.Find(CombineWordHash(node, word), found)) return LongestPointer();
       return LongestPointer(found->value.prob);
     }
 
-    // Generate a node without necessarily checking that it actually exists.  
-    // Optionally return false if it's know to not exist.  
+    // Generate a node without necessarily checking that it actually exists.
+    // Optionally return false if it's know to not exist.
     bool FastMakeNode(const WordIndex *begin, const WordIndex *end, Node &node) const {
       assert(begin != end);
       node = static_cast<Node>(*begin);
@@ -144,7 +145,7 @@ template <class Value> class HashedSearch {
     }
 
   private:
-    // Interpret config's rest cost build policy and pass the right template argument to ApplyBuild.  
+    // Interpret config's rest cost build policy and pass the right template argument to ApplyBuild.
     void DispatchBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, const ProbingVocabulary &vocab, PositiveProbWarn &warn);
 
     template <class Build> void ApplyBuild(util::FilePiece &f, const std::vector<uint64_t> &counts, const ProbingVocabulary &vocab, PositiveProbWarn &warn, const Build &build);
@@ -153,7 +154,7 @@ template <class Value> class HashedSearch {
       public:
         Unigram() {}
 
-        Unigram(void *start, uint64_t count, std::size_t /*allocated*/) : 
+        Unigram(void *start, uint64_t count, std::size_t /*allocated*/) :
           unigram_(static_cast<typename Value::Weights*>(start))
 #ifdef DEBUG
          ,  count_(count)
