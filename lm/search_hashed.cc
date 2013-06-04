@@ -144,15 +144,15 @@ template <class Build> void MarkLower(
     int start_order,
     const typename Build::Value::Weights &longer) {
   if (start_order == 0) return;
-  typename util::ProbingHashTable<typename Build::Value::ProbingEntry, util::IdentityHash>::MutableIterator iter;
   // Hopefully the compiler will realize that if MarkExtends always returns false, it can simplify this code.
   for (int even_lower = start_order - 2 /* index in middle */; ; --even_lower) {
     if (even_lower == -1) {
       build.MarkExtends(unigram, longer);
       return;
     }
-    middle[even_lower].UnsafeMutableFind(keys[even_lower], iter);
-    if (!build.MarkExtends(iter->value, longer)) return;
+    if (!build.MarkExtends(
+          middle[even_lower].UnsafeMutableMustFind(keys[even_lower])->value,
+          longer)) return;
   }
 }
 

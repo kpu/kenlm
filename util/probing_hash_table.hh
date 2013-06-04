@@ -109,8 +109,19 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
         if (equal_(got, key)) { out = i; return true; }
         if (equal_(got, invalid_)) return false;
         if (++i == end_) i = begin_;
-      }   
+      }
     }
+
+    // Like UnsafeMutableFind, but the key must be there.
+    template <class Key> MutableIterator UnsafeMutableMustFind(const Key key) {
+       for (MutableIterator i(begin_ + (hash_(key) % buckets_));;) {
+        Key got(i->GetKey());
+        if (equal_(got, key)) { return i; }
+        assert(!equal_(got, invalid_));
+        if (++i == end_) i = begin_;
+      }
+    }
+
 
     template <class Key> bool Find(const Key key, ConstIterator &out) const {
 #ifdef DEBUG
@@ -122,6 +133,16 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
         if (equal_(got, invalid_)) return false;
         if (++i == end_) i = begin_;
       }    
+    }
+
+    // Like Find but we're sure it must be there.
+    template <class Key> ConstIterator MustFind(const Key key) const {
+      for (ConstIterator i(begin_ + (hash_(key) % buckets_));;) {
+        Key got(i->GetKey());
+        if (equal_(got, key)) { return i; }
+        assert(!equal_(got, invalid_));
+        if (++i == end_) i = begin_;
+      }
     }
 
     void Clear() {

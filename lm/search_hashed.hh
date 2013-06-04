@@ -102,15 +102,9 @@ template <class Value> class HashedSearch {
       return ret;
     }
 
-#pragma GCC diagnostic ignored "-Wuninitialized"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
     MiddlePointer Unpack(uint64_t extend_pointer, unsigned char extend_length, Node &node) const {
       node = extend_pointer;
-      typename Middle::ConstIterator found;
-      bool got = middle_[extend_length - 2].Find(extend_pointer, found);
-      assert(got);
-      (void)got;
-      return MiddlePointer(found->value);
+      return MiddlePointer(middle_[extend_length - 2].MustFind(extend_pointer)->value);
     }
 
     MiddlePointer LookupMiddle(unsigned char order_minus_2, WordIndex word, Node &node, bool &independent_left, uint64_t &extend_pointer) const {
