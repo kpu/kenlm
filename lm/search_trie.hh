@@ -41,7 +41,8 @@ template <class Quant, class Bhiksha> class TrieSearch {
     static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config) {
       Quant::UpdateConfigFromBinary(fd, counts, config);
       util::AdvanceOrThrow(fd, Quant::Size(counts.size(), config) + Unigram::Size(counts[0]));
-      Bhiksha::UpdateConfigFromBinary(fd, config);
+      // Currently the unigram pointers are not compresssed, so there will only be a header for order > 2.
+      if (counts.size() > 2) Bhiksha::UpdateConfigFromBinary(fd, config);
     }
 
     static uint64_t Size(const std::vector<uint64_t> &counts, const Config &config) {

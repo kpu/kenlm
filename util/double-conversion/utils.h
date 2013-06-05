@@ -218,7 +218,8 @@ class StringBuilder {
   // 0-characters; use the Finalize() method to terminate the string
   // instead.
   void AddCharacter(char c) {
-    ASSERT(c != '\0');
+    // I just extract raw data not a cstr so null is fine.
+    //ASSERT(c != '\0');
     ASSERT(!is_finalized() && position_ < buffer_.length());
     buffer_[position_++] = c;
   }
@@ -233,7 +234,8 @@ class StringBuilder {
   // builder. The input string must have enough characters.
   void AddSubstring(const char* s, int n) {
     ASSERT(!is_finalized() && position_ + n < buffer_.length());
-    ASSERT(static_cast<size_t>(n) <= strlen(s));
+    // I just extract raw data not a cstr so null is fine.
+    //ASSERT(static_cast<size_t>(n) <= strlen(s));
     memmove(&buffer_[position_], s, n * kCharSize);
     position_ += n;
   }
@@ -253,7 +255,8 @@ class StringBuilder {
     buffer_[position_] = '\0';
     // Make sure nobody managed to add a 0-character to the
     // buffer while building the string.
-    ASSERT(strlen(buffer_.start()) == static_cast<size_t>(position_));
+    // I just extract raw data not a cstr so null is fine.
+    //ASSERT(strlen(buffer_.start()) == static_cast<size_t>(position_));
     position_ = -1;
     ASSERT(is_finalized());
     return buffer_.start();
@@ -296,7 +299,11 @@ template <class Dest, class Source>
 inline Dest BitCast(const Source& source) {
   // Compile time assertion: sizeof(Dest) == sizeof(Source)
   // A compile error here means your Dest and Source have different sizes.
-  typedef char VerifySizesAreEqual[sizeof(Dest) == sizeof(Source) ? 1 : -1];
+  typedef char VerifySizesAreEqual[sizeof(Dest) == sizeof(Source) ? 1 : -1]
+#if __GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ >= 8
+      __attribute__((unused))
+#endif
+      ;
 
   Dest dest;
   memmove(&dest, &source, sizeof(dest));
