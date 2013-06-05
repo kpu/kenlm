@@ -14,7 +14,12 @@ cdef class LanguageModel:
 
     def __init__(self, path):
         self.path = os.path.abspath(as_str(path))
-        self.model = LoadVirtual(self.path)
+        try:
+            self.model = LoadVirtual(self.path)
+        except RuntimeError as exception:
+            exception_message = str(exception).replace('\n', ' ')
+            raise IOError('Cannot read model \'{}\' ({})'.format(path, exception_message))\
+                    from exception
         self.vocab = &self.model.BaseVocabulary()
 
     def __dealloc__(self):
