@@ -1,30 +1,31 @@
 cdef extern from "lm/word_index.hh":
     ctypedef unsigned WordIndex
 
-cdef extern from "lm/model.hh" namespace "lm":
-    cdef cppclass FullScoreReturn:
-        FullScoreReturn(FullScoreReturn)
+cdef extern from "lm/return.hh" namespace "lm":
+    cdef struct FullScoreReturn:
         float prob
         unsigned char ngram_length
 
-cdef extern from "lm/model.hh" namespace "lm::ngram":
-    cdef cppclass State:
-        State()
-        State(State& state)
+cdef extern from "lm/state.hh" namespace "lm::ngram":
+    cdef struct State:
+        pass
 
+cdef extern from "lm/virtual_interface.hh" namespace "lm::base":
     cdef cppclass Vocabulary:
         WordIndex Index(char*)
         WordIndex BeginSentence() 
         WordIndex EndSentence()
         WordIndex NotFound()
 
-    ctypedef Vocabulary const_Vocabulary "const lm::ngram::Vocabulary"
+    ctypedef Vocabulary const_Vocabulary "const lm::base::Vocabulary"
 
     cdef cppclass Model:
-        Model(char*) except +
-        State &BeginSentenceState()
-        State &NullContextState()
+        void BeginSentenceWrite(void *)
+        void NullContextWrite(void *)
         unsigned int Order()
-        const_Vocabulary& GetVocabulary()
-        float Score(State &in_state, WordIndex new_word, State &out_state)
-        FullScoreReturn FullScore(State &in_state, WordIndex new_word, State &out_state)
+        const_Vocabulary& BaseVocabulary()
+        float Score(void *in_state, WordIndex new_word, void *out_state)
+        FullScoreReturn FullScore(void *in_state, WordIndex new_word, void *out_state)
+
+cdef extern from "lm/model.hh" namespace "lm::ngram":
+    cdef Model *LoadVirtual(char *) except +

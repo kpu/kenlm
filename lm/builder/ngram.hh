@@ -53,7 +53,7 @@ class NGram {
     Payload &Value() { return *reinterpret_cast<Payload *>(end_); }
 
     uint64_t &Count() { return Value().count; }
-    const uint64_t Count() const { return Value().count; }
+    uint64_t Count() const { return Value().count; }
 
     std::size_t Order() const { return end_ - begin_; }
 

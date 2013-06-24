@@ -25,7 +25,7 @@ uint64_t HashForVocab(const char *str, std::size_t len);
 inline uint64_t HashForVocab(const StringPiece &str) {
   return HashForVocab(str.data(), str.length());
 }
-class ProbingVocabularyHeader;
+struct ProbingVocabularyHeader;
 } // namespace detail
 
 class WriteWordsWrapper : public EnumerateVocab {

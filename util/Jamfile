@@ -11,12 +11,15 @@ if [ test_library "lzma" ] && [ test_header "lzma.h" ] {
   compressed_deps += lzma ;
 }
 
+#rt is needed for clock_gettime on linux.  But it's already included with threading=multi
+lib rt ;
+
 obj read_compressed.o : read_compressed.cc : $(compressed_flags) ;
 alias read_compressed : read_compressed.o $(compressed_deps) ;
 obj read_compressed_test.o : read_compressed_test.cc /top//boost_unit_test_framework : $(compressed_flags) ;
 obj file_piece_test.o : file_piece_test.cc /top//boost_unit_test_framework : $(compressed_flags) ;
 
-fakelib kenutil : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc mmap.cc murmur_hash.cc pool.cc read_compressed scoped.cc string_piece.cc usage.cc double-conversion//double-conversion : <include>.. : : <include>.. ;
+fakelib kenutil : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_piece.cc mmap.cc murmur_hash.cc pool.cc read_compressed scoped.cc string_piece.cc usage.cc double-conversion//double-conversion : <include>.. <os>LINUX,<threading>single:<source>rt : : <include>.. ;
 
 import testing ;
 

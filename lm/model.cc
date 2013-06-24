@@ -304,5 +304,26 @@ template class GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::DontBhiks
 template class GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::ArrayBhiksha>, SortedVocabulary>;
 
 } // namespace detail
+
+base::Model *LoadVirtual(const char *file_name, const Config &config, ModelType model_type) {
+  RecognizeBinary(file_name, model_type);
+  switch (model_type) {
+    case PROBING:
+      return new ProbingModel(file_name, config);
+    case REST_PROBING:
+      return new RestProbingModel(file_name, config);
+    case TRIE:
+      return new TrieModel(file_name, config);
+    case QUANT_TRIE:
+      return new QuantTrieModel(file_name, config);
+    case ARRAY_TRIE:
+      return new ArrayTrieModel(file_name, config);
+    case QUANT_ARRAY_TRIE:
+      return new QuantArrayTrieModel(file_name, config);
+    default:
+      UTIL_THROW(FormatLoadException, "Confused by model type " << model_type);
+  }
+}
+
 } // namespace ngram
 } // namespace lm

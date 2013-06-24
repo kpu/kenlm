@@ -80,7 +80,7 @@ Contributed by Victor Chahuneau.
 ### Installation
 
 ```bash
-pip install -e git+https://github.com/kpu/kenlm.git#egg=kenlm
+pip install https://github.com/kpu/kenlm/archive/master.zip
 ```
 
 ### Basic Usage
