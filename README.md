@@ -24,7 +24,7 @@ filter takes an ARPA or count file and removes entries that will never be querie
 ```bash
 bin/filter
 ```
-and see http://kheafield.com/code/kenlm/filter.html for more documentation.
+and see http://kheafield.com/code/kenlm/filter/ for more documentation.
 
 ## Querying
 
