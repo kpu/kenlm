@@ -144,7 +144,7 @@ template <class Num> uint64_t ParseNum(const std::string &arg) {
   for (std::string::size_type i = 0; i < index; ++i) {
     value *= 1024;
   }
-  return value;
+  return static_cast<uint64_t>(value);
 }
 
 } // namespace
