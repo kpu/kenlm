@@ -24,7 +24,7 @@ filter takes an ARPA or count file and removes entries that will never be querie
 ```bash
 bin/filter
 ```
-and see http://kheafield.com/code/kenlm/filter.html for more documentation.
+and see http://kheafield.com/code/kenlm/filter/ for more documentation.
 
 ## Querying
 
@@ -80,7 +80,7 @@ Contributed by Victor Chahuneau.
 ### Installation
 
 ```bash
-pip install -e git+https://github.com/kpu/kenlm.git#egg=kenlm
+pip install https://github.com/kpu/kenlm/archive/master.zip
 ```
 
 ### Basic Usage

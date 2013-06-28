@@ -122,7 +122,7 @@ class Chain {
       threads_.push_back(new Thread(Complete(), kRecycle));
     }
 
-    Chain &operator>>(const Recycler &recycle) {
+    Chain &operator>>(const Recycler &) {
       CompleteLoop();
       return *this;
     }

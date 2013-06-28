@@ -59,7 +59,9 @@ external-lib z ;
 build-project lm ;
 build-project util ;
 
-install-bin-libs lm//programs ;
+lib kenlm : lm//kenlm ;
+
+install-bin-libs lm//programs kenlm ;
 install-headers headers : [ glob-tree *.hh : dist include ] : . ;
 alias install : prefix-bin prefix-lib prefix-include ; 
 explicit headers ;

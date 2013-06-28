@@ -153,6 +153,11 @@ LM_NAME_MODEL(QuantArrayTrieModel, detail::GenericModel<trie::TrieSearch<Separat
 typedef ::lm::ngram::ProbingVocabulary Vocabulary;
 typedef ProbingModel Model;
 
+/* Autorecognize the file type, load, and return the virtual base class.  Don't
+ * use the virtual base class if you can avoid it.  Instead, use the above
+ * classes as template arguments to your own virtual feature function.*/
+base::Model *LoadVirtual(const char *file_name, const Config &config = Config(), ModelType if_arpa = PROBING);
+
 } // namespace ngram
 } // namespace lm
 
