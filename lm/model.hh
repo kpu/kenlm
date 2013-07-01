@@ -67,7 +67,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     FullScoreReturn FullScoreForgotState(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, State &out_state) const;
 
     /* Get the state for a context.  Don't use this if you can avoid it.  Use
-     * BeginSentenceState or EmptyContextState and extend from those.  If
+     * BeginSentenceState or NullContextState and extend from those.  If
      * you're only going to use this state to call FullScore once, use
      * FullScoreForgotState. 
      * To use this function, make an array of WordIndex containing the context
