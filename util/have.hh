@@ -10,4 +10,8 @@
 //#define HAVE_ICU
 #endif
 
+#ifndef KENLM_MAX_ORDER
+#error Implementing your own build system?  See README.md for the macros you have to define.
+#endif
+
 #endif // UTIL_HAVE__
