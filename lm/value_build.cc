@@ -9,6 +9,7 @@ namespace ngram {
 template <class Model> LowerRestBuild<Model>::LowerRestBuild(const Config &config, unsigned int order, const typename Model::Vocabulary &vocab) {
   UTIL_THROW_IF(config.rest_lower_files.size() != order - 1, ConfigException, "This model has order " << order << " so there should be " << (order - 1) << " lower-order models for rest cost purposes.");
   Config for_lower = config;
+  for_lower.write_mmap = NULL;
   for_lower.rest_lower_files.clear();
 
   // Unigram models aren't supported, so this is a custom loader.  
