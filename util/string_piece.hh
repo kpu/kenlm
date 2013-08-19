@@ -74,6 +74,12 @@ inline bool operator!=(const StringPiece& x, const StringPiece& y) {
 #endif // old version of ICU
 
 U_NAMESPACE_BEGIN
+
+inline bool starts_with(const StringPiece& longer, const StringPiece& prefix) {
+  int longersize = longer.size(), prefixsize = prefix.size();
+  return longersize >= prefixsize && std::memcmp(longer.data(), prefix.data(), prefixsize) == 0;
+}
+
 #else
 
 #include <algorithm>
@@ -212,7 +218,7 @@ class StringPiece {
   StringPiece substr(size_type pos, size_type n = npos) const;
 
   static int wordmemcmp(const char* p, const char* p2, size_type N) {
-    return memcmp(p, p2, N);
+    return std::memcmp(p, p2, N);
   }
 };
 
@@ -225,6 +231,10 @@ inline bool operator==(const StringPiece& x, const StringPiece& y) {
 
 inline bool operator!=(const StringPiece& x, const StringPiece& y) {
   return !(x == y);
+}
+
+inline bool starts_with(const StringPiece& longer, const StringPiece& prefix) {
+  return longer.starts_with(prefix);
 }
 
 #endif // HAVE_ICU undefined
