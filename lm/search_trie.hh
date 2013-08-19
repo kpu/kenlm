@@ -11,6 +11,7 @@
 #include "util/file_piece.hh"
 
 #include <vector>
+#include <cstdlib>
 
 #include <assert.h>
 
@@ -104,12 +105,12 @@ template <class Quant, class Bhiksha> class TrieSearch {
   private:
     friend void BuildTrie<Quant, Bhiksha>(SortedFiles &files, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing);
 
-    // Middles are managed manually so we can delay construction and they don't have to be copyable.  
+    // Middles are managed manually so we can delay construction and they don't have to be copyable.
     void FreeMiddles() {
       for (const Middle *i = middle_begin_; i != middle_end_; ++i) {
         i->~Middle();
       }
-      free(middle_begin_);
+      std::free(middle_begin_);
     }
 
     typedef trie::BitPackedMiddle<Bhiksha> Middle;
