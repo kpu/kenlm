@@ -8,6 +8,7 @@
 #include <cstring>
 #include <limits>
 #include <string>
+#include <cstdlib>
 
 #include <stdint.h>
 
@@ -169,21 +170,21 @@ bool IsBinaryFormat(int fd) {
   }
   Sanity reference_header = Sanity();
   reference_header.SetToReference();
-  if (!memcmp(memory.get(), &reference_header, sizeof(Sanity))) return true;
-  if (!memcmp(memory.get(), kMagicIncomplete, strlen(kMagicIncomplete))) {
+  if (!std::memcmp(memory.get(), &reference_header, sizeof(Sanity))) return true;
+  if (!std::memcmp(memory.get(), kMagicIncomplete, strlen(kMagicIncomplete))) {
     UTIL_THROW(FormatLoadException, "This binary file did not finish building");
   }
-  if (!memcmp(memory.get(), kMagicBeforeVersion, strlen(kMagicBeforeVersion))) {
+  if (!std::memcmp(memory.get(), kMagicBeforeVersion, strlen(kMagicBeforeVersion))) {
     char *end_ptr;
     const char *begin_version = static_cast<const char*>(memory.get()) + strlen(kMagicBeforeVersion);
-    long int version = strtol(begin_version, &end_ptr, 10);
+    long int version = std::strtol(begin_version, &end_ptr, 10);
     if ((end_ptr != begin_version) && version != kMagicVersion) {
       UTIL_THROW(FormatLoadException, "Binary file has version " << version << " but this implementation expects version " << kMagicVersion << " so you'll have to use the ARPA to rebuild your binary");
     }
 
     OldSanity old_sanity = OldSanity();
     old_sanity.SetToReference();
-    UTIL_THROW_IF(!memcmp(memory.get(), &old_sanity, sizeof(OldSanity)), FormatLoadException, "Looks like this is an old 32-bit format.  The old 32-bit format has been removed so that 64-bit and 32-bit files are exchangeable.");
+    UTIL_THROW_IF(!std::memcmp(memory.get(), &old_sanity, sizeof(OldSanity)), FormatLoadException, "Looks like this is an old 32-bit format.  The old 32-bit format has been removed so that 64-bit and 32-bit files are exchangeable.");
     UTIL_THROW(FormatLoadException, "File looks like it should be loaded with mmap, but the test values don't match.  Try rebuilding the binary format LM using the same code revision, compiler, and architecture");
   }
   return false;
