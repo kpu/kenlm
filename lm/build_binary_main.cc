@@ -186,6 +186,7 @@ int main(int argc, char *argv[]) {
       config.write_mmap = argv[optind + 2];
     } else {
       Usage(argv[0], default_mem);
+      return 1;
     }
     if (!strcmp(model_type, "probing")) {
       if (!set_write_method) config.write_method = Config::WRITE_AFTER;

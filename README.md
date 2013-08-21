@@ -9,6 +9,19 @@ The website http://kheafield.com/code/kenlm/ has more documentation.  If you're 
 ## Compiling
 See BUILDING. 
 
+## Compiling with your own build system
+If you want to compile with your own build system (Makefile etc) or to use as a library, there are a number of macros you can set on the g++ command line or in util/have.hh .  
+
+* `KENLM_MAX_ORDER` is the maximum order that can be loaded.  This is done to make state an efficient POD rather than a vector.  
+* `HAVE_ICU` If your code links against ICU, define this to disable the internal StringPiece and replace it with ICU's copy of StringPiece, avoiding naming conflicts.  
+
+ARPA files can be read in compressed format with these options:
+* `HAVE_ZLIB` Supports gzip.  Link with -lz.
+* `HAVE_BZLIB` Supports bzip2.  Link with -lbz2.
+* `HAVE_XZLIB` Supports xz.  Link with -llzma.
+
+Note that these macros impact only `read_compressed.cc` and `read_compressed_test.cc`.  The bjam build system will auto-detect bzip2 and xz support.  
+
 ## Estimation
 lmplz estimates unpruned language models with modified Kneser-Ney smoothing.  After compiling with bjam, run
 ```bash
@@ -42,19 +55,6 @@ ARM support is reportedly working, at least on the iphone.
 Runs on Linux, OS X, Cygwin, and MinGW.  
 
 Hideo Okuma and Tomoyuki Yoshimura from NICT contributed ports to ARM and MinGW.  
-
-## Compile-time configuration
-There are a number of macros you can set on the g++ command line or in util/have.hh .  
-
-* `KENLM_MAX_ORDER` is the maximum order that can be loaded.  This is done to make state an efficient POD rather than a vector.  
-* `HAVE_ICU` If your code links against ICU, define this to disable the internal StringPiece and replace it with ICU's copy of StringPiece, avoiding naming conflicts.  
-
-ARPA files can be read in compressed format with these options:
-* `HAVE_ZLIB` Supports gzip.  Link with -lz.  I have enabled this by default.  
-* `HAVE_BZLIB` Supports bzip2.  Link with -lbz2.
-* `HAVE_XZLIB` Supports xz.  Link with -llzma.
-
-Note that these macros impact only `read_compressed.cc` and `read_compressed_test.cc`.  The bjam build system will auto-detect bzip2 and xz support.  
 
 ## Decoder developers
 - I recommend copying the code and distributing it with your decoder.  However, please send improvements upstream.  
