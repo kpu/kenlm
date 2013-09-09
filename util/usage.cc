@@ -83,7 +83,7 @@ void PrintUsage(std::ostream &out) {
   }
 
   struct rusage usage;
-  if (getrusage(RUSAGE_CHILDREN, &usage)) {
+  if (getrusage(RUSAGE_SELF, &usage)) {
     perror("getrusage");
     return;
   }
