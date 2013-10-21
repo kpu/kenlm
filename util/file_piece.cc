@@ -74,7 +74,9 @@ StringPiece FilePiece::ReadLine(char delim) {
       }
     }
     if (at_end_) {
-      if (position_ == position_end_) Shift();
+      if (position_ == position_end_) {
+        Shift();
+      }
       return Consume(position_end_);
     }
     skip = position_end_ - position_;
