@@ -12,6 +12,7 @@
 #include <iosfwd>
 #include <string>
 
+#include <assert.h>
 #include <stdint.h>
 
 namespace util {
@@ -66,8 +67,14 @@ class FilePiece {
 
     // Skip spaces defined by isspace.
     void SkipSpaces(const bool *delim = kSpaces) {
+      assert(position_ <= position_end_);
       for (; ; ++position_) {
-        if (position_ == position_end_) Shift();
+        if (position_ == position_end_) {
+          Shift();
+          // And break out at end of file.
+          if (position_ == position_end_) return;
+        }
+        assert(position_ < position_end_);
         if (!delim[static_cast<unsigned char>(*position_)]) return;
       }
     }
@@ -86,6 +93,7 @@ class FilePiece {
     template <class T> T ReadNumber();
 
     StringPiece Consume(const char *to) {
+      assert(to >= position_);
       StringPiece ret(position_, to - position_);
       position_ = to;
       return ret;
