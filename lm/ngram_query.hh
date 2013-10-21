@@ -67,6 +67,7 @@ template <class Model> void Query(const Model &model, bool sentence_context, std
 
 template <class M> void Query(const char *file, bool sentence_context, std::istream &in_stream, std::ostream &out_stream) {
   Config config;
+  config.load_method = util::LAZY;
   M model(file, config);
   Query(model, sentence_context, in_stream, out_stream);
 }
