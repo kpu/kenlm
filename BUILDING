@@ -2,7 +2,7 @@ If you have Boost >= 1.36.0 installed:
    ./bjam
    ./bjam install --prefix=/usr #optional
 
-If you only want the query code:
+If you only want the query code and do not care about compression (.gz, .bz2, and .xz):
   ./compile_query_only.sh
 
 Windows:

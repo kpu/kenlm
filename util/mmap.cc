@@ -90,7 +90,9 @@ void scoped_memory::call_realloc(std::size_t size) {
   if (!new_data) {
     reset();
   } else {
-    reset(new_data, size, MALLOC_ALLOCATED);
+    data_ = new_data;
+    size_ = size;
+    source_ = MALLOC_ALLOCATED;
   }
 }
 

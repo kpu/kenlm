@@ -36,6 +36,11 @@ class SizedInnerIterator {
     void *Data() { return ptr_; }
     std::size_t EntrySize() const { return size_; }
 
+    friend inline void swap(SizedInnerIterator &first, SizedInnerIterator &second) {
+      std::swap(first.ptr_, second.ptr_);
+      std::swap(first.size_, second.size_);
+    }
+
   private:
     uint8_t *ptr_;
     std::size_t size_;
@@ -87,7 +92,7 @@ typedef ProxyIterator<SizedProxy> SizedIterator;
 
 inline SizedIterator SizedIt(void *ptr, std::size_t size) { return SizedIterator(SizedProxy(ptr, size)); }
 
-// Useful wrapper for a comparison function i.e. sort.  
+// Useful wrapper for a comparison function i.e. sort.
 template <class Delegate, class Proxy = SizedProxy> class SizedCompare : public std::binary_function<const Proxy &, const Proxy &, bool> {
   public:
     explicit SizedCompare(const Delegate &delegate = Delegate()) : delegate_(delegate) {}
@@ -106,7 +111,7 @@ template <class Delegate, class Proxy = SizedProxy> class SizedCompare : public 
     }
 
     const Delegate &GetDelegate() const { return delegate_; }
-    
+
   private:
     const Delegate delegate_;
 };

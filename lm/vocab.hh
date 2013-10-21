@@ -26,7 +26,7 @@ uint64_t HashForVocab(const char *str, std::size_t len);
 inline uint64_t HashForVocab(const StringPiece &str) {
   return HashForVocab(str.data(), str.length());
 }
-class ProbingVocabularyHeader;
+struct ProbingVocabularyHeader;
 } // namespace detail
 
 // For internal use.  Assumes the file has been seeked appropriately.
