@@ -14,8 +14,8 @@ namespace {
 
 class Callback {
   public:
-    Callback(float uniform_prob, const WordIndex end_sentence, const ChainPositions &backoffs) 
-      : backoffs_(backoffs.size()), end_sentence_(end_sentence), probs_(backoffs.size() + 2) {
+    Callback(float uniform_prob, Binarize &binarize, const ChainPositions &backoffs) 
+      : backoffs_(backoffs.size()), probs_(backoffs.size() + 2), binarize_(binarize) {
       probs_[0] = uniform_prob;
       for (std::size_t i = 0; i < backoffs.size(); ++i) {
         backoffs_.push_back(backoffs[i]);
@@ -26,7 +26,7 @@ class Callback {
       for (std::size_t i = 0; i < backoffs_.size(); ++i) {
         if (backoffs_[i]) {
           std::cerr << "Backoffs do not match for order " << (i + 1) << std::endl;
-          abort();
+          //abort();
         }
       }
     }
@@ -37,7 +37,7 @@ class Callback {
       probs_[order_minus_1 + 1] = pay.complete.prob;
       pay.complete.prob = log10(pay.complete.prob);
       // TODO: this is a hack to skip n-grams that don't appear as context.  Pruning will require some different handling.  
-      if (order_minus_1 < backoffs_.size() && *(gram.end() - 1) != kUNK && *(gram.end() - 1) != end_sentence_) {
+      if (order_minus_1 < backoffs_.size() && *(gram.end() - 1) != kUNK && *(gram.end() - 1) != binarize_.EndSentence()) {
         pay.complete.backoff = log10(*static_cast<const float*>(backoffs_[order_minus_1].Get()));
         ngram::SetExtension(pay.complete.backoff);
         ++backoffs_[order_minus_1];
@@ -45,7 +45,7 @@ class Callback {
         // Not a context.  
         pay.complete.backoff = ngram::kNoExtensionBackoff;
       }
-      //binarize_.Enter(order_minus_1, gram);
+      binarize_.Enter(order_minus_1, gram);
     }
 
    // void Exit(unsigned, const NGram &) const {}
@@ -53,21 +53,21 @@ class Callback {
   private:
     FixedArray<util::stream::Stream> backoffs_;
 
-    const WordIndex end_sentence_;
-
     std::vector<float> probs_;
+
+    Binarize &binarize_;
 };
 } // namespace
 
-Interpolate::Interpolate(uint64_t unigram_count, WordIndex end_sentence, const ChainPositions &backoffs) 
+Interpolate::Interpolate(uint64_t unigram_count, Binarize &binarize, const ChainPositions &backoffs) 
   : uniform_prob_(1.0 / static_cast<float>(unigram_count - 1)),
-    end_sentence_(end_sentence),
+    binarize_(binarize),
     backoffs_(backoffs) {}
 
 // perform order-wise interpolation
 void Interpolate::Run(const ChainPositions &positions) {
   assert(positions.size() == backoffs_.size() + 1);
-  Callback callback(uniform_prob_, end_sentence_, backoffs_);
+  Callback callback(uniform_prob_, binarize_, backoffs_);
   JointOrder<Callback, SuffixOrder>(positions, callback);
 }
 
