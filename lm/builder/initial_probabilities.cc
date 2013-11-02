@@ -14,13 +14,13 @@ namespace lm { namespace builder {
 
 namespace {
 struct BufferEntry {
-  // Gamma from page 20 of Chen and Goodman.  
+  // Gamma from page 20 of Chen and Goodman.
   float gamma;
-  // \sum_w a(c w) for all w.  
+  // \sum_w a(c w) for all w.
   float denominator;
 };
 
-// Extract an array of gamma from an array of BufferEntry.  
+// Extract an array of gamma from an array of BufferEntry.
 class OnlyGamma {
   public:
     void Run(const util::stream::ChainPosition &position) {
@@ -38,7 +38,7 @@ class OnlyGamma {
 
 class AddRight {
   public:
-    AddRight(const Discount &discount, const util::stream::ChainPosition &input) 
+    AddRight(const Discount &discount, const util::stream::ChainPosition &input)
       : discount_(discount), input_(input) {}
 
     void Run(const util::stream::ChainPosition &output) {
@@ -50,11 +50,13 @@ class AddRight {
       for(; in; ++out) {
         memcpy(&previous[0], in->begin(), size);
         uint64_t denominator = 0;
+        uint64_t denominatorCutoff = 0;
         uint64_t counts[4];
         memset(counts, 0, sizeof(counts));
         do {
-          denominator += in->Count();
-          ++counts[std::min(in->Count(), static_cast<uint64_t>(3))];
+          denominator += in->UnmarkedCount();
+          denominatorCutoff += in->CutoffCount();
+          ++counts[std::min(in->CutoffCount(), static_cast<uint64_t>(3))];
         } while (++in && !memcmp(&previous[0], in->begin(), size));
         BufferEntry &entry = *reinterpret_cast<BufferEntry*>(out.Get());
         entry.denominator = static_cast<float>(denominator);
@@ -62,6 +64,8 @@ class AddRight {
         for (unsigned i = 1; i <= 3; ++i) {
           entry.gamma += discount_.Get(i) * static_cast<float>(counts[i]);
         }
+
+        entry.gamma += denominator - denominatorCutoff;
         entry.gamma /= entry.denominator;
       }
       out.Poison();
@@ -105,8 +109,11 @@ class MergeRight {
         const BufferEntry &sums = *static_cast<const BufferEntry*>(summed.Get());
         do {
           Payload &pay = grams->Value();
-          pay.uninterp.prob = discount_.Apply(pay.count) / sums.denominator;
+          uint64_t count = grams->CutoffCount();
+
+          pay.uninterp.prob = discount_.Apply(count) / sums.denominator;
           pay.uninterp.gamma = sums.gamma;
+
         } while (++grams && !memcmp(&previous[0], grams->begin(), size));
       }
     }
@@ -128,7 +135,7 @@ void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::v
     gamma_out.push_back(gamma_config);
     gamma_out[i] >> AddRight(discounts[i], second);
     primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i]);
-    // Don't bother with the OnlyGamma thread for something to discard.  
+    // Don't bother with the OnlyGamma thread for something to discard.
     if (i) gamma_out[i] >> OnlyGamma();
   }
 }
