@@ -26,7 +26,7 @@ struct InitialProbabilitiesConfig {
  *   The values are bare floats and should be buffered for interpolation to
  *   use.  
  */
-void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Chains &primary, Chains &second_in, Chains &gamma_out);
+void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Chains &primary, Chains &second_in, Chains &gamma_out, std::vector<uint64_t> &prune_thresholds);
 
 } // namespace builder
 } // namespace lm

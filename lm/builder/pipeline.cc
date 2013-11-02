@@ -230,7 +230,8 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
   master.InitForAdjust(sorter, type_count);
 }
 
-void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary, FixedArray<util::stream::FileBuffer> &gammas) {
+void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary,
+                          FixedArray<util::stream::FileBuffer> &gammas, std::vector<uint64_t> &prune_thresholds) {
   const PipelineConfig &config = master.Config();
   Chains second(config.order);
 
@@ -244,7 +245,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
   }
 
   Chains gamma_chains(config.order);
-  InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second, gamma_chains);
+  InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second, gamma_chains, prune_thresholds);
   // Don't care about gamma for 0.  
   gamma_chains[0] >> util::stream::kRecycle;
   gammas.Init(config.order - 1);
@@ -301,12 +302,13 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
 
   std::vector<uint64_t> counts;
   std::vector<Discount> discounts;
-  master >> AdjustCounts(counts, discounts);
+  // master >> AdjustCounts(counts, discounts);
+  master >> AdjustCounts(counts, discounts, config.prune_thresholds); // mjd
 
   {
     FixedArray<util::stream::FileBuffer> gammas;
     Sorts<SuffixOrder> primary;
-    InitialProbabilities(counts, discounts, master, primary, gammas);
+    InitialProbabilities(counts, discounts, master, primary, gammas, config.prune_thresholds);
     InterpolateProbabilities(counts, master, primary, gammas);
   }
 

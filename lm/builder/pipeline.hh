@@ -30,6 +30,10 @@ struct PipelineConfig {
   // Number of blocks to use.  This will be overridden to 1 if everything fits.
   std::size_t block_count;
 
+  // n-gram count thresholds for pruning. 0 values means no pruning for
+  // corresponding n-gram order
+  std::vector<uint64_t> prune_thresholds; //mjd
+  
   const std::string &TempPrefix() const { return sort.temp_prefix; }
   std::size_t TotalMemory() const { return sort.total_memory; }
 };

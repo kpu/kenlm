@@ -20,6 +20,45 @@ struct BufferEntry {
   float denominator;
 };
 
+// Reads all entries in order like NGramStream does.  
+// But deletes any entries that have CutoffCount below or equal to pruning
+// threshold.   
+class PruneNGramStream : public NGramStream {
+  public:
+    PruneNGramStream(std::vector<uint64_t> &prune_thresholds)
+      : NGramStream(), prune_thresholds_(prune_thresholds), pruneMe_(false) {}
+      
+    PruneNGramStream(const util::stream::ChainPosition &position, std::vector<uint64_t> &prune_thresholds)
+      : NGramStream(position), prune_thresholds_(prune_thresholds), pruneMe_(false) {
+      if((*this)->CutoffCount() <= prune_thresholds_[(*this)->Order()-1])
+        pruneMe_ = true;
+    }
+    
+    PruneNGramStream &operator++() {
+      if(pruneMe_) {
+        // do something;
+      }
+      
+      NGramStream::operator++();
+      if(*this) {
+        if((*this)->CutoffCount() <= prune_thresholds_[(*this)->Order()-1])
+          pruneMe_ = true;
+        else
+          pruneMe_ = false;
+      }
+      
+      return *this;
+  }
+  
+  bool ToPrune() {
+    return pruneMe_;  
+  }
+  
+  private:
+    std::vector<uint64_t> &prune_thresholds_;
+    bool pruneMe_;
+};
+
 // Extract an array of gamma from an array of BufferEntry.  
 class OnlyGamma {
   public:
@@ -50,18 +89,26 @@ class AddRight {
       for(; in; ++out) {
         memcpy(&previous[0], in->begin(), size);
         uint64_t denominator = 0;
+        uint64_t denominatorCutoff = 0; //mjd
+        
         uint64_t counts[4];
         memset(counts, 0, sizeof(counts));
         do {
-          denominator += in->Count();
-          ++counts[std::min(in->Count(), static_cast<uint64_t>(3))];
+          //denominator += in->Count();
+          denominator += in->UnmarkedCount(); //mjd
+          denominatorCutoff += in->CutoffCount(); //mjd
+          
+          //++counts[std::min(in->Count(), static_cast<uint64_t>(3))];
+          ++counts[std::min(in->CutoffCount(), static_cast<uint64_t>(3))]; //mjd
         } while (++in && !memcmp(&previous[0], in->begin(), size));
+        
         BufferEntry &entry = *reinterpret_cast<BufferEntry*>(out.Get());
         entry.denominator = static_cast<float>(denominator);
         entry.gamma = 0.0;
         for (unsigned i = 1; i <= 3; ++i) {
           entry.gamma += discount_.Get(i) * static_cast<float>(counts[i]);
         }
+        entry.gamma += denominator - denominatorCutoff; //mjd
         entry.gamma /= entry.denominator;
       }
       out.Poison();
@@ -74,15 +121,16 @@ class AddRight {
 
 class MergeRight {
   public:
-    MergeRight(bool interpolate_unigrams, const util::stream::ChainPosition &from_adder, const Discount &discount)
-      : interpolate_unigrams_(interpolate_unigrams), from_adder_(from_adder), discount_(discount) {}
+    MergeRight(bool interpolate_unigrams, const util::stream::ChainPosition &from_adder, const Discount &discount,
+              std::vector<uint64_t> &prune_thresholds)
+      : interpolate_unigrams_(interpolate_unigrams), from_adder_(from_adder), discount_(discount), prune_thresholds_(prune_thresholds) {}
 
     // calculate the initial probability of each n-gram (before order-interpolation)
     // Run() gets invoked once for each order
     void Run(const util::stream::ChainPosition &primary) {
       util::stream::Stream summed(from_adder_);
 
-      NGramStream grams(primary);
+      PruneNGramStream grams(primary, prune_thresholds_);
 
       // Without interpolation, the interpolation weight goes to <unk>.
       if (grams->Order() == 1 && !interpolate_unigrams_) {
@@ -103,9 +151,10 @@ class MergeRight {
       for (; grams; ++summed) {
         memcpy(&previous[0], grams->begin(), size);
         const BufferEntry &sums = *static_cast<const BufferEntry*>(summed.Get());
-        do {
+        do {          
           Payload &pay = grams->Value();
           pay.uninterp.prob = discount_.Apply(pay.count) / sums.denominator;
+             
           pay.uninterp.gamma = sums.gamma;
         } while (++grams && !memcmp(&previous[0], grams->begin(), size));
       }
@@ -115,11 +164,13 @@ class MergeRight {
     bool interpolate_unigrams_;
     util::stream::ChainPosition from_adder_;
     Discount discount_;
+    std::vector<uint64_t> &prune_thresholds_;
 };
 
 } // namespace
 
-void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Chains &primary, Chains &second_in, Chains &gamma_out) {
+void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Chains &primary, Chains &second_in, Chains &gamma_out,
+                          std::vector<uint64_t> &prune_thresholds) {
   util::stream::ChainConfig gamma_config = config.adder_out;
   gamma_config.entry_size = sizeof(BufferEntry);
   for (size_t i = 0; i < primary.size(); ++i) {
@@ -127,7 +178,7 @@ void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::v
     second_in[i] >> util::stream::kRecycle;
     gamma_out.push_back(gamma_config);
     gamma_out[i] >> AddRight(discounts[i], second);
-    primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i]);
+    primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i], prune_thresholds);
     // Don't bother with the OnlyGamma thread for something to discard.  
     if (i) gamma_out[i] >> OnlyGamma();
   }

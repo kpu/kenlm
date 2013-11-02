@@ -27,14 +27,18 @@ class BadDiscountException : public util::Exception {
  */
 class AdjustCounts {
   public:
-    AdjustCounts(std::vector<uint64_t> &counts, std::vector<Discount> &discounts)
-      : counts_(counts), discounts_(discounts) {}
+    AdjustCounts(std::vector<uint64_t> &counts, std::vector<Discount> &discounts,
+                 std::vector<uint64_t> &prune_thresholds)
+      : counts_(counts), discounts_(discounts),
+        prune_thresholds_(prune_thresholds) //mjd
+    {}
 
     void Run(const ChainPositions &positions);
 
   private:
     std::vector<uint64_t> &counts_;
     std::vector<Discount> &discounts_;
+    std::vector<uint64_t> &prune_thresholds_; //mjd
 };
 
 } // namespace builder

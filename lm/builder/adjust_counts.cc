@@ -3,6 +3,7 @@
 #include "util/stream/timer.hh"
 
 #include <algorithm>
+#include <iostream>
 
 namespace lm { namespace builder {
 
@@ -83,9 +84,12 @@ class StatCollector {
 // order but we don't care because the data is going to be sorted again.  
 class CollapseStream {
   public:
-    CollapseStream(const util::stream::ChainPosition &position) :
+    CollapseStream(const util::stream::ChainPosition &position,
+                   uint64_t prune_threshold) : //mjd
       current_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())),
-      block_(position) {
+      block_(position),
+      prune_threshold_(prune_threshold) //mjd
+    { 
       StartBlock();
     }
 
@@ -100,6 +104,10 @@ class CollapseStream {
         memcpy(current_.Base(), copy_from_, current_.TotalSize());
         UpdateCopyFrom();
       }
+      
+      if(current_.Count() <= prune_threshold_) //mjd
+        current_.Mark(); //mjd
+      
       current_.NextInMemory();
       uint8_t *block_base = static_cast<uint8_t*>(block_->Get());
       if (current_.Base() == block_base + block_->ValidSize()) {
@@ -134,6 +142,7 @@ class CollapseStream {
     uint8_t *copy_from_;
 
     util::stream::Link block_;
+    uint64_t prune_threshold_; // mjd
 };
 
 } // namespace
@@ -146,14 +155,18 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   if (order == 1) {
     // Only unigrams.  Just collect stats.  
     for (NGramStream full(positions[0]); full; ++full) 
-      stats.AddFull(full->Count());
+      // stats.AddFull(full->Count());
+      stats.AddFull(full->UnmarkedCount()); //mjd
     stats.CalculateDiscounts();
     return;
   }
 
   NGramStreams streams;
   streams.Init(positions, positions.size() - 1);
-  CollapseStream full(positions[positions.size() - 1]);
+  
+  std::cerr << prune_thresholds_.back() << std::endl; //mjd
+  // CollapseStream full(positions[positions.size() - 1]);
+  CollapseStream full(positions[positions.size() - 1], prune_thresholds_.back()); //mjd
 
   // Initialization: <unk> has count 0 and so does <s>.  
   NGramStream *lower_valid = streams.begin();
@@ -192,9 +205,11 @@ void AdjustCounts::Run(const ChainPositions &positions) {
       // There is an <s> beyond the 0th word.  
       NGramStream &to = *++lower_valid;
       std::copy(bos, full_end, to->begin());
-      to->Count() = full->Count();  
+      //to->Count() = full->Count();
+      to->Count() = full->UnmarkedCount(); //mjd
     } else {
-      stats.AddFull(full->Count());
+      // stats.AddFull(full->Count());
+      stats.AddFull(full->UnmarkedCount()); //mjd
     }
     assert(lower_valid >= &streams[0]);
   }

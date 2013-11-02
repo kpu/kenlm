@@ -69,6 +69,30 @@ class NGram {
       assert(size == TotalSize(ret));
       return ret;
     }
+    
+    /*mjd**********************************************************************/
+
+    bool IsMarked() const {
+      return Value().count >> (sizeof(Value().count) * 8 - 1);
+    }
+    
+    void Mark() {
+      Value().count |= (1ul << (sizeof(Value().count) * 8 - 1));
+    }
+    
+    void Unmark() {
+      Value().count &= ~(1ul << (sizeof(Value().count) * 8 - 1));
+    }
+    
+    uint64_t UnmarkedCount() const {
+      return Value().count & ~(1ul << (sizeof(Value().count) * 8 - 1));
+    }
+    
+    uint64_t CutoffCount() const {
+      return IsMarked() ? 0 : UnmarkedCount();
+    }
+
+    /*mjd**********************************************************************/
 
   private:
     WordIndex *begin_, *end_;
