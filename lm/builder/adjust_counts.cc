@@ -104,19 +104,10 @@ class CollapseStream {
         memcpy(current_.Base(), copy_from_, current_.TotalSize());
         UpdateCopyFrom();
       }
-<<<<<<< HEAD
       
       if(current_.Count() <= prune_threshold_) //mjd
         current_.Mark(); //mjd
-      
-=======
 
-      if(current_.Count() == 1)
-        current_.Mark();
-
-      //std::cerr << current_.Count() << " " << current_.UnmarkedCount() << std::endl;
-
->>>>>>> 7cc0cb6bb81f841ab99d71dc6bb3a965078cfe1a
       current_.NextInMemory();
       uint8_t *block_base = static_cast<uint8_t*>(block_->Get());
       if (current_.Base() == block_base + block_->ValidSize()) {
@@ -162,16 +153,12 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   const std::size_t order = positions.size();
   StatCollector stats(order, counts_, discounts_);
   if (order == 1) {
-<<<<<<< HEAD
+
     // Only unigrams.  Just collect stats.  
     for (NGramStream full(positions[0]); full; ++full) 
       // stats.AddFull(full->Count());
       stats.AddFull(full->UnmarkedCount()); //mjd
-=======
-    // Only unigrams.  Just collect stats.
-    for (NGramStream full(positions[0]); full; ++full)
-      stats.AddFull(full->UnmarkedCount());
->>>>>>> 7cc0cb6bb81f841ab99d71dc6bb3a965078cfe1a
+
     stats.CalculateDiscounts();
     return;
   }
@@ -220,17 +207,12 @@ void AdjustCounts::Run(const ChainPositions &positions) {
       // There is an <s> beyond the 0th word.
       NGramStream &to = *++lower_valid;
       std::copy(bos, full_end, to->begin());
-<<<<<<< HEAD
+
       //to->Count() = full->Count();
       to->Count() = full->UnmarkedCount(); //mjd
     } else {
       // stats.AddFull(full->Count());
       stats.AddFull(full->UnmarkedCount()); //mjd
-=======
-      to->Count() = full->UnmarkedCount();
-    } else {
-      stats.AddFull(full->UnmarkedCount());
->>>>>>> 7cc0cb6bb81f841ab99d71dc6bb3a965078cfe1a
     }
     assert(lower_valid >= &streams[0]);
   }

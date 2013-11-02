@@ -55,13 +55,6 @@ class NGram {
     uint64_t &Count() { return Value().count; }
     uint64_t Count() const { return Value().count; }
 
-    // manipulate msb to signal that ngram can be pruned
-    bool IsMarked() const { return Value().count >> (sizeof(Value().count) * 8 - 1); }
-    void Mark() { Value().count |= (1ul << (sizeof(Value().count) * 8 - 1)); }
-    void Unmark() { Value().count &= ~(1ul << (sizeof(Value().count) * 8 - 1)); }
-    uint64_t UnmarkedCount() const { return Value().count & ~(1ul << (sizeof(Value().count) * 8 - 1)); }
-    uint64_t CutoffCount() { return IsMarked() ? 0 : UnmarkedCount(); }
-
     std::size_t Order() const { return end_ - begin_; }
 
     static std::size_t TotalSize(std::size_t order) {
@@ -77,6 +70,7 @@ class NGram {
       return ret;
     }
     
+    // manipulate msb to signal that ngram can be pruned
     /*mjd**********************************************************************/
 
     bool IsMarked() const {
