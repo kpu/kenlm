@@ -26,7 +26,7 @@ union Payload {
 
 class NGram {
   public:
-    NGram(void *begin, std::size_t order) 
+    NGram(void *begin, std::size_t order)
       : begin_(static_cast<WordIndex*>(begin)), end_(begin_ + order) {}
 
     const uint8_t *Base() const { return reinterpret_cast<const uint8_t*>(begin_); }
@@ -38,12 +38,12 @@ class NGram {
       end_ = begin_ + difference;
     }
 
-    // Would do operator++ but that can get confusing for a stream.  
+    // Would do operator++ but that can get confusing for a stream.
     void NextInMemory() {
       ReBase(&Value() + 1);
     }
 
-    // Lower-case in deference to STL.  
+    // Lower-case in deference to STL.
     const WordIndex *begin() const { return begin_; }
     WordIndex *begin() { return begin_; }
     const WordIndex *end() const { return end_; }
@@ -55,13 +55,20 @@ class NGram {
     uint64_t &Count() { return Value().count; }
     uint64_t Count() const { return Value().count; }
 
+    // manipulate msb to signal that ngram can be pruned
+    bool IsMarked() const { return Value().count >> (sizeof(Value().count) * 8 - 1); }
+    void Mark() { Value().count |= (1ul << (sizeof(Value().count) * 8 - 1)); }
+    void Unmark() { Value().count &= ~(1ul << (sizeof(Value().count) * 8 - 1)); }
+    uint64_t UnmarkedCount() const { return Value().count & ~(1ul << (sizeof(Value().count) * 8 - 1)); }
+    uint64_t CutoffCount() { return IsMarked() ? 0 : UnmarkedCount(); }
+
     std::size_t Order() const { return end_ - begin_; }
 
     static std::size_t TotalSize(std::size_t order) {
       return order * sizeof(WordIndex) + sizeof(Payload);
     }
     std::size_t TotalSize() const {
-      // Compiler should optimize this.  
+      // Compiler should optimize this.
       return TotalSize(Order());
     }
     static std::size_t OrderFromSize(std::size_t size) {

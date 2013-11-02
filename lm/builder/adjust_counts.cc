@@ -11,18 +11,18 @@ BadDiscountException::BadDiscountException() throw() {}
 BadDiscountException::~BadDiscountException() throw() {}
 
 namespace {
-// Return last word in full that is different.  
+// Return last word in full that is different.
 const WordIndex* FindDifference(const NGram &full, const NGram &lower_last) {
   const WordIndex *cur_word = full.end() - 1;
   const WordIndex *pre_word = lower_last.end() - 1;
-  // Find last difference.  
+  // Find last difference.
   for (; pre_word >= lower_last.begin() && *pre_word == *cur_word; --cur_word, --pre_word) {}
   return cur_word;
 }
 
 class StatCollector {
   public:
-    StatCollector(std::size_t order, std::vector<uint64_t> &counts, std::vector<Discount> &discounts) 
+    StatCollector(std::size_t order, std::vector<uint64_t> &counts, std::vector<Discount> &discounts)
       : orders_(order), full_(orders_.back()), counts_(counts), discounts_(discounts) {
       memset(&orders_[0], 0, sizeof(OrderStat) * order);
     }
@@ -78,10 +78,10 @@ class StatCollector {
     std::vector<Discount> &discounts_;
 };
 
-// Reads all entries in order like NGramStream does.  
+// Reads all entries in order like NGramStream does.
 // But deletes any entries that have <s> in the 1st (not 0th) position on the
 // way out by putting other entries in their place.  This disrupts the sort
-// order but we don't care because the data is going to be sorted again.  
+// order but we don't care because the data is going to be sorted again.
 class CollapseStream {
   public:
     CollapseStream(const util::stream::ChainPosition &position,
@@ -104,10 +104,19 @@ class CollapseStream {
         memcpy(current_.Base(), copy_from_, current_.TotalSize());
         UpdateCopyFrom();
       }
+<<<<<<< HEAD
       
       if(current_.Count() <= prune_threshold_) //mjd
         current_.Mark(); //mjd
       
+=======
+
+      if(current_.Count() == 1)
+        current_.Mark();
+
+      //std::cerr << current_.Count() << " " << current_.UnmarkedCount() << std::endl;
+
+>>>>>>> 7cc0cb6bb81f841ab99d71dc6bb3a965078cfe1a
       current_.NextInMemory();
       uint8_t *block_base = static_cast<uint8_t*>(block_->Get());
       if (current_.Base() == block_base + block_->ValidSize()) {
@@ -129,7 +138,7 @@ class CollapseStream {
       UpdateCopyFrom();
     }
 
-    // Find last without bos.  
+    // Find last without bos.
     void UpdateCopyFrom() {
       for (copy_from_ -= current_.TotalSize(); copy_from_ >= current_.Base(); copy_from_ -= current_.TotalSize()) {
         if (NGram(copy_from_, current_.Order()).begin()[1] != kBOS) break;
@@ -153,10 +162,16 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   const std::size_t order = positions.size();
   StatCollector stats(order, counts_, discounts_);
   if (order == 1) {
+<<<<<<< HEAD
     // Only unigrams.  Just collect stats.  
     for (NGramStream full(positions[0]); full; ++full) 
       // stats.AddFull(full->Count());
       stats.AddFull(full->UnmarkedCount()); //mjd
+=======
+    // Only unigrams.  Just collect stats.
+    for (NGramStream full(positions[0]); full; ++full)
+      stats.AddFull(full->UnmarkedCount());
+>>>>>>> 7cc0cb6bb81f841ab99d71dc6bb3a965078cfe1a
     stats.CalculateDiscounts();
     return;
   }
@@ -168,48 +183,54 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   // CollapseStream full(positions[positions.size() - 1]);
   CollapseStream full(positions[positions.size() - 1], prune_thresholds_.back()); //mjd
 
-  // Initialization: <unk> has count 0 and so does <s>.  
+  // Initialization: <unk> has count 0 and so does <s>.
   NGramStream *lower_valid = streams.begin();
   streams[0]->Count() = 0;
   *streams[0]->begin() = kUNK;
   stats.Add(0, 0);
   (++streams[0])->Count() = 0;
   *streams[0]->begin() = kBOS;
-  // not in stats because it will get put in later.  
+  // not in stats because it will get put in later.
 
   // iterate over full (the stream of the highest order ngrams)
   for (; full; ++full) {
     const WordIndex *different = FindDifference(*full, **lower_valid);
     std::size_t same = full->end() - 1 - different;
-    // Increment the adjusted count.  
+    // Increment the adjusted count.
     if (same) ++streams[same - 1]->Count();
 
-    // Output all the valid ones that changed.  
+    // Output all the valid ones that changed.
     for (; lower_valid >= &streams[same]; --lower_valid) {
       stats.Add(lower_valid - streams.begin(), (*lower_valid)->Count());
       ++*lower_valid;
     }
 
     // This is here because bos is also const WordIndex *, so copy gets
-    // consistent argument types.  
+    // consistent argument types.
     const WordIndex *full_end = full->end();
-    // Initialize and mark as valid up to bos.  
+    // Initialize and mark as valid up to bos.
     const WordIndex *bos;
     for (bos = different; (bos > full->begin()) && (*bos != kBOS); --bos) {
       ++lower_valid;
       std::copy(bos, full_end, (*lower_valid)->begin());
       (*lower_valid)->Count() = 1;
     }
-    // Now bos indicates where <s> is or is the 0th word of full.  
+    // Now bos indicates where <s> is or is the 0th word of full.
     if (bos != full->begin()) {
-      // There is an <s> beyond the 0th word.  
+      // There is an <s> beyond the 0th word.
       NGramStream &to = *++lower_valid;
       std::copy(bos, full_end, to->begin());
+<<<<<<< HEAD
       //to->Count() = full->Count();
       to->Count() = full->UnmarkedCount(); //mjd
     } else {
       // stats.AddFull(full->Count());
       stats.AddFull(full->UnmarkedCount()); //mjd
+=======
+      to->Count() = full->UnmarkedCount();
+    } else {
+      stats.AddFull(full->UnmarkedCount());
+>>>>>>> 7cc0cb6bb81f841ab99d71dc6bb3a965078cfe1a
     }
     assert(lower_valid >= &streams[0]);
   }
@@ -219,7 +240,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
     stats.Add(s - streams.begin(), (*s)->Count());
     ++*s;
   }
-  // Poison everyone!  Except the N-grams which were already poisoned by the input.   
+  // Poison everyone!  Except the N-grams which were already poisoned by the input.
   for (NGramStream *s = streams.begin(); s != streams.end(); ++s)
     s->Poison();
 
