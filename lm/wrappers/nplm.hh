@@ -1,12 +1,11 @@
 #ifndef LM_WRAPPER_NPLM__
 #define LM_WRAPPER_NPLM__
 
-#include "lm/base.hh"
+#include "lm/facade.hh"
 #include "lm/max_order.hh"
 #include "util/string_piece.hh"
 
-// NPLM uses Boost anyway.
-#include <boost/scoped_ptr.hpp>
+#include "neuralLM.h"
 
 /* Wrapper to NPLM "by Ashish Vaswani, with contributions from David Chiang
  * and Victoria Fossum."  
@@ -15,7 +14,6 @@
 
 namespace nplm {
 class vocabulary;
-class neuralLM;
 } // namespace nplm
 
 namespace lm {
@@ -45,6 +43,7 @@ struct State {
   WordIndex words[NPLM_MAX_ORDER - 1];
 };
 
+// Not threadsafe!  Make a copy for each thread.
 class Model : public lm::base::ModelFacade<Model, State, Vocabulary> {
   private:
     typedef lm::base::ModelFacade<Model, State, Vocabulary> P;
@@ -52,15 +51,16 @@ class Model : public lm::base::ModelFacade<Model, State, Vocabulary> {
   public:
     Model(const std::string &file);
 
-    // for scoped_ptr destructor.
-    ~Model();
+    FullScoreReturn FullScore(const State &from, const WordIndex new_word, State &out_state) const;
 
-    FullScoreReturn FullScore(const State &from, const WordIndex new_word, State &out_state);
-
-    FullScoreReturn FullScoreForgotState(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word,State &out_state);
+    FullScoreReturn FullScoreForgotState(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word,State &out_state) const;
 
   private:
-    boost::scoped_ptr<nplm::neuralLM> backend_;
+    // Sigh.
+    mutable nplm::neuralLM backend_;
+    Vocabulary vocab_;
+
+    lm::WordIndex null_word_;
 };
 
 } // namespace np

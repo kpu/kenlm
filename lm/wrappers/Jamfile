@@ -1,0 +1,5 @@
+local with-nplm = [ option.get "with-nplm" ] ;
+if $(with-nplm) {
+  lib neuralLM : : <search>$(with-nplm)/src <link>static ;
+  obj nplm.o : nplm.cc ..//kenlm : <include>../.. <include>$(with-nplm)/src <cxxflags>-fopenmp ;
+}
