@@ -49,7 +49,10 @@ class Model : public lm::base::ModelFacade<Model, State, Vocabulary> {
     typedef lm::base::ModelFacade<Model, State, Vocabulary> P;
 
   public:
-    Model(const std::string &file);
+    // Does this look like an NPLM?
+    static bool Recognize(const std::string &file);
+
+    explicit Model(const std::string &file);
 
     FullScoreReturn FullScore(const State &from, const WordIndex new_word, State &out_state) const;
 

@@ -1,6 +1,9 @@
 #include "lm/wrappers/nplm.hh"
+#include "util/file.hh"
 
 #include <algorithm>
+
+#include <string.h>
 
 namespace lm {
 namespace np {
@@ -14,6 +17,18 @@ Vocabulary::~Vocabulary() {}
 WordIndex Vocabulary::Index(const std::string &str) const {
   return vocab_.lookup_word(str);
 }
+
+bool Model::Recognize(const std::string &name) {
+  try {
+    util::scoped_fd file(util::OpenReadOrThrow(name.c_str()));
+    char magic_check[16];
+    util::ReadOrThrow(file.get(), magic_check, sizeof(magic_check));
+    const char nnlm_magic[] = "\\config\nversion ";
+    return !memcmp(magic_check, nnlm_magic, 16);
+  } catch (const util::Exception &) {
+    return false;
+  }
+} 
 
 Model::Model(const std::string &file) : backend_(file), vocab_(backend_.get_vocabulary()) {
   State begin_sentence, null_context;
