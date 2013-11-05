@@ -5,7 +5,8 @@
 #include "lm/max_order.hh"
 #include "util/string_piece.hh"
 
-#include "neuralLM.h"
+#include <boost/thread/tss.hpp>
+#include <boost/scoped_ptr.hpp>
 
 /* Wrapper to NPLM "by Ashish Vaswani, with contributions from David Chiang
  * and Victoria Fossum."  
@@ -14,6 +15,7 @@
 
 namespace nplm {
 class vocabulary;
+class neuralLM;
 } // namespace nplm
 
 namespace lm {
@@ -43,7 +45,6 @@ struct State {
   WordIndex words[NPLM_MAX_ORDER - 1];
 };
 
-// Not threadsafe!  Make a copy for each thread.
 class Model : public lm::base::ModelFacade<Model, State, Vocabulary> {
   private:
     typedef lm::base::ModelFacade<Model, State, Vocabulary> P;
@@ -54,13 +55,17 @@ class Model : public lm::base::ModelFacade<Model, State, Vocabulary> {
 
     explicit Model(const std::string &file);
 
+    ~Model();
+
     FullScoreReturn FullScore(const State &from, const WordIndex new_word, State &out_state) const;
 
     FullScoreReturn FullScoreForgotState(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, State &out_state) const;
 
   private:
-    // Sigh.
-    mutable nplm::neuralLM backend_;
+    boost::scoped_ptr<nplm::neuralLM> base_instance_;
+
+    mutable boost::thread_specific_ptr<nplm::neuralLM> backend_;
+
     Vocabulary vocab_;
 
     lm::WordIndex null_word_;
