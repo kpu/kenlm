@@ -54,6 +54,7 @@ FullScoreReturn Model::FullScore(const State &from, const WordIndex new_word, St
   out_state.words[backend_.get_order() - 2] = new_word;
   // Fill in trailing words with zeros so state comparison works.
   memset(out_state.words + backend_.get_order() - 1, 0, sizeof(WordIndex) * (NPLM_MAX_ORDER - backend_.get_order()));
+  return ret;
 }
 
 // TODO: optimize with direct call?
