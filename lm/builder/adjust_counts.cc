@@ -182,8 +182,9 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   for (; full; ++full) {
     
     // Mark highest order n-grams for later pruning
-    if(full->Count() <= prune_thresholds_.back()) 
+    if(full->Count() <= prune_thresholds_.back()) {
       const_cast<NGram&>(*full).Mark(); 
+    }
     
     const WordIndex *different = FindDifference(*full, **lower_valid);
     std::size_t same = full->end() - 1 - different;
@@ -231,9 +232,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
 
       to->Count() = full->UnmarkedCount(); 
     } else {
-      // stats.AddFull(full->Count());
-      bool pruned = prune_thresholds_[full->Order() - 1] ? full->Count() <= prune_thresholds_[full->Order() - 1] : false;
-      stats.AddFull(full->UnmarkedCount(), pruned); 
+      stats.AddFull(full->UnmarkedCount(), full->IsMarked()); 
     }
     assert(lower_valid >= &streams[0]);
   }
