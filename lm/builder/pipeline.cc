@@ -2,6 +2,7 @@
 
 #include "lm/builder/adjust_counts.hh"
 #include "lm/builder/corpus_count.hh"
+#include "lm/builder/hash_gamma.hh"
 #include "lm/builder/initial_probabilities.hh"
 #include "lm/builder/interpolate.hh"
 #include "lm/builder/print.hh"
@@ -270,7 +271,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
     util::stream::ChainConfig read_backoffs(config.read_backoffs);
 
     // Add 1 because here we are skipping unigrams
-    if(config.counts_threshold[i + 1] > 0)
+    if(config.prune_thresholds[i + 1] > 0)
         read_backoffs.entry_size = sizeof(HashGamma);
     else
         read_backoffs.entry_size = sizeof(float);

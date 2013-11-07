@@ -92,12 +92,8 @@ class StatCollector {
 // order but we don't care because the data is going to be sorted again.
 class CollapseStream {
   public:
-    CollapseStream(const util::stream::ChainPosition &position,
-                   uint64_t prune_threshold) :
-      current_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())),
-      block_(position),
-      prune_threshold_(prune_threshold) 
-    { 
+    CollapseStream(const util::stream::ChainPosition &position) :
+      current_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())), block_(position) { 
       StartBlock();
     }
 
@@ -112,9 +108,6 @@ class CollapseStream {
         memcpy(current_.Base(), copy_from_, current_.TotalSize());
         UpdateCopyFrom();
       }
-      
-      if(current_.Count() <= prune_threshold_) 
-        current_.Mark(); 
 
       current_.NextInMemory();
       uint8_t *block_base = static_cast<uint8_t*>(block_->Get());
@@ -150,7 +143,6 @@ class CollapseStream {
     uint8_t *copy_from_;
 
     util::stream::Link block_;
-    uint64_t prune_threshold_; 
 };
 
 } // namespace
@@ -173,7 +165,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   NGramStreams streams;
   streams.Init(positions, positions.size() - 1);
   
-  CollapseStream full(positions[positions.size() - 1], prune_thresholds_.back());
+  CollapseStream full(positions[positions.size() - 1]);
 
   // Initialization: <unk> has count 0 and so does <s>.
   NGramStream *lower_valid = streams.begin();
@@ -188,6 +180,11 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   
   // iterate over full (the stream of the highest order ngrams)
   for (; full; ++full) {
+    
+    // Mark highest order n-grams for later pruning
+    if(full->Count() <= prune_thresholds_.back()) 
+      const_cast<NGram&>(*full).Mark(); 
+    
     const WordIndex *different = FindDifference(*full, **lower_valid);
     std::size_t same = full->end() - 1 - different;
     // Increment the adjusted count.
