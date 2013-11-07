@@ -20,10 +20,13 @@
 namespace lm { namespace builder {
 
 namespace {
-void PrintStatistics(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts) {
+void PrintStatistics(const std::vector<uint64_t> &counts, const std::vector<uint64_t> &counts_pruned, const std::vector<Discount> &discounts) {
   std::cerr << "Statistics:\n";
   for (size_t i = 0; i < counts.size(); ++i) {
-    std::cerr << (i + 1) << ' ' << counts[i];
+    std::cerr << (i + 1) << ' ' << counts_pruned[i];
+    if(counts[i] != counts_pruned[i])
+       std::cerr << "/" << counts[i];
+
     for (size_t d = 1; d <= 3; ++d)
       std::cerr << " D" << d << (d == 3 ? "+=" : "=") << discounts[i].amount[d];
     std::cerr << '\n';
@@ -230,7 +233,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
   master.InitForAdjust(sorter, type_count);
 }
 
-void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary,
+void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<uint64_t> &counts_pruned, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary,
                           FixedArray<util::stream::FileBuffer> &gammas, std::vector<uint64_t> &prune_thresholds) {
   const PipelineConfig &config = master.Config();
   Chains second(config.order);
@@ -238,8 +241,8 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
   {
     Sorts<ContextOrder> sorts;
     master.SetupSorts(sorts);
-    PrintStatistics(counts, discounts);
-    lm::ngram::ShowSizes(counts);
+    PrintStatistics(counts, counts_pruned, discounts);
+    lm::ngram::ShowSizes(counts_pruned);
     std::cerr << "=== 3/5 Calculating and sorting initial probabilities ===" << std::endl;
     master.SortAndReadTwice(counts, sorts, second, config.initial_probs.adder_in);
   }
@@ -301,22 +304,22 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
   CountText(text_file, vocab_file.get(), master, token_count, text_file_name);
 
   std::vector<uint64_t> counts;
+  std::vector<uint64_t> counts_pruned;
   std::vector<Discount> discounts;
-  // master >> AdjustCounts(counts, discounts);
-  master >> AdjustCounts(counts, discounts, config.prune_thresholds); // mjd
+  master >> AdjustCounts(counts, counts_pruned, discounts, config.prune_thresholds);
 
   {
     FixedArray<util::stream::FileBuffer> gammas;
     Sorts<SuffixOrder> primary;
-    InitialProbabilities(counts, discounts, master, primary, gammas, config.prune_thresholds);
-    InterpolateProbabilities(counts, master, primary, gammas);
+    InitialProbabilities(counts, counts_pruned, discounts, master, primary, gammas, config.prune_thresholds);
+    InterpolateProbabilities(counts_pruned, master, primary, gammas);
   }
 
   std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
   VocabReconstitute vocab(vocab_file.get());
   UTIL_THROW_IF(vocab.Size() != counts[0], util::Exception, "Vocab words don't match up.  Is there a null byte in the input?");
   HeaderInfo header_info(text_file_name, token_count);
-  master >> PrintARPA(vocab, counts, (config.verbose_header ? &header_info : NULL), out_arpa) >> util::stream::kRecycle;
+  master >> PrintARPA(vocab, counts_pruned, (config.verbose_header ? &header_info : NULL), out_arpa) >> util::stream::kRecycle;
   master.MutableChains().Wait(true);
 }
 

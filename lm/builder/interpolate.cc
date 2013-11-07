@@ -30,9 +30,11 @@ class Callback {
 
     void Enter(unsigned order_minus_1, NGram &gram) {
       Payload &pay = gram.Value();
+      
       pay.complete.prob = pay.uninterp.prob + pay.uninterp.gamma * probs_[order_minus_1];
       probs_[order_minus_1 + 1] = pay.complete.prob;
       pay.complete.prob = log10(pay.complete.prob);
+      
       // TODO: this is a hack to skip n-grams that don't appear as context.  Pruning will require some different handling.  
       if (order_minus_1 < backoffs_.size() && *(gram.end() - 1) != kUNK && *(gram.end() - 1) != kEOS) {
         pay.complete.backoff = log10(*static_cast<const float*>(backoffs_[order_minus_1].Get()));

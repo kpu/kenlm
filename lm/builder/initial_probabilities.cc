@@ -23,40 +23,72 @@ struct BufferEntry {
 // Reads all entries in order like NGramStream does.  
 // But deletes any entries that have CutoffCount below or equal to pruning
 // threshold.   
-class PruneNGramStream : public NGramStream {
+class PruneNGramStream {
   public:
-    PruneNGramStream(std::vector<uint64_t> &prune_thresholds)
-      : NGramStream(), prune_thresholds_(prune_thresholds), pruneMe_(false) {}
-      
-    PruneNGramStream(const util::stream::ChainPosition &position, std::vector<uint64_t> &prune_thresholds)
-      : NGramStream(position), prune_thresholds_(prune_thresholds), pruneMe_(false) {
-      if((*this)->CutoffCount() <= prune_thresholds_[(*this)->Order()-1])
-        pruneMe_ = true;
+    PruneNGramStream(const util::stream::ChainPosition &position,
+                   std::vector<uint64_t> &prune_thresholds) : //mjd
+      current_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())),
+      dest_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())),
+      currentCount_(0),
+      block_(position),
+      prune_thresholds_(prune_thresholds) //mjd
+    { 
+      StartBlock();
     }
-    
+
+    NGram &operator*() { return current_; }
+    NGram *operator->() { return &current_; }
+
+    operator bool() const {
+      return block_;
+    }
+
     PruneNGramStream &operator++() {
-      if(pruneMe_) {
-        // do something;
+      assert(block_);
+      
+      if (current_.Order() > 1) {
+        if(currentCount_ > 0) {
+          if(dest_.Base() < current_.Base())
+            memcpy(dest_.Base(), current_.Base(), current_.TotalSize());
+          dest_.NextInMemory();
+        }
+      }
+      else
+        dest_.NextInMemory();          
+      
+      current_.NextInMemory();
+      
+      uint8_t *block_base = static_cast<uint8_t*>(block_->Get());
+      if (current_.Base() == block_base + block_->ValidSize()) {
+        block_->SetValidSize(dest_.Base() - block_base);
+        ++block_;
+        StartBlock();
       }
       
-      NGramStream::operator++();
-      if(*this) {
-        if((*this)->CutoffCount() <= prune_thresholds_[(*this)->Order()-1])
-          pruneMe_ = true;
-        else
-          pruneMe_ = false;
-      }
+      currentCount_ = current_.CutoffCount();
       
       return *this;
-  }
-  
-  bool ToPrune() {
-    return pruneMe_;  
-  }
-  
+    }
+
   private:
-    std::vector<uint64_t> &prune_thresholds_;
-    bool pruneMe_;
+    void StartBlock() {
+      for (; ; ++block_) {
+        if (!block_) return;
+        if (block_->ValidSize()) break;
+      }
+      current_.ReBase(block_->Get());
+      currentCount_ = current_.CutoffCount();
+      
+      dest_.ReBase(block_->Get());
+    }
+
+    NGram current_; // input iterator
+    NGram dest_;    // output iterator
+    
+    uint64_t currentCount_;
+
+    util::stream::Link block_;
+    std::vector<uint64_t> &prune_thresholds_; // mjd
 };
 
 class OnlyGamma {
@@ -89,17 +121,15 @@ class AddRight {
         memcpy(&previous[0], in->begin(), size);
         uint64_t denominator = 0;
 
-        uint64_t denominatorCutoff = 0; //mjd
+        uint64_t denominatorCutoff = 0;
         
         uint64_t counts[4];
         memset(counts, 0, sizeof(counts));
         do {
-          //denominator += in->Count();
-          denominator += in->UnmarkedCount(); //mjd
-          denominatorCutoff += in->CutoffCount(); //mjd
+          denominator += in->UnmarkedCount();
+          denominatorCutoff += in->CutoffCount();
           
-          //++counts[std::min(in->Count(), static_cast<uint64_t>(3))];
-          ++counts[std::min(in->CutoffCount(), static_cast<uint64_t>(3))]; //mjd
+          ++counts[std::min(in->CutoffCount(), static_cast<uint64_t>(3))];
 
         } while (++in && !memcmp(&previous[0], in->begin(), size));
         
@@ -142,26 +172,25 @@ class MergeRight {
         grams->Value().uninterp.prob = sums.gamma;
         grams->Value().uninterp.gamma = 0.0;
         while (++grams) {
-          grams->Value().uninterp.prob = discount_.Apply(grams->Count()) / sums.denominator;
+          grams->Value().uninterp.prob = discount_.Apply(grams->CutoffCount()) / sums.denominator;
           grams->Value().uninterp.gamma = 0.0;
         }
         ++summed;
         return;
       }
-
+      
       std::vector<WordIndex> previous(grams->Order() - 1);
       const std::size_t size = sizeof(WordIndex) * previous.size();
+      
       for (; grams; ++summed) {
         memcpy(&previous[0], grams->begin(), size);
         const BufferEntry &sums = *static_cast<const BufferEntry*>(summed.Get());
         do {          
           Payload &pay = grams->Value();
-          
-          uint64_t count = grams->CutoffCount();
-          pay.uninterp.prob = discount_.Apply(count) / sums.denominator;
-          
+        
+          pay.uninterp.prob = discount_.Apply(grams->CutoffCount()) / sums.denominator;
           pay.uninterp.gamma = sums.gamma;
-
+          
         } while (++grams && !memcmp(&previous[0], grams->begin(), size));
       }
     }
