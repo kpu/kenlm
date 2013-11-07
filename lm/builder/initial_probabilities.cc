@@ -26,12 +26,12 @@ struct BufferEntry {
 class PruneNGramStream {
   public:
     PruneNGramStream(const util::stream::ChainPosition &position,
-                   std::vector<uint64_t> &prune_thresholds) : //mjd
+                   std::vector<uint64_t> &prune_thresholds) :
       current_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())),
       dest_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())),
       currentCount_(0),
       block_(position),
-      prune_thresholds_(prune_thresholds) //mjd
+      prune_thresholds_(prune_thresholds)
     { 
       StartBlock();
     }
@@ -88,7 +88,7 @@ class PruneNGramStream {
     uint64_t currentCount_;
 
     util::stream::Link block_;
-    std::vector<uint64_t> &prune_thresholds_; // mjd
+    std::vector<uint64_t> &prune_thresholds_;
 };
 
 class OnlyGamma {
@@ -129,7 +129,8 @@ class AddRight {
           denominator += in->UnmarkedCount();
           denominatorCutoff += in->CutoffCount();
           
-          ++counts[std::min(in->CutoffCount(), static_cast<uint64_t>(3))];
+          //mjd: Verify this! According to Chen&Goodman based on counts not on cutoffs.
+          ++counts[std::min(in->UnmarkedCount(), static_cast<uint64_t>(3))];
 
         } while (++in && !memcmp(&previous[0], in->begin(), size));
         
@@ -140,7 +141,7 @@ class AddRight {
           entry.gamma += discount_.Get(i) * static_cast<float>(counts[i]);
         }
 
-        entry.gamma += denominator - denominatorCutoff; //mjd
+        entry.gamma += denominator - denominatorCutoff;
 
         entry.gamma /= entry.denominator;
       }

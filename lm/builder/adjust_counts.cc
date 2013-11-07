@@ -93,10 +93,10 @@ class StatCollector {
 class CollapseStream {
   public:
     CollapseStream(const util::stream::ChainPosition &position,
-                   uint64_t prune_threshold) : //mjd
+                   uint64_t prune_threshold) :
       current_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())),
       block_(position),
-      prune_threshold_(prune_threshold) //mjd
+      prune_threshold_(prune_threshold) 
     { 
       StartBlock();
     }
@@ -113,8 +113,8 @@ class CollapseStream {
         UpdateCopyFrom();
       }
       
-      if(current_.Count() <= prune_threshold_) //mjd
-        current_.Mark(); //mjd
+      if(current_.Count() <= prune_threshold_) 
+        current_.Mark(); 
 
       current_.NextInMemory();
       uint8_t *block_base = static_cast<uint8_t*>(block_->Get());
@@ -150,7 +150,7 @@ class CollapseStream {
     uint8_t *copy_from_;
 
     util::stream::Link block_;
-    uint64_t prune_threshold_; // mjd
+    uint64_t prune_threshold_; 
 };
 
 } // namespace
@@ -164,8 +164,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
 
     // Only unigrams.  Just collect stats.  
     for (NGramStream full(positions[0]); full; ++full) 
-      // stats.AddFull(full->Count());
-      stats.AddFull(full->UnmarkedCount()); //mjd
+      stats.AddFull(full->UnmarkedCount());
 
     stats.CalculateDiscounts();
     return;
@@ -174,8 +173,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   NGramStreams streams;
   streams.Init(positions, positions.size() - 1);
   
-  // CollapseStream full(positions[positions.size() - 1]);
-  CollapseStream full(positions[positions.size() - 1], prune_thresholds_.back()); //mjd
+  CollapseStream full(positions[positions.size() - 1], prune_thresholds_.back());
 
   // Initialization: <unk> has count 0 and so does <s>.
   NGramStream *lower_valid = streams.begin();
@@ -198,23 +196,24 @@ void AdjustCounts::Run(const ChainPositions &positions) {
     // Output all the valid ones that changed.
     for (; lower_valid >= &streams[same]; --lower_valid) {
       
+      // mjd: review this!
       uint64_t order = (*lower_valid)->Order();
       uint64_t realCount = lower_counts[order - 1];
       if(order == 1 || !prune_thresholds_[order - 1] || realCount > prune_thresholds_[order - 1]) {
           stats.Add(lower_valid - streams.begin(), (*lower_valid)->Count(), false);
-          ++*lower_valid;
       }
-      else
-          stats.Add(lower_valid - streams.begin(), (*lower_valid)->Count(), true);
+      else {
+        (*lower_valid)->Mark();
+        stats.Add(lower_valid - streams.begin(), (*lower_valid)->UnmarkedCount(), true);
+      }
+          
+      ++*lower_valid;
     }
-
+    
     for (std::size_t i = 0; i < lower_counts.size(); ++i) {
         if (i >= same)
             lower_counts[i] = 0;
-        lower_counts[i] += full->Count();
-        
-      //stats.Add(lower_valid - streams.begin(), (*lower_valid)->Count());
-      //++*lower_valid;
+        lower_counts[i] += full->UnmarkedCount();
     }
 
     // This is here because bos is also const WordIndex *, so copy gets
@@ -246,9 +245,10 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   for (NGramStream *s = streams.begin(); s <= lower_valid; ++s) {
     bool pruned = prune_thresholds_[(*s)->Order() - 1]
         ? (*s)->Count() <= prune_thresholds_[(*s)->Order() - 1] : false;
-    stats.Add(s - streams.begin(), (*s)->Count(), pruned);
-    if(not pruned)
-        ++*s;
+    if(pruned)
+      (*s)->Mark();
+    stats.Add(s - streams.begin(), (*s)->UnmarkedCount(), pruned);
+    ++*s;
   }
   // Poison everyone!  Except the N-grams which were already poisoned by the input.
   for (NGramStream *s = streams.begin(); s != streams.end(); ++s)
