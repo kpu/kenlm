@@ -22,7 +22,7 @@ class Interpolate {
   private:
     float uniform_prob_;
     ChainPositions backoffs_;
-    std::vector<uint64_t> prune_thresholds_;
+    const std::vector<uint64_t> prune_thresholds_;
 };
 
 }} // namespaces

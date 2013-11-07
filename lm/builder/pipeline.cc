@@ -244,7 +244,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
     PrintStatistics(counts, counts_pruned, discounts);
     lm::ngram::ShowSizes(counts_pruned);
     std::cerr << "=== 3/5 Calculating and sorting initial probabilities ===" << std::endl;
-    master.SortAndReadTwice(counts, sorts, second, config.initial_probs.adder_in);
+    master.SortAndReadTwice(counts_pruned, sorts, second, config.initial_probs.adder_in);
   }
 
   Chains gamma_chains(config.order);
@@ -266,9 +266,15 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
   master.MaximumLazyInput(counts, primary);
 
   Chains gamma_chains(config.order - 1);
-  util::stream::ChainConfig read_backoffs(config.read_backoffs);
-  read_backoffs.entry_size = sizeof(float);
   for (std::size_t i = 0; i < config.order - 1; ++i) {
+    util::stream::ChainConfig read_backoffs(config.read_backoffs);
+
+    // Add 1 because here we are skipping unigrams
+    if(config.counts_threshold[i + 1] > 0)
+        read_backoffs.entry_size = sizeof(HashGamma);
+    else
+        read_backoffs.entry_size = sizeof(float);
+
     gamma_chains.push_back(read_backoffs);
     gamma_chains.back() >> gammas[i].Source();
   }
