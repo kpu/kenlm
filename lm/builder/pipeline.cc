@@ -272,7 +272,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
     gamma_chains.push_back(read_backoffs);
     gamma_chains.back() >> gammas[i].Source();
   }
-  master >> Interpolate(counts[0], ChainPositions(gamma_chains));
+  master >> Interpolate(counts[0], ChainPositions(gamma_chains), config.prune_thresholds);
   gamma_chains >> util::stream::kRecycle;
   master.BufferFinal(counts);
 }

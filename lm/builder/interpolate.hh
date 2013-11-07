@@ -14,13 +14,15 @@ namespace lm { namespace builder {
  */
 class Interpolate {
   public:
-    explicit Interpolate(uint64_t unigram_count, const ChainPositions &backoffs);
+    explicit Interpolate(uint64_t unigram_count, const ChainPositions &backoffs,
+                         const std::vector<uint64_t> &prune_thresholds_);
 
     void Run(const ChainPositions &positions);
 
   private:
     float uniform_prob_;
     ChainPositions backoffs_;
+    std::vector<uint64_t> prune_thresholds_;
 };
 
 }} // namespaces
