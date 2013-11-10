@@ -32,13 +32,11 @@ struct HashBufferEntry : public BufferEntry {
 // threshold.   
 class PruneNGramStream {
   public:
-    PruneNGramStream(const util::stream::ChainPosition &position,
-                   std::vector<uint64_t> &prune_thresholds) :
+    PruneNGramStream(const util::stream::ChainPosition &position) :
       current_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())),
       dest_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())),
       currentCount_(0),
-      block_(position),
-      prune_thresholds_(prune_thresholds)
+      block_(position)
     { 
       StartBlock();
     }
@@ -55,13 +53,14 @@ class PruneNGramStream {
       
       if (current_.Order() > 1) {
         if(currentCount_ > 0) {
-          if(dest_.Base() < current_.Base())
+          if(dest_.Base() < current_.Base()) {
             memcpy(dest_.Base(), current_.Base(), current_.TotalSize());
+          }
           dest_.NextInMemory();
         }
-      }
-      else
+      } else {
         dest_.NextInMemory();          
+      }
       
       current_.NextInMemory();
       
@@ -71,7 +70,7 @@ class PruneNGramStream {
         ++block_;
         StartBlock();
       }
-      
+                
       currentCount_ = current_.CutoffCount();
       
       return *this;
@@ -95,7 +94,6 @@ class PruneNGramStream {
     uint64_t currentCount_;
 
     util::stream::Link block_;
-    std::vector<uint64_t> &prune_thresholds_;
 };
 
 // Extract an array of HashedGamma from an array of BufferEntry.
@@ -163,7 +161,6 @@ class AddRight {
           
           //mjd: Verify this! According to Chen&Goodman based on counts not on cutoffs.
           ++counts[std::min(in->UnmarkedCount(), static_cast<uint64_t>(3))];
-
         } while (++in && !memcmp(&previous[0], in->begin(), size));
         
         BufferEntry &entry = *reinterpret_cast<BufferEntry*>(out.Get());
@@ -194,15 +191,15 @@ class AddRight {
 
 class MergeRight {
   public:
-    MergeRight(bool interpolate_unigrams, const util::stream::ChainPosition &from_adder, const Discount &discount, std::vector<uint64_t> &prune_thresholds)
-      : interpolate_unigrams_(interpolate_unigrams), from_adder_(from_adder), discount_(discount), prune_thresholds_(prune_thresholds) {}
+    MergeRight(bool interpolate_unigrams, const util::stream::ChainPosition &from_adder, const Discount &discount)
+      : interpolate_unigrams_(interpolate_unigrams), from_adder_(from_adder), discount_(discount) {}
 
     // calculate the initial probability of each n-gram (before order-interpolation)
     // Run() gets invoked once for each order
     void Run(const util::stream::ChainPosition &primary) {
       util::stream::Stream summed(from_adder_);
 
-      PruneNGramStream grams(primary, prune_thresholds_);
+      PruneNGramStream grams(primary);
 
       // Without interpolation, the interpolation weight goes to <unk>.
       if (grams->Order() == 1 && !interpolate_unigrams_) {
@@ -211,7 +208,7 @@ class MergeRight {
         grams->Value().uninterp.prob = sums.gamma;
         grams->Value().uninterp.gamma = 0.0;
         while (++grams) {
-          grams->Value().uninterp.prob = discount_.Apply(grams->CutoffCount()) / sums.denominator;
+          grams->Value().uninterp.prob = discount_.Apply(grams->Count()) / sums.denominator;
           grams->Value().uninterp.gamma = 0.0;
         }
         ++summed;
@@ -223,7 +220,8 @@ class MergeRight {
       for (; grams; ++summed) {
         memcpy(&previous[0], grams->begin(), size);
         const BufferEntry &sums = *static_cast<const BufferEntry*>(summed.Get());
-        do {          
+        
+        do {
           Payload &pay = grams->Value();
           pay.uninterp.prob = discount_.Apply(grams->CutoffCount()) / sums.denominator;
           pay.uninterp.gamma = sums.gamma;
@@ -235,13 +233,11 @@ class MergeRight {
     bool interpolate_unigrams_;
     util::stream::ChainPosition from_adder_;
     Discount discount_;
-    std::vector<uint64_t> &prune_thresholds_;
 };
 
 } // namespace
 
-void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Chains &primary, Chains &second_in, Chains &gamma_out,
-                          std::vector<uint64_t> &prune_thresholds) {        
+void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Chains &primary, Chains &second_in, Chains &gamma_out, const std::vector<uint64_t> &prune_thresholds) {
   for (size_t i = 0; i < primary.size(); ++i) {
     util::stream::ChainConfig gamma_config = config.adder_out;
     if(prune_thresholds[i] > 0)
@@ -254,7 +250,7 @@ void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::v
     gamma_out.push_back(gamma_config);
     gamma_out[i] >> AddRight(discounts[i], second, prune_thresholds[i] > 0);
 
-    primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i], prune_thresholds);
+    primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i]);
     // Don't bother with the OnlyGamma thread for something to discard.
     
     if (i) gamma_out[i] >> OnlyGamma(prune_thresholds[i] > 0);

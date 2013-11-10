@@ -45,11 +45,15 @@ class Callback {
         }
 
         if(prune_thresholds_[order_minus_1 + 1] > 0) {
-          const HashGamma *hashed_backoff = static_cast<const HashGamma*>(backoffs_[order_minus_1].Get());
-
           //Compute hash value for current context
           uint64_t current_hash = util::MurmurHashNative(gram.begin(), gram.Order());
-
+          
+          const HashGamma *hashed_backoff = static_cast<const HashGamma*>(backoffs_[order_minus_1].Get());
+          while(backoffs_[order_minus_1] && current_hash != hashed_backoff->hash_value) {
+            hashed_backoff = static_cast<const HashGamma*>(backoffs_[order_minus_1].Get());
+            ++backoffs_[order_minus_1];
+          }
+          
           if(current_hash == hashed_backoff->hash_value) {
             pay.complete.backoff = log10(hashed_backoff->gamma);
             ++backoffs_[order_minus_1];

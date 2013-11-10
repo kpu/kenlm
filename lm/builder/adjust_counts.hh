@@ -27,10 +27,8 @@ class BadDiscountException : public util::Exception {
  */
 class AdjustCounts {
   public:
-    AdjustCounts(std::vector<uint64_t> &counts, std::vector<uint64_t> &counts_pruned,
-                 std::vector<Discount> &discounts, std::vector<uint64_t> &prune_thresholds)
-      : counts_(counts), counts_pruned_(counts_pruned), discounts_(discounts),
-        prune_thresholds_(prune_thresholds)
+    AdjustCounts(std::vector<uint64_t> &counts, std::vector<uint64_t> &counts_pruned, std::vector<Discount> &discounts, std::vector<uint64_t> &prune_thresholds)
+      : counts_(counts), counts_pruned_(counts_pruned), discounts_(discounts), prune_thresholds_(prune_thresholds)
     {}
 
     void Run(const ChainPositions &positions);
