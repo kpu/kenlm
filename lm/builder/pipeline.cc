@@ -226,6 +226,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
 
   util::stream::Sort<SuffixOrder, AddCombiner> sorter(chain, config.sort, SuffixOrder(config.order), AddCombiner());
   chain.Wait(true);
+  std::cerr << "Unigram tokens " << token_count << " types " << type_count << std::endl;
   std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;
   master.InitForAdjust(sorter, type_count);
 }
