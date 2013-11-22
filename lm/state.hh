@@ -91,7 +91,7 @@ inline uint64_t hash_value(const Left &left) {
 }
 
 struct ChartState {
-  bool operator==(const ChartState &other) {
+  bool operator==(const ChartState &other) const {
     return (right == other.right) && (left == other.left);
   }
 
@@ -102,7 +102,7 @@ struct ChartState {
   }
 
   bool operator<(const ChartState &other) const {
-    return Compare(other) == -1;
+    return Compare(other) < 0;
   }
 
   void ZeroRemaining() {
