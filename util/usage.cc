@@ -37,7 +37,7 @@ typedef WINBOOL (WINAPI *PFN_MS_EX) (lMEMORYSTATUSEX*);
 #include <unistd.h>
 #endif
 
-#if defined(__MACH__) || defined(__FreeBSD__)
+#if defined(__MACH__) || defined(__FreeBSD__) || defined(__APPLE__)
 #include <sys/sysctl.h>
 #endif
 
@@ -151,7 +151,7 @@ uint64_t GuessPhysicalMemory() {
   }
 #endif
 
-#if defined(HW_PHYSMEN) && (defined(__MACH__) || defined(__FreeBSD__))
+#if defined(HW_PHYSMEN) && (defined(__MACH__) || defined(__FreeBSD__) || defined(__APPLE__))
   { /* This works on *bsd and darwin.  */
     unsigned int physmem;
     size_t len = sizeof physmem;
