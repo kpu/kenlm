@@ -58,6 +58,23 @@ class AnyCharacter {
     StringPiece chars_;
 };
 
+class BoolCharacter {
+  public:
+    BoolCharacter() {}
+
+    explicit BoolCharacter(const bool *delimiter) { delimiter_ = delimiter; }
+
+    StringPiece Find(const StringPiece &in) const {
+      for (const char *i = in.data(); i != in.data() + in.size(); ++i) {
+        if (delimiter_[static_cast<unsigned char>(*i)]) return StringPiece(i, 1);
+      }
+      return StringPiece(in.data() + in.size(), 0);
+    }
+
+  private:
+    const bool *delimiter_;
+};
+
 class AnyCharacterLast {
   public:
     AnyCharacterLast() {}
