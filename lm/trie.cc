@@ -86,6 +86,16 @@ template <class Bhiksha> util::BitAddress BitPackedMiddle<Bhiksha>::Insert(WordI
   return ret;
 }
 
+// TODO refactor
+template <class Bhiksha> util::BitAddress BitPackedMiddle<Bhiksha>::CheckedRead(uint64_t index, WordIndex &word, NodeRange &range) {
+  uint64_t at_pointer = index * total_bits_;
+  base_.CheckedBase(at_pointer >> 3);
+  word = util::ReadInt57(base_.get(), at_pointer, word_bits_, word_mask_);
+  at_pointer += word_bits_;
+  bhiksha_.ReadNext(base_.get(), at_pointer + quant_bits_, index, total_bits_, range);
+  return util::BitAddress(base_.get(), at_pointer);
+}
+
 template <class Bhiksha> util::BitAddress BitPackedMiddle<Bhiksha>::Find(WordIndex word, NodeRange &range, uint64_t &pointer) const {
   uint64_t at_pointer;
   if (!FindBitPacked(base_.get(), word_mask_, word_bits_, total_bits_, range.begin, range.end, max_vocab_, word, at_pointer)) {
@@ -121,6 +131,13 @@ util::BitAddress BitPackedLongest::Find(WordIndex word, const NodeRange &range) 
   if (!FindBitPacked(base_.get(), word_mask_, word_bits_, total_bits_, range.begin, range.end, max_vocab_, word, at_pointer)) return util::BitAddress(NULL, 0);
   at_pointer = at_pointer * total_bits_ + word_bits_;
   return util::BitAddress(base_.get(), at_pointer);
+}
+
+util::BitAddress BitPackedLongest::CheckedRead(uint64_t index, WordIndex &word) {
+  uint64_t at_pointer = index * total_bits_;
+  base_.CheckedBase(at_pointer >> 3);
+  word = util::ReadInt57(base_.get(), at_pointer, word_bits_, word_mask_);
+  return util::BitAddress(base_.get(), at_pointer + word_bits_);
 }
 
 template class BitPackedMiddle<DontBhiksha>;

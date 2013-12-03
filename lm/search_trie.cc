@@ -600,6 +600,28 @@ template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::Initializ
   BuildTrie(sorted, counts, config, *this, quant_, vocab, backing);
 }
 
+// Horribly inefficient.
+template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::CheckedRead(unsigned int order, uint64_t offset, WordIndex &word, ProbBackoff &weights, Node &pointer) {
+  if (order == 1) {
+    const UnigramValue &value = unigram_.CheckedIndex(offset);
+    weights = value.weights;
+    word = offset;
+    pointer.begin = value.next;
+    pointer.end = unigram_.CheckedIndex(offset + 1).next;
+    return;
+  }
+  Middle *at = middle_begin_ + order - 2;
+  if (at == middle_end_) {
+    pointer.begin = pointer.end = 0;
+    weights.backoff = 0.0;
+    weights.prob = typename Quant::LongestPointer(quant_, longest_.CheckedRead(offset, word)).Prob();
+  } else {
+    typename Quant::MiddlePointer reader(quant_, order - 2, at->CheckedRead(offset, word, pointer));
+    weights.prob = reader.Prob();
+    weights.backoff = reader.Backoff();
+  }
+}
+
 template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::ExternalInsert(unsigned int order, WordIndex last_word, const ProbBackoff &weights) {
   if (order == 1) {
     UnigramValue &value = unigram_.CheckedIndex(last_word);

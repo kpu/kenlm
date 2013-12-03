@@ -110,6 +110,9 @@ template <class Quant, class Bhiksha> class TrieSearch {
       return true;
     }
 
+    // Kludge for dumping a trie
+    void CheckedRead(unsigned int order, uint64_t offset, WordIndex &word, ProbBackoff &weights, Node &pointer);
+
     // For building directly from text.
     void ExternalInsert(unsigned int order, WordIndex last_word, const ProbBackoff &payload);
     void ExternalFinished(const Config &config, WordIndex unigram_count_inc_unk);

@@ -133,6 +133,8 @@ template <class Bhiksha> class BitPackedMiddle : public BitPacked {
       return util::BitAddress(base_.get(), addr);
     }
 
+    util::BitAddress CheckedRead(uint64_t index, WordIndex &word, NodeRange &range);
+
   private:
     uint8_t quant_bits_;
     Bhiksha bhiksha_;
@@ -158,6 +160,8 @@ class BitPackedLongest : public BitPacked {
     util::BitAddress Insert(WordIndex word);
 
     util::BitAddress Find(WordIndex word, const NodeRange &node) const;
+
+    util::BitAddress CheckedRead(uint64_t index, WordIndex &word);
 
   private:
     uint8_t quant_bits_;
