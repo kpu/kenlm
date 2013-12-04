@@ -24,6 +24,7 @@ namespace util { class FilePiece; }
 
 namespace lm {
 // For friend declaration.
+class DumpTrie;
 namespace builder { class Binarize; }
 
 namespace ngram {
@@ -114,6 +115,7 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
   private:
     friend void lm::ngram::LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);
     friend class lm::builder::Binarize;
+    friend class lm::DumpTrie;
 
     static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config);
 
