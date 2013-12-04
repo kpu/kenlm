@@ -3,6 +3,7 @@
 #include "lm/model.hh"
 #include "util/fake_ofstream.hh"
 #include "util/file.hh"
+#include "util/ersatz_progress.hh"
 
 #include <boost/lexical_cast.hpp>
 
@@ -10,6 +11,12 @@
 #include <string.h>
 
 namespace lm {
+
+struct NoOpProgress {
+  NoOpProgress(uint64_t end) {}
+  void operator++() const {}
+};
+
 class DumpTrie : public EnumerateVocab {
   public:
     DumpTrie() {}
@@ -26,23 +33,25 @@ class DumpTrie : public EnumerateVocab {
         files_[i].reset(util::CreateOrThrow((base + boost::lexical_cast<std::string>(static_cast<unsigned int>(i) + 1)).c_str()));
         out_[i].SetFD(files_[i].get());
       }
-      Dump(model, 1, range);
+      Dump<util::ErsatzProgress>(model, 1, range);
     }
 
   private:
-    void Dump(ngram::TrieModel &model, const unsigned char order, const ngram::trie::NodeRange range) {
+    template <class Progress> void Dump(ngram::TrieModel &model, const unsigned char order, const ngram::trie::NodeRange range) {
       ngram::trie::NodeRange pointer;
       ProbBackoff weights;
       WordIndex word;
-      for (uint64_t i = range.begin; i < range.end; ++i) {
+      Progress progress(range.end);
+      for (uint64_t i = range.begin; i < range.end; ++i, ++progress) {
         model.search_.CheckedRead(order, i, word, weights, pointer);
+        
         words_[order - 1] = pieces_[word];
         out_[order - 1] << weights.prob << '\t' << words_[order - 1];
         for (char w = static_cast<char>(order) - 2; w >= 0; --w) {
           out_[static_cast<unsigned char>(order - 1)] << ' ' << words_[static_cast<unsigned char>(w)];
         }
         out_[order - 1] << '\t' << weights.backoff << '\n';
-        Dump(model, order + 1, pointer);
+        Dump<NoOpProgress>(model, order + 1, pointer);
       }
     }
 
@@ -67,7 +76,6 @@ int main(int argc, char *argv[]) {
   config.load_method = util::LAZY;
   config.enumerate_vocab = &dumper;
   lm::ngram::TrieModel model(argv[1], config);
-
   dumper.Dump(model, argv[2]);
   return 0;
 }
