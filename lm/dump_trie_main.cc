@@ -59,7 +59,7 @@ class DumpTrie {
       }
       Dump<util::ErsatzProgress>(model, 1, range);
       for (unsigned char i = 0; i < model.Order(); ++i) {
-        std::cout << "ngram " << static_cast<unsigned>(i) << '=' << count_[i] << '\n';
+        std::cout << "ngram " << static_cast<unsigned>(i + 1) << '=' << count_[i] << '\n';
       }
     }
 
