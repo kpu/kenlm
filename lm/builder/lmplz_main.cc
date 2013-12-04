@@ -70,7 +70,13 @@ int main(int argc, char *argv[]) {
         "setting the temporary file location (-T) and sorting memory (-S) is recommended.\n\n"
         "Memory sizes are specified like GNU sort: a number followed by a unit character.\n"
         "Valid units are \% for percentage of memory (supported platforms only) and (in\n"
-        "increasing powers of 1024): b, K, M, G, T, P, E, Z, Y.  Default is K (*1024).\n\n";
+        "increasing powers of 1024): b, K, M, G, T, P, E, Z, Y.  Default is K (*1024).\n";
+      uint64_t mem = util::GuessPhysicalMemory();
+      if (mem) {
+        std::cerr << "This machine has " << mem << " bytes of memory.\n\n";
+      } else {
+        std::cerr << "Unable to determine the amount of memory on this machine.\n\n";
+      } 
       std::cerr << options << std::endl;
       return 1;
     }

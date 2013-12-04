@@ -66,7 +66,7 @@ template <class Iterator, class Output, class Less> void AllIntersection(std::ve
 
   std::sort(sets.begin(), sets.end(), detail::RangeLessBySize<boost::iterator_range<Iterator> >());
   boost::optional<Value> ret;
-  for (boost::optional<Value> ret; ret = detail::FirstIntersectionSorted(sets, less); sets.front().advance_begin(1)) {
+  for (boost::optional<Value> ret; (ret = detail::FirstIntersectionSorted(sets, less)); sets.front().advance_begin(1)) {
     out(*ret);
   }
 }

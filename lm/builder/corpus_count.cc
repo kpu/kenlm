@@ -238,12 +238,14 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
   const WordIndex end_sentence = vocab.Lookup("</s>");
   Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_);
   uint64_t count = 0;
-  StringPiece delimiters("\0\t\r ", 4);
+  bool delimiters[256];
+  memset(delimiters, 0, sizeof(delimiters));
+  delimiters['\0'] = delimiters['\t'] = delimiters['\n'] = delimiters['\r'] = delimiters[' '] = true;
   try {
     while(true) {
       StringPiece line(from_.ReadLine());
       writer.StartSentence();
-      for (util::TokenIter<util::AnyCharacter, true> w(line, delimiters); w; ++w) {
+      for (util::TokenIter<util::BoolCharacter, true> w(line, delimiters); w; ++w) {
         WordIndex word = vocab.Lookup(*w);
         UTIL_THROW_IF(word <= 2, FormatLoadException, "Special word " << *w << " is not allowed in the corpus.  I plan to support models containing <unk> in the future.");
         writer.Append(word);
