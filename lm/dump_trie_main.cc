@@ -1,5 +1,4 @@
 #include "lm/config.hh"
-#include "lm/enumerate_vocab.hh"
 #include "lm/model.hh"
 #include "util/fake_ofstream.hh"
 #include "util/file.hh"
@@ -17,15 +16,20 @@ struct NoOpProgress {
   void operator++() const {}
 };
 
-class DumpTrie : public EnumerateVocab {
+class DumpTrie {
   public:
     DumpTrie() {}
 
-    void Add(WordIndex index, const StringPiece &str) {
-      pieces_.push_back(StringPiece((const char*)memcpy(pool_.Allocate(str.size()), str.data(), str.size()), str.size()));
-    }
-
-    void Dump(ngram::TrieModel &model, const std::string &base) {
+    void Dump(ngram::TrieModel &model, const std::string &base, const std::string &vocab) {
+      pieces_.resize(model.GetVocabulary().Bound());
+      util::FilePiece f(vocab.c_str());
+      try { while (true) {
+        StringPiece word = f.ReadDelimited();
+        StringPiece &stored = pieces_[model.GetVocabulary().Index(word)];
+        if (stored.empty()) {
+          stored = StringPiece(static_cast<const char*>(memcpy(pool_.Allocate(word.size()), word.data(), word.size())), word.size());
+        }
+      } } catch (const util::EndOfFileException &e) {}
       ngram::trie::NodeRange range;
       range.begin = 0;
       range.end = model.GetVocabulary().Bound();
@@ -44,7 +48,7 @@ class DumpTrie : public EnumerateVocab {
       Progress progress(range.end);
       for (uint64_t i = range.begin; i < range.end; ++i, ++progress) {
         model.search_.CheckedRead(order, i, word, weights, pointer);
-        
+        if (pieces_[word].empty()) continue;
         words_[order - 1] = pieces_[word];
         out_[order - 1] << weights.prob << '\t' << words_[order - 1];
         for (char w = static_cast<char>(order) - 2; w >= 0; --w) {
@@ -65,17 +69,15 @@ class DumpTrie : public EnumerateVocab {
 } // namespace
 
 int main(int argc, char *argv[]) {
-  if (argc != 3) {
-    std::cerr << "Usage: " << argv[0] << " trie output_base" << std::endl;
+  if (argc != 4) {
+    std::cerr << "Usage: " << argv[0] << " trie output_base vocab" << std::endl;
     return 1;
   }
 
-  lm::DumpTrie dumper;
-
   lm::ngram::Config config;
   config.load_method = util::LAZY;
-  config.enumerate_vocab = &dumper;
   lm::ngram::TrieModel model(argv[1], config);
-  dumper.Dump(model, argv[2]);
+  lm::DumpTrie dumper;
+  dumper.Dump(model, argv[2], argv[3]);
   return 0;
 }

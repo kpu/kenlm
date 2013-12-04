@@ -246,6 +246,7 @@ util::stream::Sort<SuffixOrder, AddCombiner> *CountText(int text_file /* input *
 
   std::auto_ptr<util::stream::Sort<SuffixOrder, AddCombiner> > sorter(new util::stream::Sort<SuffixOrder, AddCombiner>(chain, config.sort, SuffixOrder(config.order), AddCombiner()));
   chain.Wait(true);
+  std::cerr << "Unigram tokens " << token_count << " types " << type_count << std::endl;
   return sorter.release();
 }
 
