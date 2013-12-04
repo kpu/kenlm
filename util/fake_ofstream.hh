@@ -2,6 +2,9 @@
  * Does not support many data types.  Currently, it's targeted at writing ARPA
  * files quickly.
  */
+#ifndef UTIL_FAKE_OFSTREAM__
+#define UTIL_FAKE_OFSTREAM__
+
 #include "util/double-conversion/double-conversion.h"
 #include "util/double-conversion/utils.h"
 #include "util/file.hh"
@@ -92,3 +95,5 @@ class FakeOFStream {
 };
 
 } // namespace
+
+#endif
