@@ -28,6 +28,7 @@ boost::program_options::typed_value<std::string> *SizeOption(std::size_t &to, co
 } // namespace
 
 int main(int argc, char *argv[]) {
+  bool help = false;
   try {
     namespace po = boost::program_options;
     po::options_description options("Language model building options");
@@ -36,6 +37,7 @@ int main(int argc, char *argv[]) {
     std::string text, arpa;
 
     options.add_options()
+      ("help", po::bool_switch(), "Show this help message")
       ("order,o", po::value<std::size_t>(&pipeline.order)
 #if BOOST_VERSION >= 104200
          ->required()
@@ -52,7 +54,10 @@ int main(int argc, char *argv[]) {
       ("verbose_header", po::bool_switch(&pipeline.verbose_header), "Add a verbose header to the ARPA file that includes information such as token count, smoothing type, etc.")
       ("text", po::value<std::string>(&text), "Read text from a file instead of stdin")
       ("arpa", po::value<std::string>(&arpa), "Write ARPA to a file instead of stdout");
-    if (argc == 1) {
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, options), vm);
+
+    if (argc == 1 || vm["help"].as<bool>()) {
       std::cerr << 
         "Builds unpruned language models with modified Kneser-Ney smoothing.\n\n"
         "Please cite:\n"
@@ -80,8 +85,7 @@ int main(int argc, char *argv[]) {
       std::cerr << options << std::endl;
       return 1;
     }
-    po::variables_map vm;
-    po::store(po::parse_command_line(argc, argv, options), vm);
+
     po::notify(vm);
 
     // required() appeared in Boost 1.42.0.
@@ -120,6 +124,7 @@ int main(int argc, char *argv[]) {
     }
     util::PrintUsage(std::cerr);
   } catch (const std::exception &e) {
+    std::cerr << "help is " << help << std::endl;
     std::cerr << e.what() << std::endl;
     return 1;
   }
