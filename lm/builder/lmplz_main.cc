@@ -28,7 +28,6 @@ boost::program_options::typed_value<std::string> *SizeOption(std::size_t &to, co
 } // namespace
 
 int main(int argc, char *argv[]) {
-  bool help = false;
   try {
     namespace po = boost::program_options;
     po::options_description options("Language model building options");
@@ -124,7 +123,6 @@ int main(int argc, char *argv[]) {
     }
     util::PrintUsage(std::cerr);
   } catch (const std::exception &e) {
-    std::cerr << "help is " << help << std::endl;
     std::cerr << e.what() << std::endl;
     return 1;
   }
