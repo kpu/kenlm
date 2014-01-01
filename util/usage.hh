@@ -7,6 +7,9 @@
 #include <stdint.h>
 
 namespace util {
+// Time in seconds since process started.  Zero on unsupported platforms.
+double WallTime();
+
 void PrintUsage(std::ostream &to);
 
 // Determine how much physical memory there is.  Return 0 on failure.

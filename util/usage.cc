@@ -10,6 +10,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 #if defined(_WIN32) || defined(_WIN64)
 // This code lifted from physmem.c in gnulib.  See the copyright statement
 // below.  
@@ -33,7 +34,6 @@ typedef WINBOOL (WINAPI *PFN_MS_EX) (lMEMORYSTATUSEX*);
 #else
 #include <sys/resource.h>
 #include <sys/time.h>
-#include <time.h>
 #include <unistd.h>
 #endif
 
@@ -43,53 +43,76 @@ typedef WINBOOL (WINAPI *PFN_MS_EX) (lMEMORYSTATUSEX*);
 #endif
 
 namespace util {
-
-#if !defined(_WIN32) && !defined(_WIN64)
 namespace {
 
-// On Mac OS X, clock_gettime is not implemented.
-// CLOCK_MONOTONIC is not defined either.
-#ifdef __MACH__
-#define CLOCK_MONOTONIC 0
-
-int clock_gettime(int clk_id, struct timespec *tp) {
+#if defined(__MACH__)
+typedef struct timeval Wall;
+Wall GetWall() {
   struct timeval tv;
   gettimeofday(&tv, NULL);
-  tp->tv_sec = tv.tv_sec;
-  tp->tv_nsec = tv.tv_usec * 1000;
-  return 0;
+  return tv;
 }
-#endif // __MACH__
+#elif defined(_WIN32) || defined(_WIN64)
+typedef time_t Wall;
+Wall GetWall() {
+  return time(NULL);
+}
+#else
+typedef struct timespec Wall;
+Wall GetWall() {
+  Wall ret;
+  clock_gettime(CLOCK_MONOTONIC, &ret);
+  return ret;
+}
+#endif
 
-float FloatSec(const struct timeval &tv) {
-  return static_cast<float>(tv.tv_sec) + (static_cast<float>(tv.tv_usec) / 1000000.0);
+// These all assume first > second
+double Subtract(time_t first, time_t second) {
+  return static_cast<double>(first - second);
 }
-float FloatSec(const struct timespec &tv) {
-  return static_cast<float>(tv.tv_sec) + (static_cast<float>(tv.tv_nsec) / 1000000000.0);
+double DoubleSec(time_t tv) {
+  return static_cast<double>(tv);
 }
+#if !defined(_WIN32) && !defined(_WIN64)
+double Subtract(const struct timeval &first, const struct timeval &second) {
+  return static_cast<double>(first.tv_sec - second.tv_sec) + static_cast<double>(first.tv_usec - second.tv_usec) / 1000000.0;
+}
+double Subtract(const struct timespec &first, const struct timespec &second) {
+  return static_cast<double>(first.tv_sec - second.tv_sec) + static_cast<double>(first.tv_nsec - second.tv_nsec) / 1000000000.0;
+}
+double DoubleSec(const struct timeval &tv) {
+  return static_cast<double>(tv.tv_sec) + (static_cast<double>(tv.tv_usec) / 1000000.0);
+}
+double DoubleSec(const struct timespec &tv) {
+  return static_cast<double>(tv.tv_sec) + (static_cast<double>(tv.tv_nsec) / 1000000000.0);
+}
+#endif
+
+class RecordStart {
+  public:
+    RecordStart() {
+      started_ = GetWall();
+    }
+
+    const Wall &Started() const {
+      return started_;
+    }
+
+  private:
+    Wall started_;
+};
+
+const RecordStart kRecordStart;
 
 const char *SkipSpaces(const char *at) {
   for (; *at == ' ' || *at == '\t'; ++at) {}
   return at;
 }
-
-class RecordStart {
-  public:
-    RecordStart() {
-      clock_gettime(CLOCK_MONOTONIC, &started_);
-    }
-
-    const struct timespec &Started() const {
-      return started_;
-    }
-
-  private:
-    struct timespec started_;
-};
-
-const RecordStart kRecordStart;
 } // namespace
-#endif
+
+double WallTime() {
+  return Subtract(GetWall(), kRecordStart.Started());
+}
 
 void PrintUsage(std::ostream &out) {
 #if !defined(_WIN32) && !defined(_WIN64)
@@ -113,13 +136,12 @@ void PrintUsage(std::ostream &out) {
     return;
   }
   out << "RSSMax:" << usage.ru_maxrss << " kB" << '\t';
-  out << "user:" << FloatSec(usage.ru_utime) << "\tsys:" << FloatSec(usage.ru_stime) << '\t';
-  out << "CPU:" << (FloatSec(usage.ru_utime) + FloatSec(usage.ru_stime));
-
-  struct timespec current;
-  clock_gettime(CLOCK_MONOTONIC, &current);
-  out << "\treal:" << (FloatSec(current) - FloatSec(kRecordStart.Started())) << '\n';
+  out << "user:" << DoubleSec(usage.ru_utime) << "\tsys:" << DoubleSec(usage.ru_stime) << '\t';
+  out << "CPU:" << (DoubleSec(usage.ru_utime) + DoubleSec(usage.ru_stime));
+  out << '\t';
 #endif
+
+  out << "real:" << WallTime() << '\n';
 }
 
 /* Adapted from physmem.c in gnulib 831b84c59ef413c57a36b67344467d66a8a2ba70 */
