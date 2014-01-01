@@ -68,7 +68,7 @@ Wall GetWall() {
 
 // These all assume first > second
 double Subtract(time_t first, time_t second) {
-  return static_cast<double>(first - second);
+  return difftime(first, second);
 }
 double DoubleSec(time_t tv) {
   return static_cast<double>(tv);
