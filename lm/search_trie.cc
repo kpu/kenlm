@@ -253,11 +253,6 @@ class FindBlanks {
       ++counts_.back();
     }
 
-    // Unigrams wrote one past.
-    void Cleanup() {
-      --counts_[0];
-    }
-
     const std::vector<uint64_t> &Counts() const {
       return counts_;
     }
@@ -309,8 +304,6 @@ template <class Quant, class Bhiksha> class WriteEntries {
       const WordIndex *words = reinterpret_cast<const WordIndex*>(data);
       typename Quant::LongestPointer(quant_, longest_.Insert(words[order_ - 1])).Write(reinterpret_cast<const Prob*>(words + order_)->prob);
     }
-
-    void Cleanup() {}
 
   private:
     RecordReader *contexts_;
@@ -385,14 +378,14 @@ template <class Doing> void RecursiveInsert(const unsigned char total_order, con
   util::ErsatzProgress progress(unigram_count + 1, progress_out, message);
   WordIndex unigram = 0;
   std::priority_queue<Gram> grams;
-  grams.push(Gram(&unigram, 1));
+  if (unigram_count) grams.push(Gram(&unigram, 1));
   for (unsigned char i = 2; i <= total_order; ++i) {
     if (input[i-2]) grams.push(Gram(reinterpret_cast<const WordIndex*>(input[i-2].Data()), i));
   }
 
   BlankManager<Doing> blank(total_order, doing);
 
-  while (true) {
+  while (!grams.empty()) {
     Gram top = grams.top();
     grams.pop();
     unsigned char order = top.end - top.begin;
@@ -400,8 +393,7 @@ template <class Doing> void RecursiveInsert(const unsigned char total_order, con
       blank.Visit(&unigram, 1, doing.UnigramProb(unigram));
       doing.Unigram(unigram);
       progress.Set(unigram);
-      if (++unigram == unigram_count + 1) break;
-      grams.push(top);
+      if (++unigram < unigram_count) grams.push(top);
     } else {
       if (order == total_order) {
         blank.Visit(top.begin, order, reinterpret_cast<const Prob*>(top.end)->prob);
@@ -414,8 +406,6 @@ template <class Doing> void RecursiveInsert(const unsigned char total_order, con
       if (++reader) grams.push(top);
     }
   }
-  assert(grams.empty());
-  doing.Cleanup();
 }
 
 void SanityCheckCounts(const std::vector<uint64_t> &initial, const std::vector<uint64_t> &fixed) {
@@ -524,6 +514,8 @@ template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::ve
   {
     WriteEntries<Quant, Bhiksha> writer(contexts, quant, unigrams, out.middle_begin_, out.longest_, counts.size(), sri);
     RecursiveInsert(counts.size(), counts[0], inputs, config.ProgressMessages(), "Writing trie", writer);
+    // Write the last unigram entry, which is the end pointer for the bigrams.  
+    writer.Unigram(counts[0]);
   }
 
   // Do not disable this error message or else too little state will be returned.  Both WriteEntries::Middle and returning state based on found n-grams will need to be fixed to handle this situation.
