@@ -90,8 +90,6 @@ class SortedVocabulary : public base::Vocabulary {
 
     WordIndex bound_;
 
-    WordIndex highest_value_;
-
     bool saw_unk_;
 
     EnumerateVocab *enumerate_;
