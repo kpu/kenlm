@@ -70,6 +70,11 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
 #endif
     {}
 
+    void Relocate(void *new_base) {
+      begin_ = reinterpret_cast<MutableIterator>(new_base);
+      end_ = begin_ + buckets_;
+    }
+
     template <class T> MutableIterator Insert(const T &t) {
 #ifdef DEBUG
       assert(initialized_);

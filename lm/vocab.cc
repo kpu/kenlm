@@ -100,6 +100,12 @@ void SortedVocabulary::SetupMemory(void *start, std::size_t allocated, std::size
   saw_unk_ = false;
 }
 
+void SortedVocabulary(void *new_start) {
+  std::size_t delta = end_ - begin_;
+  begin_ = reinterpret_cast<uint64_t>(new_start) + 1;
+  end_ = begin_ + delta;
+}
+
 void SortedVocabulary::ConfigureEnumerate(EnumerateVocab *to, std::size_t max_entries) {
   enumerate_ = to;
   if (enumerate_) {
@@ -177,6 +183,11 @@ void ProbingVocabulary::SetupMemory(void *start, std::size_t allocated, std::siz
   lookup_ = Lookup(static_cast<uint8_t*>(start) + ALIGN8(sizeof(detail::ProbingVocabularyHeader)), allocated);
   bound_ = 1;
   saw_unk_ = false;
+}
+
+void ProbingVocabulary::Relocate(void *new_start) {
+  header_ = static_cast<detail::ProbingVocabularyHeader*>(new_start);
+  lookup_.Relocate(static_cast<uint8_t*>(new_start) + ALIGN8(sizeof(detail::ProbingVocabularyHeader)));
 }
 
 void ProbingVocabulary::ConfigureEnumerate(EnumerateVocab *to, std::size_t /*max_entries*/) {

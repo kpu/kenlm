@@ -71,6 +71,8 @@ class SortedVocabulary : public base::Vocabulary {
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
     void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
 
+    void Relocate(void *new_start);
+
     void ConfigureEnumerate(EnumerateVocab *to, std::size_t max_entries);
 
     WordIndex Insert(const StringPiece &str);
@@ -137,6 +139,8 @@ class ProbingVocabulary : public base::Vocabulary {
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
     void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
+
+    void Relocate(void *new_start);
 
     void ConfigureEnumerate(EnumerateVocab *to, std::size_t max_entries);
 
