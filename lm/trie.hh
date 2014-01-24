@@ -143,9 +143,6 @@ class BitPackedLongest : public BitPacked {
     util::BitAddress Insert(WordIndex word);
 
     util::BitAddress Find(WordIndex word, const NodeRange &node) const;
-
-  private:
-    uint8_t quant_bits_;
 };
 
 } // namespace trie
