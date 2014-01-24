@@ -153,12 +153,15 @@ uint64_t MurmurHash64B ( const void * key, std::size_t len, uint64_t seed )
 
 // Trick to test for 64-bit architecture at compile time.  
 namespace {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
 template <unsigned L> inline uint64_t MurmurHashNativeBackend(const void * key, std::size_t len, uint64_t seed) {
   return MurmurHash64A(key, len, seed);
 }
 template <> inline uint64_t MurmurHashNativeBackend<4>(const void * key, std::size_t len, uint64_t seed) {
   return MurmurHash64B(key, len, seed);
 }
+#pragma clang diagnostic pop
 } // namespace
 
 uint64_t MurmurHashNative(const void * key, std::size_t len, uint64_t seed) {
