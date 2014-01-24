@@ -67,8 +67,10 @@ Wall GetWall() {
 #endif
 
 // Some of these functions are only used on some platforms.
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wunused-function"
+#endif
 // These all assume first > second
 double Subtract(time_t first, time_t second) {
   return difftime(first, second);
@@ -90,7 +92,9 @@ double DoubleSec(const struct timespec &tv) {
   return static_cast<double>(tv.tv_sec) + (static_cast<double>(tv.tv_nsec) / 1000000000.0);
 }
 #endif
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
 
 class RecordStart {
   public:
