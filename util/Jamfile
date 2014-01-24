@@ -31,3 +31,4 @@ unit-test probing_hash_table_test : probing_hash_table_test.cc kenutil /top//boo
 unit-test sorted_uniform_test : sorted_uniform_test.cc kenutil /top//boost_unit_test_framework ;
 unit-test tokenize_piece_test : tokenize_piece_test.cc kenutil /top//boost_unit_test_framework ;
 unit-test multi_intersection_test : multi_intersection_test.cc kenutil /top//boost_unit_test_framework ;
+unit-test sized_iterator_test : sized_iterator_test.cc kenutil /top//boost_unit_test_framework ;

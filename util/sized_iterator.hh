@@ -36,7 +36,7 @@ class SizedInnerIterator {
     void *Data() { return ptr_; }
     std::size_t EntrySize() const { return size_; }
 
-    friend inline void swap(SizedInnerIterator &first, SizedInnerIterator &second) {
+    friend void swap(SizedInnerIterator &first, SizedInnerIterator &second) {
       std::swap(first.ptr_, second.ptr_);
       std::swap(first.size_, second.size_);
     }
@@ -69,7 +69,7 @@ class SizedProxy {
     const void *Data() const { return inner_.Data(); }
     void *Data() { return inner_.Data(); }
 
-    friend void swap(SizedProxy &first, SizedProxy &second) {
+    friend void swap(SizedProxy first, SizedProxy second) {
       std::swap_ranges(
           static_cast<char*>(first.inner_.Data()),
           static_cast<char*>(first.inner_.Data()) + first.inner_.EntrySize(),
