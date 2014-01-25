@@ -86,7 +86,7 @@ template <class T> class PCQueue : boost::noncopyable {
      storage_(new T[size]),
      end_(storage_.get() + size),
      produce_at_(storage_.get()),
-     consume_at_(storage_.get()) { Semaphore(3); }
+     consume_at_(storage_.get()) {}
 
   // Add a value to the queue.
   void Produce(const T &val) {
