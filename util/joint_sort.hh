@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <iostream>
 
 namespace util {
 
@@ -35,9 +34,10 @@ template <class KeyIter, class ValueIter> class JointIter {
       return *this;
     }
 
-    void swap(const JointIter &other) {
-      std::swap(key_, other.key_);
-      std::swap(value_, other.value_);
+    friend void swap(JointIter &first, JointIter &second) {
+      using std::swap;
+      swap(first.key_, second.key_);
+      swap(first.value_, second.value_);
     }
 
   private:
@@ -83,9 +83,11 @@ template <class KeyIter, class ValueIter> class JointProxy {
       return *(inner_.key_);
     }
 
-    void swap(JointProxy<KeyIter, ValueIter> &other) {
-      std::swap(*inner_.key_, *other.inner_.key_);
-      std::swap(*inner_.value_, *other.inner_.value_);
+    friend void swap(JointProxy<KeyIter, ValueIter> first, JointProxy<KeyIter, ValueIter> second) {
+      // Allow argument-dependent lookup.
+      using std::swap;
+      swap(*first.inner_.key_, *second.inner_.key_);
+      swap(*first.inner_.value_, *second.inner_.value_);
     }
 
   private:
@@ -137,15 +139,5 @@ template <class KeyIter, class ValueIter> void JointSort(const KeyIter &key_begi
 }
 
 } // namespace util
-
-namespace std {
-template <class KeyIter, class ValueIter> void swap(util::detail::JointIter<KeyIter, ValueIter> &left, util::detail::JointIter<KeyIter, ValueIter> &right) {
-  left.swap(right);
-}
-
-template <class KeyIter, class ValueIter> void swap(util::detail::JointProxy<KeyIter, ValueIter> &left, util::detail::JointProxy<KeyIter, ValueIter> &right) {
-  left.swap(right);
-}
-} // namespace std
 
 #endif // UTIL_JOINT_SORT__

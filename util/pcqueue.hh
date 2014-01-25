@@ -1,6 +1,8 @@
 #ifndef UTIL_PCQUEUE__
 #define UTIL_PCQUEUE__
 
+#include "util/exception.hh"
+
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
 #include <boost/scoped_array.hpp>
 #include <boost/thread/mutex.hpp>
@@ -8,19 +10,67 @@
 
 #include <errno.h>
 
+#ifdef __APPLE__
+#include <mach/semaphore.h>
+#include <mach/task.h>
+#include <mach/mach_traps.h>
+#include <mach/mach.h>
+#endif // __APPLE__
+
 namespace util {
 
-inline void WaitSemaphore (boost::interprocess::interprocess_semaphore &on) {
+/* OS X Maverick and Boost interprocess were doing "Function not implemented."
+ * So this is my own wrapper around the mach kernel APIs.
+ */
+#ifdef __APPLE__
+
+#define MACH_CALL(call) UTIL_THROW_IF(KERN_SUCCESS != (call), Exception, "Mach call failure")
+
+class Semaphore {
+  public:
+    explicit Semaphore(int value) : task_(mach_task_self()) {
+      MACH_CALL(semaphore_create(task_, &back_, SYNC_POLICY_FIFO, value));
+    }
+
+    ~Semaphore() {
+      MACH_CALL(semaphore_destroy(task_, back_));
+    }
+
+    void wait() {
+      MACH_CALL(semaphore_wait(back_));
+    }
+
+    void post() {
+      MACH_CALL(semaphore_signal(back_));
+    }
+
+  private:
+    semaphore_t back_;
+    task_t task_;
+};
+
+inline void WaitSemaphore(Semaphore &semaphore) {
+  semaphore.wait();
+}
+
+#else
+typedef boost::interprocess::interprocess_semaphore Semaphore;
+
+inline void WaitSemaphore (Semaphore &on) {
   while (1) {
     try {
       on.wait();
       break;
     }
     catch (boost::interprocess::interprocess_exception &e) {
-      if (e.get_native_error() != EINTR) throw;
+      if (e.get_native_error() != EINTR) {
+        throw;
+      }
     }
   }
 }
+
+#endif // __APPLE__
 
 /* Producer consumer queue safe for multiple producers and multiple consumers.
  * T must be default constructable and have operator=.  
@@ -82,9 +132,9 @@ template <class T> class PCQueue : boost::noncopyable {
    
  private:
   // Number of empty spaces in storage_.
-  boost::interprocess::interprocess_semaphore empty_;
+  Semaphore empty_;
   // Number of occupied spaces in storage_.
-  boost::interprocess::interprocess_semaphore used_;
+  Semaphore used_;
 
   boost::scoped_array<T> storage_;
 

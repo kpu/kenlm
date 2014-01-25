@@ -1,5 +1,5 @@
 #ifndef LM_FILTER_FORMAT_H__
-#define LM_FITLER_FORMAT_H__
+#define LM_FILTER_FORMAT_H__
 
 #include "lm/filter/arpa_io.hh"
 #include "lm/filter/count_io.hh"

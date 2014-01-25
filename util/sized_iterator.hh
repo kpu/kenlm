@@ -36,7 +36,7 @@ class SizedInnerIterator {
     void *Data() { return ptr_; }
     std::size_t EntrySize() const { return size_; }
 
-    friend inline void swap(SizedInnerIterator &first, SizedInnerIterator &second) {
+    friend void swap(SizedInnerIterator &first, SizedInnerIterator &second) {
       std::swap(first.ptr_, second.ptr_);
       std::swap(first.size_, second.size_);
     }
@@ -69,17 +69,7 @@ class SizedProxy {
     const void *Data() const { return inner_.Data(); }
     void *Data() { return inner_.Data(); }
 
-  /**
-     // TODO: this (deep) swap was recently added. why? if any std heap sort etc
-     // algs are using swap, that's going to be worse performance than using
-     // =. i'm not sure why we *want* a deep swap. if C++11 compilers are
-     // choosing between move constructor and swap, then we'd better implement a
-     // (deep) move constructor. it may also be that this is moot since i made
-     // ProxyIterator a reference and added a shallow ProxyIterator swap? (I
-     // need Ken or someone competent to judge whether that's correct also. -
-     // let me know at graehl@gmail.com
-  */
-    friend void swap(SizedProxy &first, SizedProxy &second) {
+    friend void swap(SizedProxy first, SizedProxy second) {
       std::swap_ranges(
           static_cast<char*>(first.inner_.Data()),
           static_cast<char*>(first.inner_.Data()) + first.inner_.EntrySize(),

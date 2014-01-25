@@ -125,13 +125,13 @@ class Model {
     void NullContextWrite(void *to) const { memcpy(to, null_context_memory_, StateSize()); }
 
     // Requires in_state != out_state
-    virtual float Score(const void *in_state, const WordIndex new_word, void *out_state) const = 0;
+    virtual float BaseScore(const void *in_state, const WordIndex new_word, void *out_state) const = 0;
 
     // Requires in_state != out_state
-    virtual FullScoreReturn FullScore(const void *in_state, const WordIndex new_word, void *out_state) const = 0;
+    virtual FullScoreReturn BaseFullScore(const void *in_state, const WordIndex new_word, void *out_state) const = 0;
 
     // Prefer to use FullScore.  The context words should be provided in reverse order.
-    virtual FullScoreReturn FullScoreForgotState(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, void *out_state) const = 0;
+    virtual FullScoreReturn BaseFullScoreForgotState(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, void *out_state) const = 0;
 
     unsigned char Order() const { return order_; }
 

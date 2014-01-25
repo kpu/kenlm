@@ -51,6 +51,11 @@ void Exception::SetLocation(const char *file, unsigned int line, const char *fun
 }
 
 namespace {
+// At least one of these functions will not be called.
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
+#endif
 // The XOPEN version.
 const char *HandleStrerror(int ret, const char *buf) {
   if (!ret) return buf;
@@ -61,6 +66,9 @@ const char *HandleStrerror(int ret, const char *buf) {
 const char *HandleStrerror(const char *ret, const char * /*buf*/) {
   return ret;
 }
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 } // namespace
 
 ErrnoException::ErrnoException() throw() : errno_(errno) {

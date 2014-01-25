@@ -240,7 +240,10 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
   uint64_t count = 0;
   bool delimiters[256];
   memset(delimiters, 0, sizeof(delimiters));
-  delimiters['\0'] = delimiters['\t'] = delimiters['\n'] = delimiters['\r'] = delimiters[' '] = true;
+  const char kDelimiterSet[] = "\0\t\n\r ";
+  for (const char *i = kDelimiterSet; i < kDelimiterSet + sizeof(kDelimiterSet); ++i) {
+    delimiters[static_cast<unsigned char>(*i)] = true;
+  }
   try {
     while(true) {
       StringPiece line(from_.ReadLine());

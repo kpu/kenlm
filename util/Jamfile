@@ -23,11 +23,8 @@ fakelib kenutil : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_pi
 
 import testing ;
 
-unit-test bit_packing_test : bit_packing_test.cc kenutil /top//boost_unit_test_framework ;
 run file_piece_test.o kenutil /top//boost_unit_test_framework : : file_piece.cc ;
-unit-test read_compressed_test : read_compressed_test.o kenutil /top//boost_unit_test_framework ;
-unit-test joint_sort_test : joint_sort_test.cc kenutil /top//boost_unit_test_framework ;
-unit-test probing_hash_table_test : probing_hash_table_test.cc kenutil /top//boost_unit_test_framework ;
-unit-test sorted_uniform_test : sorted_uniform_test.cc kenutil /top//boost_unit_test_framework ;
-unit-test tokenize_piece_test : tokenize_piece_test.cc kenutil /top//boost_unit_test_framework ;
-unit-test multi_intersection_test : multi_intersection_test.cc kenutil /top//boost_unit_test_framework ;
+for local t in [ glob *_test.cc : file_piece_test.cc read_compressed_test.cc ] {
+    local name = [ MATCH "(.*)\.cc" : $(t) ] ;
+    unit-test $(name) : $(t) kenutil /top//boost_unit_test_framework /top//boost_system ;
+}
