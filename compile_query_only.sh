@@ -30,5 +30,5 @@ mkdir -p bin
 if [ "$(uname)" != Darwin ]; then
   CXXFLAGS="$CXXFLAGS -lrt"
 fi
-$CXX lm/build_binary_main.cc $objects -o bin/build_binary $CXXFLAGS
-$CXX lm/query_main.cc $objects -o bin/query $CXXFLAGS
+$CXX lm/build_binary_main.cc $objects -o bin/build_binary $CXXFLAGS $LDFLAGS
+$CXX lm/query_main.cc $objects -o bin/query $CXXFLAGS $LDFLAGS
