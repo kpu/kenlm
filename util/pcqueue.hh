@@ -54,7 +54,7 @@ inline void WaitSemaphore(Semaphore &semaphore) {
 }
 
 #else
-typedef Semaphore Semaphore;
+typedef boost::interprocess::interprocess_semaphore Semaphore;
 
 inline void WaitSemaphore (Semaphore &on) {
   while (1) {
