@@ -64,7 +64,6 @@ inline void WaitSemaphore (Semaphore &on) {
     }
     catch (boost::interprocess::interprocess_exception &e) {
       if (e.get_native_error() != EINTR) {
-        std::cerr << "Interprocess " << e.what() << std::endl;
         throw;
       }
     }
