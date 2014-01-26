@@ -104,14 +104,14 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
     // Setup the binary file for writing the vocab lookup table.  The search_ is responsible for growing the binary file to its needs.
     vocab_.SetupMemory(backing_.SetupJustVocab(vocab_size, counts.size()), vocab_size, counts[0], config);
 
-    if (config.write_mmap) {
+    if (config.write_mmap && config.include_vocab) {
       WriteWordsWrapper wrap(config.enumerate_vocab);
       vocab_.ConfigureEnumerate(&wrap, counts[0]);
       search_.InitializeFromARPA(file, f, counts, config, vocab_, backing_);
       void *vocab_rebase, *search_rebase;
       backing_.WriteVocabWords(wrap.Buffer(), vocab_rebase, search_rebase);
-//      vocab_.Relocate(vocab_rebase);
-//      search_.SetupMemory(search_rebase, counts, config); // TODO
+      vocab_.Relocate(vocab_rebase);
+      search_.SetupMemory(reinterpret_cast<uint8_t*>(search_rebase), counts, config); // TODO
     } else {
       vocab_.ConfigureEnumerate(config.enumerate_vocab, counts[0]);
       search_.InitializeFromARPA(file, f, counts, config, vocab_, backing_);

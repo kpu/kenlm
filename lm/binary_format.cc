@@ -211,18 +211,30 @@ void *BinaryFormat::GrowForSearch(std::size_t memory_size, std::size_t vocab_pad
   // safe, we'll unmap it and map it again.
   mapping_.reset();
   util::ResizeOrThrow(file_.get(), new_size);
-  mapping_.reset(util::MapOrThrow(new_size, true, util::kFileFlags, false, file_.get()), new_size, util::scoped_memory::MMAP_ALLOCATED);
-  vocab_base = reinterpret_cast<uint8_t*>(mapping_.get()) + header_size_;
-  return reinterpret_cast<uint8_t*>(mapping_.get()) + header_size_ + vocab_size_ + vocab_pad_;
+  void *ret;
+  MapFile(vocab_base, ret);
+  return ret;
 }
 
 void BinaryFormat::WriteVocabWords(const std::string &buffer, void *&vocab_base, void *&search_base) {
+  // Checking Config's include_vocab is the responsibility of the caller.
   assert(header_size_ != kInvalidSize && vocab_size_ != kInvalidSize);
-  // TODO remap
-  // TODO: include_vocab?
-  if (write_mmap_) {
-    util::SeekOrThrow(file_.get(), VocabStringReadingOffset());
-    util::WriteOrThrow(file_.get(), &buffer[0], buffer.size());
+  if (!write_mmap_) {
+    // Unchanged base.
+    vocab_base = reinterpret_cast<uint8_t*>(memory_vocab_.get());
+    search_base = reinterpret_cast<uint8_t*>(memory_search_.get());
+    return;
+  }
+  if (write_method_ == Config::WRITE_MMAP) {
+    mapping_.reset();
+  }
+  util::SeekOrThrow(file_.get(), VocabStringReadingOffset());
+  util::WriteOrThrow(file_.get(), &buffer[0], buffer.size());
+  if (write_method_ == Config::WRITE_MMAP) {
+    MapFile(vocab_base, search_base);
+  } else {
+    vocab_base = reinterpret_cast<uint8_t*>(memory_vocab_.get()) + header_size_;
+    search_base = reinterpret_cast<uint8_t*>(memory_search_.get());
   }
 }
 
@@ -263,6 +275,12 @@ void BinaryFormat::FinishFile(const Config &config, ModelType model_type, unsign
       }
       break;
   }
+}
+
+void BinaryFormat::MapFile(void *&vocab_base, void *&search_base) {
+  mapping_.reset(util::MapOrThrow(vocab_string_offset_, true, util::kFileFlags, false, file_.get()), vocab_string_offset_, util::scoped_memory::MMAP_ALLOCATED);
+  vocab_base = reinterpret_cast<uint8_t*>(mapping_.get()) + header_size_;
+  search_base = reinterpret_cast<uint8_t*>(mapping_.get()) + header_size_ + vocab_size_ + vocab_pad_;
 }
 
 bool RecognizeBinary(const char *file, ModelType &recognized) {

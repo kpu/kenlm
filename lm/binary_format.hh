@@ -72,6 +72,9 @@ class BinaryFormat {
     void FinishFile(const Config &config, ModelType model_type, unsigned int search_version, const std::vector<uint64_t> &counts);
 
   private:
+    void MapFile(void *&vocab_base, void *&search_base);
+
+    // Copied from configuration.
     const Config::WriteMethod write_method_;
     const char *write_mmap_;
     util::LoadMethod load_method_;
@@ -90,6 +93,7 @@ class BinaryFormat {
     // Memory ranges.  Note that these may not be contiguous and may not all
     // exist.
     std::size_t header_size_, vocab_size_, vocab_pad_;
+    // aka end of search.
     uint64_t vocab_string_offset_;
 
     static const uint64_t kInvalidOffset = (uint64_t)-1;
