@@ -110,8 +110,9 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
       search_.InitializeFromARPA(file, f, counts, config, vocab_, backing_);
       void *vocab_rebase, *search_rebase;
       backing_.WriteVocabWords(wrap.Buffer(), vocab_rebase, search_rebase);
+      // Due to writing at the end of file, mmap may have relocated data.  So remap.
       vocab_.Relocate(vocab_rebase);
-      search_.SetupMemory(reinterpret_cast<uint8_t*>(search_rebase), counts, config); // TODO
+      search_.SetupMemory(reinterpret_cast<uint8_t*>(search_rebase), counts, config);
     } else {
       vocab_.ConfigureEnumerate(config.enumerate_vocab, counts[0]);
       search_.InitializeFromARPA(file, f, counts, config, vocab_, backing_);
