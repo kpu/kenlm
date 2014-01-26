@@ -103,8 +103,6 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
 
     void FinishedInserting() {}
 
-    void LoadedBinary() {}
-
     // Don't change anything related to GetKey,  
     template <class Key> bool UnsafeMutableFind(const Key key, MutableIterator &out) {
 #ifdef DEBUG

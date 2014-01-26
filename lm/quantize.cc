@@ -38,13 +38,13 @@ const char kSeparatelyQuantizeVersion = 2;
 
 } // namespace
 
-void SeparatelyQuantize::UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &/*counts*/, Config &config) {
-  char version;
-  util::ReadOrThrow(fd, &version, 1);
-  util::ReadOrThrow(fd, &config.prob_bits, 1);
-  util::ReadOrThrow(fd, &config.backoff_bits, 1);
+void SeparatelyQuantize::UpdateConfigFromBinary(const BinaryFormat &file, uint64_t offset, Config &config) {
+  unsigned char buffer[3];
+  file.ReadForConfig(buffer, 3, offset);
+  char version = buffer[0];
+  config.prob_bits = buffer[1];
+  config.backoff_bits = buffer[2];
   if (version != kSeparatelyQuantizeVersion) UTIL_THROW(FormatLoadException, "This file has quantization version " << (unsigned)version << " but the code expects version " << (unsigned)kSeparatelyQuantizeVersion);
-  util::AdvanceOrThrow(fd, -3);
 }
 
 void SeparatelyQuantize::SetupMemory(void *base, unsigned char order, const Config &config) {

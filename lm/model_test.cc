@@ -360,10 +360,11 @@ BOOST_AUTO_TEST_CASE(quant_bhiksha_trie) {
   LoadingTest<QuantArrayTrieModel>();
 }
 
-template <class ModelT> void BinaryTest() {
+template <class ModelT> void BinaryTest(Config::WriteMethod write_method) {
   Config config;
   config.write_mmap = "test.binary";
   config.messages = NULL;
+  config.write_method = write_method;
   ExpectEnumerateVocab enumerate;
   config.enumerate_vocab = &enumerate;
 
@@ -404,6 +405,11 @@ template <class ModelT> void BinaryTest() {
     NoUnkCheck(binary);
   }
   unlink("test_nounk.binary");
+}
+
+template <class ModelT> void BinaryTest() {
+  BinaryTest<ModelT>(Config::WRITE_MMAP);
+  BinaryTest<ModelT>(Config::WRITE_AFTER);
 }
 
 BOOST_AUTO_TEST_CASE(write_and_read_probing) {

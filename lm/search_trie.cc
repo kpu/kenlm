@@ -459,7 +459,7 @@ void PopulateUnigramWeights(FILE *file, WordIndex unigram_count, RecordReader &c
 
 } // namespace
 
-template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, const SortedVocabulary &vocab, Backing &backing) {
+template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, SortedVocabulary &vocab, BinaryFormat &backing) {
   RecordReader inputs[KENLM_MAX_ORDER - 1];
   RecordReader contexts[KENLM_MAX_ORDER - 1];
 
@@ -488,7 +488,10 @@ template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::ve
 
   sri.ObtainBackoffs(counts.size(), unigram_file.get(), inputs);
 
-  out.SetupMemory(GrowForSearch(config, vocab.UnkCountChangePadding(), TrieSearch<Quant, Bhiksha>::Size(fixed_counts, config), backing), fixed_counts, config);
+  void *vocab_relocate;
+  void *search_base = backing.GrowForSearch(TrieSearch<Quant, Bhiksha>::Size(fixed_counts, config), vocab.UnkCountChangePadding(), vocab_relocate);
+  vocab.Relocate(vocab_relocate);
+  out.SetupMemory(reinterpret_cast<uint8_t*>(search_base), fixed_counts, config);
 
   for (unsigned char i = 2; i <= counts.size(); ++i) {
     inputs[i-2].Rewind();
@@ -571,15 +574,7 @@ template <class Quant, class Bhiksha> uint8_t *TrieSearch<Quant, Bhiksha>::Setup
   return start + Longest::Size(Quant::LongestBits(config), counts.back(), counts[0]);
 }
 
-template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::LoadedBinary() {
-  unigram_.LoadedBinary();
-  for (Middle *i = middle_begin_; i != middle_end_; ++i) {
-    i->LoadedBinary();
-  }
-  longest_.LoadedBinary();
-}
-
-template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::InitializeFromARPA(const char *file, util::FilePiece &f, std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, Backing &backing) {
+template <class Quant, class Bhiksha> void TrieSearch<Quant, Bhiksha>::InitializeFromARPA(const char *file, util::FilePiece &f, std::vector<uint64_t> &counts, const Config &config, SortedVocabulary &vocab, BinaryFormat &backing) {
   std::string temporary_prefix;
   if (config.temporary_directory_prefix) {
     temporary_prefix = config.temporary_directory_prefix;

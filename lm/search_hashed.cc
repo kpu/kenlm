@@ -204,9 +204,10 @@ template <class Build, class Activate, class Store> void ReadNGrams(
 namespace detail {
 
 template <class Value> uint8_t *HashedSearch<Value>::SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
-  std::size_t allocated = Unigram::Size(counts[0]);
-  unigram_ = Unigram(start, counts[0], allocated);
-  start += allocated;
+  unigram_ = Unigram(start, counts[0]);
+  start += Unigram::Size(counts[0]);
+  std::size_t allocated;
+  middle_.clear();
   for (unsigned int n = 2; n < counts.size(); ++n) {
     allocated = Middle::Size(counts[n - 1], config.probing_multiplier);
     middle_.push_back(Middle(start, allocated));
@@ -218,9 +219,21 @@ template <class Value> uint8_t *HashedSearch<Value>::SetupMemory(uint8_t *start,
   return start;
 }
 
-template <class Value> void HashedSearch<Value>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, ProbingVocabulary &vocab, Backing &backing) {
-  // TODO: fix sorted.
-  SetupMemory(GrowForSearch(config, vocab.UnkCountChangePadding(), Size(counts, config), backing), counts, config);
+/*template <class Value> void HashedSearch<Value>::Relocate(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config) {
+  unigram_ = Unigram(start, counts[0]);
+  start += Unigram::Size(counts[0]);
+  for (unsigned int n = 2; n < counts.size(); ++n) {
+    middle[n-2].Relocate(start);
+    start += Middle::Size(counts[n - 1], config.probing_multiplier)
+  }
+  longest_.Relocate(start);
+}*/
+
+template <class Value> void HashedSearch<Value>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, ProbingVocabulary &vocab, BinaryFormat &backing) {
+  void *vocab_rebase;
+  void *search_base = backing.GrowForSearch(Size(counts, config), vocab.UnkCountChangePadding(), vocab_rebase);
+  vocab.Relocate(vocab_rebase);
+  SetupMemory(reinterpret_cast<uint8_t*>(search_base), counts, config);
 
   PositiveProbWarn warn(config.positive_log_probability);
   Read1Grams(f, counts[0], vocab, unigram_.Raw(), warn);
@@ -275,14 +288,6 @@ template <class Value> template <class Build> void HashedSearch<Value>::ApplyBui
     UTIL_THROW(util::ProbingSizeException, "Avoid pruning n-grams like \"bar baz quux\" when \"foo bar baz quux\" is still in the model.  KenLM will work when this pruning happens, but the probing model assumes these events are rare enough that using blank space in the probing hash table will cover all of them.  Increase probing_multiplier (-p to build_binary) to add more blank spaces.\n");
   }
   ReadEnd(f);
-}
-
-template <class Value> void HashedSearch<Value>::LoadedBinary() {
-  unigram_.LoadedBinary();
-  for (typename std::vector<Middle>::iterator i = middle_.begin(); i != middle_.end(); ++i) {
-    i->LoadedBinary();
-  }
-  longest_.LoadedBinary();
 }
 
 template class HashedSearch<BackoffValue>;

@@ -18,7 +18,7 @@ namespace util { class FilePiece; }
 
 namespace lm {
 namespace ngram {
-struct Backing;
+class BinaryFormat;
 class ProbingVocabulary;
 namespace detail {
 
@@ -72,7 +72,7 @@ template <class Value> class HashedSearch {
     static const unsigned int kVersion = 0;
 
     // TODO: move probing_multiplier here with next binary file format update.
-    static void UpdateConfigFromBinary(int, const std::vector<uint64_t> &, Config &) {}
+    static void UpdateConfigFromBinary(const BinaryFormat &, const std::vector<uint64_t> &, uint64_t, Config &) {}
 
     static uint64_t Size(const std::vector<uint64_t> &counts, const Config &config) {
       uint64_t ret = Unigram::Size(counts[0]);
@@ -84,9 +84,7 @@ template <class Value> class HashedSearch {
 
     uint8_t *SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config);
 
-    void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, ProbingVocabulary &vocab, Backing &backing);
-
-    void LoadedBinary();
+    void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, ProbingVocabulary &vocab, BinaryFormat &backing);
 
     unsigned char Order() const {
       return middle_.size() + 2;
@@ -148,7 +146,7 @@ template <class Value> class HashedSearch {
       public:
         Unigram() {}
 
-        Unigram(void *start, uint64_t count, std::size_t /*allocated*/) :
+        Unigram(void *start, uint64_t count) :
           unigram_(static_cast<typename Value::Weights*>(start))
 #ifdef DEBUG
          ,  count_(count)
@@ -167,8 +165,6 @@ template <class Value> class HashedSearch {
         }
 
         typename Value::Weights &Unknown() { return unigram_[0]; }
-
-        void LoadedBinary() {}
 
         // For building.
         typename Value::Weights *Raw() { return unigram_; }

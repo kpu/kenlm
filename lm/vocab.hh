@@ -36,7 +36,7 @@ class WriteWordsWrapper : public EnumerateVocab {
     
     void Add(WordIndex index, const StringPiece &str);
 
-    void Write(int fd, uint64_t start);
+    const std::string &Buffer() const { return buffer_; }
 
   private:
     EnumerateVocab *inner_;
@@ -85,7 +85,7 @@ class SortedVocabulary : public base::Vocabulary {
 
     bool SawUnk() const { return saw_unk_; }
 
-    void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);
+    void LoadedBinary(bool have_words, int fd, EnumerateVocab *to, uint64_t offset);
 
   private:
     uint64_t *begin_, *end_;
@@ -154,7 +154,7 @@ class ProbingVocabulary : public base::Vocabulary {
 
     bool SawUnk() const { return saw_unk_; }
 
-    void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);
+    void LoadedBinary(bool have_words, int fd, EnumerateVocab *to, uint64_t offset);
 
   private:
     void InternalFinishedLoading();
