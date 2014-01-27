@@ -17,7 +17,11 @@
 #include <fcntl.h>
 #include <stdint.h>
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined __MINGW32__
+#include <windows.h>
+#include <unistd.h>
+#warning "The file functions on MinGW have not been tested for file sizes above 2^31 - 1.  Please read https://stackoverflow.com/questions/12539488/determine-64-bit-file-size-in-c-on-mingw-32-bit and fix"
+#elif defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #include <io.h>
 #include <algorithm>
@@ -76,7 +80,13 @@ int CreateOrThrow(const char *name) {
 }
 
 uint64_t SizeFile(int fd) {
-#if defined(_WIN32) || defined(_WIN64)
+#if defined __MINGW32__
+  struct stat sb;
+  // Does this handle 64-bit?
+  int ret = fstat(fd, &sb);
+  if (ret == -1 || (!sb.st_size && !S_ISREG(sb.st_mode))) return kBadSize;
+  return sb.st_size;
+#elif defined(_WIN32) || defined(_WIN64)
   __int64 ret = _filelengthi64(fd);
   return (ret == -1) ? kBadSize : ret;
 #else // Not windows.
@@ -100,7 +110,10 @@ uint64_t SizeOrThrow(int fd) {
 }
 
 void ResizeOrThrow(int fd, uint64_t to) {
-#if defined(_WIN32) || defined(_WIN64)
+#if defined __MINGW32__
+    // Does this handle 64-bit?  
+    int ret = ftruncate
+#elif defined(_WIN32) || defined(_WIN64)
     errno_t ret = _chsize_s
 #elif defined(OS_ANDROID)
     int ret = ftruncate64
@@ -115,7 +128,7 @@ namespace {
 std::size_t GuardLarge(std::size_t size) {
   // The following operating systems have broken read/write/pread/pwrite that
   // only supports up to 2^31.
-#if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__) || defined(OS_ANDROID)
+#if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__) || defined(OS_ANDROID) || defined(__MINGW32__)
   return std::min(static_cast<std::size_t>(static_cast<unsigned>(-1)), size);
 #else
   return size;
@@ -251,7 +264,10 @@ typedef CheckOffT<sizeof(off_t)>::True IgnoredType;
 // Can't we all just get along?
 void InternalSeek(int fd, int64_t off, int whence) {
   if (
-#if defined(_WIN32) || defined(_WIN64)
+#if defined __MINGW32__
+    // Does this handle 64-bit?
+    (off_t)-1 == lseek(fd, off, whence)
+#elif defined(_WIN32) || defined(_WIN64)
     (__int64)-1 == _lseeki64(fd, off, whence)
 #elif defined(OS_ANDROID)
     (off64_t)-1 == lseek64(fd, off, whence)
