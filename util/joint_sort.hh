@@ -40,6 +40,12 @@ template <class KeyIter, class ValueIter> class JointIter {
       swap(first.value_, second.value_);
     }
 
+    void DeepSwap(JointIter &other) {
+      using std::swap;
+      swap(*key_, *other.key_);
+      swap(*value_, *other.value_);
+    }
+
   private:
     friend class JointProxy<KeyIter, ValueIter>;
     KeyIter key_;
@@ -84,10 +90,7 @@ template <class KeyIter, class ValueIter> class JointProxy {
     }
 
     friend void swap(JointProxy<KeyIter, ValueIter> first, JointProxy<KeyIter, ValueIter> second) {
-      // Allow argument-dependent lookup.
-      using std::swap;
-      swap(*first.inner_.key_, *second.inner_.key_);
-      swap(*first.inner_.value_, *second.inner_.value_);
+      first.DeepSwap(second);
     }
 
   private:
