@@ -34,6 +34,8 @@ class Vocabulary : public base::Vocabulary {
       return Index(std::string(str.data(), str.size()));
     }
 
+    lm::WordIndex NullWord() const { return null_word_; }
+
   private:
     const nplm::vocabulary &vocab_;
 };
