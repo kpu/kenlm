@@ -5,20 +5,18 @@
 #include <iostream>
 #include <string>
 
-#include <err.h>
-
+#include "util/fake_ofstream.hh"
+#include "util/file.hh"
 #include "util/file_piece.hh"
 
 namespace lm {
 
 class CountOutput : boost::noncopyable {
   public:
-    explicit CountOutput(const char *name) : file_(name, std::ios::out) {}
+    explicit CountOutput(const char *name) : file_(util::CreateOrThrow(name)) {}
 
     void AddNGram(const StringPiece &line) {
-      if (!(file_ << line << '\n')) {
-        err(3, "Writing counts file failed");
-      }
+      file_ << line << '\n';
     }
 
     template <class Iterator> void AddNGram(const Iterator &begin, const Iterator &end, const StringPiece &line) {
@@ -30,7 +28,7 @@ class CountOutput : boost::noncopyable {
     }
 
   private:
-    std::fstream file_;
+    util::FakeOFStream file_;
 };
 
 class CountBatch {
