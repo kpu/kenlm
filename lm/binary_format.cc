@@ -175,7 +175,8 @@ void *BinaryFormat::SetupJustVocab(std::size_t memory_size, uint8_t order) {
   header_size_ = TotalHeaderSize(order);
   std::size_t total = util::CheckOverflow(static_cast<uint64_t>(header_size_) + static_cast<uint64_t>(memory_size));
   file_.reset(util::CreateOrThrow(write_mmap_));
-  void *vocab_base;
+  // some gccs complain about uninitialized variables even though all enum values are covered.
+  void *vocab_base = NULL;
   switch (write_method_) {
     case Config::WRITE_MMAP:
       mapping_.reset(util::MapZeroedWrite(file_.get(), total), total, util::scoped_memory::MMAP_ALLOCATED);
