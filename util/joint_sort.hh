@@ -90,7 +90,7 @@ template <class KeyIter, class ValueIter> class JointProxy {
     }
 
     friend void swap(JointProxy<KeyIter, ValueIter> first, JointProxy<KeyIter, ValueIter> second) {
-      first.DeepSwap(second);
+      first.Inner().DeepSwap(second.Inner());
     }
 
   private:
