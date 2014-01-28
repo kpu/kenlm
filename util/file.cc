@@ -192,16 +192,15 @@ void PReadOrThrow(int fd, void *to_void, std::size_t size, uint64_t off) {
 #else
     ssize_t ret;
     errno = 0;
-    do {
-      ret =
+    ret =
 #ifdef OS_ANDROID
-        pread64
+      pread64
 #else
-        pread
+      pread
 #endif
-        (fd, to, GuardLarge(size), off);
-    } while (ret == -1 && errno == EINTR);
+      (fd, to, GuardLarge(size), off);
     if (ret <= 0) {
+      if (ret == -1 && errno == EINTR) continue;
       UTIL_THROW_IF(ret == 0, EndOfFileException, " for reading " << size << " bytes at " << off << " from " << NameFromFD(fd));
       UTIL_THROW_ARG(FDException, (fd), "while reading " << size << " bytes at offset " << off);
     }
