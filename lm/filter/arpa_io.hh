@@ -14,7 +14,6 @@
 #include <string>
 #include <vector>
 
-#include <err.h>
 #include <string.h>
 #include <stdint.h>
 
