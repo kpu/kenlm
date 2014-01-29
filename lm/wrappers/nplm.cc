@@ -13,7 +13,7 @@ namespace np {
 
 Vocabulary::Vocabulary(const nplm::vocabulary &vocab) 
   : base::Vocabulary(vocab.lookup_word("<s>"), vocab.lookup_word("</s>"), vocab.lookup_word("<unk>")),
-    vocab_(vocab) {}
+    vocab_(vocab), null_word_(vocab.lookup_word("<null>")) {}
 
 Vocabulary::~Vocabulary() {}
 

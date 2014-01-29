@@ -38,6 +38,8 @@ class Vocabulary : public base::Vocabulary {
 
   private:
     const nplm::vocabulary &vocab_;
+
+    const lm::WordIndex null_word_;
 };
 
 // Sorry for imposing my limitations on your code.
