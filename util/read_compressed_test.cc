@@ -113,6 +113,11 @@ BOOST_AUTO_TEST_CASE(ReadXZ) {
 }
 #endif
 
+#ifdef HAVE_ZLIB
+BOOST_AUTO_TEST_CASE(AppendGZ) {
+}
+#endif
+
 BOOST_AUTO_TEST_CASE(IStream) {
   std::string name(WriteRandom());
   std::fstream stream(name.c_str(), std::ios::in);
