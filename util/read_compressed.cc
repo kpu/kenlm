@@ -421,6 +421,7 @@ ReadCompressed::ReadCompressed() {}
 ReadCompressed::~ReadCompressed() {}
 
 void ReadCompressed::Reset(int fd) {
+  raw_amount_ = 0;
   internal_.reset();
   internal_.reset(ReadFactory(fd, raw_amount_, NULL, 0, false));
 }
