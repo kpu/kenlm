@@ -58,7 +58,7 @@ class ReadBase {
 
 namespace {
 
-ReadBase *ReadFactory(int fd, uint64_t &raw_amount, const void *already_data, std::size_t already_size);
+ReadBase *ReadFactory(int fd, uint64_t &raw_amount, const void *already_data, std::size_t already_size, bool require_compressed);
 
 // Completed file that other classes can thunk to.  
 class Complete : public ReadBase {
@@ -130,7 +130,7 @@ template <class Compression> class StreamCompressed : public ReadBase {
         if (!back_.Process()) {
           // reached end, at least for the compressed portion.
           std::size_t ret = static_cast<const uint8_t *>(static_cast<void*>(back_.Stream().next_out)) - static_cast<const uint8_t*>(to);
-          ReplaceThis(ReadFactory(file_.release(), ReadCount(thunk), back_.Stream().next_in, back_.Stream().avail_in), thunk);
+          ReplaceThis(ReadFactory(file_.release(), ReadCount(thunk), back_.Stream().next_in, back_.Stream().avail_in, true), thunk);
           if (ret) return ret;
           // We did not read anything this round, so clients might think EOF.  Transfer responsibility to the next reader.
           return Current(thunk)->Read(to, amount, thunk);
@@ -205,8 +205,6 @@ class GZip {
     z_stream stream_;
 };
 #endif // HAVE_ZLIB
-
-const uint8_t kBZMagic[3] = {'B', 'Z', 'h'};
 
 #ifdef HAVE_BZLIB
 class BZip {
@@ -346,25 +344,26 @@ class IStreamReader : public ReadBase {
 };
 
 enum MagicResult {
-  UNKNOWN, GZIP, BZIP, XZIP
+  UTIL_UNKNOWN, UTIL_GZIP, UTIL_BZIP, UTIL_XZIP
 };
 
-MagicResult DetectMagic(const void *from_void) {
+MagicResult DetectMagic(const void *from_void, std::size_t length) {
   const uint8_t *header = static_cast<const uint8_t*>(from_void);
-  if (header[0] == 0x1f && header[1] == 0x8b) {
-    return GZIP;
+  if (length >= 2 && header[0] == 0x1f && header[1] == 0x8b) {
+    return UTIL_GZIP;
   }
-  if (!memcmp(header, kBZMagic, sizeof(kBZMagic))) {
-    return BZIP;
+  const uint8_t kBZMagic[3] = {'B', 'Z', 'h'};
+  if (length >= sizeof(kBZMagic) && !memcmp(header, kBZMagic, sizeof(kBZMagic))) {
+    return UTIL_BZIP;
   }
   const uint8_t kXZMagic[6] = { 0xFD, '7', 'z', 'X', 'Z', 0x00 };
-  if (!memcmp(header, kXZMagic, sizeof(kXZMagic))) {
-    return XZIP;
+  if (length >= sizeof(kXZMagic) && !memcmp(header, kXZMagic, sizeof(kXZMagic))) {
+    return UTIL_XZIP;
   }
-  return UNKNOWN;
+  return UTIL_UNKNOWN;
 }
 
-ReadBase *ReadFactory(int fd, uint64_t &raw_amount, const void *already_data, std::size_t already_size) {
+ReadBase *ReadFactory(int fd, uint64_t &raw_amount, const void *already_data, const std::size_t already_size, bool require_compressed) {
   scoped_fd hold(fd);
   std::string header(reinterpret_cast<const char*>(already_data), already_size);
   if (header.size() < ReadCompressed::kMagicSize) {
@@ -378,38 +377,35 @@ ReadBase *ReadFactory(int fd, uint64_t &raw_amount, const void *already_data, st
     hold.release();
     return new Complete();
   }
-  // Assumption: it's impossible to have a gzip/bzip2 file smaller than xz's 6-byte header.
-  if (header.size() < ReadCompressed::kMagicSize)
-    return new UncompressedWithHeader(hold.release(), header.data(), header.size());
-  switch (DetectMagic(&header[0])) {
-    case GZIP:
+  switch (DetectMagic(&header[0], header.size())) {
+    case UTIL_GZIP:
 #ifdef HAVE_ZLIB
       return new StreamCompressed<GZip>(hold.release(), header.data(), header.size());
 #else
       UTIL_THROW(CompressedException, "This looks like a gzip file but gzip support was not compiled in.");
 #endif
-    case BZIP:
+    case UTIL_BZIP:
 #ifdef HAVE_BZLIB
       return new StreamCompressed<BZip>(hold.release(), &header[0], header.size());
 #else
-      UTIL_THROW(CompressedException, "This looks like a bzip file (it begins with BZ), but bzip support was not compiled in.");
+      UTIL_THROW(CompressedException, "This looks like a bzip file (it begins with BZh), but bzip support was not compiled in.");
 #endif
-    case XZIP:
+    case UTIL_XZIP:
 #ifdef HAVE_XZLIB
       return new StreamCompressed<XZip>(hold.release(), header.data(), header.size());
 #else
       UTIL_THROW(CompressedException, "This looks like an xz file, but xz support was not compiled in.");
 #endif
-    case UNKNOWN:
-      break;
+    default:
+      UTIL_THROW_IF(require_compressed, CompressedException, "Uncompressed data detected after a compresssed file.  This could be supported but usually indicates an error.");
+      return new UncompressedWithHeader(hold.release(), header.data(), header.size());
   }
-  return new UncompressedWithHeader(hold.release(), header.data(), header.size());
 }
 
 } // namespace
 
 bool ReadCompressed::DetectCompressedMagic(const void *from_void) {
-  return DetectMagic(from_void) != UNKNOWN;
+  return DetectMagic(from_void, kMagicSize) != UTIL_UNKNOWN;
 }
 
 ReadCompressed::ReadCompressed(int fd) {
@@ -426,7 +422,7 @@ ReadCompressed::~ReadCompressed() {}
 
 void ReadCompressed::Reset(int fd) {
   internal_.reset();
-  internal_.reset(ReadFactory(fd, raw_amount_, NULL, 0));
+  internal_.reset(ReadFactory(fd, raw_amount_, NULL, 0, false));
 }
 
 void ReadCompressed::Reset(std::istream &in) {
