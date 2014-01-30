@@ -29,14 +29,19 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  if (argc == 1) {
-    util::ReadCompressed in(0);
-    Copy(in, 1);
-  } else {
-    for (int i = 1; i < argc; ++i) {
-      util::ReadCompressed in(util::OpenReadOrThrow(argv[i]));
+  try {
+    if (argc == 1) {
+      util::ReadCompressed in(0);
       Copy(in, 1);
+    } else {
+      for (int i = 1; i < argc; ++i) {
+        util::ReadCompressed in(util::OpenReadOrThrow(argv[i]));
+        Copy(in, 1);
+      }
     }
+  } catch (const std::exception &e) {
+    std::cerr << e.what() << std::endl;
+    return 2;
   }
   return 0;
 }
