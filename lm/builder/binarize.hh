@@ -26,7 +26,7 @@ class Binarize {
 
     void SetupSearch(const std::vector<uint64_t> &counts);
 
-    typename Model::SearchBackend::Quantizer &Quantizer() { return model_.search_.quant_; }
+    Model::SearchBackend::Quantizer &Quantizer() { return model_.search_.quant_; }
 
     void Enter(unsigned int, NGram &gram) {
       model_.search_.ExternalInsert(gram.Order(), *gram.begin(), gram.Value().complete);
