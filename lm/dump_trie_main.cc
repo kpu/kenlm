@@ -48,6 +48,11 @@ class DumpTrie {
       bos.sentences.resize(l);
       for (unsigned i = 0; i < l; ++i) bos.sentences[i] = i;
       eos.sentences = bos.sentences;
+      // <unk> will always appear.  But internal <unk> will only appear in matching sentences.
+      Seen &unk = seen_[model.GetVocabulary().NotFound()];
+      unk.value = "<unk>";
+      // Force <unk> to appear in the very last sentence.
+      unk.sentences.push_back(l + 1);
 
       ngram::trie::NodeRange range;
       range.begin = 0;
