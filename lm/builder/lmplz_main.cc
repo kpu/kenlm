@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     std::string text, arpa;
 
     options.add_options()
-      ("help", po::bool_switch(), "Show this help message")
+      ("help,h", po::bool_switch(), "Show this help message")
       ("order,o", po::value<std::size_t>(&pipeline.order)
 #if BOOST_VERSION >= 104200
          ->required()
