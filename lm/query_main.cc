@@ -32,22 +32,22 @@ int main(int argc, char *argv[]) {
     if (RecognizeBinary(file, model_type)) {
       switch(model_type) {
         case PROBING:
-          Query<lm::ngram::ProbingModel>(file, sentence_context, std::cin, std::cout);
+          Query<lm::ngram::ProbingModel>(file, sentence_context);
           break;
         case REST_PROBING:
-          Query<lm::ngram::RestProbingModel>(file, sentence_context, std::cin, std::cout);
+          Query<lm::ngram::RestProbingModel>(file, sentence_context);
           break;
         case TRIE:
-          Query<TrieModel>(file, sentence_context, std::cin, std::cout);
+          Query<TrieModel>(file, sentence_context);
           break;
         case QUANT_TRIE:
-          Query<QuantTrieModel>(file, sentence_context, std::cin, std::cout);
+          Query<QuantTrieModel>(file, sentence_context);
           break;
         case ARRAY_TRIE:
-          Query<ArrayTrieModel>(file, sentence_context, std::cin, std::cout);
+          Query<ArrayTrieModel>(file, sentence_context);
           break;
         case QUANT_ARRAY_TRIE:
-          Query<QuantArrayTrieModel>(file, sentence_context, std::cin, std::cout);
+          Query<QuantArrayTrieModel>(file, sentence_context);
           break;
         default:
           std::cerr << "Unrecognized kenlm model type " << model_type << std::endl;
@@ -56,10 +56,10 @@ int main(int argc, char *argv[]) {
 #ifdef WITH_NPLM
     } else if (lm::np::Model::Recognize(file)) {
       lm::np::Model model(file);
-      Query(model, sentence_context, std::cin, std::cout);
+      Query(model, sentence_context);
 #endif
     } else {
-      Query<ProbingModel>(file, sentence_context, std::cin, std::cout);
+      Query<ProbingModel>(file, sentence_context);
     }
     std::cerr << "Total time including destruction:\n";
     util::PrintUsage(std::cerr);
