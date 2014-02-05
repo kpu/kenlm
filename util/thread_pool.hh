@@ -18,7 +18,7 @@ template <class HandlerT> class Worker : boost::noncopyable {
     typedef HandlerT Handler;
     typedef typename Handler::Request Request;
 
-    template <class Construct> Worker(PCQueue<Request> &in, Construct &construct, Request &poison)
+    template <class Construct> Worker(PCQueue<Request> &in, Construct &construct, const Request &poison)
       : in_(in), handler_(construct), poison_(poison), thread_(boost::ref(*this)) {}
 
     // Only call from thread.
@@ -30,7 +30,7 @@ template <class HandlerT> class Worker : boost::noncopyable {
         try {
           (*handler_)(request);
         }
-        catch(std::exception &e) {
+        catch(const std::exception &e) {
           std::cerr << "Handler threw " << e.what() << std::endl;
           abort();
         }
@@ -50,7 +50,7 @@ template <class HandlerT> class Worker : boost::noncopyable {
 
     boost::optional<Handler> handler_;
     
-    Request poison_;
+    const Request poison_;
 
     boost::thread thread_;
 };
