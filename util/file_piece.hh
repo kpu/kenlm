@@ -60,6 +60,9 @@ class FilePiece {
     // It is similar to getline in that way.
     StringPiece ReadLine(char delim = '\n');
 
+    // Doesn't throw EndOfFileException, just returns false.
+    bool ReadLineOrEOF(StringPiece &to, char delim = '\n');
+
     float ReadFloat();
     double ReadDouble();
     long int ReadLong();

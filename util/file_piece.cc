@@ -84,6 +84,13 @@ StringPiece FilePiece::ReadLine(char delim) {
   }
 }
 
+bool FilePiece::ReadLineOrEOF(StringPiece &to, char delim) {
+  try {
+    to = ReadLine(delim);
+  } catch (const util::EndOfFileException &e) { return false; }
+  return true;
+}
+
 float FilePiece::ReadFloat() {
   return ReadNumber<float>();
 }
