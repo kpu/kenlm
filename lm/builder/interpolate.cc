@@ -52,8 +52,9 @@ class Callback {
 };
 } // namespace
 
-Interpolate::Interpolate(uint64_t unigram_count, const ChainPositions &backoffs) 
-  : uniform_prob_(1.0 / static_cast<float>(unigram_count - 1)), backoffs_(backoffs) {}
+Interpolate::Interpolate(uint64_t vocab_size, const ChainPositions &backoffs)
+  : uniform_prob_(1.0 / static_cast<float>(vocab_size)), // Includes <unk> but excludes <s>.
+    backoffs_(backoffs) {}
 
 // perform order-wise interpolation
 void Interpolate::Run(const ChainPositions &positions) {
