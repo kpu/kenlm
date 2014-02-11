@@ -1,4 +1,5 @@
 #include "lm/builder/pipeline.hh"
+#include "lm/lm_exception.hh"
 #include "util/file.hh"
 #include "util/file_piece.hh"
 #include "util/usage.hh"
@@ -43,6 +44,7 @@ int main(int argc, char *argv[]) {
 #endif
          , "Order of the model")
       ("interpolate_unigrams", po::bool_switch(&pipeline.initial_probs.interpolate_unigrams), "Interpolate the unigrams (default: emulate SRILM by not interpolating)")
+      ("skip_symbols", po::bool_switch(), "Treat <s>, </s>, and <unk> as whitespace instead of throwing an exception")
       ("temp_prefix,T", po::value<std::string>(&pipeline.sort.temp_prefix)->default_value("/tmp/lm"), "Temporary file prefix")
       ("memory,S", SizeOption(pipeline.sort.total_memory, util::GuessPhysicalMemory() ? "80%" : "1G"), "Sorting memory")
       ("minimum_block", SizeOption(pipeline.minimum_block, "8K"), "Minimum block size to allow")
@@ -99,6 +101,12 @@ int main(int argc, char *argv[]) {
     if (pipeline.vocab_size_for_unk && !pipeline.initial_probs.interpolate_unigrams) {
       std::cerr << "--vocab_pad requires --interpolate_unigrams" << std::endl;
       return 1;
+    }
+
+    if (vm["skip_symbols"].as<bool>()) {
+      pipeline.disallowed_symbol_action = lm::COMPLAIN;
+    } else {
+      pipeline.disallowed_symbol_action = lm::THROW_UP;
     }
 
     util::NormalizeTempPrefix(pipeline.sort.temp_prefix);

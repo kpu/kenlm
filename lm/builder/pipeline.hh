@@ -3,6 +3,7 @@
 
 #include "lm/builder/initial_probabilities.hh"
 #include "lm/builder/header_info.hh"
+#include "lm/lm_exception.hh"
 #include "lm/word_index.hh"
 #include "util/stream/config.hh"
 #include "util/file_piece.hh"
@@ -41,6 +42,12 @@ struct PipelineConfig {
    * larger.  This parameter serves the same purpose as IRSTLM's "dub".
    */
   uint64_t vocab_size_for_unk;
+
+  /* What to do the first time <s>, </s>, or <unk> appears in the input.  If
+   * this is anything but THROW_UP, then the symbol will always be treated as
+   * whitespace.
+   */
+  WarningAction disallowed_symbol_action;
 
   const std::string &TempPrefix() const { return sort.temp_prefix; }
   std::size_t TotalMemory() const { return sort.total_memory; }
