@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    if (vm.count("vocab_pad") && !pipeline.initial_probs.interpolate_unigrams) {
+    if (pipeline.vocab_size_for_unk && !pipeline.initial_probs.interpolate_unigrams) {
       std::cerr << "--vocab_pad requires --interpolate_unigrams" << std::endl;
       return 1;
     }
