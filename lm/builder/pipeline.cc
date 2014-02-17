@@ -289,7 +289,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
     gamma_chains.back() >> gammas[i].Source();
   }
   binarize.SetupSearch(counts);
-  master >> Interpolate(counts[0], binarize, ChainPositions(gamma_chains));
+  master >> Interpolate(std::max(master.Config().vocab_size_for_unk, counts[0] - 1 /* <s> is not included */), binarize, ChainPositions(gamma_chains));
   gamma_chains >> util::stream::kRecycle;
 /*  master.BufferFinal(counts);*/
   master >> util::stream::kRecycle;

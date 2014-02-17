@@ -17,7 +17,9 @@ class Binarize;
  */
 class Interpolate {
   public:
-    explicit Interpolate(uint64_t unigram_count, Binarize &binarize, const ChainPositions &backoffs);
+    // Normally the unigram count-1 (since p(<s>) = 0) but might be larger to
+    // set a consistent vocabulary size.
+    explicit Interpolate(uint64_t vocab_size, Binarize &binarize, const ChainPositions &backoffs);
 
     void Run(const ChainPositions &positions);
 

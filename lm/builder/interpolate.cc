@@ -97,8 +97,8 @@ class Callback {
 };
 } // namespace
 
-Interpolate::Interpolate(uint64_t unigram_count, Binarize &binarize, const ChainPositions &backoffs) 
-  : uniform_prob_(1.0 / static_cast<float>(unigram_count - 1)),
+Interpolate::Interpolate(uint64_t vocab_size, Binarize &binarize, const ChainPositions &backoffs)
+  : uniform_prob_(1.0 / static_cast<float>(vocab_size)), // Includes <unk> but excludes <s>.
     binarize_(binarize),
     backoffs_(backoffs) {}
 
