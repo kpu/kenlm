@@ -29,13 +29,20 @@ class CorpusCount {
 
     // token_count: out.
     // type_count aka vocabulary size.  Initialize to an estimate.  It is set to the exact value.
-    CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count, WordIndex &type_count, std::size_t entries_per_block, WarningAction disallowed_symbol);
+    //
+    // If dynamic_vocab is true, then vocab ids are created on the fly and the
+    // words are written to vocab_file.  If dynamic_vocab is false, then
+    // vocab_file is expected to contain an 8-byte count followed by a probing
+    // hash table with precomputed vocab ids.
+    CorpusCount(util::FilePiece &from, int vocab_file, uint64_t &token_count, WordIndex &type_count, std::size_t entries_per_block, WarningAction disallowed_symbol, bool dynamic_vocab = true);
 
     void Run(const util::stream::ChainPosition &position);
 
   private:
+    template <class Voc> void RunWithVocab(const util::stream::ChainPosition &position, Voc &vocab);
+
     util::FilePiece &from_;
-    int vocab_write_;
+    int vocab_file_;
     uint64_t &token_count_;
     WordIndex &type_count_;
 
@@ -43,6 +50,8 @@ class CorpusCount {
     util::scoped_malloc dedupe_mem_;
 
     WarningAction disallowed_symbol_action_;
+
+    bool dynamic_vocab_;
 };
 
 } // namespace builder
