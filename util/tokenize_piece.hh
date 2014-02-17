@@ -7,7 +7,8 @@
 #include <boost/iterator/iterator_facade.hpp>
 
 #include <algorithm>
-#include <iostream>
+
+#include <string.h>
 
 namespace util {
 
@@ -69,6 +70,13 @@ class BoolCharacter {
         if (delimiter_[static_cast<unsigned char>(*i)]) return StringPiece(i, 1);
       }
       return StringPiece(in.data() + in.size(), 0);
+    }
+
+    template <unsigned Length> static void Build(const char (&characters)[Length], bool (&out)[256]) {
+      memset(out, 0, sizeof(out));
+      for (const char *i = characters; i != characters + Length; ++i) {
+        out[static_cast<unsigned char>(*i)] = true;
+      }
     }
 
   private:
