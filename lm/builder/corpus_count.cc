@@ -230,9 +230,22 @@ CorpusCount::CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token
     disallowed_symbol_action_(disallowed_symbol) {
 }
 
-void CorpusCount::Run(const util::stream::ChainPosition &position) {
-  UTIL_TIMER("(%w s) Counted n-grams\n");
+namespace {
+  void ComplainDisallowed(StringPiece word, WarningAction &action) {
+    switch (action) {
+      case SILENT:
+        return;
+      case COMPLAIN:
+        std::cerr << "Warning: " << word << " appears in the input.  All instances of <s>, </s>, and <unk> will be interpreted as whitespace." << std::endl;
+        action = SILENT;
+        return;
+      case THROW_UP:
+        UTIL_THROW(FormatLoadException, "Special word " << word << " is not allowed in the corpus.  I plan to support models containing <unk> in the future.  Pass --skip_symbols to convert these symbols to whitespace.");
+    }
+  }
+} // namespace
 
+void CorpusCount::Run(const util::stream::ChainPosition &position) {
   VocabHandout vocab(vocab_write_, type_count_);
   token_count_ = 0;
   type_count_ = 0;
@@ -245,7 +258,6 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
   for (const char *i = kDelimiterSet; i < kDelimiterSet + sizeof(kDelimiterSet); ++i) {
     delimiters[static_cast<unsigned char>(*i)] = true;
   }
-  bool complained_about_disallowed = false;
   try {
     while(true) {
       StringPiece line(from_.ReadLine());
@@ -253,18 +265,8 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
       for (util::TokenIter<util::BoolCharacter, true> w(line, delimiters); w; ++w) {
         WordIndex word = vocab.Lookup(*w);
         if (word <= 2) {
-          switch (disallowed_symbol_action_) {
-            case SILENT:
-              continue;
-            case COMPLAIN:
-              if (!complained_about_disallowed) {
-                std::cerr << "Warning: " << *w << " appears in the input.  All instances of <s>, </s>, and <unk> will be interpreted as whitespace." << std::endl;
-                complained_about_disallowed = true;
-              }
-              continue;
-            case THROW_UP:
-              UTIL_THROW(FormatLoadException, "Special word " << *w << " is not allowed in the corpus.  I plan to support models containing <unk> in the future.  Pass --skip_symbols to convert these symbols to whitespace.");
-          }
+          ComplainDisallowed(*w, disallowed_symbol_action_);
+          continue;
         }
         writer.Append(word);
         ++count;
