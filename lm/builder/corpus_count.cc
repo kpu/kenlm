@@ -253,11 +253,7 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
   Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_);
   uint64_t count = 0;
   bool delimiters[256];
-  memset(delimiters, 0, sizeof(delimiters));
-  const char kDelimiterSet[] = "\0\t\n\r ";
-  for (const char *i = kDelimiterSet; i < kDelimiterSet + sizeof(kDelimiterSet); ++i) {
-    delimiters[static_cast<unsigned char>(*i)] = true;
-  }
+  util::BoolCharacter::Build("\0\t\n\r ", delimiters);
   try {
     while(true) {
       StringPiece line(from_.ReadLine());
