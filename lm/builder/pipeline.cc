@@ -241,7 +241,7 @@ util::stream::Sort<SuffixOrder, AddCombiner> *CountText(int text_file /* input *
   type_count = config.vocab_estimate;
   util::FilePiece text(text_file, NULL, &std::cerr);
   text_file_name = text.FileName();
-  CorpusCount counter(text, vocab_file, token_count, type_count, chain.BlockSize() / chain.EntrySize());
+  CorpusCount counter(text, vocab_file, token_count, type_count, chain.BlockSize() / chain.EntrySize(), config.disallowed_symbol_action);
   chain >> boost::ref(counter);
 
   std::auto_ptr<util::stream::Sort<SuffixOrder, AddCombiner> > sorter(new util::stream::Sort<SuffixOrder, AddCombiner>(chain, config.sort, SuffixOrder(config.order), AddCombiner()));
