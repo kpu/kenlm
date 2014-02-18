@@ -34,6 +34,12 @@ class scoped_malloc {
     void *get() { return p_; }
     const void *get() const { return p_; }
 
+    void *steal() {
+      void *ret = p_;
+      p_ = NULL;
+      return ret;
+    }
+
   private:
     void *p_;
 

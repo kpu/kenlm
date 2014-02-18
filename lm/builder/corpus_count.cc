@@ -286,11 +286,14 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
     VocabGiven vocab(vocab_file_);
     RunWithVocab(position, vocab);
   }
+  // Class might not exist anymore since writer has sent poison.
 }
 
 template <class Voc> void CorpusCount::RunWithVocab(const util::stream::ChainPosition &position, Voc &vocab) {
+  // Steal so this gets freed when finished running.  The class might have gone out of scope.
   const WordIndex end_sentence = vocab.Lookup("</s>");
   Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_);
+  util::scoped_malloc mem(dedupe_mem_.steal());
   uint64_t count = 0;
   bool delimiters[256];
   util::BoolCharacter::Build("\0\t\n\r ", delimiters);
