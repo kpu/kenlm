@@ -1,5 +1,5 @@
-#ifndef UTIL_JOINT_SORT__
-#define UTIL_JOINT_SORT__
+#ifndef UTIL_JOINT_SORT_H
+#define UTIL_JOINT_SORT_H
 
 /* A terrifying amount of C++ to coax std::sort into soring one range while
  * also permuting another range the same way.
@@ -143,4 +143,4 @@ template <class KeyIter, class ValueIter> void JointSort(const KeyIter &key_begi
 
 } // namespace util
 
-#endif // UTIL_JOINT_SORT__
+#endif // UTIL_JOINT_SORT_H

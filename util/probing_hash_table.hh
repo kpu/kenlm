@@ -1,5 +1,5 @@
-#ifndef UTIL_PROBING_HASH_TABLE__
-#define UTIL_PROBING_HASH_TABLE__
+#ifndef UTIL_PROBING_HASH_TABLE_H
+#define UTIL_PROBING_HASH_TABLE_H
 
 #include "util/exception.hh"
 #include "util/scoped.hh"
@@ -323,4 +323,4 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
 
 } // namespace util
 
-#endif // UTIL_PROBING_HASH_TABLE__
+#endif // UTIL_PROBING_HASH_TABLE_H

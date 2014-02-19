@@ -1,5 +1,5 @@
-#ifndef LM_FILTER_FORMAT_H__
-#define LM_FILTER_FORMAT_H__
+#ifndef LM_FILTER_FORMAT_H
+#define LM_FILTER_FORMAT_H
 
 #include "lm/filter/arpa_io.hh"
 #include "lm/filter/count_io.hh"
@@ -247,4 +247,4 @@ class MultipleOutputBuffer {
 
 } // namespace lm
 
-#endif // LM_FILTER_FORMAT_H__
+#endif // LM_FILTER_FORMAT_H

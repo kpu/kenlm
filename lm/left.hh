@@ -35,8 +35,8 @@
  * phrase, even if hypotheses are generated left-to-right.  
  */
 
-#ifndef LM_LEFT__
-#define LM_LEFT__
+#ifndef LM_LEFT_H
+#define LM_LEFT_H
 
 #include "lm/max_order.hh"
 #include "lm/state.hh"
@@ -213,4 +213,4 @@ template <class M> class RuleScore {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_LEFT__
+#endif // LM_LEFT_H

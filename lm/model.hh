@@ -1,5 +1,5 @@
-#ifndef LM_MODEL__
-#define LM_MODEL__
+#ifndef LM_MODEL_H
+#define LM_MODEL_H
 
 #include "lm/bhiksha.hh"
 #include "lm/binary_format.hh"
@@ -153,4 +153,4 @@ base::Model *LoadVirtual(const char *file_name, const Config &config = Config(),
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_MODEL__
+#endif // LM_MODEL_H

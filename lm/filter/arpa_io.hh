@@ -1,5 +1,5 @@
-#ifndef LM_FILTER_ARPA_IO__
-#define LM_FILTER_ARPA_IO__
+#ifndef LM_FILTER_ARPA_IO_H
+#define LM_FILTER_ARPA_IO_H
 /* Input and output for ARPA format language model files.
  */
 #include "lm/read_arpa.hh"
@@ -111,4 +111,4 @@ template <class Output> void ReadARPA(util::FilePiece &in_lm, Output &out) {
 
 } // namespace lm
 
-#endif // LM_FILTER_ARPA_IO__
+#endif // LM_FILTER_ARPA_IO_H

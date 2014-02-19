@@ -1,5 +1,5 @@
-#ifndef LM_TRIE__
-#define LM_TRIE__
+#ifndef LM_TRIE_H
+#define LM_TRIE_H
 
 #include "lm/weights.hh"
 #include "lm/word_index.hh"
@@ -143,4 +143,4 @@ class BitPackedLongest : public BitPacked {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_TRIE__
+#endif // LM_TRIE_H

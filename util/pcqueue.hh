@@ -1,5 +1,5 @@
-#ifndef UTIL_PCQUEUE__
-#define UTIL_PCQUEUE__
+#ifndef UTIL_PCQUEUE_H
+#define UTIL_PCQUEUE_H
 
 #include "util/exception.hh"
 
@@ -152,4 +152,4 @@ template <class T> class PCQueue : boost::noncopyable {
 
 } // namespace util
 
-#endif // UTIL_PCQUEUE__
+#endif // UTIL_PCQUEUE_H

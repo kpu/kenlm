@@ -1,5 +1,5 @@
-#ifndef UTIL_BIT_PACKING__
-#define UTIL_BIT_PACKING__
+#ifndef UTIL_BIT_PACKING_H
+#define UTIL_BIT_PACKING_H
 
 /* Bit-level packing routines 
  *
@@ -183,4 +183,4 @@ struct BitAddress {
 
 } // namespace util
 
-#endif // UTIL_BIT_PACKING__
+#endif // UTIL_BIT_PACKING_H

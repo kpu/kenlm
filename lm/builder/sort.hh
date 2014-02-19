@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_SORT__
-#define LM_BUILDER_SORT__
+#ifndef LM_BUILDER_SORT_H
+#define LM_BUILDER_SORT_H
 
 #include "lm/builder/multi_stream.hh"
 #include "lm/builder/ngram.hh"
@@ -100,4 +100,4 @@ template <class Compare> class Sorts : public FixedArray<util::stream::Sort<Comp
 } // namespace builder
 } // namespace lm
 
-#endif // LM_BUILDER_SORT__
+#endif // LM_BUILDER_SORT_H

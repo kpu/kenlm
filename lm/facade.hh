@@ -1,5 +1,5 @@
-#ifndef LM_FACADE__
-#define LM_FACADE__
+#ifndef LM_FACADE_H
+#define LM_FACADE_H
 
 #include "lm/virtual_interface.hh"
 #include "util/string_piece.hh"
@@ -70,4 +70,4 @@ template <class Child, class StateT, class VocabularyT> class ModelFacade : publ
 } // mamespace base
 } // namespace lm
 
-#endif // LM_FACADE__
+#endif // LM_FACADE_H

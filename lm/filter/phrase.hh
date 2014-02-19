@@ -1,5 +1,5 @@
-#ifndef LM_FILTER_PHRASE_H__
-#define LM_FILTER_PHRASE_H__
+#ifndef LM_FILTER_PHRASE_H
+#define LM_FILTER_PHRASE_H
 
 #include "util/murmur_hash.hh"
 #include "util/string_piece.hh"
@@ -165,4 +165,4 @@ class Multiple : public detail::ConditionCommon {
 
 } // namespace phrase
 } // namespace lm
-#endif // LM_FILTER_PHRASE_H__
+#endif // LM_FILTER_PHRASE_H

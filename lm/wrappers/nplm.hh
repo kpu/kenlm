@@ -1,5 +1,5 @@
-#ifndef LM_WRAPPER_NPLM__
-#define LM_WRAPPER_NPLM__
+#ifndef LM_WRAPPERS_NPLM_H
+#define LM_WRAPPERS_NPLM_H
 
 #include "lm/facade.hh"
 #include "lm/max_order.hh"
@@ -78,4 +78,4 @@ class Model : public lm::base::ModelFacade<Model, State, Vocabulary> {
 } // namespace np
 } // namespace lm
 
-#endif // LM_WRAPPER_NPLM__
+#endif // LM_WRAPPERS_NPLM_H

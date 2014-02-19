@@ -10,8 +10,8 @@
  *  Currently only used for next pointers.  
  */
 
-#ifndef LM_BHIKSHA__
-#define LM_BHIKSHA__
+#ifndef LM_BHIKSHA_H
+#define LM_BHIKSHA_H
 
 #include <stdint.h>
 #include <assert.h>
@@ -109,4 +109,4 @@ class ArrayBhiksha {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_BHIKSHA__
+#endif // LM_BHIKSHA_H

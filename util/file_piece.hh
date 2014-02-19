@@ -1,5 +1,5 @@
-#ifndef UTIL_FILE_PIECE__
-#define UTIL_FILE_PIECE__
+#ifndef UTIL_FILE_PIECE_H
+#define UTIL_FILE_PIECE_H
 
 #include "util/ersatz_progress.hh"
 #include "util/exception.hh"
@@ -155,4 +155,4 @@ class FilePiece {
 
 } // namespace util
 
-#endif // UTIL_FILE_PIECE__
+#endif // UTIL_FILE_PIECE_H

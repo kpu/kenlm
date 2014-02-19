@@ -1,5 +1,5 @@
-#ifndef UTIL_STREAM_STREAM__
-#define UTIL_STREAM_STREAM__
+#ifndef UTIL_STREAM_STREAM_H
+#define UTIL_STREAM_STREAM_H
 
 #include "util/stream/chain.hh"
 
@@ -71,4 +71,4 @@ inline Chain &operator>>(Chain &chain, Stream &stream) {
 
 } // namespace stream
 } // namespace util
-#endif // UTIL_STREAM_STREAM__
+#endif // UTIL_STREAM_STREAM_H

@@ -1,5 +1,5 @@
-#ifndef LM_READ_ARPA__
-#define LM_READ_ARPA__
+#ifndef LM_READ_ARPA_H
+#define LM_READ_ARPA_H
 
 #include "lm/lm_exception.hh"
 #include "lm/word_index.hh"
@@ -87,4 +87,4 @@ template <class Voc, class Weights> void ReadNGram(util::FilePiece &f, const uns
 
 } // namespace lm
 
-#endif // LM_READ_ARPA__
+#endif // LM_READ_ARPA_H

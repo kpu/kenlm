@@ -1,5 +1,5 @@
-#ifndef UTIL_TOKENIZE_PIECE__
-#define UTIL_TOKENIZE_PIECE__
+#ifndef UTIL_TOKENIZE_PIECE_H
+#define UTIL_TOKENIZE_PIECE_H
 
 #include "util/exception.hh"
 #include "util/string_piece.hh"
@@ -148,4 +148,4 @@ template <class Find, bool SkipEmpty = false> class TokenIter : public boost::it
 
 } // namespace util
 
-#endif // UTIL_TOKENIZE_PIECE__
+#endif // UTIL_TOKENIZE_PIECE_H

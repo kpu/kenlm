@@ -1,5 +1,5 @@
-#ifndef LM_FILTER_COUNT_IO__
-#define LM_FILTER_COUNT_IO__
+#ifndef LM_FILTER_COUNT_IO_H
+#define LM_FILTER_COUNT_IO_H
 
 #include <fstream>
 #include <iostream>
@@ -86,4 +86,4 @@ template <class Output> void ReadCount(util::FilePiece &in_file, Output &out) {
 
 } // namespace lm
 
-#endif // LM_FILTER_COUNT_IO__
+#endif // LM_FILTER_COUNT_IO_H

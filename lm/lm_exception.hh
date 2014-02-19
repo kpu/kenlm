@@ -1,5 +1,5 @@
-#ifndef LM_LM_EXCEPTION__
-#define LM_LM_EXCEPTION__
+#ifndef LM_LM_EXCEPTION_H
+#define LM_LM_EXCEPTION_H
 
 // Named to avoid conflict with util/exception.hh.  
 

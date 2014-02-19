@@ -1,5 +1,5 @@
-#ifndef LM_SEARCH_TRIE__
-#define LM_SEARCH_TRIE__
+#ifndef LM_SEARCH_TRIE_H
+#define LM_SEARCH_TRIE_H
 
 #include "lm/config.hh"
 #include "lm/model_type.hh"
@@ -127,4 +127,4 @@ template <class Quant, class Bhiksha> class TrieSearch {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_SEARCH_TRIE__
+#endif // LM_SEARCH_TRIE_H

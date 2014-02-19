@@ -1,5 +1,5 @@
-#ifndef UTIL_MMAP__
-#define UTIL_MMAP__
+#ifndef UTIL_MMAP_H
+#define UTIL_MMAP_H
 // Utilities for mmaped files.  
 
 #include <cstddef>
@@ -111,4 +111,4 @@ void SyncOrThrow(void *start, size_t length);
 
 } // namespace util
 
-#endif // UTIL_MMAP__
+#endif // UTIL_MMAP_H

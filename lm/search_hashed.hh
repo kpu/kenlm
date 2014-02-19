@@ -1,5 +1,5 @@
-#ifndef LM_SEARCH_HASHED__
-#define LM_SEARCH_HASHED__
+#ifndef LM_SEARCH_HASHED_H
+#define LM_SEARCH_HASHED_H
 
 #include "lm/model_type.hh"
 #include "lm/config.hh"
@@ -189,4 +189,4 @@ template <class Value> class HashedSearch {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_SEARCH_HASHED__
+#endif // LM_SEARCH_HASHED_H

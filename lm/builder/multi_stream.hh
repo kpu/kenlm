@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_MULTI_STREAM__
-#define LM_BUILDER_MULTI_STREAM__
+#ifndef LM_BUILDER_MULTI_STREAM_H
+#define LM_BUILDER_MULTI_STREAM_H
 
 #include "lm/builder/ngram_stream.hh"
 #include "util/scoped.hh"
@@ -177,4 +177,4 @@ inline Chains &operator>>(Chains &chains, NGramStreams &streams) {
 }
 
 }} // namespaces
-#endif // LM_BUILDER_MULTI_STREAM__
+#endif // LM_BUILDER_MULTI_STREAM_H
