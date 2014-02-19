@@ -161,18 +161,19 @@ typedef util::ProbingHashTable<DedupeEntry, DedupeHash, DedupeEquals> Dedupe;
 
 class Writer {
   public:
-    Writer(std::size_t order, const util::stream::ChainPosition &position, void *dedupe_mem, std::size_t dedupe_mem_size) 
+    Writer(std::size_t order, const util::stream::ChainPosition &position, void *dedupe_mem, std::size_t dedupe_mem_size, WordIndex bos) 
       : block_(position), gram_(block_->Get(), order),
         dedupe_invalid_(order, std::numeric_limits<WordIndex>::max()),
         dedupe_(dedupe_mem, dedupe_mem_size, &dedupe_invalid_[0], DedupeHash(order), DedupeEquals(order)),
         buffer_(new WordIndex[order - 1]),
-        block_size_(position.GetChain().BlockSize()) {
+        block_size_(position.GetChain().BlockSize()),
+        bos_(bos) {
       dedupe_.Clear();
       assert(Dedupe::Size(position.GetChain().BlockSize() / position.GetChain().EntrySize(), kProbingMultiplier) == dedupe_mem_size);
       if (order == 1) {
         // Add special words.  AdjustCounts is responsible if order != 1.    
         AddUnigramWord(kUNK);
-        AddUnigramWord(kBOS);
+        AddUnigramWord(bos);
       }
     }
 
@@ -184,7 +185,7 @@ class Writer {
     // Write context with a bunch of <s>
     void StartSentence() {
       for (WordIndex *i = gram_.begin(); i != gram_.end() - 1; ++i) {
-        *i = kBOS;
+        *i = bos_;
       }
     }
 
@@ -241,6 +242,8 @@ class Writer {
     boost::scoped_array<WordIndex> buffer_;
 
     const std::size_t block_size_;
+
+    const WordIndex bos_;
 };
 
 } // namespace
@@ -292,7 +295,7 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
 template <class Voc> void CorpusCount::RunWithVocab(const util::stream::ChainPosition &position, Voc &vocab) {
   // Steal so this gets freed when finished running.  The class might have gone out of scope.
   const WordIndex end_sentence = vocab.Lookup("</s>");
-  Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_);
+  Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_, vocab.Lookup("<s>"));
   util::scoped_malloc mem(dedupe_mem_.steal());
   uint64_t count = 0;
   bool delimiters[256];
