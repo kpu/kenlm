@@ -2,6 +2,7 @@ Most of the code here is licensed under the LGPL.  There are exceptions that
 have their own licenses, listed below.  See comments in those files for more
 details.  
 
+util/getopt.* is getopt for Windows
 util/murmur_hash.cc
 util/string_piece.hh and util/string_piece.cc
 util/double-conversion/LICENSE covers util/double-conversion except Jamfile
