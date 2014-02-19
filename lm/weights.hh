@@ -1,5 +1,5 @@
-#ifndef LM_WEIGHTS__
-#define LM_WEIGHTS__
+#ifndef LM_WEIGHTS_H
+#define LM_WEIGHTS_H
 
 // Weights for n-grams.  Probability and possibly a backoff.  
 
@@ -19,4 +19,4 @@ struct RestWeights {
 };
 
 } // namespace lm
-#endif // LM_WEIGHTS__
+#endif // LM_WEIGHTS_H

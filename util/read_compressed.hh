@@ -1,5 +1,5 @@
-#ifndef UTIL_READ_COMPRESSED__
-#define UTIL_READ_COMPRESSED__
+#ifndef UTIL_READ_COMPRESSED_H
+#define UTIL_READ_COMPRESSED_H
 
 #include "util/exception.hh"
 #include "util/scoped.hh"
@@ -78,4 +78,4 @@ class ReadCompressed {
 
 } // namespace util
 
-#endif // UTIL_READ_COMPRESSED__
+#endif // UTIL_READ_COMPRESSED_H

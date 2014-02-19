@@ -1,5 +1,5 @@
-#ifndef UTIL_STRING_PIECE_HASH__
-#define UTIL_STRING_PIECE_HASH__
+#ifndef UTIL_STRING_PIECE_HASH_H
+#define UTIL_STRING_PIECE_HASH_H
 
 #include "util/string_piece.hh"
 
@@ -40,4 +40,4 @@ template <class T> typename T::iterator FindStringPiece(T &t, const StringPiece 
 #endif
 }
 
-#endif // UTIL_STRING_PIECE_HASH__
+#endif // UTIL_STRING_PIECE_HASH_H

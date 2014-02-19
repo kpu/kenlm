@@ -1,5 +1,5 @@
-#ifndef UTIL_SORTED_UNIFORM__
-#define UTIL_SORTED_UNIFORM__
+#ifndef UTIL_SORTED_UNIFORM_H
+#define UTIL_SORTED_UNIFORM_H
 
 #include <algorithm>
 #include <cstddef>
@@ -124,4 +124,4 @@ template <class Iterator, class Accessor> Iterator BinaryBelow(
 
 } // namespace util
 
-#endif // UTIL_SORTED_UNIFORM__
+#endif // UTIL_SORTED_UNIFORM_H

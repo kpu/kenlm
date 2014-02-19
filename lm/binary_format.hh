@@ -1,5 +1,5 @@
-#ifndef LM_BINARY_FORMAT__
-#define LM_BINARY_FORMAT__
+#ifndef LM_BINARY_FORMAT_H
+#define LM_BINARY_FORMAT_H
 
 #include "lm/config.hh"
 #include "lm/model_type.hh"
@@ -105,4 +105,4 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
 
 } // namespace ngram
 } // namespace lm
-#endif // LM_BINARY_FORMAT__
+#endif // LM_BINARY_FORMAT_H

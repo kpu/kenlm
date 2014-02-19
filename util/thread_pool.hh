@@ -1,5 +1,5 @@
-#ifndef UTIL_THREAD_POOL__
-#define UTIL_THREAD_POOL__
+#ifndef UTIL_THREAD_POOL_H
+#define UTIL_THREAD_POOL_H
 
 #include "util/pcqueue.hh"
 
@@ -92,4 +92,4 @@ template <class HandlerT> class ThreadPool : boost::noncopyable {
 
 } // namespace util
 
-#endif // UTIL_THREAD_POOL__
+#endif // UTIL_THREAD_POOL_H

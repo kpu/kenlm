@@ -1,5 +1,5 @@
-#ifndef UTIL_MULTI_INTERSECTION__
-#define UTIL_MULTI_INTERSECTION__
+#ifndef UTIL_MULTI_INTERSECTION_H
+#define UTIL_MULTI_INTERSECTION_H
 
 #include <boost/optional.hpp>
 #include <boost/range/iterator_range.hpp>
@@ -77,4 +77,4 @@ template <class Iterator, class Output> void AllIntersection(std::vector<boost::
 
 } // namespace util
 
-#endif // UTIL_MULTI_INTERSECTION__
+#endif // UTIL_MULTI_INTERSECTION_H

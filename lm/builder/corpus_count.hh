@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_CORPUS_COUNT__
-#define LM_BUILDER_CORPUS_COUNT__
+#ifndef LM_BUILDER_CORPUS_COUNT_H
+#define LM_BUILDER_CORPUS_COUNT_H
 
 #include "lm/lm_exception.hh"
 #include "lm/word_index.hh"
@@ -56,4 +56,4 @@ class CorpusCount {
 
 } // namespace builder
 } // namespace lm
-#endif // LM_BUILDER_CORPUS_COUNT__
+#endif // LM_BUILDER_CORPUS_COUNT_H

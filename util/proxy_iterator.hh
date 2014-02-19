@@ -1,5 +1,5 @@
-#ifndef UTIL_PROXY_ITERATOR__
-#define UTIL_PROXY_ITERATOR__
+#ifndef UTIL_PROXY_ITERATOR_H
+#define UTIL_PROXY_ITERATOR_H
 
 #include <cstddef>
 #include <iterator>
@@ -98,4 +98,4 @@ template <class Proxy> ProxyIterator<Proxy> operator+(std::ptrdiff_t amount, con
 
 } // namespace util
 
-#endif // UTIL_PROXY_ITERATOR__
+#endif // UTIL_PROXY_ITERATOR_H
