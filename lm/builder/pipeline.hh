@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_PIPELINE__
-#define LM_BUILDER_PIPELINE__
+#ifndef LM_BUILDER_PIPELINE_H
+#define LM_BUILDER_PIPELINE_H
 
 #include "lm/builder/initial_probabilities.hh"
 #include "lm/builder/header_info.hh"
@@ -57,4 +57,4 @@ struct PipelineConfig {
 void Pipeline(PipelineConfig config, int text_file, int out_arpa);
 
 }} // namespaces
-#endif // LM_BUILDER_PIPELINE__
+#endif // LM_BUILDER_PIPELINE_H

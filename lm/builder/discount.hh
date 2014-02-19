@@ -1,5 +1,5 @@
-#ifndef BUILDER_DISCOUNT__
-#define BUILDER_DISCOUNT__
+#ifndef LM_BUILDER_DISCOUNT_H
+#define LM_BUILDER_DISCOUNT_H
 
 #include <algorithm>
 
@@ -23,4 +23,4 @@ struct Discount {
 } // namespace builder
 } // namespace lm
 
-#endif // BUILDER_DISCOUNT__
+#endif // LM_BUILDER_DISCOUNT_H

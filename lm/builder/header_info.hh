@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_HEADER_INFO__
-#define LM_BUILDER_HEADER_INFO__
+#ifndef LM_BUILDER_HEADER_INFO_H
+#define LM_BUILDER_HEADER_INFO_H
 
 #include <string>
 #include <stdint.h>

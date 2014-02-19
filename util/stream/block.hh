@@ -1,5 +1,5 @@
-#ifndef UTIL_STREAM_BLOCK__
-#define UTIL_STREAM_BLOCK__
+#ifndef UTIL_STREAM_BLOCK_H
+#define UTIL_STREAM_BLOCK_H
 
 #include <cstddef>
 #include <stdint.h>
@@ -40,4 +40,4 @@ class Block {
 } // namespace stream
 } // namespace util
 
-#endif // UTIL_STREAM_BLOCK__
+#endif // UTIL_STREAM_BLOCK_H

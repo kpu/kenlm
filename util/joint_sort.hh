@@ -1,5 +1,5 @@
-#ifndef UTIL_JOINT_SORT__
-#define UTIL_JOINT_SORT__
+#ifndef UTIL_JOINT_SORT_H
+#define UTIL_JOINT_SORT_H
 
 /* A terrifying amount of C++ to coax std::sort into soring one range while
  * also permuting another range the same way.
@@ -9,7 +9,6 @@
 
 #include <algorithm>
 #include <functional>
-#include <iostream>
 
 namespace util {
 
@@ -35,9 +34,16 @@ template <class KeyIter, class ValueIter> class JointIter {
       return *this;
     }
 
-    void swap(const JointIter &other) {
-      std::swap(key_, other.key_);
-      std::swap(value_, other.value_);
+    friend void swap(JointIter &first, JointIter &second) {
+      using std::swap;
+      swap(first.key_, second.key_);
+      swap(first.value_, second.value_);
+    }
+
+    void DeepSwap(JointIter &other) {
+      using std::swap;
+      swap(*key_, *other.key_);
+      swap(*value_, *other.value_);
     }
 
   private:
@@ -83,9 +89,8 @@ template <class KeyIter, class ValueIter> class JointProxy {
       return *(inner_.key_);
     }
 
-    void swap(JointProxy<KeyIter, ValueIter> &other) {
-      std::swap(*inner_.key_, *other.inner_.key_);
-      std::swap(*inner_.value_, *other.inner_.value_);
+    friend void swap(JointProxy<KeyIter, ValueIter> first, JointProxy<KeyIter, ValueIter> second) {
+      first.Inner().DeepSwap(second.Inner());
     }
 
   private:
@@ -138,14 +143,4 @@ template <class KeyIter, class ValueIter> void JointSort(const KeyIter &key_begi
 
 } // namespace util
 
-namespace std {
-template <class KeyIter, class ValueIter> void swap(util::detail::JointIter<KeyIter, ValueIter> &left, util::detail::JointIter<KeyIter, ValueIter> &right) {
-  left.swap(right);
-}
-
-template <class KeyIter, class ValueIter> void swap(util::detail::JointProxy<KeyIter, ValueIter> &left, util::detail::JointProxy<KeyIter, ValueIter> &right) {
-  left.swap(right);
-}
-} // namespace std
-
-#endif // UTIL_JOINT_SORT__
+#endif // UTIL_JOINT_SORT_H

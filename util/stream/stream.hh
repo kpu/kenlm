@@ -1,5 +1,5 @@
-#ifndef UTIL_STREAM_STREAM__
-#define UTIL_STREAM_STREAM__
+#ifndef UTIL_STREAM_STREAM_H
+#define UTIL_STREAM_STREAM_H
 
 #include "util/stream/chain.hh"
 
@@ -90,4 +90,4 @@ template <class T> class TypedStream : public Stream {
 
 } // namespace stream
 } // namespace util
-#endif // UTIL_STREAM_STREAM__
+#endif // UTIL_STREAM_STREAM_H

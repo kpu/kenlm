@@ -1,5 +1,5 @@
-#ifndef LM_VALUE_BUILD__
-#define LM_VALUE_BUILD__
+#ifndef LM_VALUE_BUILD_H
+#define LM_VALUE_BUILD_H
 
 #include "lm/weights.hh"
 #include "lm/word_index.hh"
@@ -94,4 +94,4 @@ template <class Model> class LowerRestBuild {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_VALUE_BUILD__
+#endif // LM_VALUE_BUILD_H

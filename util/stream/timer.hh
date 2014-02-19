@@ -1,5 +1,5 @@
-#ifndef UTIL_STREAM_TIMER__
-#define UTIL_STREAM_TIMER__
+#ifndef UTIL_STREAM_TIMER_H
+#define UTIL_STREAM_TIMER_H
 
 // Sorry Jon, this was adding library dependencies in Moses and people complained.
 
@@ -13,4 +13,4 @@
 #define UTIL_TIMER(str) 
 //#endif
 
-#endif // UTIL_STREAM_TIMER__
+#endif // UTIL_STREAM_TIMER_H

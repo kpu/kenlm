@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_INTERPOLATE__
-#define LM_BUILDER_INTERPOLATE__
+#ifndef LM_BUILDER_INTERPOLATE_H
+#define LM_BUILDER_INTERPOLATE_H
 
 #include "lm/builder/multi_stream.hh"
 #include "lm/word_index.hh"
@@ -30,4 +30,4 @@ class Interpolate {
 };
 
 }} // namespaces
-#endif // LM_BUILDER_INTERPOLATE__
+#endif // LM_BUILDER_INTERPOLATE_H

@@ -1,5 +1,5 @@
-#ifndef UTIL_STREAM_IO__
-#define UTIL_STREAM_IO__
+#ifndef UTIL_STREAM_IO_H
+#define UTIL_STREAM_IO_H
 
 #include "util/exception.hh"
 #include "util/file.hh"
@@ -81,4 +81,4 @@ class FileBuffer {
 
 } // namespace stream
 } // namespace util
-#endif // UTIL_STREAM_IO__
+#endif // UTIL_STREAM_IO_H
