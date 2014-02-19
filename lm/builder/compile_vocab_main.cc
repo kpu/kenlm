@@ -88,7 +88,6 @@ int main(int argc, char *argv[]) {
     VocabEntry entry;
     entry.key = i->hash;
     entry.value = i - words.begin() + 1 /* unk */;
-    std::cerr << "Calling insert with " << entry.key << " and " << entry.value << std::endl;
     table.Insert(entry);
   }
   std::cerr << "Writing table." << std::endl;
