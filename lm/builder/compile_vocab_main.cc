@@ -1,3 +1,4 @@
+#include "lm/word_index.hh"
 #include "util/fake_ofstream.hh"
 #include "util/file_piece.hh"
 #include "util/murmur_hash.hh"
@@ -32,6 +33,20 @@ void Add(util::AutoProbing<Entry, util::IdentityHash> &dedupe, util::Pool &strin
   }
 }
 
+#pragma pack(push)
+#pragma pack(4)
+struct VocabEntry {
+  typedef uint64_t Key;
+
+  uint64_t GetKey() const { return key; }
+  void SetKey(uint64_t to) { key = to; }
+
+  uint64_t key;
+  lm::WordIndex value;
+};
+#pragma pack(pop)
+
+
 int main(int argc, char *argv[]) {
   bool is_null[256];
   memset(is_null, 0, sizeof(is_null));
@@ -61,4 +76,22 @@ int main(int argc, char *argv[]) {
     // Include null termination.
     out << StringPiece(i->str, strlen(i->str) + 1);
   }
+  string_pool.FreeAll();
+
+  typedef util::ProbingHashTable<VocabEntry, util::IdentityHash> WriteTable;
+  std::size_t size = 8 + WriteTable::Size(words.size(), 1.5);
+  std::cerr << "Preparing table; size is " << size << std::endl;
+  util::scoped_malloc mapping(util::CallocOrThrow(size));
+  *static_cast<uint64_t*>(mapping.get()) = words.size();
+  WriteTable table(static_cast<char*>(mapping.get()) + 8, size - 8);
+  for (std::vector<Remember>::const_iterator i = words.begin(); i != words.end(); ++i) {
+    VocabEntry entry;
+    entry.key = i->hash;
+    entry.value = i - words.begin() + 1 /* unk */;
+    std::cerr << "Calling insert with " << entry.key << " and " << entry.value << std::endl;
+    table.Insert(entry);
+  }
+  std::cerr << "Writing table." << std::endl;
+  util::scoped_fd file(util::CreateOrThrow("vocab_table"));
+  util::WriteOrThrow(file.get(), mapping.get(), size);
 }

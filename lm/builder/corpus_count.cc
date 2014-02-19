@@ -103,7 +103,7 @@ class VocabGiven {
 
     WordIndex Lookup(const StringPiece &word) const {
       Table::ConstIterator it;
-      if (table_.Find(util::MurmurHashNative(word.data(), word.size()), it)) {
+      if (table_.Find(util::MurmurHash64A(word.data(), word.size()), it)) {
         return it->value;
       } else {
         return 0; // <unk>.
