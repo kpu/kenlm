@@ -303,10 +303,11 @@ template <class Voc> void CorpusCount::RunWithVocab(const util::stream::ChainPos
       writer.StartSentence();
       for (util::TokenIter<util::BoolCharacter, true> w(line, delimiters); w; ++w) {
         WordIndex word = vocab.Lookup(*w);
-        if (word <= 2) {
+        // Commented out because the vocab words might be in native trie order.
+  /*      if (word <= 2) {
           ComplainDisallowed(*w, disallowed_symbol_action_);
           continue;
-        }
+        }*/
         writer.Append(word);
         ++count;
       }

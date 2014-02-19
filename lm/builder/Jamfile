@@ -5,6 +5,9 @@ fakelib builder : [ glob *.cc : *test.cc *main.cc ]
 exe lmplz : lmplz_main.cc builder /top//boost_program_options ;
 #exe make_trie : make_trie_main.cc builder ;
 exe just_count : just_count_main.cc builder /top//boost_program_options ;
+exe compile_vocab : compile_vocab_main.cc builder /top//boost_program_options ;
+
+alias programs : lmplz just_count compile_vocab ;
 
 import testing ;
 unit-test corpus_count_test : corpus_count_test.cc builder /top//boost_unit_test_framework ;
