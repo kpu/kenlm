@@ -1,4 +1,5 @@
 #include "lm/word_index.hh"
+#include "util/ersatz_progress.hh"
 #include "util/fake_ofstream.hh"
 #include "util/file_piece.hh"
 #include "util/murmur_hash.hh"
@@ -59,7 +60,7 @@ int main(int argc, char *argv[]) {
     Add(dedupe, string_pool, words, "<s>");
     Add(dedupe, string_pool, words, "</s>");
     for (int i = 1; i < argc; ++i) {
-      util::FilePiece f(argv[i]);
+      util::FilePiece f(argv[i], &std::cerr);
       try { while (true) {
         Add(dedupe, string_pool, words, f.ReadDelimited(is_null));
       } } catch (const util::EndOfFileException &e) {}
@@ -72,7 +73,8 @@ int main(int argc, char *argv[]) {
   std::cerr << "Writing text" << std::endl;
   util::FakeOFStream out(1);
   out << "<unk>" << '\0';
-  for (std::vector<Remember>::const_iterator i = words.begin(); i != words.end(); ++i) {
+  std::vector<Remember>::const_iterator i = words.begin();
+  for (util::ErsatzProgress progress(words.size()); i != words.end(); ++i, ++progress) {
     // Include null termination.
     out << StringPiece(i->str, strlen(i->str) + 1);
   }
@@ -84,7 +86,8 @@ int main(int argc, char *argv[]) {
   util::scoped_malloc mapping(util::CallocOrThrow(size));
   *static_cast<uint64_t*>(mapping.get()) = words.size();
   WriteTable table(static_cast<char*>(mapping.get()) + 8, size - 8);
-  for (std::vector<Remember>::const_iterator i = words.begin(); i != words.end(); ++i) {
+  i = words.begin();
+  for (util::ErsatzProgress progress(words.size()); i != words.end(); ++i, ++progress) {
     VocabEntry entry;
     entry.key = i->hash;
     entry.value = i - words.begin() + 1 /* unk */;
