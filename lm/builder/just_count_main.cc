@@ -49,15 +49,17 @@ int main(int argc, char *argv[]) {
 
   util::scoped_fd vocab_file(util::OpenReadOrThrow(vocab.c_str()));
 
+  std::size_t blocks = 1;
+
   std::size_t memory_for_chain =
     // This much memory to work with after vocab hash table.
     static_cast<float>(ram - util::SizeOrThrow(vocab_file.get())) /
     // Solve for block size including the dedupe multiplier for one block.
-    (static_cast<float>(2) + lm::builder::CorpusCount::DedupeMultiplier(order)) *
+    (static_cast<float>(blocks) + lm::builder::CorpusCount::DedupeMultiplier(order)) *
     // Chain likes memory expressed in terms of total memory.
-    static_cast<float>(2);
+    static_cast<float>(blocks);
   
-  util::stream::Chain chain(util::stream::ChainConfig(lm::builder::NGram::TotalSize(order), 2, memory_for_chain));
+  util::stream::Chain chain(util::stream::ChainConfig(lm::builder::NGram::TotalSize(order), blocks, memory_for_chain));
   util::FilePiece f(0, NULL, &std::cerr);
   uint64_t token_count = 0;
   lm::WordIndex type_count = 0;
