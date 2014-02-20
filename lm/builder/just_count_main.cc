@@ -49,15 +49,17 @@ int main(int argc, char *argv[]) {
 
   util::scoped_fd vocab_file(util::OpenReadOrThrow(vocab.c_str()));
 
-  std::size_t blocks = 1;
+  std::size_t blocks = 2;
+  std::size_t remaining_size = ram - util::SizeOrThrow(vocab_file.get());
 
   std::size_t memory_for_chain =
     // This much memory to work with after vocab hash table.
-    static_cast<float>(ram - util::SizeOrThrow(vocab_file.get())) /
+    static_cast<float>(remaining_size) /
     // Solve for block size including the dedupe multiplier for one block.
     (static_cast<float>(blocks) + lm::builder::CorpusCount::DedupeMultiplier(order)) *
     // Chain likes memory expressed in terms of total memory.
     static_cast<float>(blocks);
+  std::cerr << "Using " << memory_for_chain << " for chains." << std::endl;
   
   util::stream::Chain chain(util::stream::ChainConfig(lm::builder::NGram::TotalSize(order), blocks, memory_for_chain));
   util::FilePiece f(0, NULL, &std::cerr);
@@ -69,8 +71,14 @@ int main(int argc, char *argv[]) {
   util::stream::SortConfig sort_config;
   sort_config.temp_prefix = temp_prefix;
   sort_config.buffer_size = 64 * 1024 * 1024;
-  sort_config.total_memory = ram;
+  // Intended to run in parallel.
+  sort_config.total_memory = remaining_size;
+  util::stream::Sort<lm::builder::SuffixOrder, lm::builder::AddCombiner> sorted(chain, sort_config, lm::builder::SuffixOrder(order), lm::builder::AddCombiner());
+  chain.Wait(true);
+  util::stream::Chain chain2(util::stream::ChainConfig(lm::builder::NGram::TotalSize(order), blocks, sort_config.buffer_size));
+  sorted.Output(chain2);
   // Inefficiently copies if there's only one block.
-  util::stream::BlockingSort(chain, sort_config, lm::builder::SuffixOrder(order), lm::builder::AddCombiner());
-  chain >> util::stream::WriteAndRecycle(1);
+  chain2 >> util::stream::WriteAndRecycle(1);
+  chain2.Wait(true);
+  return 0;
 }
