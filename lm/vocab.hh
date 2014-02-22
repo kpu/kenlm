@@ -106,6 +106,9 @@ class SortedVocabulary : public base::Vocabulary {
      */
     void BuildFromFile(int fd, std::vector<WordIndex> &mapping);
 
+    // Built from already sorted strings.
+    void BuildAlreadySorted(int fd);
+
     // Trie stores the correct counts including <unk> in the header.  If this was previously sized based on a count exluding <unk>, padding with 8 bytes will make it the correct size based on a count including <unk>.
     std::size_t UnkCountChangePadding() const { return SawUnk() ? 0 : sizeof(uint64_t); }
 

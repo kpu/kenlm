@@ -9,14 +9,10 @@
 
 namespace lm { namespace builder {
 
-Binarize::Binarize(uint64_t unigram_count, uint8_t order, const ngram::Config &config, int vocab_file, std::vector<WordIndex> &mapping)
+Binarize::Binarize(uint64_t unigram_count, uint8_t order, const ngram::Config &config, int vocab_file)
   : model_(unigram_count, order, config), config_(config) {
-  {
-    util::scoped_fd permuted_text(util::CreateOrThrow("vocab_permuted"));
-    ngram::SizedWriteWordsWrapper writer(NULL, permuted_text.get(), 0);
-    model_.vocab_.ConfigureEnumerate(&writer, unigram_count);
-    model_.vocab_.BuildFromFile(vocab_file, mapping);
-  }
+  model_.vocab_.BuildAlreadySorted(vocab_file);
+  begin_sentence_ = model_.vocab_.BeginSentence();
   end_sentence_ = model_.vocab_.EndSentence();
 
   // forget vocab until later

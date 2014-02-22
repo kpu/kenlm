@@ -174,6 +174,18 @@ void SortedVocabulary::BuildFromFile(int fd, std::vector<WordIndex> &mapping) {
   } 
 }
 
+void SortedVocabulary::BuildAlreadySorted(int fd) {
+  bool is_null[256];
+  memset(is_null, 0, sizeof(is_null));
+  is_null[0] = true;
+  util::FilePiece f(fd, NULL, &std::cerr);
+  try { while (true) {
+    StringPiece str = f.ReadDelimited(is_null);
+    *(end_++) = detail::HashForVocab(str.data(), str.size());
+  } } catch (const util::EndOfFileException &e) {}
+  saw_unk_ = true;
+}
+
 void SortedVocabulary::LoadedBinary(bool have_words, int fd, EnumerateVocab *to) {
   end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
   SetSpecial(Index("<s>"), Index("</s>"), 0);

@@ -50,17 +50,10 @@ class Master {
     }
 
     // This takes the (partially) sorted ngrams and sets up for adjusted counts.
-    void InitForAdjust(util::stream::Sort<SuffixOrder, AddCombiner> &ngrams, WordIndex types) {
-      const std::size_t each_order_min = config_.minimum_block * config_.block_count;
-      // We know how many unigrams there are.  Don't allocate more than needed to them.
-      const std::size_t min_chains = (config_.order - 1) * each_order_min +
-        std::min(types * NGram::TotalSize(1), each_order_min);
-      // Do merge sort with calculated laziness.
-      const std::size_t merge_using = ngrams.Merge(std::min(config_.TotalMemory() - min_chains, ngrams.DefaultLazy()));
-
+    void InitForAdjust(util::stream::FileMergingReader<SuffixOrder, AddCombiner> &ngrams, WordIndex types) {
       std::vector<uint64_t> count_bounds(1, types);
-      CreateChains(config_.TotalMemory() - merge_using - types * sizeof(lm::WordIndex) /* for renumbering */, count_bounds);
-      ngrams.Output(chains_.back(), merge_using);
+      CreateChains(config_.TotalMemory() - ngrams.MemoryUsage(), count_bounds);
+      chains_.back() >> boost::ref(ngrams);
 
       // Setup unigram file.  
       files_.push_back(util::MakeTemp(config_.TempPrefix()));
@@ -299,7 +292,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
 
 } // namespace
 
-void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
+void Pipeline(PipelineConfig config, const std::vector<std::string> &inputs, WordIndex type_count, int out_arpa) {
   // Some fail-fast sanity checks.
   if (config.sort.buffer_size * 4 > config.TotalMemory()) {
     config.sort.buffer_size = config.TotalMemory() / 4;
@@ -313,37 +306,29 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
   UTIL_THROW_IF(config.TotalMemory() < config.minimum_block * config.order * config.block_count, util::Exception,
       "Not enough memory to fit " << (config.order * config.block_count) << " blocks with minimum size " << config.minimum_block << ".  Increase memory to " << (config.minimum_block * config.order * config.block_count) << " bytes or decrease the minimum block size.");
 
-  UTIL_TIMER("(%w s) Total wall time elapsed\n");
-  Master master(config);
-
-  util::scoped_fd vocab_file(config.vocab_file.empty() ? 
-      util::MakeTemp(config.TempPrefix()) : 
-      util::CreateOrThrow(config.vocab_file.c_str()));
-  WordIndex type_count;
-  uint64_t token_count;
-  std::string text_file_name;
-  boost::scoped_ptr<util::stream::Sort<SuffixOrder, AddCombiner> > adjust_in(CountText(text_file, vocab_file.get(), master, type_count, token_count, text_file_name));
 
   std::cerr << "=== Building vocabulary ===" << std::endl;
-  std::vector<lm::WordIndex> mapping;
   ngram::Config out_config;
 //  out_config.pointer_bhiksha_bits = 64;
   out_config.write_mmap = "trie";
 //  out_config.prob_bits = out_config.backoff_bits = 10;
   out_config.write_method = ngram::Config::WRITE_MMAP;
-  lm::builder::Binarize binarize(type_count, config.order, out_config, vocab_file.get(), mapping);
+  lm::builder::Binarize binarize(type_count, config.order, out_config, util::OpenReadOrThrow(config.vocab_file.c_str()));
+
+  Master master(config);
+
 
   std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;
-  master.InitForAdjust(*adjust_in, type_count);
-  adjust_in.reset();
+  util::stream::FileMergingReader<SuffixOrder, AddCombiner> reader(SuffixOrder(config.order), AddCombiner());
+  for (std::vector<std::string>::const_iterator i = inputs.begin(); i != inputs.end(); ++i) {
+    reader.Add(i->c_str());
+  }
+
+  master.InitForAdjust(reader, type_count);
 
   std::vector<uint64_t> counts;
   std::vector<Discount> discounts;
-  master >> AdjustCounts(counts, discounts);
-
-  for (unsigned int i = 0; i < config.order; ++i) {
-    master.MutableChains()[i] >> lm::builder::Renumber(&mapping[0]);
-  }
+  master >> AdjustCounts(counts, discounts, binarize.BeginSentence());
 
   {
     FixedArray<util::stream::FileBuffer> gammas;

@@ -34,7 +34,9 @@ int main(int argc, char *argv[]) {
     po::options_description options("Language model building options");
     lm::builder::PipelineConfig pipeline;
 
-    std::string text, arpa;
+    std::string arpa;
+    std::vector<std::string> inputs;
+    lm::WordIndex vocab_size;
 
     options.add_options()
       ("help,h", po::bool_switch(), "Show this help message")
@@ -51,11 +53,12 @@ int main(int argc, char *argv[]) {
       ("sort_block", SizeOption(pipeline.sort.buffer_size, "64M"), "Size of IO operations for sort (determines arity)")
       ("block_count", po::value<std::size_t>(&pipeline.block_count)->default_value(2), "Block count (per order)")
       ("vocab_estimate", po::value<lm::WordIndex>(&pipeline.vocab_estimate)->default_value(1000000), "Assume this vocabulary size for purposes of calculating memory in step 1 (corpus count) and pre-sizing the hash table")
-      ("vocab_file", po::value<std::string>(&pipeline.vocab_file)->default_value(""), "Location to write a file containing the unique vocabulary strings delimited by null bytes")
+      ("vocab_file", po::value<std::string>(&pipeline.vocab_file)->required(), "Location to write a file containing the unique vocabulary strings delimited by null bytes")
       ("vocab_pad", po::value<std::size_t>(&pipeline.vocab_size_for_unk)->default_value(0), "If the vocabulary is smaller than this value, pad with <unk> to reach this size. Requires --interpolate_unigrams")
       ("verbose_header", po::bool_switch(&pipeline.verbose_header), "Add a verbose header to the ARPA file that includes information such as token count, smoothing type, etc.")
-      ("text", po::value<std::string>(&text), "Read text from a file instead of stdin")
-      ("arpa", po::value<std::string>(&arpa), "Write ARPA to a file instead of stdout");
+      ("inputs", po::value<std::vector<std::string> >(&inputs)->required()->composing(), "Files to merge")
+      ("arpa", po::value<std::string>(&arpa), "Write ARPA to a file instead of stdout")
+      ("vocab_size", po::value<lm::WordIndex>(&vocab_size)->required(), "Vocabulary size");
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, options), vm);
 
@@ -119,17 +122,9 @@ int main(int argc, char *argv[]) {
     initial.adder_out.block_count = 2;
     pipeline.read_backoffs = initial.adder_out;
 
-    util::scoped_fd in(0), out(1);
-    if (vm.count("text")) {
-      in.reset(util::OpenReadOrThrow(text.c_str()));
-    }
-    if (vm.count("arpa")) {
-      out.reset(util::CreateOrThrow(arpa.c_str()));
-    }
-
-    // Read from stdin
     try {
-      lm::builder::Pipeline(pipeline, in.release(), out.release());
+      // HACK!
+      lm::builder::Pipeline(pipeline, inputs, vocab_size, 1);
     } catch (const util::MallocException &e) {
       std::cerr << e.what() << std::endl;
       std::cerr << "Try rerunning with a more conservative -S setting than " << vm["memory"].as<std::string>() << std::endl;

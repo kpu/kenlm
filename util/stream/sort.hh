@@ -383,16 +383,21 @@ class FileToMerge {
 
 template <class Compare, class Combine> class FileMergingReader {
   public:
-    FileMergingReader(std::size_t files, const Compare &compare, const Combine &combine);
+    FileMergingReader(const Compare &compare, const Combine &combine) : compare_(compare), combine_(combine) {}
 
     void Add(const char *name) {
       files_.push_back(new FileToMerge(name));
     }
 
+    std::size_t MemoryUsage() const {
+      return files_.size() * 64 * 1024 * 1024;
+    }
+
     void Run(const ChainPosition &position) {
       const std::size_t entry_size = position.GetChain().EntrySize();
       const std::size_t buffer_size = ((64 * 1024 * 1024) / entry_size) * entry_size;
-      std::priority_queue<FileToMerge *, std::vector<FileToMerge*>, Greater> queue(Greater(compare_));
+      Greater great(compare_);
+      Queue queue(great);
 
       for (boost::ptr_vector<FileToMerge>::iterator i = files_.begin(); i != files_.end(); ++i) {
         i->Init(buffer_size);
@@ -419,6 +424,7 @@ template <class Compare, class Combine> class FileMergingReader {
           queue.push(top);
       }
       ++stream;
+      files_.clear();
       stream.Poison();
     }
 
@@ -439,6 +445,8 @@ template <class Compare, class Combine> class FileMergingReader {
       private:
         const Compare compare_;
     };
+
+    typedef typename std::priority_queue<FileToMerge *, std::vector<FileToMerge*>, Greater> Queue;
 };
 
 // Don't use this directly.  Worker that sorts blocks.   

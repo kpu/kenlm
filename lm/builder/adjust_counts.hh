@@ -2,6 +2,7 @@
 #define LM_BUILDER_ADJUST_COUNTS_H
 
 #include "lm/builder/discount.hh"
+#include "lm/word_index.hh"
 #include "util/exception.hh"
 
 #include <vector>
@@ -27,14 +28,16 @@ class BadDiscountException : public util::Exception {
  */
 class AdjustCounts {
   public:
-    AdjustCounts(std::vector<uint64_t> &counts, std::vector<Discount> &discounts)
-      : counts_(counts), discounts_(discounts) {}
+    AdjustCounts(std::vector<uint64_t> &counts, std::vector<Discount> &discounts, WordIndex begin_sentence)
+      : counts_(counts), discounts_(discounts), begin_sentence_(begin_sentence) {}
 
     void Run(const ChainPositions &positions);
 
   private:
     std::vector<uint64_t> &counts_;
     std::vector<Discount> &discounts_;
+
+    WordIndex begin_sentence_;
 };
 
 } // namespace builder

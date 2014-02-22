@@ -20,7 +20,9 @@ class Binarize {
   private:
     typedef ngram::TrieModel Model;
   public:
-    Binarize(uint64_t unigram_count, uint8_t order, const ngram::Config &config, int vocab_file, std::vector<WordIndex> &mapping);
+    Binarize(uint64_t unigram_count, uint8_t order, const ngram::Config &config, int vocab_file);
+
+    WordIndex BeginSentence() const { return begin_sentence_; }
 
     WordIndex EndSentence() const { return end_sentence_; }
 
@@ -38,7 +40,7 @@ class Binarize {
 
   private:
     Model model_;
-    WordIndex end_sentence_;
+    WordIndex begin_sentence_, end_sentence_;
     std::vector<uint64_t> counts_;
     const ngram::Config config_;
     std::size_t vocab_size_;

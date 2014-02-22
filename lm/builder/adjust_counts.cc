@@ -83,9 +83,9 @@ class StatCollector {
 // order but we don't care because the data is going to be sorted again.  
 class CollapseStream {
   public:
-    CollapseStream(const util::stream::ChainPosition &position) :
+    CollapseStream(const util::stream::ChainPosition &position, WordIndex begin_sentence) :
       current_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())),
-      block_(position) {
+      block_(position), begin_sentence_(begin_sentence) {
       StartBlock();
     }
 
@@ -96,7 +96,7 @@ class CollapseStream {
 
     CollapseStream &operator++() {
       assert(block_);
-      if (current_.begin()[1] == kBOS && current_.Base() < copy_from_) {
+      if (current_.begin()[1] == begin_sentence_ && current_.Base() < copy_from_) {
         memcpy(current_.Base(), copy_from_, current_.TotalSize());
         UpdateCopyFrom();
       }
@@ -124,7 +124,7 @@ class CollapseStream {
     // Find last without bos.  
     void UpdateCopyFrom() {
       for (copy_from_ -= current_.TotalSize(); copy_from_ >= current_.Base(); copy_from_ -= current_.TotalSize()) {
-        if (NGram(copy_from_, current_.Order()).begin()[1] != kBOS) break;
+        if (NGram(copy_from_, current_.Order()).begin()[1] != begin_sentence_) break;
       }
     }
 
@@ -134,6 +134,8 @@ class CollapseStream {
     uint8_t *copy_from_;
 
     util::stream::Link block_;
+
+    WordIndex begin_sentence_;
 };
 
 } // namespace
@@ -153,7 +155,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
 
   NGramStreams streams;
   streams.Init(positions, positions.size() - 1);
-  CollapseStream full(positions[positions.size() - 1]);
+  CollapseStream full(positions[positions.size() - 1], begin_sentence_);
 
   // Initialization: <unk> has count 0 and so does <s>.  
   NGramStream *lower_valid = streams.begin();
@@ -161,7 +163,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   *streams[0]->begin() = kUNK;
   stats.Add(0, 0);
   (++streams[0])->Count() = 0;
-  *streams[0]->begin() = kBOS;
+  *streams[0]->begin() = begin_sentence_;
   // not in stats because it will get put in later.  
 
   // iterate over full (the stream of the highest order ngrams)
@@ -182,7 +184,7 @@ void AdjustCounts::Run(const ChainPositions &positions) {
     const WordIndex *full_end = full->end();
     // Initialize and mark as valid up to bos.  
     const WordIndex *bos;
-    for (bos = different; (bos > full->begin()) && (*bos != kBOS); --bos) {
+    for (bos = different; (bos > full->begin()) && (*bos != begin_sentence_); --bos) {
       ++lower_valid;
       std::copy(bos, full_end, (*lower_valid)->begin());
       (*lower_valid)->Count() = 1;

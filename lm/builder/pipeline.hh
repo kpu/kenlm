@@ -54,7 +54,7 @@ struct PipelineConfig {
 };
 
 // Takes ownership of text_file and out_arpa.
-void Pipeline(PipelineConfig config, int text_file, int out_arpa);
+void Pipeline(PipelineConfig config, const std::vector<std::string> &inputs, WordIndex type_count, int out_arpa);
 
 }} // namespaces
 #endif // LM_BUILDER_PIPELINE_H
