@@ -353,6 +353,94 @@ template <class Compare, class Combine> class OwningMergingReader : public Mergi
     Offsets offsets_;
 };
 
+class FileToMerge {
+  public:
+    // Call increment to see if there is content.
+    explicit FileToMerge(const char *name)
+      : file_(util::OpenReadOrThrow(name)), current_(NULL), buffer_end_(NULL) {}
+
+    void Init(std::size_t buffer_size) {
+      buffer_.reset(util::MallocOrThrow(buffer_size));
+    }
+
+    // Assumes proper file sizing...
+    bool Increment(std::size_t buf_size, std::size_t entry_size) {
+      current_ += entry_size;
+      if (current_ < buffer_end_) return true;
+      std::size_t got = util::ReadOrEOF(file_.get(), buffer_.get(), buf_size);
+      current_ = static_cast<uint8_t*>(buffer_.get());
+      buffer_end_ = current_ + got;
+      return got;
+    }
+
+    const void *Current() const { return current_; }
+    
+  private:
+    util::scoped_fd file_;
+    util::scoped_malloc buffer_;
+    uint8_t *current_, *buffer_end_;
+};
+
+template <class Compare, class Combine> class FileMergingReader {
+  public:
+    FileMergingReader(std::size_t files, const Compare &compare, const Combine &combine);
+
+    void Add(const char *name) {
+      files_.push_back(new FileToMerge(name));
+    }
+
+    void Run(const ChainPosition &position) {
+      const std::size_t entry_size = position.GetChain().EntrySize();
+      const std::size_t buffer_size = ((64 * 1024 * 1024) / entry_size) * entry_size;
+      std::priority_queue<FileToMerge *, std::vector<FileToMerge*>, Greater> queue(Greater(compare_));
+
+      for (boost::ptr_vector<FileToMerge>::iterator i = files_.begin(); i != files_.end(); ++i) {
+        i->Init(buffer_size);
+        if (i->Increment(buffer_size, entry_size))
+          queue.push(&*i);
+      }
+
+      Stream stream(position);
+      // Merge including combiner support.  
+      memcpy(stream.Get(), queue.top()->Current(), entry_size);
+      FileToMerge *t = queue.top();
+      queue.pop();
+      if (t->Increment(buffer_size, entry_size)) {
+        queue.push(t);
+      }
+      while (!queue.empty()) {
+        FileToMerge *top = queue.top();
+        queue.pop();
+        if (!combine_(stream.Get(), top->Current(), compare_)) {
+          ++stream;
+          memcpy(stream.Get(), top->Current(), entry_size);
+        }
+        if (top->Increment(buffer_size, entry_size))
+          queue.push(top);
+      }
+      ++stream;
+      stream.Poison();
+    }
+
+  private:
+    Compare compare_;
+    Combine combine_;
+
+    boost::ptr_vector<FileToMerge> files_;
+
+    class Greater : public std::binary_function<const FileToMerge *, const FileToMerge *, bool> {
+      public:
+        explicit Greater(const Compare &compare) : compare_(compare) {}
+
+        bool operator()(const FileToMerge *first, const FileToMerge *second) const {
+          return compare_(first->Current(), second->Current());
+        }
+
+      private:
+        const Compare compare_;
+    };
+};
+
 // Don't use this directly.  Worker that sorts blocks.   
 template <class Compare> class BlockSorter {
   public:
