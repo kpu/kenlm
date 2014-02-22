@@ -9,7 +9,7 @@ exe compile_vocab : compile_vocab_main.cc builder /top//boost_program_options ;
 exe dump_counts : dump_counts_main.cc builder ;
 exe merge : merge_main.cc builder ;
 
-alias programs : lmplz just_count compile_vocab dump_counts ;
+alias programs : lmplz just_count compile_vocab dump_counts merge ;
 
 import testing ;
 unit-test corpus_count_test : corpus_count_test.cc builder /top//boost_unit_test_framework ;
