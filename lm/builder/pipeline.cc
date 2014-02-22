@@ -334,10 +334,7 @@ void Pipeline(PipelineConfig config, const std::vector<std::string> &inputs, Wor
     writing[i].reset(util::CreateOrThrow(boost::lexical_cast<std::string>(i).c_str()));
     master.MutableChains()[i] >> util::stream::WriteAndRecycle(writing[i].get());
   }
-  master.MutableChains().Wait(true);
-
-  std::cerr << "Waited" << std::endl;
-  std::cerr << type_count << " " << counts[0] << std::endl;*/
+  master.MutableChains().Wait(true);*/
 
   {
     FixedArray<util::stream::FileBuffer> gammas;

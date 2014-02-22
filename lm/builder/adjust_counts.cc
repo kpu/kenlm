@@ -162,8 +162,16 @@ void AdjustCounts::Run(const ChainPositions &positions) {
   streams[0]->Count() = 0;
   *streams[0]->begin() = kUNK;
   stats.Add(0, 0);
-  (++streams[0])->Count() = 0;
+
+  ++streams[0];
+  streams[0]->Count() = 0;
   *streams[0]->begin() = begin_sentence_;
+  stats.Add(0, 0);
+
+  ++streams[0];
+  streams[0]->Count() = 0;
+  // first word other than <unk>
+  *streams[0]->begin() = 1;
   // not in stats because it will get put in later.  
 
   // iterate over full (the stream of the highest order ngrams)

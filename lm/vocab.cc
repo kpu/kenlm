@@ -179,11 +179,19 @@ void SortedVocabulary::BuildAlreadySorted(int fd) {
   memset(is_null, 0, sizeof(is_null));
   is_null[0] = true;
   util::FilePiece f(fd, NULL, &std::cerr);
+  // Skip <unk>.
+  UTIL_THROW_IF("<unk>" != f.ReadDelimited(is_null), FormatLoadException, "Expected <unk> at the beginning of the vocab file.");
   try { while (true) {
     StringPiece str = f.ReadDelimited(is_null);
     *(end_++) = detail::HashForVocab(str.data(), str.size());
   } } catch (const util::EndOfFileException &e) {}
   saw_unk_ = true;
+  
+  SetSpecial(Index("<s>"), Index("</s>"), 0);
+  // Save size.  Excludes UNK.  
+  *(reinterpret_cast<uint64_t*>(begin_) - 1) = end_ - begin_;
+  // Includes UNK.
+  bound_ = end_ - begin_ + 1;
 }
 
 void SortedVocabulary::LoadedBinary(bool have_words, int fd, EnumerateVocab *to) {
