@@ -385,10 +385,6 @@ template <class Compare, class Combine> class FileMergingReader : boost::noncopy
   public:
     FileMergingReader(const Compare &compare, const Combine &combine) : compare_(compare), combine_(combine) {}
 
-    ~FileMergingReader() {
-      std::cerr << "Destructor " << std::endl;
-    }
-
     void Add(const char *name) {
       files_.push_back(new FileToMerge(name));
     }
