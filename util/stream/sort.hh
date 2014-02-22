@@ -381,9 +381,13 @@ class FileToMerge {
     uint8_t *current_, *buffer_end_;
 };
 
-template <class Compare, class Combine> class FileMergingReader {
+template <class Compare, class Combine> class FileMergingReader : boost::noncopyable {
   public:
     FileMergingReader(const Compare &compare, const Combine &combine) : compare_(compare), combine_(combine) {}
+
+    ~FileMergingReader() {
+      std::cerr << "Destructor " << std::endl;
+    }
 
     void Add(const char *name) {
       files_.push_back(new FileToMerge(name));
@@ -439,7 +443,7 @@ template <class Compare, class Combine> class FileMergingReader {
         explicit Greater(const Compare &compare) : compare_(compare) {}
 
         bool operator()(const FileToMerge *first, const FileToMerge *second) const {
-          return compare_(first->Current(), second->Current());
+          return compare_(second->Current(), first->Current());
         }
 
       private:

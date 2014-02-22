@@ -317,7 +317,6 @@ void Pipeline(PipelineConfig config, const std::vector<std::string> &inputs, Wor
 
   Master master(config);
 
-
   std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;
   util::stream::FileMergingReader<SuffixOrder, AddCombiner> reader(SuffixOrder(config.order), AddCombiner());
   for (std::vector<std::string>::const_iterator i = inputs.begin(); i != inputs.end(); ++i) {
@@ -329,6 +328,16 @@ void Pipeline(PipelineConfig config, const std::vector<std::string> &inputs, Wor
   std::vector<uint64_t> counts;
   std::vector<Discount> discounts;
   master >> AdjustCounts(counts, discounts, binarize.BeginSentence());
+
+/*  util::scoped_fd writing[5];
+  for (unsigned int i = 0; i < config.order; ++i) {
+    writing[i].reset(util::CreateOrThrow(boost::lexical_cast<std::string>(i).c_str()));
+    master.MutableChains()[i] >> util::stream::WriteAndRecycle(writing[i].get());
+  }
+  master.MutableChains().Wait(true);
+
+  std::cerr << "Waited" << std::endl;
+  std::cerr << type_count << " " << counts[0] << std::endl;*/
 
   {
     FixedArray<util::stream::FileBuffer> gammas;

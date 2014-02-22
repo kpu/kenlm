@@ -7,6 +7,7 @@ exe lmplz : lmplz_main.cc builder /top//boost_program_options ;
 exe just_count : just_count_main.cc builder /top//boost_program_options ;
 exe compile_vocab : compile_vocab_main.cc builder /top//boost_program_options ;
 exe dump_counts : dump_counts_main.cc builder ;
+exe merge : merge_main.cc builder ;
 
 alias programs : lmplz just_count compile_vocab dump_counts ;
 
