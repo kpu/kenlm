@@ -107,12 +107,11 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
       return Search::kDifferentRest ? InternalUnRest(pointers_begin, pointers_end, first_length) : 0.0;
     }
 
-  protected:
+  //protected:
     typedef Search SearchBackend;
     // This is used by the external Binarize class to make a Model from text.
     GenericModel(uint64_t unigram_count, uint8_t order, const Config &config);
 
-  private:
     friend void lm::ngram::LoadLM<>(const char *file, const Config &config, GenericModel<Search, VocabularyT> &to);
     friend class lm::builder::Binarize;
     friend class lm::DumpTrie;
@@ -146,6 +145,8 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     VocabularyT vocab_;
 
     Search search_;
+    // Huge hack!
+  private:
 };
 
 } // namespace detail
@@ -157,9 +158,9 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
 class name : public from {\
   public:\
     name(const char *file, const Config &config = Config()) : from(file, config) {}\
-  private:\
     friend class lm::builder::Binarize;\
     name(uint64_t unigram_count, uint8_t order, const Config &config) : from(unigram_count, order, config) {}\
+  private:\
 };
 
 LM_NAME_MODEL(ProbingModel, detail::GenericModel<detail::HashedSearch<BackoffValue> LM_COMMA() ProbingVocabulary>);

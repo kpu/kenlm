@@ -113,6 +113,10 @@ class SortedVocabulary : public base::Vocabulary {
 
     void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);
 
+    uint64_t *&EndHack() { return end_; }
+
+    void Populated();
+
   private:
     template <class T> void GenericFinished(T *reorder);
 
