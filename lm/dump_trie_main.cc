@@ -99,7 +99,7 @@ class DumpTrie {
   public:
     DumpTrie() {}
 
-    void Dump(ngram::TrieModel &model, const std::string &base, const std::string &vocab) {
+    void Dump(ngram::TrieModel &model, const std::string &vocab) {
       seen_.resize(model.GetVocabulary().Bound());
       util::FilePiece f(vocab.c_str());
       unsigned l;
@@ -138,7 +138,7 @@ class DumpTrie {
       Building building(vocab_remember.Size(), model.Order(), model_config);
       uint64_t * &vocab_end = building.vocab_.EndHack();
       vocab_end = vocab_remember.Finish(vocab_end, seen_);
-      std::cerr << "Wrote vocab words?" << std::endl;
+      std::cerr << "Wrote vocab words." << std::endl;
       building.vocab_.Populated();
       std::size_t vocab_size = building.backing_.vocab.size();
       building.backing_.vocab.reset();
@@ -204,8 +204,8 @@ class DumpTrie {
 } // namespace
 
 int main(int argc, char *argv[]) {
-  if (argc != 4) {
-    std::cerr << "Usage: " << argv[0] << " trie output_base vocab" << std::endl;
+  if (argc != 3) {
+    std::cerr << "Usage: " << argv[0] << " trie vocab" << std::endl;
     return 1;
   }
 
@@ -213,6 +213,6 @@ int main(int argc, char *argv[]) {
   config.load_method = util::LAZY;
   lm::ngram::TrieModel model(argv[1], config);
   lm::DumpTrie dumper;
-  dumper.Dump(model, argv[2], argv[3]);
+  dumper.Dump(model, argv[2]);
   return 0;
 }
