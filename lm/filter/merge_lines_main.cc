@@ -14,27 +14,25 @@ struct Entry {
 };
 
 int main(int argc, char *argv[]) {
-  boost::ptr_vector<util::FilePiece> files;
-  for (int i = 1; i < argc; ++i) {
-    files.push_back(new util::FilePiece(argv[i]));
-  }
-  if (files.empty()) {
+  if (argc < 2) {
     std::cerr << "Provide a list of vocabulary files to merge on the command line." << std::endl;
     return 1;
+  }
+  boost::ptr_vector<util::FilePiece> files;
+  files.push_back(new util::FilePiece(argv[1], &std::cerr));
+  for (int i = 2; i < argc; ++i) {
+    files.push_back(new util::FilePiece(argv[i]));
   }
   util::FakeOFStream out(1);
   StringPiece word;
   try { while (true) {
-    std::cerr << "New dedupe" << std::endl;
     util::AutoProbing<Entry, util::IdentityHash> dedupe;
     for (boost::ptr_vector<util::FilePiece>::iterator i = files.begin(); i != files.end(); ++i) {
       while (i->ReadWordSameLine(word)) {
-        std::cerr << "Read " << word << std::endl;
         Entry entry;
         entry.key = util::MurmurHashNative(word.data(), word.size());
         util::AutoProbing<Entry, util::IdentityHash>::MutableIterator ignored;
         if (!dedupe.FindOrInsert(entry, ignored)) {
-          std::cerr << "Identified word " << word << std::endl;
           out << word << ' ';
         }
       }
