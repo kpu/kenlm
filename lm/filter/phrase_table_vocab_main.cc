@@ -22,7 +22,7 @@ struct MutablePiece {
 };
 
 std::size_t hash_value(const MutablePiece &m) {
-  return hash_value(m.behind);
+  return util::MurmurHashNative(m.behind.data(), m.behind.size());
 }
 
 class InternString {
