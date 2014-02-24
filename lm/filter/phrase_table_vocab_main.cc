@@ -45,7 +45,15 @@ class InternString {
     boost::unordered_set<MutablePiece> strs_;
 };
 
+struct MurmurChar : public std::unary_function<const char *, std::size_t> {
+  std::size_t operator()(const char *value) const {
+    return util::MurmurHashNative(&value, sizeof(const char*));
+  }
+};
+
 class TargetWords {
+  private:
+    typedef boost::unordered_set<const char *, MurmurChar> Map;
   public:
     void Introduce(StringPiece source) {
       vocab_.resize(vocab_.size() + 1);
@@ -61,7 +69,7 @@ class TargetWords {
         interns_.push_back(intern_.Add(nopipe));
       }
       for (std::vector<unsigned int>::const_iterator i(sentences.begin()); i != sentences.end(); ++i) {
-        boost::unordered_set<const char *> &vocab = vocab_[*i];
+        Map &vocab = vocab_[*i];
         for (std::vector<const char *>::const_iterator j = interns_.begin(); j != interns_.end(); ++j) {
           vocab.insert(*j);
         }
@@ -70,8 +78,8 @@ class TargetWords {
 
     void Print() const {
       util::FakeOFStream out(1);
-      for (std::vector<boost::unordered_set<const char *> >::const_iterator i = vocab_.begin(); i != vocab_.end(); ++i) {
-        for (boost::unordered_set<const char *>::const_iterator j = i->begin(); j != i->end(); ++j) {
+      for (std::vector<Map>::const_iterator i = vocab_.begin(); i != vocab_.end(); ++i) {
+        for (Map::const_iterator j = i->begin(); j != i->end(); ++j) {
           out << *j << ' ';
         }
         out << '\n';
@@ -81,7 +89,7 @@ class TargetWords {
   private:
     InternString intern_;
 
-    std::vector<boost::unordered_set<const char *> > vocab_;
+    std::vector<Map> vocab_;
 
     // Temporary in Add.
     std::vector<const char *> interns_;
