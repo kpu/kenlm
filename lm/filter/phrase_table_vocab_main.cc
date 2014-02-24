@@ -57,7 +57,8 @@ class TargetWords {
       if (sentences.empty()) return;
       interns_.clear();
       for (util::TokenIter<util::BoolCharacter, true> i(target, util::kSpaces); i; ++i) {
-        interns_.push_back(intern_.Add(*i));
+        StringPiece nopipe(i->data(), std::find(i->data(), i->data() + i->size(), '|') - i->data());
+        interns_.push_back(intern_.Add(nopipe));
       }
       for (std::vector<unsigned int>::const_iterator i(sentences.begin()); i != sentences.end(); ++i) {
         boost::unordered_set<const char *> &vocab = vocab_[*i];
@@ -96,7 +97,8 @@ class Input {
 
       pieces_.clear();
       for (util::TokenIter<util::BoolCharacter, true> i(sentence, util::kSpaces); i; ++i) {
-        pieces_.push_back(*i);
+        StringPiece nopipe(i->data(), std::find(i->data(), i->data() + i->size(), '|') - i->data());
+        pieces_.push_back(nopipe);
       }
 
       for (std::size_t i = 0; i < pieces_.size(); ++i) {
