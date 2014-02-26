@@ -28,15 +28,21 @@ int main(int argc, char *argv[]) {
   try { while (true) {
     util::AutoProbing<Entry, util::IdentityHash> dedupe;
     for (boost::ptr_vector<util::FilePiece>::iterator i = files.begin(); i != files.end(); ++i) {
-      while (i->ReadWordSameLine(word)) {
-        Entry entry;
-        entry.key = util::MurmurHashNative(word.data(), word.size());
-        util::AutoProbing<Entry, util::IdentityHash>::MutableIterator ignored;
-        if (!dedupe.FindOrInsert(entry, ignored)) {
-          out << word << ' ';
+      try {
+        while (i->ReadWordSameLine(word)) {
+          Entry entry;
+          entry.key = util::MurmurHashNative(word.data(), word.size());
+          util::AutoProbing<Entry, util::IdentityHash>::MutableIterator ignored;
+          if (!dedupe.FindOrInsert(entry, ignored)) {
+            out << word << ' ';
+          }
         }
+        i->ReadLine();
+      } catch (const util::EndOfFileException &e) {
+        if (i == files.begin()) throw;
+        std::cerr << "File " << i->FileName() << " is shorter than the others." << std::endl;
+        return 1;
       }
-      i->ReadLine();
     }
     out << '\n';
   } } catch (const util::EndOfFileException &e) {
