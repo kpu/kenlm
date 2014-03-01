@@ -213,21 +213,22 @@ void SeekPastHeader(int fd, const Parameters &params) {
   util::SeekOrThrow(fd, TotalHeaderSize(params.counts.size()));
 }
 
-uint8_t *SetupBinary(const Config &config, const Parameters &params, uint64_t memory_size, Backing &backing) {
+util::Rolling SetupBinary(const Config &config, const Parameters &params, uint64_t memory_size, Backing &backing) {
   const uint64_t file_size = util::SizeFile(backing.file.get());
   // The header is smaller than a page, so we have to map the whole header as well.
   std::size_t total_map = util::CheckOverflow(TotalHeaderSize(params.counts.size()) + memory_size);
   if (file_size != util::kBadSize && static_cast<uint64_t>(file_size) < total_map)
     UTIL_THROW(FormatLoadException, "Binary file has size " << file_size << " but the headers say it should be at least " << total_map);
 
-  util::MapRead(config.load_method, backing.file.get(), 0, total_map, backing.search);
+//  util::MapRead(config.load_method, backing.file.get(), 0, total_map, backing.search);
 
   if (config.enumerate_vocab && !params.fixed.has_vocabulary)
     UTIL_THROW(FormatLoadException, "The decoder requested all the vocabulary strings, but this binary file does not have them.  You may need to rebuild the binary file with an updated version of build_binary.");
 
   // Seek to vocabulary words
   util::SeekOrThrow(backing.file.get(), total_map);
-  return reinterpret_cast<uint8_t*>(backing.search.get()) + TotalHeaderSize(params.counts.size());
+ // return reinterpret_cast<uint8_t*>(backing.search.get()) + TotalHeaderSize(params.counts.size());
+  return util::Rolling(backing.file.get(), false, 64 << 20, 1024, TotalHeaderSize(params.counts.size()), total_map - TotalHeaderSize(params.counts.size()));
 }
 
 void ComplainAboutARPA(const Config &config, ModelType model_type) {

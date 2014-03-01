@@ -218,6 +218,10 @@ template <class Value> uint8_t *HashedSearch<Value>::SetupMemory(uint8_t *start,
   return start;
 }
 
+template <class Value> uint8_t *HashedSearch<Value>::SetupMemory(const util::Rolling &, const std::vector<uint64_t> &counts, const Config &config) {
+  UTIL_THROW(util::Exception, "Unimplemented");
+}
+
 template <class Value> void HashedSearch<Value>::InitializeFromARPA(const char * /*file*/, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, ProbingVocabulary &vocab, Backing &backing) {
   // TODO: fix sorted.
   SetupMemory(GrowForSearch(config, vocab.UnkCountChangePadding(), Size(counts, config), backing), counts, config);

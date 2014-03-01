@@ -126,9 +126,9 @@ template <class Search, class VocabularyT> class GenericModel : public base::Mod
     float InternalUnRest(const uint64_t *pointers_begin, const uint64_t *pointers_end, unsigned char first_length) const;
 
     // Appears after Size in the cc file.
-    void SetupMemory(void *start, const std::vector<uint64_t> &counts, const Config &config);
+    void SetupMemory(util::Rolling rolling, const std::vector<uint64_t> &counts, const Config &config);
 
-    void InitializeFromBinary(void *start, const Parameters &params, const Config &config, int fd);
+    void InitializeFromBinary(const util::Rolling &rolling, const Parameters &params, const Config &config, int fd);
 
     void InitializeFromARPA(const char *file, const Config &config);
 

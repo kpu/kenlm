@@ -134,7 +134,7 @@ class DumpTrie {
       ngram::Config model_config;
       model_config.write_mmap = "filtered_trie";
       model_config.write_method = ngram::Config::WRITE_MMAP;
-      model_config.pointer_bhiksha_bits = 15;
+      model_config.pointer_bhiksha_bits = 64;
       Building building(vocab_remember.Size(), model.Order(), model_config);
       uint64_t * &vocab_end = building.vocab_.EndHack();
       vocab_end = vocab_remember.Finish(vocab_end, seen_);

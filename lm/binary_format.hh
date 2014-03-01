@@ -70,7 +70,7 @@ void MatchCheck(ModelType model_type, unsigned int search_version, const Paramet
 
 void SeekPastHeader(int fd, const Parameters &params);
 
-uint8_t *SetupBinary(const Config &config, const Parameters &params, uint64_t memory_size, Backing &backing);
+util::Rolling SetupBinary(const Config &config, const Parameters &params, uint64_t memory_size, Backing &backing);
 
 void ComplainAboutARPA(const Config &config, ModelType model_type);
 
@@ -91,8 +91,7 @@ template <class To> void LoadLM(const char *file, const Config &config, To &to) 
       detail::SeekPastHeader(backing.file.get(), params);
       To::UpdateConfigFromBinary(backing.file.get(), params.counts, new_config);
       uint64_t memory_size = To::Size(params.counts, new_config);
-      uint8_t *start = detail::SetupBinary(new_config, params, memory_size, backing);
-      to.InitializeFromBinary(start, params, new_config, backing.file.get());
+      to.InitializeFromBinary(detail::SetupBinary(new_config, params, memory_size, backing), params, new_config, backing.file.get());
     } else {
       detail::ComplainAboutARPA(config, To::kModelType);
       to.InitializeFromARPA(file, config);

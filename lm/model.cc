@@ -24,13 +24,11 @@ template <class Search, class VocabularyT> uint64_t GenericModel<Search, Vocabul
   return VocabularyT::Size(counts[0], config) + Search::Size(counts, config);
 }
 
-template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(void *base, const std::vector<uint64_t> &counts, const Config &config) {
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::SetupMemory(util::Rolling rolling, const std::vector<uint64_t> &counts, const Config &config) {
   util::CheckOverflow(Size(counts, config));
-  uint8_t *start = static_cast<uint8_t*>(base);
   size_t allocated = VocabularyT::Size(counts[0], config);
-  vocab_.SetupMemory(start, allocated, counts[0], config);
-  start += allocated;
-  search_.SetupMemory(start, counts, config);
+  vocab_.SetupMemory(rolling.ExtractNonRolling(backing_.vocab, 0, allocated), allocated, counts[0], config); // TODO!!!
+  search_.SetupMemory(util::Rolling(rolling, allocated), counts, config);
 }
 
 template <class Search, class VocabularyT> GenericModel<Search, VocabularyT>::GenericModel(const char *file, const Config &config) {
@@ -55,9 +53,9 @@ void CheckCounts(const std::vector<uint64_t> &counts) {
 }
 } // namespace
 
-template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(void *start, const Parameters &params, const Config &config, int fd) {
+template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::InitializeFromBinary(const util::Rolling &rolling, const Parameters &params, const Config &config, int fd) {
   CheckCounts(params.counts);
-  SetupMemory(start, params.counts, config);
+  SetupMemory(rolling, params.counts, config);
   vocab_.LoadedBinary(params.fixed.has_vocabulary, fd, config.enumerate_vocab);
   search_.LoadedBinary();
 }
@@ -114,7 +112,8 @@ template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT
   typename Search::Node ignored_node;
   bool ignored_independent_left;
   uint64_t ignored_extend_left;
-  begin_sentence.backoff[0] = search_.LookupUnigram(begin_sentence.words[0], ignored_node, ignored_independent_left, ignored_extend_left).Backoff();
+  // HACK!   Will prevent actual use of this model
+  //begin_sentence.backoff[0] = search_.LookupUnigram(begin_sentence.words[0], ignored_node, ignored_independent_left, ignored_extend_left).Backoff();
   State null_context = State();
   null_context.length = 0;
   P::Init(begin_sentence, null_context, vocab_, search_.Order());

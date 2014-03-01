@@ -84,6 +84,8 @@ template <class Value> class HashedSearch {
 
     uint8_t *SetupMemory(uint8_t *start, const std::vector<uint64_t> &counts, const Config &config);
 
+    uint8_t *SetupMemory(const util::Rolling &, const std::vector<uint64_t> &, const Config &);
+
     void InitializeFromARPA(const char *file, util::FilePiece &f, const std::vector<uint64_t> &counts, const Config &config, ProbingVocabulary &vocab, Backing &backing);
 
     void LoadedBinary();
