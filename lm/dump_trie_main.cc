@@ -7,6 +7,7 @@
 #include "util/tokenize_piece.hh"
 
 #include <boost/lexical_cast.hpp>
+#include <boost/thread.hpp>
 
 #include <iostream>
 #include <string.h>
@@ -24,10 +25,14 @@ struct Seen {
 };
 
 class DumpTrie {
+  private:
+    typedef std::vector<boost::iterator_range<std::vector<unsigned>::const_iterator> > Sets;
+    typedef std::vector<StringPiece> Words;
+  
   public:
     DumpTrie() {}
 
-    void Dump(ngram::TrieModel &model, const std::string &base, const std::string &vocab) {
+    void Dump(lm::ngram::TrieModel &model, const std::string &base, const std::string &vocab, int threads) {
       seen_.resize(model.GetVocabulary().Bound());
       util::FilePiece f(vocab.c_str());
       unsigned l;
@@ -62,34 +67,64 @@ class DumpTrie {
         files_[i].reset(util::CreateOrThrow((base + boost::lexical_cast<std::string>(static_cast<unsigned int>(i) + 1)).c_str()));
         out_[i].SetFD(files_[i].get());
       }
-      Dump<util::ErsatzProgress>(model, 1, range);
+      
+      std::vector<boost::thread*> threadSet;
+      util::ErsatzProgress* progress = new util::ErsatzProgress(range.end);      
+      for(int i = 0; i < threads; ++i) {
+        threadSet.push_back(new boost::thread(&DumpTrie::Dump<util::ErsatzProgress>,
+                             this, &model, 1, range, Sets(), Words(KENLM_MAX_ORDER),
+                             i, threads, progress));
+      }
+      
+      for(int i = 0; i < threads; ++i) {
+        threadSet[i]->join();
+        delete threadSet[i];
+      }
+      delete progress;
+      
       for (unsigned char i = 0; i < model.Order(); ++i) {
         std::cout << "ngram " << static_cast<unsigned>(i + 1) << '=' << count_[i] << '\n';
       }
     }
 
   private:
-    template <class Progress> void Dump(ngram::TrieModel &model, const unsigned char order, const ngram::trie::NodeRange range) {
+    template <class Progress> void Dump(ngram::TrieModel *model, const unsigned char order,
+                                        const ngram::trie::NodeRange range,
+                                        Sets &sets, Words &words,
+                                        int threadNo, int totalThreads,
+                                        Progress* progress) {
       ngram::trie::NodeRange pointer;
+     
       ProbBackoff weights;
       WordIndex word;
-      Progress progress(range.end);
-      for (uint64_t i = range.begin; i < range.end; ++i, ++progress) {
-        model.search_.CheckedRead(order, i, word, weights, pointer);
+
+      int shift = order > 1 ? 0 : threadNo;
+      int step  = order > 1 ? 1 : totalThreads;
+      for (uint64_t i = range.begin + shift; i < range.end; i += step, ++(*progress)) {
+        model->search_.CheckedRead(order, i, word, weights, pointer);
+     
         if (seen_[word].value.empty()) continue;
-        sets_.push_back(boost::iterator_range<std::vector<unsigned>::const_iterator>(seen_[word].sentences.begin(), seen_[word].sentences.end()));
-        sets_copy_ = sets_;
-        if (util::FirstIntersection(sets_copy_)) {
-          words_[order - 1] = seen_[word].value;
-          ++count_[order - 1];
-          out_[order - 1] << weights.prob << '\t' << words_[order - 1];
-          for (char w = static_cast<char>(order) - 2; w >= 0; --w) {
-            out_[static_cast<unsigned char>(order - 1)] << ' ' << words_[static_cast<unsigned char>(w)];
+
+        sets.push_back(boost::iterator_range<std::vector<unsigned>::const_iterator>(seen_[word].sentences.begin(), seen_[word].sentences.end()));
+        Sets sets_copy = sets;
+        if (util::FirstIntersection(sets_copy))
+        {
+          {
+            boost::mutex::scoped_lock lock(mutex_);
+            words[order - 1] = seen_[word].value;
+            ++count_[order - 1];
+            out_[order - 1] << weights.prob << '\t' << words[order - 1];
+            for (char w = static_cast<char>(order) - 2; w >= 0; --w) {
+              out_[static_cast<unsigned char>(order - 1)] << ' ' << words[static_cast<unsigned char>(w)];
+            }
+            out_[order - 1] << '\t' << weights.backoff << '\n';
           }
-          out_[order - 1] << '\t' << weights.backoff << '\n';
-          Dump<NoOpProgress>(model, order + 1, pointer);
+          
+          NoOpProgress noop(pointer.end);
+          Dump<NoOpProgress>(model, order + 1, pointer, sets, words,
+                             threadNo, totalThreads, &noop);
         }
-        sets_.pop_back();
+        sets.pop_back();
       }
     }
 
@@ -98,24 +133,28 @@ class DumpTrie {
     util::scoped_fd files_[KENLM_MAX_ORDER];
     util::FakeOFStream out_[KENLM_MAX_ORDER];
 
-    StringPiece words_[KENLM_MAX_ORDER];
-
     uint64_t count_[KENLM_MAX_ORDER];
+    boost::mutex mutex_;
 
-    std::vector<boost::iterator_range<std::vector<unsigned>::const_iterator> > sets_, sets_copy_;
 };
 } // namespace
 
 int main(int argc, char *argv[]) {
-  if (argc != 4) {
-    std::cerr << "Usage: " << argv[0] << " trie output_base vocab" << std::endl;
+  if (argc != 4 && argc != 5) {
+    std::cerr << "Usage: " << argv[0] << " trie output_base vocab [threads]" << std::endl;
     return 1;
   }
 
   lm::ngram::Config config;
   config.load_method = util::LAZY;
-  lm::ngram::TrieModel model(argv[1], config);
+  
+  lm::ngram::TrieModel model(argv[1], config); 
   lm::DumpTrie dumper;
-  dumper.Dump(model, argv[2], argv[3]);
+  
+  int threads = 1;
+  if(argc == 5)
+    threads = atoi(argv[4]);
+              
+  dumper.Dump(model, argv[2], argv[3], threads);
   return 0;
 }
