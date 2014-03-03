@@ -32,7 +32,7 @@ class DumpTrie {
   public:
     DumpTrie() {}
 
-    void Dump(lm::ngram::TrieModel &model, const std::string &base, const std::string &vocab, int threads) {
+    void Dump(lm::ngram::ArrayTrieModel &model, const std::string &base, const std::string &vocab, int threads) {
       seen_.resize(model.GetVocabulary().Bound());
       util::FilePiece f(vocab.c_str());
       unsigned l;
@@ -88,7 +88,7 @@ class DumpTrie {
     }
 
   private:
-    template <class Progress> void Dump(ngram::TrieModel *model, const unsigned char order,
+    template <class Progress> void Dump(ngram::ArrayTrieModel *model, const unsigned char order,
                                         const ngram::trie::NodeRange range,
                                         Sets &sets, Words &words,
                                         int threadNo, int totalThreads,
@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
   lm::ngram::Config config;
   config.load_method = util::LAZY;
   
-  lm::ngram::TrieModel model(argv[1], config); 
+  lm::ngram::ArrayTrieModel model(argv[1], config); 
   lm::DumpTrie dumper;
   
   int threads = 1;
