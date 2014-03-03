@@ -1,5 +1,5 @@
-#ifndef LM_RETURN__
-#define LM_RETURN__
+#ifndef LM_RETURN_H
+#define LM_RETURN_H
 
 #include <stdint.h>
 
@@ -39,4 +39,4 @@ struct FullScoreReturn {
 };
 
 } // namespace lm
-#endif // LM_RETURN__
+#endif // LM_RETURN_H

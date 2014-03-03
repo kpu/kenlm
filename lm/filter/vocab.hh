@@ -1,5 +1,5 @@
-#ifndef LM_FILTER_VOCAB_H__
-#define LM_FILTER_VOCAB_H__
+#ifndef LM_FILTER_VOCAB_H
+#define LM_FILTER_VOCAB_H
 
 // Vocabulary-based filters for language models.
 
@@ -130,4 +130,4 @@ class Multiple {
 } // namespace vocab
 } // namespace lm
 
-#endif // LM_FILTER_VOCAB_H__
+#endif // LM_FILTER_VOCAB_H

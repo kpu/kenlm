@@ -1,5 +1,5 @@
-#ifndef UTIL_FILE__
-#define UTIL_FILE__
+#ifndef UTIL_FILE_H
+#define UTIL_FILE_H
 
 #include "util/exception.hh"
 
@@ -139,4 +139,4 @@ std::string NameFromFD(int fd);
 
 } // namespace util
 
-#endif // UTIL_FILE__
+#endif // UTIL_FILE_H

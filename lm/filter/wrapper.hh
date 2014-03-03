@@ -1,5 +1,5 @@
-#ifndef LM_FILTER_WRAPPER_H__
-#define LM_FILTER_WRAPPER_H__
+#ifndef LM_FILTER_WRAPPER_H
+#define LM_FILTER_WRAPPER_H
 
 #include "util/string_piece.hh"
 
@@ -53,4 +53,4 @@ template <class FilterT> class ContextFilter {
 
 } // namespace lm
 
-#endif // LM_FILTER_WRAPPER_H__
+#endif // LM_FILTER_WRAPPER_H

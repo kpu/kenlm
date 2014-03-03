@@ -174,6 +174,13 @@ void SortedVocabulary::BuildFromFile(int fd, std::vector<WordIndex> &mapping) {
   } 
 }
 
+void SortedVocabulary::Populated() {
+  saw_unk_ = true;
+  SetSpecial(Index("<s>"), Index("</s>"), 0);
+  bound_ = end_ - begin_ + 1;
+  *(reinterpret_cast<uint64_t*>(begin_) - 1) = end_ - begin_;
+}
+
 void SortedVocabulary::LoadedBinary(bool have_words, int fd, EnumerateVocab *to) {
   end_ = begin_ + *(reinterpret_cast<const uint64_t*>(begin_) - 1);
   SetSpecial(Index("<s>"), Index("</s>"), 0);

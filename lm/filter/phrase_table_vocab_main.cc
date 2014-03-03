@@ -22,7 +22,7 @@ struct MutablePiece {
 };
 
 std::size_t hash_value(const MutablePiece &m) {
-  return hash_value(m.behind);
+  return util::MurmurHashNative(m.behind.data(), m.behind.size());
 }
 
 class InternString {
@@ -45,7 +45,15 @@ class InternString {
     boost::unordered_set<MutablePiece> strs_;
 };
 
+struct MurmurChar : public std::unary_function<const char *, std::size_t> {
+  std::size_t operator()(const char *value) const {
+    return util::MurmurHashNative(&value, sizeof(const char*));
+  }
+};
+
 class TargetWords {
+  private:
+    typedef boost::unordered_set<const char *, MurmurChar> Map;
   public:
     void Introduce(StringPiece source) {
       vocab_.resize(vocab_.size() + 1);
@@ -56,11 +64,12 @@ class TargetWords {
     void Add(const std::vector<unsigned int> &sentences, StringPiece target) {
       if (sentences.empty()) return;
       interns_.clear();
-      for (util::TokenIter<util::SingleCharacter, true> i(target, ' '); i; ++i) {
-        interns_.push_back(intern_.Add(*i));
+      for (util::TokenIter<util::BoolCharacter, true> i(target, util::kSpaces); i; ++i) {
+        StringPiece nopipe(i->data(), std::find(i->data(), i->data() + i->size(), '|') - i->data());
+        interns_.push_back(intern_.Add(nopipe));
       }
       for (std::vector<unsigned int>::const_iterator i(sentences.begin()); i != sentences.end(); ++i) {
-        boost::unordered_set<const char *> &vocab = vocab_[*i];
+        Map &vocab = vocab_[*i];
         for (std::vector<const char *>::const_iterator j = interns_.begin(); j != interns_.end(); ++j) {
           vocab.insert(*j);
         }
@@ -69,8 +78,8 @@ class TargetWords {
 
     void Print() const {
       util::FakeOFStream out(1);
-      for (std::vector<boost::unordered_set<const char *> >::const_iterator i = vocab_.begin(); i != vocab_.end(); ++i) {
-        for (boost::unordered_set<const char *>::const_iterator j = i->begin(); j != i->end(); ++j) {
+      for (std::vector<Map>::const_iterator i = vocab_.begin(); i != vocab_.end(); ++i) {
+        for (Map::const_iterator j = i->begin(); j != i->end(); ++j) {
           out << *j << ' ';
         }
         out << '\n';
@@ -80,7 +89,7 @@ class TargetWords {
   private:
     InternString intern_;
 
-    std::vector<boost::unordered_set<const char *> > vocab_;
+    std::vector<Map> vocab_;
 
     // Temporary in Add.
     std::vector<const char *> interns_;
@@ -92,28 +101,30 @@ class Input {
       : max_length_(max_length), sentence_id_(0), empty_() {}
 
     void AddSentence(StringPiece sentence, TargetWords &targets) {
-      canonical_.clear();
-      starts_.clear();
-      starts_.push_back(0);
-      for (util::TokenIter<util::AnyCharacter, true> i(sentence, StringPiece("\0 \t", 3)); i; ++i) {
-        canonical_.append(i->data(), i->size());
-        canonical_ += ' ';
-        starts_.push_back(canonical_.size());
+      targets.Introduce(sentence);
+
+      pieces_.clear();
+      for (util::TokenIter<util::BoolCharacter, true> i(sentence, util::kSpaces); i; ++i) {
+        StringPiece nopipe(i->data(), std::find(i->data(), i->data() + i->size(), '|') - i->data());
+        pieces_.push_back(nopipe);
       }
-      targets.Introduce(canonical_);
-      for (std::size_t i = 0; i < starts_.size() - 1; ++i) {
-        std::size_t subtract = starts_[i];
-        const char *start = &canonical_[subtract];
-        for (std::size_t j = i + 1; j < std::min(starts_.size(), i + max_length_ + 1); ++j) {
-          map_[util::MurmurHash64A(start, &canonical_[starts_[j]] - start - 1)].push_back(sentence_id_);
+
+      for (std::size_t i = 0; i < pieces_.size(); ++i) {
+        uint64_t hash = 0;
+        for (std::size_t j = i; j < std::min(pieces_.size(), i + max_length_); ++j) {
+          hash = util::MurmurHash64A(pieces_[j].data(), pieces_[j].size(), hash);
+          map_[hash].push_back(sentence_id_);
         }
       }
       ++sentence_id_;
     }
 
-    // Assumes single space-delimited phrase with no space at the beginning or end.
     const std::vector<unsigned int> &Matches(StringPiece phrase) const {
-      Map::const_iterator i = map_.find(util::MurmurHash64A(phrase.data(), phrase.size()));
+      uint64_t hash = 0;
+      for (util::TokenIter<util::BoolCharacter, true> i(phrase, util::kSpaces); i; ++i) {
+        hash = util::MurmurHash64A(i->data(), std::find(i->data(), i->data() + i->size(), '|') - i->data(), hash);
+      }
+      Map::const_iterator i = map_.find(hash);
       return i == map_.end() ? empty_ : i->second;
     }
 
@@ -126,9 +137,8 @@ class Input {
 
     std::size_t sentence_id_;
     
-    // Temporaries in AddSentence.
-    std::string canonical_;
-    std::vector<std::size_t> starts_;
+    // Temporary in AddSentence
+    std::vector<StringPiece> pieces_;
 
     const std::vector<unsigned int> empty_;
 };

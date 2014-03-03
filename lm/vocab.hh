@@ -1,5 +1,5 @@
-#ifndef LM_VOCAB__
-#define LM_VOCAB__
+#ifndef LM_VOCAB_H
+#define LM_VOCAB_H
 
 #include "lm/enumerate_vocab.hh"
 #include "lm/lm_exception.hh"
@@ -113,6 +113,10 @@ class SortedVocabulary : public base::Vocabulary {
 
     void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);
 
+    uint64_t *&EndHack() { return end_; }
+
+    void Populated();
+
   private:
     template <class T> void GenericFinished(T *reorder);
 
@@ -212,4 +216,4 @@ template <class Vocab> void CheckSpecials(const Config &config, const Vocab &voc
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_VOCAB__
+#endif // LM_VOCAB_H

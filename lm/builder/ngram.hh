@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_NGRAM__
-#define LM_BUILDER_NGRAM__
+#ifndef LM_BUILDER_NGRAM_H
+#define LM_BUILDER_NGRAM_H
 
 #include "lm/weights.hh"
 #include "lm/word_index.hh"
@@ -81,4 +81,4 @@ const WordIndex kEOS = 2;
 } // namespace builder
 } // namespace lm
 
-#endif // LM_BUILDER_NGRAM__
+#endif // LM_BUILDER_NGRAM_H

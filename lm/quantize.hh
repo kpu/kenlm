@@ -1,5 +1,5 @@
-#ifndef LM_QUANTIZE_H__
-#define LM_QUANTIZE_H__
+#ifndef LM_QUANTIZE_H
+#define LM_QUANTIZE_H
 
 #include "lm/blank.hh"
 #include "lm/config.hh"
@@ -230,4 +230,4 @@ class SeparatelyQuantize {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_QUANTIZE_H__
+#endif // LM_QUANTIZE_H

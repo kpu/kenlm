@@ -1,5 +1,5 @@
-#ifndef LM_NGRAM_QUERY__
-#define LM_NGRAM_QUERY__
+#ifndef LM_NGRAM_QUERY_H
+#define LM_NGRAM_QUERY_H
 
 #include "lm/enumerate_vocab.hh"
 #include "lm/model.hh"
@@ -75,6 +75,6 @@ template <class M> void Query(const char *file, bool sentence_context, std::istr
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_NGRAM_QUERY__
+#endif // LM_NGRAM_QUERY_H
 
 

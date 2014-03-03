@@ -1,5 +1,5 @@
-#ifndef UTIL_MURMUR_HASH__
-#define UTIL_MURMUR_HASH__
+#ifndef UTIL_MURMUR_HASH_H
+#define UTIL_MURMUR_HASH_H
 #include <cstddef>
 #include <stdint.h>
 
@@ -11,4 +11,4 @@ uint64_t MurmurHashNative(const void * key, std::size_t len, uint64_t seed = 0);
 
 } // namespace util
 
-#endif // UTIL_MURMUR_HASH__
+#endif // UTIL_MURMUR_HASH_H

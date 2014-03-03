@@ -1,5 +1,5 @@
-#ifndef LM_BLANK__
-#define LM_BLANK__
+#ifndef LM_BLANK_H
+#define LM_BLANK_H
 
 #include <limits>
 
@@ -40,4 +40,4 @@ inline bool HasExtension(const float &backoff) {
 
 } // namespace ngram
 } // namespace lm
-#endif // LM_BLANK__
+#endif // LM_BLANK_H

@@ -39,6 +39,7 @@ struct VocabEntry {
 
 const float kProbingMultiplier = 1.5;
 
+// Hand out vocab ids on the fly.
 class VocabHandout {
   public:
     static std::size_t MemUsage(WordIndex initial_guess) {
@@ -46,7 +47,7 @@ class VocabHandout {
       return util::CheckOverflow(Table::Size(initial_guess, kProbingMultiplier));
     }
 
-    explicit VocabHandout(int fd, WordIndex initial_guess) :
+    VocabHandout(int fd, WordIndex initial_guess) :
         table_backing_(util::CallocOrThrow(MemUsage(initial_guess))),
         table_(table_backing_.get(), MemUsage(initial_guess)),
         double_cutoff_(std::max<std::size_t>(initial_guess * 1.1, 1)),
@@ -91,6 +92,35 @@ class VocabHandout {
     util::FakeOFStream word_list_;
 };
 
+// Vocab ids are given in a precompiled hash table.
+class VocabGiven {
+  public:
+    explicit VocabGiven(int fd) {
+      util::MapRead(util::POPULATE_OR_READ, fd, 0, util::CheckOverflow(util::SizeOrThrow(fd)), table_backing_);
+      // Leave space for header with size.
+      table_ = Table(static_cast<char*>(table_backing_.get()) + sizeof(uint64_t), table_backing_.size() - sizeof(uint64_t));
+    }
+
+    WordIndex Lookup(const StringPiece &word) const {
+      Table::ConstIterator it;
+      if (table_.Find(util::MurmurHash64A(word.data(), word.size()), it)) {
+        return it->value;
+      } else {
+        return 0; // <unk>.
+      }
+    }
+
+    WordIndex Size() const {
+      return *static_cast<const uint64_t*>(table_backing_.get());
+    }
+
+  private:
+    util::scoped_memory table_backing_;
+
+    typedef util::ProbingHashTable<VocabEntry, util::IdentityHash> Table;
+    Table table_;
+};
+
 class DedupeHash : public std::unary_function<const WordIndex *, bool> {
   public:
     explicit DedupeHash(std::size_t order) : size_(order * sizeof(WordIndex)) {}
@@ -131,18 +161,19 @@ typedef util::ProbingHashTable<DedupeEntry, DedupeHash, DedupeEquals> Dedupe;
 
 class Writer {
   public:
-    Writer(std::size_t order, const util::stream::ChainPosition &position, void *dedupe_mem, std::size_t dedupe_mem_size) 
+    Writer(std::size_t order, const util::stream::ChainPosition &position, void *dedupe_mem, std::size_t dedupe_mem_size, WordIndex bos) 
       : block_(position), gram_(block_->Get(), order),
         dedupe_invalid_(order, std::numeric_limits<WordIndex>::max()),
         dedupe_(dedupe_mem, dedupe_mem_size, &dedupe_invalid_[0], DedupeHash(order), DedupeEquals(order)),
         buffer_(new WordIndex[order - 1]),
-        block_size_(position.GetChain().BlockSize()) {
+        block_size_(position.GetChain().BlockSize()),
+        bos_(bos) {
       dedupe_.Clear();
       assert(Dedupe::Size(position.GetChain().BlockSize() / position.GetChain().EntrySize(), kProbingMultiplier) == dedupe_mem_size);
       if (order == 1) {
         // Add special words.  AdjustCounts is responsible if order != 1.    
         AddUnigramWord(kUNK);
-        AddUnigramWord(kBOS);
+        AddUnigramWord(bos);
       }
     }
 
@@ -154,7 +185,7 @@ class Writer {
     // Write context with a bunch of <s>
     void StartSentence() {
       for (WordIndex *i = gram_.begin(); i != gram_.end() - 1; ++i) {
-        *i = kBOS;
+        *i = bos_;
       }
     }
 
@@ -211,6 +242,8 @@ class Writer {
     boost::scoped_array<WordIndex> buffer_;
 
     const std::size_t block_size_;
+
+    const WordIndex bos_;
 };
 
 } // namespace
@@ -223,31 +256,61 @@ std::size_t CorpusCount::VocabUsage(std::size_t vocab_estimate) {
   return VocabHandout::MemUsage(vocab_estimate);
 }
 
-CorpusCount::CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count, WordIndex &type_count, std::size_t entries_per_block) 
-  : from_(from), vocab_write_(vocab_write), token_count_(token_count), type_count_(type_count),
+CorpusCount::CorpusCount(util::FilePiece &from, int vocab_file, uint64_t &token_count, WordIndex &type_count, std::size_t entries_per_block, WarningAction disallowed_symbol, bool dynamic_vocab)
+  : from_(from), vocab_file_(vocab_file), token_count_(token_count), type_count_(type_count),
     dedupe_mem_size_(Dedupe::Size(entries_per_block, kProbingMultiplier)),
-    dedupe_mem_(util::MallocOrThrow(dedupe_mem_size_)) {
+    dedupe_mem_(util::MallocOrThrow(dedupe_mem_size_)),
+    disallowed_symbol_action_(disallowed_symbol),
+    dynamic_vocab_(dynamic_vocab) {
 }
 
-void CorpusCount::Run(const util::stream::ChainPosition &position) {
-  UTIL_TIMER("(%w s) Counted n-grams\n");
+namespace {
+  void ComplainDisallowed(StringPiece word, WarningAction &action) {
+    switch (action) {
+      case SILENT:
+        return;
+      case COMPLAIN:
+        std::cerr << "Warning: " << word << " appears in the input.  All instances of <s>, </s>, and <unk> will be interpreted as whitespace." << std::endl;
+        action = SILENT;
+        return;
+      case THROW_UP:
+        UTIL_THROW(FormatLoadException, "Special word " << word << " is not allowed in the corpus.  I plan to support models containing <unk> in the future.  Pass --skip_symbols to convert these symbols to whitespace.");
+    }
+  }
+} // namespace
 
-  VocabHandout vocab(vocab_write_, type_count_);
+void CorpusCount::Run(const util::stream::ChainPosition &position) {
   token_count_ = 0;
   type_count_ = 0;
+  if (dynamic_vocab_) {
+    VocabHandout vocab(vocab_file_, type_count_);
+    RunWithVocab(position, vocab);
+  } else {
+    VocabGiven vocab(vocab_file_);
+    RunWithVocab(position, vocab);
+  }
+  // Class might not exist anymore since writer has sent poison.
+}
+
+template <class Voc> void CorpusCount::RunWithVocab(const util::stream::ChainPosition &position, Voc &vocab) {
+  // Steal so this gets freed when finished running.  The class might have gone out of scope.
   const WordIndex end_sentence = vocab.Lookup("</s>");
-  Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_);
+  Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_, vocab.Lookup("<s>"));
+  util::scoped_malloc mem(dedupe_mem_.steal());
   uint64_t count = 0;
   bool delimiters[256];
-  memset(delimiters, 0, sizeof(delimiters));
-  delimiters['\0'] = delimiters['\t'] = delimiters['\n'] = delimiters['\r'] = delimiters[' '] = true;
+  util::BoolCharacter::Build("\0\t\n\r ", delimiters);
   try {
     while(true) {
       StringPiece line(from_.ReadLine());
       writer.StartSentence();
       for (util::TokenIter<util::BoolCharacter, true> w(line, delimiters); w; ++w) {
         WordIndex word = vocab.Lookup(*w);
-        UTIL_THROW_IF(word <= 2, FormatLoadException, "Special word " << *w << " is not allowed in the corpus.  I plan to support models containing <unk> in the future.");
+        // Commented out because the vocab words might be in native trie order.
+  /*      if (word <= 2) {
+          ComplainDisallowed(*w, disallowed_symbol_action_);
+          continue;
+        }*/
         writer.Append(word);
         ++count;
       }

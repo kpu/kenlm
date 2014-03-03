@@ -1,5 +1,5 @@
-#ifndef UTIL_PROBING_HASH_TABLE__
-#define UTIL_PROBING_HASH_TABLE__
+#ifndef UTIL_PROBING_HASH_TABLE_H
+#define UTIL_PROBING_HASH_TABLE_H
 
 #include "util/exception.hh"
 #include "util/scoped.hh"
@@ -265,6 +265,7 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
     AutoProbing(std::size_t initial_size = 10, const Key &invalid = Key(), const Hash &hash_func = Hash(), const Equal &equal_func = Equal()) :
       allocated_(Backend::Size(initial_size, 1.5)), mem_(util::MallocOrThrow(allocated_)), backend_(mem_.get(), allocated_, invalid, hash_func, equal_func) {
       threshold_ = initial_size * 1.2;
+      Clear();
     }
 
     // Assumes that the key is unique.  Multiple insertions won't cause a failure, just inconsistent lookup.
@@ -320,4 +321,4 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
 
 } // namespace util
 
-#endif // UTIL_PROBING_HASH_TABLE__
+#endif // UTIL_PROBING_HASH_TABLE_H

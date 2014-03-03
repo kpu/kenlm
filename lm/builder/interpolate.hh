@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_INTERPOLATE__
-#define LM_BUILDER_INTERPOLATE__
+#ifndef LM_BUILDER_INTERPOLATE_H
+#define LM_BUILDER_INTERPOLATE_H
 
 #include "lm/builder/multi_stream.hh"
 #include "lm/word_index.hh"
@@ -17,7 +17,9 @@ class Binarize;
  */
 class Interpolate {
   public:
-    explicit Interpolate(uint64_t unigram_count, Binarize &binarize, const ChainPositions &backoffs);
+    // Normally the unigram count-1 (since p(<s>) = 0) but might be larger to
+    // set a consistent vocabulary size.
+    explicit Interpolate(uint64_t vocab_size, Binarize &binarize, const ChainPositions &backoffs);
 
     void Run(const ChainPositions &positions);
 
@@ -28,4 +30,4 @@ class Interpolate {
 };
 
 }} // namespaces
-#endif // LM_BUILDER_INTERPOLATE__
+#endif // LM_BUILDER_INTERPOLATE_H

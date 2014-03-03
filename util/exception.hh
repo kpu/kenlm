@@ -1,5 +1,5 @@
-#ifndef UTIL_EXCEPTION__
-#define UTIL_EXCEPTION__
+#ifndef UTIL_EXCEPTION_H
+#define UTIL_EXCEPTION_H
 
 #include <exception>
 #include <limits>
@@ -143,4 +143,4 @@ inline std::size_t CheckOverflow(uint64_t value) {
 
 } // namespace util
 
-#endif // UTIL_EXCEPTION__
+#endif // UTIL_EXCEPTION_H

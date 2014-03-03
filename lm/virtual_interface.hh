@@ -1,5 +1,5 @@
-#ifndef LM_VIRTUAL_INTERFACE__
-#define LM_VIRTUAL_INTERFACE__
+#ifndef LM_VIRTUAL_INTERFACE_H
+#define LM_VIRTUAL_INTERFACE_H
 
 #include "lm/return.hh"
 #include "lm/word_index.hh"
@@ -157,4 +157,4 @@ class Model {
 } // mamespace base
 } // namespace lm
 
-#endif // LM_VIRTUAL_INTERFACE__
+#endif // LM_VIRTUAL_INTERFACE_H

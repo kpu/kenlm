@@ -1,5 +1,5 @@
-#ifndef LM_CONFIG__
-#define LM_CONFIG__
+#ifndef LM_CONFIG_H
+#define LM_CONFIG_H
 
 #include "lm/lm_exception.hh"
 #include "util/mmap.hh"
@@ -120,4 +120,4 @@ struct Config {
 
 } /* namespace ngram */ } /* namespace lm */
 
-#endif // LM_CONFIG__
+#endif // LM_CONFIG_H
