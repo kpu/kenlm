@@ -1,3 +1,8 @@
+#include <fstream>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/stream.hpp>
+
 #include "lm/config.hh"
 #include "lm/model.hh"
 #include "util/fake_ofstream.hh"
@@ -64,8 +69,14 @@ class DumpTrie {
       range.end = model.GetVocabulary().Bound();
       for (unsigned char i = 0; i < model.Order(); ++i) {
         count_[i] = 0;
-        files_[i].reset(util::CreateOrThrow((base + boost::lexical_cast<std::string>(static_cast<unsigned int>(i) + 1)).c_str()));
-        out_[i].SetFD(files_[i].get());
+        //files_[i].reset(util::CreateOrThrow((base + boost::lexical_cast<std::string>(static_cast<unsigned int>(i) + 1)).c_str()));
+        std::ofstream outStream;
+        outStream.open((base + boost::lexical_cast<std::string>(static_cast<unsigned int>(i) + 1) + ".gz").c_str());
+        
+        out_[i].push(boost::iostreams::gzip_compressor());
+        out_[i].push(outStream);
+        
+        //out_[i].SetFD(files_[i].get());
       }
       
       std::vector<boost::thread*> threadSet;
@@ -131,7 +142,7 @@ class DumpTrie {
     util::Pool pool_;
     std::vector<Seen> seen_;
     util::scoped_fd files_[KENLM_MAX_ORDER];
-    util::FakeOFStream out_[KENLM_MAX_ORDER];
+    boost::iostreams::filtering_ostream out_[KENLM_MAX_ORDER];
 
     uint64_t count_[KENLM_MAX_ORDER];
     boost::mutex mutex_;
