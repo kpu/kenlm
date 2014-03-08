@@ -2,6 +2,7 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/stream.hpp>
+#include <sstream>
 
 #include "lm/config.hh"
 #include "lm/model.hh"
@@ -37,7 +38,7 @@ class DumpTrie {
   public:
     DumpTrie() {}
 
-    void Dump(lm::ngram::ArrayTrieModel &model, const std::string &base, const std::string &vocab, int threads) {
+    void Dump(lm::ngram::TrieModel &model, const std::string &base, const std::string &vocab, int threads) {
       seen_.resize(model.GetVocabulary().Bound());
       util::FilePiece f(vocab.c_str());
       unsigned l;
@@ -67,16 +68,27 @@ class DumpTrie {
       ngram::trie::NodeRange range;
       range.begin = 0;
       range.end = model.GetVocabulary().Bound();
+      
       for (unsigned char i = 0; i < model.Order(); ++i) {
-        count_[i] = 0;
-        //files_[i].reset(util::CreateOrThrow((base + boost::lexical_cast<std::string>(static_cast<unsigned int>(i) + 1)).c_str()));
-        std::ofstream outStream;
-        outStream.open((base + boost::lexical_cast<std::string>(static_cast<unsigned int>(i) + 1) + ".gz").c_str());
+        count_[i].resize(threads, 0);
         
-        out_[i].push(boost::iostreams::gzip_compressor());
-        out_[i].push(outStream);
+        for(int j = 0; j < threads; ++j) {
+          outStream_[i].push_back(new std::ofstream());
+          out_[i].push_back(new boost::iostreams::filtering_ostream());
+        }
         
-        //out_[i].SetFD(files_[i].get());
+        
+        
+        for(unsigned char j = 0; j < threads; ++j) {
+          outStream_[i][j]->open((base +
+                                 boost::lexical_cast<std::string>(static_cast<unsigned int>(i) + 1) +
+                                 "." +
+                                 boost::lexical_cast<std::string>(static_cast<unsigned int>(j) + 1) +
+                                 ".gz").c_str());
+          
+          out_[i][j]->push(boost::iostreams::gzip_compressor());
+          out_[i][j]->push(*outStream_[i][j]);
+        }
       }
       
       std::vector<boost::thread*> threadSet;
@@ -94,12 +106,23 @@ class DumpTrie {
       delete progress;
       
       for (unsigned char i = 0; i < model.Order(); ++i) {
-        std::cout << "ngram " << static_cast<unsigned>(i + 1) << '=' << count_[i] << '\n';
+        for(int j = 0; j < threads; ++j) {
+          delete out_[i][j];
+          outStream_[i][j]->close();
+          delete outStream_[i][j];
+        }
+      }
+      
+      for (unsigned char i = 0; i < model.Order(); ++i) {
+        size_t sum = 0;
+        for(size_t j = 0; j < count_[i].size(); j++)
+          sum += count_[i][j];
+        std::cout << "ngram " << static_cast<unsigned>(i + 1) << '=' << sum << '\n';
       }
     }
 
   private:
-    template <class Progress> void Dump(ngram::ArrayTrieModel *model, const unsigned char order,
+    template <class Progress> void Dump(ngram::TrieModel *model, const unsigned char order,
                                         const ngram::trie::NodeRange range,
                                         Sets &sets, Words &words,
                                         int threadNo, int totalThreads,
@@ -120,16 +143,14 @@ class DumpTrie {
         Sets sets_copy = sets;
         if (util::FirstIntersection(sets_copy))
         {
-          {
-            boost::mutex::scoped_lock lock(mutex_);
-            words[order - 1] = seen_[word].value;
-            ++count_[order - 1];
-            out_[order - 1] << weights.prob << '\t' << words[order - 1];
-            for (char w = static_cast<char>(order) - 2; w >= 0; --w) {
-              out_[static_cast<unsigned char>(order - 1)] << ' ' << words[static_cast<unsigned char>(w)];
-            }
-            out_[order - 1] << '\t' << weights.backoff << '\n';
+          words[order - 1] = seen_[word].value;
+          ++count_[order - 1][threadNo];
+            
+          *out_[order-1][threadNo] << weights.prob << '\t' << words[order - 1];
+          for (char w = static_cast<char>(order) - 2; w >= 0; --w) {
+            *out_[order-1][threadNo] << ' ' << words[static_cast<unsigned char>(w)];
           }
+          *out_[order-1][threadNo] << '\t' << weights.backoff << '\n';
           
           NoOpProgress noop(pointer.end);
           Dump<NoOpProgress>(model, order + 1, pointer, sets, words,
@@ -141,10 +162,12 @@ class DumpTrie {
 
     util::Pool pool_;
     std::vector<Seen> seen_;
-    util::scoped_fd files_[KENLM_MAX_ORDER];
-    boost::iostreams::filtering_ostream out_[KENLM_MAX_ORDER];
-
-    uint64_t count_[KENLM_MAX_ORDER];
+    
+    std::vector<std::ofstream*> outStream_[KENLM_MAX_ORDER];
+    std::vector<boost::iostreams::filtering_ostream*> out_[KENLM_MAX_ORDER];
+    
+    std::vector<uint64_t> count_[KENLM_MAX_ORDER];
+    
     boost::mutex mutex_;
 
 };
@@ -159,7 +182,7 @@ int main(int argc, char *argv[]) {
   lm::ngram::Config config;
   config.load_method = util::LAZY;
   
-  lm::ngram::ArrayTrieModel model(argv[1], config); 
+  lm::ngram::TrieModel model(argv[1], config); 
   lm::DumpTrie dumper;
   
   int threads = 1;
