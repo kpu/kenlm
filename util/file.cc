@@ -111,7 +111,7 @@ uint64_t SizeOrThrow(int fd) {
 
 void ResizeOrThrow(int fd, uint64_t to) {
 #if defined __MINGW32__
-    // Does this handle 64-bit?  
+    // Does this handle 64-bit?
     int ret = ftruncate
 #elif defined(_WIN32) || defined(_WIN64)
     errno_t ret = _chsize_s
@@ -128,8 +128,10 @@ namespace {
 std::size_t GuardLarge(std::size_t size) {
   // The following operating systems have broken read/write/pread/pwrite that
   // only supports up to 2^31.
+  // OS X man pages claim to support 64-bit, but Kareem M. Darwish had problems
+  // building with larger files, so APPLE is also here.
 #if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__) || defined(OS_ANDROID) || defined(__MINGW32__)
-  return std::min(static_cast<std::size_t>(static_cast<unsigned>(-1)), size);
+  return size < INT_MAX ? size : INT_MAX;
 #else
   return size;
 #endif
