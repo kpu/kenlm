@@ -18,19 +18,27 @@ namespace lm {
 namespace ngram {
 
 extern const char *kModelNames[6];
+extern const char * const kMagicBeforeVersion;
 
-/*Inspect a file to determine if it is a binary lm.  If not, return false.  
+/**
+   If one is set, allow this alternative kMagicBeforeVersion of the same length
+   (used to RecognizeBinary and load LMs)
+*/
+void SetAlternateMagicBeforeVersion(char const* alternateMagicBeforeVersion);
+
+/*Inspect a file to determine if it is a binary lm.  If not, return false.
  * If so, return true and set recognized to the type.  This is the only API in
- * this header designed for use by decoder authors.  
+ * this header designed for use by decoder authors.
  */
 bool RecognizeBinary(const char *file, ModelType &recognized);
+
 
 struct FixedWidthParameters {
   unsigned char order;
   float probing_multiplier;
-  // What type of model is this?  
+  // What type of model is this?
   ModelType model_type;
-  // Does the end of the file have the actual strings in the vocabulary?   
+  // Does the end of the file have the actual strings in the vocabulary?
   bool has_vocabulary;
   unsigned int search_version;
 };
@@ -38,7 +46,7 @@ struct FixedWidthParameters {
 // This is a macro instead of an inline function so constants can be assigned using it.
 #define ALIGN8(a) ((std::ptrdiff_t(((a)-1)/8)+1)*8)
 
-// Parameters stored in the header of a binary file.  
+// Parameters stored in the header of a binary file.
 struct Parameters {
   FixedWidthParameters fixed;
   std::vector<uint64_t> counts;
@@ -79,7 +87,7 @@ class BinaryFormat {
     const char *write_mmap_;
     util::LoadMethod load_method_;
 
-    // File behind memory, if any.  
+    // File behind memory, if any.
     util::scoped_fd file_;
 
     // If there is a file involved, a single mapping.
