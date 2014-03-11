@@ -128,7 +128,8 @@ namespace {
 std::size_t GuardLarge(std::size_t size) {
   // The following operating systems have broken read/write/pread/pwrite that
   // only supports up to 2^31.
-#if defined(_WIN32) || defined(_WIN64) || defined(OS_ANDROID) || defined(__MINGW32__)
+#if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__) || defined(OS_ANDROID) || defined(__MINGW32__)
+  // OS X man pages claim 64-bit, but past experience suggests not trusting them
   return size < INT_MAX ? size : INT_MAX;
 #else
   return size;
