@@ -17,8 +17,17 @@ namespace ngram {
 
 const char *kModelNames[6] = {"probing hash tables", "probing hash tables with rest costs", "trie", "trie with quantization", "trie with array-compressed pointers", "trie with quantization and array-compressed pointers"};
 
+char const* const kMagicBeforeVersion = "mmap lm http://kheafield.com/code format version";
+
+char const* kAlternateMagicBeforeVersion = 0;
+
+void SetAlternateMagicBeforeVersion(char const* alternate) {
+  UTIL_THROW_IF(std::strlen(alternate) != std::strlen(kMagicBeforeVersion), util::Exception,
+                "alternate kMagicBeforeVersion '" << alternate << "' was not the same length as '" << kMagicBeforeVersion << "'");
+  kAlternateMagicBeforeVersion = alternate;
+}
+
 namespace {
-const char kMagicBeforeVersion[] = "mmap lm http://kheafield.com/code format version";
 const char kMagicBytes[] = "mmap lm http://kheafield.com/code format version 5\n\0";
 // This must be shorter than kMagicBytes and indicates an incomplete binary file (i.e. build failed).
 const char kMagicIncomplete[] = "mmap lm http://kheafield.com/code incomplete\n";
@@ -59,6 +68,13 @@ struct Sanity {
     padding_to_8 = 0;
     one_uint64 = 1;
   }
+  bool HaveAlternateReference() const {
+    return kAlternateMagicBeforeVersion;
+  }
+  void SetToAlternateReference() {
+    SetToReference();
+    std::memcpy(magic, kAlternateMagicBeforeVersion, std::strlen(kAlternateMagicBeforeVersion));
+  }
 };
 
 std::size_t TotalHeaderSize(unsigned char order) {
@@ -92,15 +108,20 @@ bool IsBinaryFormat(int fd) {
   } catch (const util::Exception &e) {
     return false;
   }
+  void const* header = memory.get();
   Sanity reference_header = Sanity();
   reference_header.SetToReference();
-  if (!std::memcmp(memory.get(), &reference_header, sizeof(Sanity))) return true;
-  if (!std::memcmp(memory.get(), kMagicIncomplete, strlen(kMagicIncomplete))) {
+  if (!std::memcmp(header, &reference_header, sizeof(Sanity))) return true;
+  if (reference_header.HaveAlternateReference()) {
+    reference_header.SetToAlternateReference();
+    if (!std::memcmp(header, &reference_header, sizeof(Sanity))) return true;
+  }
+  if (!std::memcmp(header, kMagicIncomplete, std::strlen(kMagicIncomplete))) {
     UTIL_THROW(FormatLoadException, "This binary file did not finish building");
   }
-  if (!std::memcmp(memory.get(), kMagicBeforeVersion, strlen(kMagicBeforeVersion))) {
+  if (!std::memcmp(header, kMagicBeforeVersion, std::strlen(kMagicBeforeVersion))) {
     char *end_ptr;
-    const char *begin_version = static_cast<const char*>(memory.get()) + strlen(kMagicBeforeVersion);
+    const char *begin_version = static_cast<const char*>(header) + std::strlen(kMagicBeforeVersion);
     long int version = std::strtol(begin_version, &end_ptr, 10);
     if ((end_ptr != begin_version) && version != kMagicVersion) {
       UTIL_THROW(FormatLoadException, "Binary file has version " << version << " but this implementation expects version " << kMagicVersion << " so you'll have to use the ARPA to rebuild your binary");
@@ -108,7 +129,7 @@ bool IsBinaryFormat(int fd) {
 
     OldSanity old_sanity = OldSanity();
     old_sanity.SetToReference();
-    UTIL_THROW_IF(!std::memcmp(memory.get(), &old_sanity, sizeof(OldSanity)), FormatLoadException, "Looks like this is an old 32-bit format.  The old 32-bit format has been removed so that 64-bit and 32-bit files are exchangeable.");
+    UTIL_THROW_IF(!std::memcmp(header, &old_sanity, sizeof(OldSanity)), FormatLoadException, "Looks like this is an old 32-bit format.  The old 32-bit format has been removed so that 64-bit and 32-bit files are exchangeable.");
     UTIL_THROW(FormatLoadException, "File looks like it should be loaded with mmap, but the test values don't match.  Try rebuilding the binary format LM using the same code revision, compiler, and architecture");
   }
   return false;
@@ -135,7 +156,7 @@ void MatchCheck(ModelType model_type, unsigned int search_version, const Paramet
 
 const std::size_t kInvalidSize = static_cast<std::size_t>(-1);
 
-BinaryFormat::BinaryFormat(const Config &config) 
+BinaryFormat::BinaryFormat(const Config &config)
   : write_method_(config.write_method), write_mmap_(config.write_mmap), load_method_(config.load_method),
     header_size_(kInvalidSize), vocab_size_(kInvalidSize), vocab_string_offset_(kInvalidOffset) {}
 
