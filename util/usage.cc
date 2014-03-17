@@ -30,6 +30,8 @@ typedef struct
   DWORDLONG ullAvailVirtual;
   DWORDLONG ullAvailExtendedVirtual;
 } lMEMORYSTATUSEX;
+// Is this really supposed to be defined like this?
+typedef int WINBOOL;
 typedef WINBOOL (WINAPI *PFN_MS_EX) (lMEMORYSTATUSEX*);
 #else
 #include <sys/resource.h>
