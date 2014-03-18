@@ -3,6 +3,7 @@
 // Utilities for mmaped files.  
 
 #include <cstddef>
+#include <limits>
 
 #include <stdint.h>
 #include <sys/types.h>
@@ -52,6 +53,9 @@ class scoped_memory {
   public:
     typedef enum {MMAP_ALLOCATED, ARRAY_ALLOCATED, MALLOC_ALLOCATED, NONE_ALLOCATED} Alloc;
 
+    scoped_memory(void *data, std::size_t size, Alloc source) 
+      : data_(data), size_(size), source_(source) {}
+
     scoped_memory() : data_(NULL), size_(0), source_(NONE_ALLOCATED) {}
 
     ~scoped_memory() { reset(); }
@@ -72,7 +76,6 @@ class scoped_memory {
     void call_realloc(std::size_t to);
 
   private:
-
     void *data_;
     std::size_t size_;
 
@@ -110,6 +113,79 @@ void *MapZeroedWrite(const char *name, std::size_t size, scoped_fd &file);
 
 // msync wrapper 
 void SyncOrThrow(void *start, size_t length);
+
+// Forward rolling memory map with no overlap.
+class Rolling {
+  public:
+    Rolling() {}
+    
+    explicit Rolling(void *data) { Init(data); }
+
+    Rolling(const Rolling &copy_from, uint64_t increase = 0);
+    Rolling &operator=(const Rolling &copy_from);
+
+    // For an actual rolling mmap.
+    explicit Rolling(int fd, bool for_write, std::size_t block, std::size_t read_bound, uint64_t offset, uint64_t amount);
+
+    // For a static mapping
+    void Init(void *data) {
+      ptr_ = data;
+      current_end_ = std::numeric_limits<uint64_t>::max();
+      current_begin_ = 0;
+      // Mark as a pass-through.
+      fd_ = -1;
+    }
+
+    void IncreaseBase(uint64_t by) {
+      file_begin_ += by;
+      ptr_ = static_cast<uint8_t*>(ptr_) + by;
+      if (!IsPassthrough()) current_end_ = 0;
+    }
+
+    void DecreaseBase(uint64_t by) {
+      file_begin_ -= by;
+      ptr_ = static_cast<uint8_t*>(ptr_) - by;
+      if (!IsPassthrough()) current_end_ = 0;
+    }
+
+    void *ExtractNonRolling(scoped_memory &out, uint64_t index, std::size_t size);
+
+    // Returns base pointer
+    void *get() const { return ptr_; }
+
+    // Returns base pointer.
+    void *CheckedBase(uint64_t index) {
+      if (index >= current_end_ || index < current_begin_) {
+        Roll(index);
+      }
+      return ptr_;
+    }
+    
+    // Returns indexed pointer.
+    void *CheckedIndex(uint64_t index) {
+      return static_cast<uint8_t*>(CheckedBase(index)) + index;
+    }
+
+  private:
+    void Roll(uint64_t index);
+
+    // True if this is just a thin wrapper on a pointer.
+    bool IsPassthrough() const { return fd_ == -1; }
+
+    void *ptr_;
+    uint64_t current_begin_;
+    uint64_t current_end_;
+    
+    scoped_memory mem_;
+
+    int fd_;
+    uint64_t file_begin_;
+    uint64_t file_end_;
+
+    bool for_write_;
+    std::size_t block_;
+    std::size_t read_bound_;
+};
 
 } // namespace util
 
