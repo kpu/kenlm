@@ -90,7 +90,9 @@ typedef enum {
   // Populate on Linux.  malloc and read on non-Linux.  
   POPULATE_OR_READ,
   // malloc and read.  
-  READ
+  READ,
+  // malloc and read in parallel (recommended for Lustre)
+  PARALLEL_READ,
 } LoadMethod;
 
 extern const int kFileFlags;

@@ -6,6 +6,7 @@
 
 #include "util/exception.hh"
 #include "util/file.hh"
+#include "util/parallel_read.hh"
 #include "util/scoped.hh"
 
 #include <iostream>
@@ -153,6 +154,10 @@ void MapRead(LoadMethod method, int fd, uint64_t offset, std::size_t size, scope
       out.reset(MallocOrThrow(size), size, scoped_memory::MALLOC_ALLOCATED);
       SeekOrThrow(fd, offset);
       ReadOrThrow(fd, out.get(), size);
+      break;
+    case PARALLEL_READ:
+      out.reset(MallocOrThrow(size), size, scoped_memory::MALLOC_ALLOCATED);
+      ParallelRead(fd, out.get(), size, offset);
       break;
   }
 }
