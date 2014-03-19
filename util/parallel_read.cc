@@ -62,7 +62,7 @@ void ParallelRead(int fd, void *to, std::size_t amount, uint64_t offset) {
 
 namespace util {
 void ParallelRead(int fd, void *to, std::size_t amount, uint64_t offset) {
- util::PReadOrThrow(fd, to, size, offset);
+ util::PReadOrThrow(fd, to, amount, offset);
 }
 } // namespace util
 
