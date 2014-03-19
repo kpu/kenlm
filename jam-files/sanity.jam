@@ -140,10 +140,9 @@ rule boost-lib ( name macro : deps * ) {
   }
 
   if $(boost-auto-shared) = "<link>shared" {
-    alias boost_$(name) : inner_boost_$(name) : <link>shared ;
-    requirements += <define>BOOST_$(macro) ;
+    alias boost_$(name) : inner_boost_$(name) : <link>shared : : <define>BOOST_$(macro) ;
   } else {
-    alias boost_$(name) : inner_boost_$(name) : <link>static ;
+    alias boost_$(name) : inner_boost_$(name) : : : <link>shared:<define>BOOST_$(macro) ;
   }
 }
 
