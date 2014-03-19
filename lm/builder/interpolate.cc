@@ -4,6 +4,7 @@
 #include "lm/builder/multi_stream.hh"
 #include "lm/builder/sort.hh"
 #include "lm/lm_exception.hh"
+#include "util/fixed_array.hh"
 
 #include <assert.h>
 
@@ -46,7 +47,7 @@ class Callback {
     void Exit(unsigned, const NGram &) const {}
 
   private:
-    FixedArray<util::stream::Stream> backoffs_;
+    util::FixedArray<util::stream::Stream> backoffs_;
 
     std::vector<float> probs_;
 };

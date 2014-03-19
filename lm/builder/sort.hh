@@ -85,10 +85,10 @@ struct AddCombiner {
 
 // The combiner is only used on a single chain, so I didn't bother to allow
 // that template.  
-template <class Compare> class Sorts : public FixedArray<util::stream::Sort<Compare> > {
+template <class Compare> class Sorts : public util::FixedArray<util::stream::Sort<Compare> > {
   private:
     typedef util::stream::Sort<Compare> S;
-    typedef FixedArray<S> P;
+    typedef util::FixedArray<S> P;
 
   public:
     void push_back(util::stream::Chain &chain, const util::stream::SortConfig &config, const Compare &compare) {

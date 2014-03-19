@@ -200,7 +200,7 @@ class Master {
 
     Chains chains_;
     // Often only unigrams, but sometimes all orders.  
-    FixedArray<util::stream::FileBuffer> files_;
+    util::FixedArray<util::stream::FileBuffer> files_;
 };
 
 void CountText(int text_file /* input */, int vocab_file /* output */, Master &master, uint64_t &token_count, std::string &text_file_name) {
@@ -231,7 +231,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
   master.InitForAdjust(sorter, type_count);
 }
 
-void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary, FixedArray<util::stream::FileBuffer> &gammas) {
+void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary, util::FixedArray<util::stream::FileBuffer> &gammas) {
   const PipelineConfig &config = master.Config();
   Chains second(config.order);
 
@@ -257,7 +257,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
   master.SetupSorts(primary);
 }
 
-void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &master, Sorts<SuffixOrder> &primary, FixedArray<util::stream::FileBuffer> &gammas) {
+void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &master, Sorts<SuffixOrder> &primary, util::FixedArray<util::stream::FileBuffer> &gammas) {
   std::cerr << "=== 4/5 Calculating and writing order-interpolated probabilities ===" << std::endl;
   const PipelineConfig &config = master.Config();
   master.MaximumLazyInput(counts, primary);
@@ -305,7 +305,7 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
   master >> AdjustCounts(counts, discounts);
 
   {
-    FixedArray<util::stream::FileBuffer> gammas;
+    util::FixedArray<util::stream::FileBuffer> gammas;
     Sorts<SuffixOrder> primary;
     InitialProbabilities(counts, discounts, master, primary, gammas);
     InterpolateProbabilities(counts, master, primary, gammas);
