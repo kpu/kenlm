@@ -444,8 +444,8 @@ void NormalizeTempPrefix(std::string &base) {
     ) base += '/';
 }
 
-int MakeTemp(const std::string &base) {
-  std::string name(base);
+int MakeTemp(const StringPiece &base) {
+  std::string name(base.data(), base.size());
   name += "XXXXXX";
   name.push_back(0);
   int ret;
@@ -453,7 +453,7 @@ int MakeTemp(const std::string &base) {
   return ret;
 }
 
-std::FILE *FMakeTemp(const std::string &base) {
+std::FILE *FMakeTemp(const StringPiece &base) {
   util::scoped_fd file(MakeTemp(base));
   return FDOpenOrThrow(file);
 }
