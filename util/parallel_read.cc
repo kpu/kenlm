@@ -35,6 +35,8 @@ class Reader {
 void ParallelRead(int fd, void *to, std::size_t amount, uint64_t offset) {
   Reader::Request poison;
   poison.to = NULL;
+  poison.size = 0;
+  poison.offset = 0;
   unsigned threads = boost::thread::hardware_concurrency();
   if (!threads) threads = 2;
   ThreadPool<Reader> pool(2 /* don't need much of a queue */, threads, fd, poison);
