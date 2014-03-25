@@ -55,7 +55,7 @@ class Model : public lm::base::ModelFacade<Model, State, Vocabulary> {
 
   public:
     // Does this look like an NPLM?
-    static bool Recognize(const std::string &file);
+    static bool Recognize(const std::string &file, std::size_t cache_size = 1 << 20);
 
     explicit Model(const std::string &file);
 
@@ -73,6 +73,8 @@ class Model : public lm::base::ModelFacade<Model, State, Vocabulary> {
     Vocabulary vocab_;
 
     lm::WordIndex null_word_;
+
+    const std::size_t cache_size_;
 };
 
 } // namespace np
