@@ -484,7 +484,7 @@ bool TryName(int fd, std::string &out) {
     ssize_t ret = readlink(name.c_str(), &out[0], out.size());
     if (-1 == ret)
       return false;
-    if (ret < out.size()) {
+    if ((size_t)ret < out.size()) {
       out.resize(ret);
       break;
     }
