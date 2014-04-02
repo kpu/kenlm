@@ -479,14 +479,18 @@ bool TryName(int fd, std::string &out) {
   if (-1 == lstat(name.c_str(), &sb))
     return false;
   out.resize(sb.st_size + 1);
-  ssize_t ret = readlink(name.c_str(), &out[0], sb.st_size + 1);
-  if (-1 == ret)
-    return false;
-  if (ret > sb.st_size) {
-    // Increased in size?!
-    return false;
+  // lstat gave us a size, but I've seen it grow, possibly due to symlinks on top of symlinks.
+  while (true) {
+    ssize_t ret = readlink(name.c_str(), &out[0], out.size());
+    if (-1 == ret)
+      return false;
+    if ((size_t)ret < out.size()) {
+      out.resize(ret);
+      break;
+    }
+    // Exponential growth.
+    out.resize(out.size() * 2);
   }
-  out.resize(ret);
   // Don't use the non-file names.
   if (!out.empty() && out[0] != '/')
     return false;
