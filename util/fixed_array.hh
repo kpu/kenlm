@@ -1,10 +1,13 @@
 #ifndef UTIL_FIXED_ARRAY_H
 #define UTIL_FIXED_ARRAY_H
 
-// Ever want an array of things by they don't have a default constructor or 
+// Ever want an array of things by they don't have a default constructor or are
+// non-copyable?  FixedArray allows constructing one at a time.
 #include "util/scoped.hh"
 
 #include <cstddef>
+
+#include <assert.h>
 
 namespace util {
 
