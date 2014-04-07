@@ -4,7 +4,6 @@
 #include <iostream>
 
 #include <ctype.h>
-#include <err.h>
 
 namespace lm {
 namespace vocab {

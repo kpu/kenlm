@@ -1,5 +1,5 @@
-#ifndef UTIL_ERSATZ_PROGRESS__
-#define UTIL_ERSATZ_PROGRESS__
+#ifndef UTIL_ERSATZ_PROGRESS_H
+#define UTIL_ERSATZ_PROGRESS_H
 
 #include <iostream>
 #include <string>
@@ -55,4 +55,4 @@ class ErsatzProgress {
 
 } // namespace util
 
-#endif // UTIL_ERSATZ_PROGRESS__
+#endif // UTIL_ERSATZ_PROGRESS_H

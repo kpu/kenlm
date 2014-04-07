@@ -1,5 +1,5 @@
-#ifndef LM_VOCAB__
-#define LM_VOCAB__
+#ifndef LM_VOCAB_H
+#define LM_VOCAB_H
 
 #include "lm/enumerate_vocab.hh"
 #include "lm/lm_exception.hh"
@@ -36,7 +36,7 @@ class WriteWordsWrapper : public EnumerateVocab {
     
     void Add(WordIndex index, const StringPiece &str);
 
-    void Write(int fd, uint64_t start);
+    const std::string &Buffer() const { return buffer_; }
 
   private:
     EnumerateVocab *inner_;
@@ -71,6 +71,8 @@ class SortedVocabulary : public base::Vocabulary {
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
     void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
 
+    void Relocate(void *new_start);
+
     void ConfigureEnumerate(EnumerateVocab *to, std::size_t max_entries);
 
     WordIndex Insert(const StringPiece &str);
@@ -83,14 +85,12 @@ class SortedVocabulary : public base::Vocabulary {
 
     bool SawUnk() const { return saw_unk_; }
 
-    void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);
+    void LoadedBinary(bool have_words, int fd, EnumerateVocab *to, uint64_t offset);
 
   private:
     uint64_t *begin_, *end_;
 
     WordIndex bound_;
-
-    WordIndex highest_value_;
 
     bool saw_unk_;
 
@@ -140,6 +140,8 @@ class ProbingVocabulary : public base::Vocabulary {
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
     void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
 
+    void Relocate(void *new_start);
+
     void ConfigureEnumerate(EnumerateVocab *to, std::size_t max_entries);
 
     WordIndex Insert(const StringPiece &str);
@@ -152,7 +154,7 @@ class ProbingVocabulary : public base::Vocabulary {
 
     bool SawUnk() const { return saw_unk_; }
 
-    void LoadedBinary(bool have_words, int fd, EnumerateVocab *to);
+    void LoadedBinary(bool have_words, int fd, EnumerateVocab *to, uint64_t offset);
 
   private:
     void InternalFinishedLoading();
@@ -182,4 +184,4 @@ template <class Vocab> void CheckSpecials(const Config &config, const Vocab &voc
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_VOCAB__
+#endif // LM_VOCAB_H

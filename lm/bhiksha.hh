@@ -10,8 +10,8 @@
  *  Currently only used for next pointers.  
  */
 
-#ifndef LM_BHIKSHA__
-#define LM_BHIKSHA__
+#ifndef LM_BHIKSHA_H
+#define LM_BHIKSHA_H
 
 #include <stdint.h>
 #include <assert.h>
@@ -24,6 +24,7 @@
 namespace lm {
 namespace ngram {
 struct Config;
+class BinaryFormat;
 
 namespace trie {
 
@@ -31,7 +32,7 @@ class DontBhiksha {
   public:
     static const ModelType kModelTypeAdd = static_cast<ModelType>(0);
 
-    static void UpdateConfigFromBinary(int /*fd*/, Config &/*config*/) {}
+    static void UpdateConfigFromBinary(const BinaryFormat &, uint64_t, Config &/*config*/) {}
 
     static uint64_t Size(uint64_t /*max_offset*/, uint64_t /*max_next*/, const Config &/*config*/) { return 0; }
 
@@ -53,8 +54,6 @@ class DontBhiksha {
 
     void FinishedLoading(const Config &/*config*/) {}
 
-    void LoadedBinary() {}
-
     uint8_t InlineBits() const { return next_.bits; }
 
   private:
@@ -65,7 +64,7 @@ class ArrayBhiksha {
   public:
     static const ModelType kModelTypeAdd = kArrayAdd;
 
-    static void UpdateConfigFromBinary(int fd, Config &config);
+    static void UpdateConfigFromBinary(const BinaryFormat &file, uint64_t offset, Config &config);
 
     static uint64_t Size(uint64_t max_offset, uint64_t max_next, const Config &config);
 
@@ -93,8 +92,6 @@ class ArrayBhiksha {
 
     void FinishedLoading(const Config &config);
 
-    void LoadedBinary();
-
     uint8_t InlineBits() const { return next_inline_.bits; }
 
   private:
@@ -112,4 +109,4 @@ class ArrayBhiksha {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_BHIKSHA__
+#endif // LM_BHIKSHA_H

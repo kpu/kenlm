@@ -1,5 +1,5 @@
-#ifndef LM_PARTIAL__
-#define LM_PARTIAL__
+#ifndef LM_PARTIAL_H
+#define LM_PARTIAL_H
 
 #include "lm/return.hh"
 #include "lm/state.hh"
@@ -164,4 +164,4 @@ template <class Model> float Subsume(const Model &model, Left &first_left, const
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_PARTIAL__
+#endif // LM_PARTIAL_H

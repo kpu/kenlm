@@ -5,6 +5,7 @@
 #include "lm/builder/multi_stream.hh"
 #include "lm/builder/sort.hh"
 #include "lm/lm_exception.hh"
+#include "util/fixed_array.hh"
 #include "util/murmur_hash.hh"
 
 #include <assert.h>
@@ -74,15 +75,17 @@ class Callback {
     void Exit(unsigned, const NGram &) const {}
 
   private:
-    FixedArray<util::stream::Stream> backoffs_;
+    util::FixedArray<util::stream::Stream> backoffs_;
 
     std::vector<float> probs_;
     const std::vector<uint64_t>& prune_thresholds_;
 };
 } // namespace
 
-Interpolate::Interpolate(uint64_t unigram_count, const ChainPositions &backoffs, const std::vector<uint64_t>& prune_thresholds) 
-  : uniform_prob_(1.0 / static_cast<float>(unigram_count - 1)), backoffs_(backoffs), prune_thresholds_(prune_thresholds) {}
+Interpolate::Interpolate(uint64_t vocab_size, const ChainPositions &backoffs, const std::vector<uint64_t>& prune_thresholds)
+  : uniform_prob_(1.0 / static_cast<float>(vocab_size)), // Includes <unk> but excludes <s>.
+    backoffs_(backoffs),
+    prune_thresholds_(prune_thresholds) {}
 
 // perform order-wise interpolation
 void Interpolate::Run(const ChainPositions &positions) {

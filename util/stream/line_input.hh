@@ -1,5 +1,5 @@
-#ifndef UTIL_STREAM_LINE_INPUT__
-#define UTIL_STREAM_LINE_INPUT__
+#ifndef UTIL_STREAM_LINE_INPUT_H
+#define UTIL_STREAM_LINE_INPUT_H
 namespace util {namespace stream {
 
 class ChainPosition;
@@ -19,4 +19,4 @@ class LineInput {
 };
 
 }} // namespaces
-#endif // UTIL_STREAM_LINE_INPUT__
+#endif // UTIL_STREAM_LINE_INPUT_H

@@ -24,8 +24,8 @@ cdef extern from "lm/virtual_interface.hh" namespace "lm::base":
         void NullContextWrite(void *)
         unsigned int Order()
         const_Vocabulary& BaseVocabulary()
-        float Score(void *in_state, WordIndex new_word, void *out_state)
-        FullScoreReturn FullScore(void *in_state, WordIndex new_word, void *out_state)
+        float BaseScore(void *in_state, WordIndex new_word, void *out_state)
+        FullScoreReturn BaseFullScore(void *in_state, WordIndex new_word, void *out_state)
 
 cdef extern from "lm/model.hh" namespace "lm::ngram":
     cdef Model *LoadVirtual(char *) except +

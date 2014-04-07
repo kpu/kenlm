@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_INITIAL_PROBABILITIES__
-#define LM_BUILDER_INITIAL_PROBABILITIES__
+#ifndef LM_BUILDER_INITIAL_PROBABILITIES_H
+#define LM_BUILDER_INITIAL_PROBABILITIES_H
 
 #include "lm/builder/discount.hh"
 #include "util/stream/config.hh"
@@ -31,4 +31,4 @@ void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::v
 } // namespace builder
 } // namespace lm
 
-#endif // LM_BUILDER_INITIAL_PROBABILITIES__
+#endif // LM_BUILDER_INITIAL_PROBABILITIES_H

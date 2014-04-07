@@ -47,4 +47,16 @@ BOOST_AUTO_TEST_CASE(char_int) {
   BOOST_CHECK_EQUAL(327, values[3]);
 }
 
+BOOST_AUTO_TEST_CASE(swap_proxy) {
+  char keys[2] = {0, 1};
+  int values[2] = {2, 3};
+  detail::JointProxy<char *, int *> first(keys, values);
+  detail::JointProxy<char *, int *> second(keys + 1, values + 1);
+  swap(first, second);
+  BOOST_CHECK_EQUAL(1, keys[0]);
+  BOOST_CHECK_EQUAL(0, keys[1]);
+  BOOST_CHECK_EQUAL(3, values[0]);
+  BOOST_CHECK_EQUAL(2, values[1]);
+}
+
 }} // namespace anonymous util

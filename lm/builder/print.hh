@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_PRINT__
-#define LM_BUILDER_PRINT__
+#ifndef LM_BUILDER_PRINT_H
+#define LM_BUILDER_PRINT_H
 
 #include "lm/builder/ngram.hh"
 #include "lm/builder/multi_stream.hh"
@@ -100,4 +100,4 @@ class PrintARPA {
 };
 
 }} // namespaces
-#endif // LM_BUILDER_PRINT__
+#endif // LM_BUILDER_PRINT_H

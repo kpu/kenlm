@@ -1,5 +1,5 @@
-#ifndef LM_VALUE__
-#define LM_VALUE__
+#ifndef LM_VALUE_H
+#define LM_VALUE_H
 
 #include "lm/model_type.hh"
 #include "lm/value_build.hh"
@@ -154,4 +154,4 @@ struct RestValue {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_VALUE__
+#endif // LM_VALUE_H

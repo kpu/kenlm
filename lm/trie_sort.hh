@@ -1,7 +1,7 @@
 // Step of trie builder: create sorted files.  
 
-#ifndef LM_TRIE_SORT__
-#define LM_TRIE_SORT__
+#ifndef LM_TRIE_SORT_H
+#define LM_TRIE_SORT_H
 
 #include "lm/max_order.hh"
 #include "lm/word_index.hh"
@@ -111,4 +111,4 @@ class SortedFiles {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_TRIE_SORT__
+#endif // LM_TRIE_SORT_H

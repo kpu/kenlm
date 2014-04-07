@@ -17,7 +17,11 @@
 #include <fcntl.h>
 #include <stdint.h>
 
-#if defined(_WIN32) || defined(_WIN64)
+#if defined __MINGW32__
+#include <windows.h>
+#include <unistd.h>
+#warning "The file functions on MinGW have not been tested for file sizes above 2^31 - 1.  Please read https://stackoverflow.com/questions/12539488/determine-64-bit-file-size-in-c-on-mingw-32-bit and fix"
+#elif defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #include <io.h>
 #include <algorithm>
@@ -76,7 +80,13 @@ int CreateOrThrow(const char *name) {
 }
 
 uint64_t SizeFile(int fd) {
-#if defined(_WIN32) || defined(_WIN64)
+#if defined __MINGW32__
+  struct stat sb;
+  // Does this handle 64-bit?
+  int ret = fstat(fd, &sb);
+  if (ret == -1 || (!sb.st_size && !S_ISREG(sb.st_mode))) return kBadSize;
+  return sb.st_size;
+#elif defined(_WIN32) || defined(_WIN64)
   __int64 ret = _filelengthi64(fd);
   return (ret == -1) ? kBadSize : ret;
 #else // Not windows.
@@ -100,7 +110,10 @@ uint64_t SizeOrThrow(int fd) {
 }
 
 void ResizeOrThrow(int fd, uint64_t to) {
-#if defined(_WIN32) || defined(_WIN64)
+#if defined __MINGW32__
+    // Does this handle 64-bit?
+    int ret = ftruncate
+#elif defined(_WIN32) || defined(_WIN64)
     errno_t ret = _chsize_s
 #elif defined(OS_ANDROID)
     int ret = ftruncate64
@@ -115,8 +128,10 @@ namespace {
 std::size_t GuardLarge(std::size_t size) {
   // The following operating systems have broken read/write/pread/pwrite that
   // only supports up to 2^31.
-#if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__) || defined(OS_ANDROID)
-  return std::min(static_cast<std::size_t>(static_cast<unsigned>(-1)), size);
+  // OS X man pages claim to support 64-bit, but Kareem M. Darwish had problems
+  // building with larger files, so APPLE is also here.
+#if defined(_WIN32) || defined(_WIN64) || defined(__APPLE__) || defined(OS_ANDROID) || defined(__MINGW32__)
+  return size < INT_MAX ? size : INT_MAX;
 #else
   return size;
 #endif
@@ -179,16 +194,15 @@ void PReadOrThrow(int fd, void *to_void, std::size_t size, uint64_t off) {
 #else
     ssize_t ret;
     errno = 0;
-    do {
-      ret =
+    ret =
 #ifdef OS_ANDROID
-        pread64
+      pread64
 #else
-        pread
+      pread
 #endif
-        (fd, to, GuardLarge(size), off);
-    } while (ret == -1 && errno == EINTR);
+      (fd, to, GuardLarge(size), off);
     if (ret <= 0) {
+      if (ret == -1 && errno == EINTR) continue;
       UTIL_THROW_IF(ret == 0, EndOfFileException, " for reading " << size << " bytes at " << off << " from " << NameFromFD(fd));
       UTIL_THROW_ARG(FDException, (fd), "while reading " << size << " bytes at offset " << off);
     }
@@ -251,7 +265,10 @@ typedef CheckOffT<sizeof(off_t)>::True IgnoredType;
 // Can't we all just get along?
 void InternalSeek(int fd, int64_t off, int whence) {
   if (
-#if defined(_WIN32) || defined(_WIN64)
+#if defined __MINGW32__
+    // Does this handle 64-bit?
+    (off_t)-1 == lseek(fd, off, whence)
+#elif defined(_WIN32) || defined(_WIN64)
     (__int64)-1 == _lseeki64(fd, off, whence)
 #elif defined(OS_ANDROID)
     (off64_t)-1 == lseek64(fd, off, whence)
@@ -427,8 +444,8 @@ void NormalizeTempPrefix(std::string &base) {
     ) base += '/';
 }
 
-int MakeTemp(const std::string &base) {
-  std::string name(base);
+int MakeTemp(const StringPiece &base) {
+  std::string name(base.data(), base.size());
   name += "XXXXXX";
   name.push_back(0);
   int ret;
@@ -436,7 +453,7 @@ int MakeTemp(const std::string &base) {
   return ret;
 }
 
-std::FILE *FMakeTemp(const std::string &base) {
+std::FILE *FMakeTemp(const StringPiece &base) {
   util::scoped_fd file(MakeTemp(base));
   return FDOpenOrThrow(file);
 }
@@ -462,14 +479,18 @@ bool TryName(int fd, std::string &out) {
   if (-1 == lstat(name.c_str(), &sb))
     return false;
   out.resize(sb.st_size + 1);
-  ssize_t ret = readlink(name.c_str(), &out[0], sb.st_size + 1);
-  if (-1 == ret)
-    return false;
-  if (ret > sb.st_size) {
-    // Increased in size?!
-    return false;
+  // lstat gave us a size, but I've seen it grow, possibly due to symlinks on top of symlinks.
+  while (true) {
+    ssize_t ret = readlink(name.c_str(), &out[0], out.size());
+    if (-1 == ret)
+      return false;
+    if ((size_t)ret < out.size()) {
+      out.resize(ret);
+      break;
+    }
+    // Exponential growth.
+    out.resize(out.size() * 2);
   }
-  out.resize(ret);
   // Don't use the non-file names.
   if (!out.empty() && out[0] != '/')
     return false;

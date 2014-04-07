@@ -1,5 +1,5 @@
-#ifndef LM_TRIE__
-#define LM_TRIE__
+#ifndef LM_TRIE_H
+#define LM_TRIE_H
 
 #include "lm/weights.hh"
 #include "lm/word_index.hh"
@@ -62,8 +62,6 @@ class Unigram {
       return unigram_;
     }
     
-    void LoadedBinary() {}
-
     UnigramPointer Find(WordIndex word, NodeRange &next) const {
       UnigramValue *val = unigram_ + word;
       next.begin = val->next;
@@ -108,8 +106,6 @@ template <class Bhiksha> class BitPackedMiddle : public BitPacked {
 
     void FinishedLoading(uint64_t next_end, const Config &config);
 
-    void LoadedBinary() { bhiksha_.LoadedBinary(); }
-
     util::BitAddress Find(WordIndex word, NodeRange &range, uint64_t &pointer) const;
 
     util::BitAddress ReadEntry(uint64_t pointer, NodeRange &range) {
@@ -138,18 +134,13 @@ class BitPackedLongest : public BitPacked {
       BaseInit(base, max_vocab, quant_bits);
     }
 
-    void LoadedBinary() {}
-
     util::BitAddress Insert(WordIndex word);
 
     util::BitAddress Find(WordIndex word, const NodeRange &node) const;
-
-  private:
-    uint8_t quant_bits_;
 };
 
 } // namespace trie
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_TRIE__
+#endif // LM_TRIE_H

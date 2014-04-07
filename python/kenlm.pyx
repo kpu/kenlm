@@ -36,9 +36,9 @@ cdef class LanguageModel:
         cdef State out_state
         cdef float total = 0
         for word in words:
-            total += self.model.Score(&state, self.vocab.Index(word), &out_state)
+            total += self.model.BaseScore(&state, self.vocab.Index(word), &out_state)
             state = out_state
-        total += self.model.Score(&state, self.vocab.EndSentence(), &out_state)
+        total += self.model.BaseScore(&state, self.vocab.EndSentence(), &out_state)
         return total
 
     def full_scores(self, sentence):
@@ -49,11 +49,11 @@ cdef class LanguageModel:
         cdef FullScoreReturn ret
         cdef float total = 0
         for word in words:
-            ret = self.model.FullScore(&state,
+            ret = self.model.BaseFullScore(&state,
                 self.vocab.Index(word), &out_state)
             yield (ret.prob, ret.ngram_length)
             state = out_state
-        ret = self.model.FullScore(&state,
+        ret = self.model.BaseFullScore(&state,
             self.vocab.EndSentence(), &out_state)
         yield (ret.prob, ret.ngram_length)
     

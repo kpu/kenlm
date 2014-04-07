@@ -1,7 +1,8 @@
-#ifndef LM_BUILDER_MULTI_STREAM__
-#define LM_BUILDER_MULTI_STREAM__
+#ifndef LM_BUILDER_MULTI_STREAM_H
+#define LM_BUILDER_MULTI_STREAM_H
 
 #include "lm/builder/ngram_stream.hh"
+#include "util/fixed_array.hh"
 #include "util/scoped.hh"
 #include "util/stream/chain.hh"
 
@@ -13,72 +14,9 @@
 
 namespace lm { namespace builder {
 
-template <class T> class FixedArray {
-  public:
-    explicit FixedArray(std::size_t count) {
-      Init(count);
-    }
-
-    FixedArray() : newed_end_(NULL) {}
-
-    void Init(std::size_t count) {
-      assert(!block_.get());
-      block_.reset(malloc(sizeof(T) * count));
-      if (!block_.get()) throw std::bad_alloc();
-      newed_end_ = begin();
-    }
-
-    FixedArray(const FixedArray &from) {
-      std::size_t size = from.newed_end_ - static_cast<const T*>(from.block_.get());
-      Init(size);
-      for (std::size_t i = 0; i < size; ++i) {
-        new(end()) T(from[i]);
-        Constructed();
-      }
-    }
-
-    ~FixedArray() { clear(); }
-
-    T *begin() { return static_cast<T*>(block_.get()); }
-    const T *begin() const { return static_cast<const T*>(block_.get()); }
-    // Always call Constructed after successful completion of new.  
-    T *end() { return newed_end_; }
-    const T *end() const { return newed_end_; }
-
-    T &back() { return *(end() - 1); }
-    const T &back() const { return *(end() - 1); }
-
-    std::size_t size() const { return end() - begin(); }
-    bool empty() const { return begin() == end(); }
-
-    T &operator[](std::size_t i) { return begin()[i]; }
-    const T &operator[](std::size_t i) const { return begin()[i]; }
-
-    template <class C> void push_back(const C &c) {
-      new (end()) T(c);
-      Constructed();
-    }
-
-    void clear() {
-      for (T *i = begin(); i != end(); ++i)
-        i->~T();
-      newed_end_ = begin();
-    }
-
-  protected:
-    void Constructed() {
-      ++newed_end_;
-    }
-
-  private:
-    util::scoped_malloc block_;
-
-    T *newed_end_;
-};
-
 class Chains;
 
-class ChainPositions : public FixedArray<util::stream::ChainPosition> {
+class ChainPositions : public util::FixedArray<util::stream::ChainPosition> {
   public:
     ChainPositions() {}
 
@@ -89,14 +27,14 @@ class ChainPositions : public FixedArray<util::stream::ChainPosition> {
     }
 };
 
-class Chains : public FixedArray<util::stream::Chain> {
+class Chains : public util::FixedArray<util::stream::Chain> {
   private:
     template <class T, void (T::*ptr)(const ChainPositions &) = &T::Run> struct CheckForRun {
       typedef Chains type;
     };
 
   public:
-    explicit Chains(std::size_t limit) : FixedArray<util::stream::Chain>(limit) {}
+    explicit Chains(std::size_t limit) : util::FixedArray<util::stream::Chain>(limit) {}
 
     template <class Worker> typename CheckForRun<Worker>::type &operator>>(const Worker &worker) {
       threads_.push_back(new util::stream::Thread(ChainPositions(*this), worker));
@@ -129,7 +67,7 @@ class Chains : public FixedArray<util::stream::Chain> {
 };
 
 inline void ChainPositions::Init(Chains &chains) {
-  FixedArray<util::stream::ChainPosition>::Init(chains.size());
+  util::FixedArray<util::stream::ChainPosition>::Init(chains.size());
   for (util::stream::Chain *i = chains.begin(); i != chains.end(); ++i) {
     new (end()) util::stream::ChainPosition(i->Add()); Constructed();
   }
@@ -140,13 +78,13 @@ inline Chains &operator>>(Chains &chains, ChainPositions &positions) {
   return chains;
 }
 
-class NGramStreams : public FixedArray<NGramStream> {
+class NGramStreams : public util::FixedArray<NGramStream> {
   public:
     NGramStreams() {}
 
     // This puts a dummy NGramStream at the beginning (useful to algorithms that need to reference something at the beginning).
     void InitWithDummy(const ChainPositions &positions) {
-      FixedArray<NGramStream>::Init(positions.size() + 1);
+      util::FixedArray<NGramStream>::Init(positions.size() + 1);
       new (end()) NGramStream(); Constructed();
       for (const util::stream::ChainPosition *i = positions.begin(); i != positions.end(); ++i) {
         push_back(*i);
@@ -155,7 +93,7 @@ class NGramStreams : public FixedArray<NGramStream> {
 
     // Limit restricts to positions[0,limit)
     void Init(const ChainPositions &positions, std::size_t limit) {
-      FixedArray<NGramStream>::Init(limit);
+      util::FixedArray<NGramStream>::Init(limit);
       for (const util::stream::ChainPosition *i = positions.begin(); i != positions.begin() + limit; ++i) {
         push_back(*i);
       }
@@ -177,4 +115,4 @@ inline Chains &operator>>(Chains &chains, NGramStreams &streams) {
 }
 
 }} // namespaces
-#endif // LM_BUILDER_MULTI_STREAM__
+#endif // LM_BUILDER_MULTI_STREAM_H

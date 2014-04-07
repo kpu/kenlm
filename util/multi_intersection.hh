@@ -1,5 +1,5 @@
-#ifndef UTIL_MULTI_INTERSECTION__
-#define UTIL_MULTI_INTERSECTION__
+#ifndef UTIL_MULTI_INTERSECTION_H
+#define UTIL_MULTI_INTERSECTION_H
 
 #include <boost/optional.hpp>
 #include <boost/range/iterator_range.hpp>
@@ -66,7 +66,7 @@ template <class Iterator, class Output, class Less> void AllIntersection(std::ve
 
   std::sort(sets.begin(), sets.end(), detail::RangeLessBySize<boost::iterator_range<Iterator> >());
   boost::optional<Value> ret;
-  for (boost::optional<Value> ret; ret = detail::FirstIntersectionSorted(sets, less); sets.front().advance_begin(1)) {
+  for (boost::optional<Value> ret; (ret = detail::FirstIntersectionSorted(sets, less)); sets.front().advance_begin(1)) {
     out(*ret);
   }
 }
@@ -77,4 +77,4 @@ template <class Iterator, class Output> void AllIntersection(std::vector<boost::
 
 } // namespace util
 
-#endif // UTIL_MULTI_INTERSECTION__
+#endif // UTIL_MULTI_INTERSECTION_H

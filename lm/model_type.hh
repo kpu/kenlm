@@ -1,5 +1,5 @@
-#ifndef LM_MODEL_TYPE__
-#define LM_MODEL_TYPE__
+#ifndef LM_MODEL_TYPE_H
+#define LM_MODEL_TYPE_H
 
 namespace lm {
 namespace ngram {
@@ -20,4 +20,4 @@ const static ModelType kArrayAdd = static_cast<ModelType>(ARRAY_TRIE - TRIE);
 
 } // namespace ngram
 } // namespace lm
-#endif // LM_MODEL_TYPE__
+#endif // LM_MODEL_TYPE_H
