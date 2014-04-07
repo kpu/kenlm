@@ -150,14 +150,13 @@ class AddRight {
       for(; in; ++out) {
         memcpy(&previous[0], in->begin(), size);
         uint64_t denominator = 0;
-
-        uint64_t denominatorCutoff = 0;
+        float discountSum = 0.0;
         
         uint64_t counts[4];
         memset(counts, 0, sizeof(counts));
         do {
           denominator += in->UnmarkedCount();
-          denominatorCutoff += in->CutoffCount();
+          discountSum += discount_.Apply(in->UnmarkedCount() - in->CutoffCount());
           
           //mjd: Verify this! According to Chen&Goodman based on counts not on cutoffs.
           ++counts[std::min(in->UnmarkedCount(), static_cast<uint64_t>(3))];
@@ -170,8 +169,7 @@ class AddRight {
           entry.gamma += discount_.Get(i) * static_cast<float>(counts[i]);
         }
 
-        entry.gamma += denominator - denominatorCutoff;
-
+        entry.gamma += discountSum;
         entry.gamma /= entry.denominator;
         
         if(pruning_) {
@@ -223,7 +221,7 @@ class MergeRight {
         
         do {
           Payload &pay = grams->Value();
-          pay.uninterp.prob = discount_.Apply(grams->CutoffCount()) / sums.denominator;
+          pay.uninterp.prob = discount_.Apply(grams->UnmarkedCount()) / sums.denominator;
           pay.uninterp.gamma = sums.gamma;
         } while (++grams && !memcmp(&previous[0], grams->begin(), size));
       }
