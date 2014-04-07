@@ -236,7 +236,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
 }
 
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<uint64_t> &counts_pruned, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary,
-                          util::FixedArray<util::stream::FileBuffer> &gammas, std::vector<uint64_t> &prune_thresholds) {
+                          util::FixedArray<util::stream::FileBuffer> &gammas, const std::vector<uint64_t> &prune_thresholds) {
   const PipelineConfig &config = master.Config();
   Chains second(config.order);
 
