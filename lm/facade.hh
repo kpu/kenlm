@@ -16,11 +16,6 @@ template <class Child, class StateT, class VocabularyT> class ModelFacade : publ
     typedef StateT State;
     typedef VocabularyT Vocabulary;
 
-    // Default Score function calls FullScore.  Model can override this.  
-    float Score(const State &in_state, const WordIndex new_word, State &out_state) const {
-      return static_cast<const Child*>(this)->FullScore(in_state, new_word, out_state).prob;
-    }
-
     /* Translate from void* to State */
     FullScoreReturn FullScore(const void *in_state, const WordIndex new_word, void *out_state) const {
       return static_cast<const Child*>(this)->FullScore(
@@ -28,6 +23,20 @@ template <class Child, class StateT, class VocabularyT> class ModelFacade : publ
           new_word,
           *reinterpret_cast<State*>(out_state));
     }
+
+    FullScoreReturn FullScoreForgotState(const WordIndex *context_rbegin, const WordIndex *context_rend, const WordIndex new_word, void *out_state) const {
+      return static_cast<const Child*>(this)->FullScoreForgotState(
+          context_rbegin,
+          context_rend,
+          new_word,
+          *reinterpret_cast<State*>(out_state));
+    }
+
+    // Default Score function calls FullScore.  Model can override this.  
+    float Score(const State &in_state, const WordIndex new_word, State &out_state) const {
+      return static_cast<const Child*>(this)->FullScore(in_state, new_word, out_state).prob;
+    }
+
     float Score(const void *in_state, const WordIndex new_word, void *out_state) const {
       return static_cast<const Child*>(this)->Score(
           *reinterpret_cast<const State*>(in_state),

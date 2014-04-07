@@ -1,5 +1,9 @@
 #include "lm/ngram_query.hh"
 
+#ifdef WITH_NPLM
+#include "lm/wrappers/nplm.hh"
+#endif
+
 int main(int argc, char *argv[]) {
   if (!(argc == 2 || (argc == 3 && !strcmp(argv[2], "null")))) {
     std::cerr << "KenLM was compiled with maximum order " << KENLM_MAX_ORDER << "." << std::endl;
@@ -35,6 +39,11 @@ int main(int argc, char *argv[]) {
           std::cerr << "Unrecognized kenlm model type " << model_type << std::endl;
           abort();
       }
+#ifdef WITH_NPLM
+    } else if (lm::np::Model::Recognize(argv[1])) {
+      lm::np::Model model(argv[1]);
+      Query(model, sentence_context, std::cin, std::cout);
+#endif
     } else {
       Query<ProbingModel>(argv[1], sentence_context, std::cin, std::cout);
     }
