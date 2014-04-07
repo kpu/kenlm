@@ -101,8 +101,8 @@ int main(int argc, char *argv[]) {
        uint64_t lower_threshold = 0;
        for (std::vector<uint64_t>::iterator it = pipeline.prune_thresholds.begin(); it != pipeline.prune_thresholds.end(); ++it)
            if (lower_threshold > *it) {
-               std::cerr << "Do not speciefie pruning threshold counts in decreasing order\n"
-              "Pruning counts threshold for lower n-grams is not allowed to be specified higher than for higher order n-grams" << std::endl;
+               std::cerr << "Do not specify pruning threshold counts in decreasing order\n"
+              "Pruning threshold for lower-order n-grams must be equal to or lower than for higher-order n-grams" << std::endl;
                return 1;
            } else lower_threshold = *it;
     } else {
