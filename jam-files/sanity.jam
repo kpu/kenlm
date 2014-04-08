@@ -169,11 +169,12 @@ rule boost ( min-version ) {
   #Are we linking static binaries against shared boost?
   boost-auto-shared = [ auto-shared "boost_program_options"$(boost-lib-version) : $(L-boost-search) ] ;
 
-  #See tools/build/v2/contrib/boost.jam in a boost distribution for a table of macros to define.   
-  boost-lib exception EXCEPTION_DYN_LINK ;
+  #See tools/build/v2/contrib/boost.jam in a boost distribution for a table of macros to define.
+  #boost_exception is static only and may not be needed just yet.
+  #boost-lib exception EXCEPTION_DYN_LINK ;
   boost-lib system SYSTEM_DYN_LINK ;
-  boost-lib thread THREAD_DYN_DLL : boost_system boost_exception ;
-  boost-lib program_options PROGRAM_OPTIONS_DYN_LINK : boost_exception ;
+  boost-lib thread THREAD_DYN_DLL : boost_system ;
+  boost-lib program_options PROGRAM_OPTIONS_DYN_LINK ;
   boost-lib unit_test_framework TEST_DYN_LINK ;
   boost-lib iostreams IOSTREAMS_DYN_LINK ;
   boost-lib filesystem FILE_SYSTEM_DYN_LINK ;
