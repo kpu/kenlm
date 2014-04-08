@@ -1,5 +1,5 @@
-#ifndef LM_FILTER_THREAD_H__
-#define LM_FILTER_THREAD_H__
+#ifndef LM_FILTER_THREAD_H
+#define LM_FILTER_THREAD_H
 
 #include "util/thread_pool.hh"
 
@@ -164,4 +164,4 @@ template <class Filter, class OutputBuffer, class RealOutput> class Controller :
 
 } // namespace lm
 
-#endif // LM_FILTER_THREAD_H__
+#endif // LM_FILTER_THREAD_H

@@ -1,6 +1,6 @@
 /* Optional packages.  You might want to integrate this with your build system e.g. config.h from ./configure. */
-#ifndef UTIL_HAVE__
-#define UTIL_HAVE__
+#ifndef UTIL_HAVE_H
+#define UTIL_HAVE_H
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -10,4 +10,4 @@
 //#define HAVE_ICU
 #endif
 
-#endif // UTIL_HAVE__
+#endif // UTIL_HAVE_H

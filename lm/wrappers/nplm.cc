@@ -13,7 +13,7 @@ namespace np {
 
 Vocabulary::Vocabulary(const nplm::vocabulary &vocab) 
   : base::Vocabulary(vocab.lookup_word("<s>"), vocab.lookup_word("</s>"), vocab.lookup_word("<unk>")),
-    vocab_(vocab) {}
+    vocab_(vocab), null_word_(vocab.lookup_word("<null>")) {}
 
 Vocabulary::~Vocabulary() {}
 
@@ -33,8 +33,11 @@ bool Model::Recognize(const std::string &name) {
   }
 } 
 
-Model::Model(const std::string &file) : base_instance_(new nplm::neuralLM(file)), vocab_(base_instance_->get_vocabulary()) {
+Model::Model(const std::string &file, std::size_t cache) 
+  : base_instance_(new nplm::neuralLM(file)), vocab_(base_instance_->get_vocabulary()), cache_size_(cache) {
   UTIL_THROW_IF(base_instance_->get_order() > NPLM_MAX_ORDER, util::Exception, "This NPLM has order " << (unsigned int)base_instance_->get_order() << " but the KenLM wrapper was compiled with " << NPLM_MAX_ORDER << ".  Change the defintion of NPLM_MAX_ORDER and recompile.");
+  // log10 compatible with backoff models.
+  base_instance_->set_log_base(10.0);
   State begin_sentence, null_context;
   std::fill(begin_sentence.words, begin_sentence.words + NPLM_MAX_ORDER - 1, base_instance_->lookup_word("<s>"));
   null_word_ = base_instance_->lookup_word("<null>");
@@ -50,6 +53,7 @@ FullScoreReturn Model::FullScore(const State &from, const WordIndex new_word, St
   if (!lm) {
     lm = new nplm::neuralLM(*base_instance_);
     backend_.reset(lm);
+    lm->set_cache(cache_size_);
   }
   // State is in natural word order.
   FullScoreReturn ret;

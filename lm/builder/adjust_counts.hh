@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_ADJUST_COUNTS__
-#define LM_BUILDER_ADJUST_COUNTS__
+#ifndef LM_BUILDER_ADJUST_COUNTS_H
+#define LM_BUILDER_ADJUST_COUNTS_H
 
 #include "lm/builder/discount.hh"
 #include "util/exception.hh"
@@ -43,5 +43,5 @@ class AdjustCounts {
 } // namespace builder
 } // namespace lm
 
-#endif // LM_BUILDER_ADJUST_COUNTS__
+#endif // LM_BUILDER_ADJUST_COUNTS_H
 

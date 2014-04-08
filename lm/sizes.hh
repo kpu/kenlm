@@ -1,5 +1,5 @@
-#ifndef LM_SIZES__
-#define LM_SIZES__
+#ifndef LM_SIZES_H
+#define LM_SIZES_H
 
 #include <vector>
 
@@ -14,4 +14,4 @@ void ShowSizes(const std::vector<uint64_t> &counts);
 void ShowSizes(const char *file, const lm::ngram::Config &config);
 
 }} // namespaces
-#endif // LM_SIZES__
+#endif // LM_SIZES_H

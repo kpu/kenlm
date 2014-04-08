@@ -1,5 +1,5 @@
-#ifndef UTIL_FILE_PIECE__
-#define UTIL_FILE_PIECE__
+#ifndef UTIL_FILE_PIECE_H
+#define UTIL_FILE_PIECE_H
 
 #include "util/ersatz_progress.hh"
 #include "util/exception.hh"
@@ -56,9 +56,32 @@ class FilePiece {
       return Consume(FindDelimiterOrEOF(delim));
     }
 
+    // Read word until the line or file ends.
+    bool ReadWordSameLine(StringPiece &to, const bool *delim = kSpaces) {
+      assert(delim[static_cast<unsigned char>('\n')]);
+      // Skip non-enter spaces.
+      for (; ; ++position_) {
+        if (position_ == position_end_) {
+          try {
+            Shift();
+          } catch (const util::EndOfFileException &e) { return false; }
+          // And break out at end of file.
+          if (position_ == position_end_) return false;
+        }
+        if (!delim[static_cast<unsigned char>(*position_)]) break;
+        if (*position_ == '\n') return false;
+      }
+      // We can't be at the end of file because there's at least one character open.
+      to = Consume(FindDelimiterOrEOF(delim));
+      return true;
+    }
+
     // Unlike ReadDelimited, this includes leading spaces and consumes the delimiter.
     // It is similar to getline in that way.
     StringPiece ReadLine(char delim = '\n');
+
+    // Doesn't throw EndOfFileException, just returns false.
+    bool ReadLineOrEOF(StringPiece &to, char delim = '\n');
 
     float ReadFloat();
     double ReadDouble();
@@ -132,4 +155,4 @@ class FilePiece {
 
 } // namespace util
 
-#endif // UTIL_FILE_PIECE__
+#endif // UTIL_FILE_PIECE_H

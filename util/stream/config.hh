@@ -1,5 +1,5 @@
-#ifndef UTIL_STREAM_CONFIG__
-#define UTIL_STREAM_CONFIG__
+#ifndef UTIL_STREAM_CONFIG_H
+#define UTIL_STREAM_CONFIG_H
 
 #include <cstddef>
 #include <string>
@@ -29,4 +29,4 @@ struct SortConfig {
 };
 
 }} // namespaces
-#endif // UTIL_STREAM_CONFIG__
+#endif // UTIL_STREAM_CONFIG_H

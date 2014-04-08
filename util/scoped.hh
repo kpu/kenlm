@@ -1,5 +1,5 @@
-#ifndef UTIL_SCOPED__
-#define UTIL_SCOPED__
+#ifndef UTIL_SCOPED_H
+#define UTIL_SCOPED_H
 /* Other scoped objects in the style of scoped_ptr. */
 
 #include "util/exception.hh"
@@ -101,4 +101,4 @@ template <class T> class scoped_ptr {
 
 } // namespace util
 
-#endif // UTIL_SCOPED__
+#endif // UTIL_SCOPED_H

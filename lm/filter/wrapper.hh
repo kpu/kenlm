@@ -1,5 +1,5 @@
-#ifndef LM_FILTER_WRAPPER_H__
-#define LM_FILTER_WRAPPER_H__
+#ifndef LM_FILTER_WRAPPER_H
+#define LM_FILTER_WRAPPER_H
 
 #include "util/string_piece.hh"
 
@@ -39,20 +39,18 @@ template <class FilterT> class ContextFilter {
     explicit ContextFilter(Filter &backend) : backend_(backend) {}
 
     template <class Output> void AddNGram(const StringPiece &ngram, const StringPiece &line, Output &output) {
-      pieces_.clear();
-      // TODO: this copy could be avoided by a lookahead iterator.
-      std::copy(util::TokenIter<util::SingleCharacter, true>(ngram, ' '), util::TokenIter<util::SingleCharacter, true>::end(), std::back_insert_iterator<std::vector<StringPiece> >(pieces_));
-      backend_.AddNGram(pieces_.begin(), pieces_.end() - !pieces_.empty(), line, output);
+      // Find beginning of string or last space.
+      const char *last_space;
+      for (last_space = ngram.data() + ngram.size() - 1; last_space > ngram.data() && *last_space != ' '; --last_space) {}
+      backend_.AddNGram(StringPiece(ngram.data(), last_space - ngram.data()), line, output);
     }
 
     void Flush() const {}
 
   private:
-    std::vector<StringPiece> pieces_;
-
     Filter backend_;
 };
 
 } // namespace lm
 
-#endif // LM_FILTER_WRAPPER_H__
+#endif // LM_FILTER_WRAPPER_H

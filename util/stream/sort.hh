@@ -15,8 +15,8 @@
  * sort.  Use a hash table for that.  
  */
 
-#ifndef UTIL_STREAM_SORT__
-#define UTIL_STREAM_SORT__
+#ifndef UTIL_STREAM_SORT_H
+#define UTIL_STREAM_SORT_H
 
 #include "util/stream/chain.hh"
 #include "util/stream/config.hh"
@@ -545,4 +545,4 @@ template <class Compare, class Combine> uint64_t BlockingSort(Chain &chain, cons
 } // namespace stream
 } // namespace util
 
-#endif // UTIL_STREAM_SORT__
+#endif // UTIL_STREAM_SORT_H

@@ -1,5 +1,5 @@
-#ifndef LM_QUANTIZE_H__
-#define LM_QUANTIZE_H__
+#ifndef LM_QUANTIZE_H
+#define LM_QUANTIZE_H
 
 #include "lm/blank.hh"
 #include "lm/config.hh"
@@ -18,12 +18,13 @@ namespace lm {
 namespace ngram {
 
 struct Config;
+class BinaryFormat;
 
 /* Store values directly and don't quantize. */
 class DontQuantize {
   public:
     static const ModelType kModelTypeAdd = static_cast<ModelType>(0);
-    static void UpdateConfigFromBinary(int, const std::vector<uint64_t> &, Config &) {}
+    static void UpdateConfigFromBinary(const BinaryFormat &, uint64_t, Config &) {}
     static uint64_t Size(uint8_t /*order*/, const Config &/*config*/) { return 0; }
     static uint8_t MiddleBits(const Config &/*config*/) { return 63; }
     static uint8_t LongestBits(const Config &/*config*/) { return 31; }
@@ -136,7 +137,7 @@ class SeparatelyQuantize {
   public:
     static const ModelType kModelTypeAdd = kQuantAdd;
 
-    static void UpdateConfigFromBinary(int fd, const std::vector<uint64_t> &counts, Config &config);
+    static void UpdateConfigFromBinary(const BinaryFormat &file, uint64_t offset, Config &config);
 
     static uint64_t Size(uint8_t order, const Config &config) {
       uint64_t longest_table = (static_cast<uint64_t>(1) << static_cast<uint64_t>(config.prob_bits)) * sizeof(float);
@@ -229,4 +230,4 @@ class SeparatelyQuantize {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_QUANTIZE_H__
+#endif // LM_QUANTIZE_H

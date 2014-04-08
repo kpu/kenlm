@@ -1,6 +1,6 @@
 /* Progress bar suitable for chains of workers */
-#ifndef UTIL_MULTI_PROGRESS__
-#define UTIL_MULTI_PROGRESS__
+#ifndef UTIL_STREAM_MULTI_PROGRESS_H
+#define UTIL_STREAM_MULTI_PROGRESS_H
 
 #include <boost/thread/mutex.hpp>
 
@@ -87,4 +87,4 @@ class WorkerProgress {
 
 }} // namespaces
 
-#endif // UTIL_MULTI_PROGRESS__
+#endif // UTIL_STREAM_MULTI_PROGRESS_H

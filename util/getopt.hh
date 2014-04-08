@@ -11,8 +11,8 @@ Code given out at the 1985 UNIFORUM conference in Dallas.
 #endif
 #ifndef __GNUC__
 
-#ifndef _WINGETOPT_H_
-#define _WINGETOPT_H_
+#ifndef UTIL_GETOPT_H
+#define UTIL_GETOPT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,6 +28,6 @@ extern int getopt(int argc, char **argv, char *opts);
 }
 #endif
 
-#endif  /* _GETOPT_H_ */
+#endif  /* UTIL_GETOPT_H */
 #endif  /* __GNUC__ */
 

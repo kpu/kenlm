@@ -204,7 +204,7 @@ class Master {
 
     Chains chains_;
     // Often only unigrams, but sometimes all orders.  
-    FixedArray<util::stream::FileBuffer> files_;
+    util::FixedArray<util::stream::FileBuffer> files_;
 };
 
 void CountText(int text_file /* input */, int vocab_file /* output */, Master &master, uint64_t &token_count, std::string &text_file_name) {
@@ -225,17 +225,18 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
   WordIndex type_count = config.vocab_estimate;
   util::FilePiece text(text_file, NULL, &std::cerr);
   text_file_name = text.FileName();
-  CorpusCount counter(text, vocab_file, token_count, type_count, chain.BlockSize() / chain.EntrySize());
+  CorpusCount counter(text, vocab_file, token_count, type_count, chain.BlockSize() / chain.EntrySize(), config.disallowed_symbol_action);
   chain >> boost::ref(counter);
 
   util::stream::Sort<SuffixOrder, AddCombiner> sorter(chain, config.sort, SuffixOrder(config.order), AddCombiner());
   chain.Wait(true);
+  std::cerr << "Unigram tokens " << token_count << " types " << type_count << std::endl;
   std::cerr << "=== 2/5 Calculating and sorting adjusted counts ===" << std::endl;
   master.InitForAdjust(sorter, type_count);
 }
 
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<uint64_t> &counts_pruned, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary,
-                          FixedArray<util::stream::FileBuffer> &gammas, std::vector<uint64_t> &prune_thresholds) {
+                          util::FixedArray<util::stream::FileBuffer> &gammas, const std::vector<uint64_t> &prune_thresholds) {
   const PipelineConfig &config = master.Config();
   Chains second(config.order);
 
@@ -261,7 +262,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
   master.SetupSorts(primary);
 }
 
-void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &master, Sorts<SuffixOrder> &primary, FixedArray<util::stream::FileBuffer> &gammas) {
+void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &master, Sorts<SuffixOrder> &primary, util::FixedArray<util::stream::FileBuffer> &gammas) {
   std::cerr << "=== 4/5 Calculating and writing order-interpolated probabilities ===" << std::endl;
   const PipelineConfig &config = master.Config();
   master.MaximumLazyInput(counts, primary);
@@ -279,7 +280,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
     gamma_chains.push_back(read_backoffs);
     gamma_chains.back() >> gammas[i].Source();
   }
-  master >> Interpolate(counts[0], ChainPositions(gamma_chains), config.prune_thresholds);
+  master >> Interpolate(std::max(master.Config().vocab_size_for_unk, counts[0] - 1 /* <s> is not included */), ChainPositions(gamma_chains), config.prune_thresholds);
   gamma_chains >> util::stream::kRecycle;
   master.BufferFinal(counts);
 }
@@ -316,7 +317,7 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
   master >> AdjustCounts(counts, counts_pruned, discounts, config.prune_thresholds);
 
   {
-    FixedArray<util::stream::FileBuffer> gammas;
+    util::FixedArray<util::stream::FileBuffer> gammas;
     Sorts<SuffixOrder> primary;
     InitialProbabilities(counts, counts_pruned, discounts, master, primary, gammas, config.prune_thresholds);
     InterpolateProbabilities(counts_pruned, master, primary, gammas);

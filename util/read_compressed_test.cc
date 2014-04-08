@@ -12,6 +12,23 @@
 
 #include <stdlib.h>
 
+#if defined __MINGW32__
+#include <time.h>
+#include <fcntl.h>
+
+#if !defined mkstemp
+// TODO insecure
+int mkstemp(char * stemplate)
+{
+    char *filename = mktemp(stemplate);
+    if (filename == NULL)
+        return -1;
+    return open(filename, O_RDWR | O_CREAT, 0600);
+}
+#endif
+
+#endif // defined
+
 namespace util {
 namespace {
 
@@ -93,6 +110,11 @@ BOOST_AUTO_TEST_CASE(ReadBZ) {
 #ifdef HAVE_XZLIB
 BOOST_AUTO_TEST_CASE(ReadXZ) {
   TestRandom("xz");
+}
+#endif
+
+#ifdef HAVE_ZLIB
+BOOST_AUTO_TEST_CASE(AppendGZ) {
 }
 #endif
 

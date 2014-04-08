@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_JOINT_ORDER__
-#define LM_BUILDER_JOINT_ORDER__
+#ifndef LM_BUILDER_JOINT_ORDER_H
+#define LM_BUILDER_JOINT_ORDER_H
 
 #include "lm/builder/multi_stream.hh"
 #include "lm/lm_exception.hh"
@@ -40,4 +40,4 @@ template <class Callback, class Compare> void JointOrder(const ChainPositions &p
 
 }} // namespaces
 
-#endif // LM_BUILDER_JOINT_ORDER__
+#endif // LM_BUILDER_JOINT_ORDER_H

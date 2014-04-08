@@ -1,8 +1,9 @@
-#ifndef LM_BUILDER_PIPELINE__
-#define LM_BUILDER_PIPELINE__
+#ifndef LM_BUILDER_PIPELINE_H
+#define LM_BUILDER_PIPELINE_H
 
 #include "lm/builder/initial_probabilities.hh"
 #include "lm/builder/header_info.hh"
+#include "lm/lm_exception.hh"
 #include "lm/word_index.hh"
 #include "util/stream/config.hh"
 #include "util/file_piece.hh"
@@ -34,6 +35,24 @@ struct PipelineConfig {
   // corresponding n-gram order
   std::vector<uint64_t> prune_thresholds; //mjd
   
+  /* Computing the perplexity of LMs with different vocabularies is hard.  For
+   * example, the lowest perplexity is attained by a unigram model that
+   * predicts p(<unk>) = 1 and has no other vocabulary.  Also, linearly
+   * interpolated models will sum to more than 1 because <unk> is duplicated
+   * (SRI just pretends p(<unk>) = 0 for these purposes, which makes it sum to
+   * 1 but comes with its own problems).  This option will make the vocabulary
+   * a particular size by replicating <unk> multiple times for purposes of
+   * computing vocabulary size.  It has no effect if the actual vocabulary is
+   * larger.  This parameter serves the same purpose as IRSTLM's "dub".
+   */
+  uint64_t vocab_size_for_unk;
+
+  /* What to do the first time <s>, </s>, or <unk> appears in the input.  If
+   * this is anything but THROW_UP, then the symbol will always be treated as
+   * whitespace.
+   */
+  WarningAction disallowed_symbol_action;
+
   const std::string &TempPrefix() const { return sort.temp_prefix; }
   std::size_t TotalMemory() const { return sort.total_memory; }
 };
@@ -42,4 +61,4 @@ struct PipelineConfig {
 void Pipeline(PipelineConfig config, int text_file, int out_arpa);
 
 }} // namespaces
-#endif // LM_BUILDER_PIPELINE__
+#endif // LM_BUILDER_PIPELINE_H

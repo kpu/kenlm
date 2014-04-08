@@ -2,6 +2,9 @@
  * Does not support many data types.  Currently, it's targeted at writing ARPA
  * files quickly.
  */
+#ifndef UTIL_FAKE_OFSTREAM_H
+#define UTIL_FAKE_OFSTREAM_H
+
 #include "util/double-conversion/double-conversion.h"
 #include "util/double-conversion/utils.h"
 #include "util/file.hh"
@@ -17,7 +20,8 @@ class FakeOFStream {
     static const std::size_t kOutBuf = 1048576;
 
     // Does not take ownership of out.
-    explicit FakeOFStream(int out)
+    // Allows default constructor, but must call SetFD.
+    explicit FakeOFStream(int out = -1)
       : buf_(util::MallocOrThrow(kOutBuf)),
         builder_(static_cast<char*>(buf_.get()), kOutBuf),
         // Mostly the default but with inf instead.  And no flags.
@@ -26,6 +30,11 @@ class FakeOFStream {
 
     ~FakeOFStream() {
       if (buf_.get()) Flush();
+    }
+
+    void SetFD(int to) {
+      if (builder_.position()) Flush();
+      fd_ = to;
     }
 
     FakeOFStream &operator<<(float value) {
@@ -92,3 +101,5 @@ class FakeOFStream {
 };
 
 } // namespace
+
+#endif

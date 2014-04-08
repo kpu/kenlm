@@ -1,5 +1,5 @@
-#ifndef LM_STATE__
-#define LM_STATE__
+#ifndef LM_STATE_H
+#define LM_STATE_H
 
 #include "lm/max_order.hh"
 #include "lm/word_index.hh"
@@ -91,7 +91,7 @@ inline uint64_t hash_value(const Left &left) {
 }
 
 struct ChartState {
-  bool operator==(const ChartState &other) {
+  bool operator==(const ChartState &other) const {
     return (right == other.right) && (left == other.left);
   }
 
@@ -102,7 +102,7 @@ struct ChartState {
   }
 
   bool operator<(const ChartState &other) const {
-    return Compare(other) == -1;
+    return Compare(other) < 0;
   }
 
   void ZeroRemaining() {
@@ -122,4 +122,4 @@ inline uint64_t hash_value(const ChartState &state) {
 } // namespace ngram
 } // namespace lm
 
-#endif // LM_STATE__
+#endif // LM_STATE_H

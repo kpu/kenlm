@@ -1,7 +1,8 @@
-#ifndef UTIL_FILE__
-#define UTIL_FILE__
+#ifndef UTIL_FILE_H
+#define UTIL_FILE_H
 
 #include "util/exception.hh"
+#include "util/string_piece.hh"
 
 #include <cstddef>
 #include <cstdio>
@@ -125,8 +126,8 @@ std::FILE *FDOpenReadOrThrow(scoped_fd &file);
 // Temporary files
 // Append a / if base is a directory.
 void NormalizeTempPrefix(std::string &base);
-int MakeTemp(const std::string &prefix);
-std::FILE *FMakeTemp(const std::string &prefix);
+int MakeTemp(const StringPiece &prefix);
+std::FILE *FMakeTemp(const StringPiece &prefix);
 
 // dup an fd.
 int DupOrThrow(int fd);
@@ -139,4 +140,4 @@ std::string NameFromFD(int fd);
 
 } // namespace util
 
-#endif // UTIL_FILE__
+#endif // UTIL_FILE_H

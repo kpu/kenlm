@@ -1,5 +1,5 @@
-#ifndef LM_ENUMERATE_VOCAB__
-#define LM_ENUMERATE_VOCAB__
+#ifndef LM_ENUMERATE_VOCAB_H
+#define LM_ENUMERATE_VOCAB_H
 
 #include "lm/word_index.hh"
 #include "util/string_piece.hh"
@@ -24,5 +24,5 @@ class EnumerateVocab {
 
 } // namespace lm
 
-#endif // LM_ENUMERATE_VOCAB__
+#endif // LM_ENUMERATE_VOCAB_H
 
