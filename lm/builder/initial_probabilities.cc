@@ -150,16 +150,23 @@ class AddRight {
       for(; in; ++out) {
         memcpy(&previous[0], in->begin(), size);
         uint64_t denominator = 0;
-        float discountSum = 0.0;
+        uint64_t normalizer = 0;
         
         uint64_t counts[4];
         memset(counts, 0, sizeof(counts));
         do {
           denominator += in->UnmarkedCount();
-          discountSum += discount_.Apply(in->UnmarkedCount() - in->CutoffCount());
           
-          //mjd: Verify this! According to Chen&Goodman based on counts not on cutoffs.
-          ++counts[std::min(in->UnmarkedCount(), static_cast<uint64_t>(3))];
+          // Collect unused probability mass from pruning.
+          // Becomes 0 for unpruned ngrams.
+          normalizer += in->UnmarkedCount() - in->CutoffCount();
+          
+          // Chen&Goodman do not mention counting based on cutoffs, but
+          // backoff becomes larger than 1 otherwise, so probably needs
+          // to count cutoffs. Counts normally without pruning.
+          if(in->CutoffCount() > 0)
+            ++counts[std::min(in->CutoffCount(), static_cast<uint64_t>(3))];
+        
         } while (++in && !memcmp(&previous[0], in->begin(), size));
         
         BufferEntry &entry = *reinterpret_cast<BufferEntry*>(out.Get());
@@ -169,7 +176,10 @@ class AddRight {
           entry.gamma += discount_.Get(i) * static_cast<float>(counts[i]);
         }
 
-        entry.gamma += discountSum;
+        
+        // Makes model sum to 1 with pruning (I hope).
+        entry.gamma += normalizer;
+        
         entry.gamma /= entry.denominator;
         
         if(pruning_) {
