@@ -28,7 +28,7 @@ void ReadEnd(util::FilePiece &in);
 
 extern const bool kARPASpaces[256];
 
-// Positive log probability warning.  
+// Positive log probability warning.
 class PositiveProbWarn {
   public:
     PositiveProbWarn() : action_(THROW_UP) {}
@@ -58,7 +58,6 @@ template <class Voc, class Weights> void Read1Gram(util::FilePiece &f, Voc &voca
   }
 }
 
-// Return true if a positive log probability came out.
 template <class Voc, class Weights> void Read1Grams(util::FilePiece &f, std::size_t count, Voc &vocab, Weights *unigrams, PositiveProbWarn &warn) {
   ReadNGramHeader(f, 1);
   for (std::size_t i = 0; i < count; ++i) {
@@ -67,7 +66,6 @@ template <class Voc, class Weights> void Read1Grams(util::FilePiece &f, std::siz
   vocab.FinishedLoading(unigrams);
 }
 
-// Return true if a positive log probability came out.
 template <class Voc, class Weights> void ReadNGram(util::FilePiece &f, const unsigned char n, const Voc &vocab, WordIndex *const reverse_indices, Weights &weights, PositiveProbWarn &warn) {
   try {
     weights.prob = f.ReadFloat();
