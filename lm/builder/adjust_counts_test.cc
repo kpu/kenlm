@@ -1,6 +1,6 @@
 #include "lm/builder/adjust_counts.hh"
 
-#include "lm/builder/multi_stream.hh"
+#include "lm/builder/ngram_stream.hh"
 #include "util/scoped.hh"
 
 #include <boost/thread/thread.hpp>

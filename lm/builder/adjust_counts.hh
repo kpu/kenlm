@@ -8,10 +8,10 @@
 
 #include <stdint.h>
 
+namespace util { namespace stream { class ChainPositions; } }
+
 namespace lm {
 namespace builder {
-
-class ChainPositions;
 
 class BadDiscountException : public util::Exception {
   public:
@@ -31,7 +31,7 @@ class AdjustCounts {
       : counts_(counts), counts_pruned_(counts_pruned), discounts_(discounts), prune_thresholds_(prune_thresholds)
     {}
 
-    void Run(const ChainPositions &positions);
+    void Run(const util::stream::ChainPositions &positions);
 
   private:
     std::vector<uint64_t> &counts_;

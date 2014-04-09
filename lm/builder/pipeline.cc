@@ -43,7 +43,7 @@ class Master {
 
     const PipelineConfig &Config() const { return config_; }
 
-    Chains &MutableChains() { return chains_; }
+    util::stream::Chains &MutableChains() { return chains_; }
 
     template <class T> Master &operator>>(const T &worker) {
       chains_ >> worker;
@@ -68,7 +68,7 @@ class Master {
     }
 
     // For initial probabilities, but this is generic.
-    void SortAndReadTwice(const std::vector<uint64_t> &counts, Sorts<ContextOrder> &sorts, Chains &second, util::stream::ChainConfig second_config) {
+    void SortAndReadTwice(const std::vector<uint64_t> &counts, Sorts<ContextOrder> &sorts, util::stream::Chains &second, util::stream::ChainConfig second_config) {
       // Do merge first before allocating chain memory.
       for (std::size_t i = 1; i < config_.order; ++i) {
         sorts[i - 1].Merge(0);
@@ -202,7 +202,7 @@ class Master {
 
     PipelineConfig config_;
 
-    Chains chains_;
+    util::stream::Chains chains_;
     // Often only unigrams, but sometimes all orders.  
     util::FixedArray<util::stream::FileBuffer> files_;
 };
@@ -238,7 +238,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<uint64_t> &counts_pruned, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary,
                           util::FixedArray<util::stream::FileBuffer> &gammas, const std::vector<uint64_t> &prune_thresholds) {
   const PipelineConfig &config = master.Config();
-  Chains second(config.order);
+  util::stream::Chains second(config.order);
 
   {
     Sorts<ContextOrder> sorts;
@@ -249,7 +249,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
     master.SortAndReadTwice(counts_pruned, sorts, second, config.initial_probs.adder_in);
   }
 
-  Chains gamma_chains(config.order);
+  util::stream::Chains gamma_chains(config.order);
   InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second, gamma_chains, prune_thresholds);
   // Don't care about gamma for 0.  
   gamma_chains[0] >> util::stream::kRecycle;
@@ -267,7 +267,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
   const PipelineConfig &config = master.Config();
   master.MaximumLazyInput(counts, primary);
 
-  Chains gamma_chains(config.order - 1);
+  util::stream::Chains gamma_chains(config.order - 1);
   for (std::size_t i = 0; i < config.order - 1; ++i) {
     util::stream::ChainConfig read_backoffs(config.read_backoffs);
 
@@ -280,7 +280,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
     gamma_chains.push_back(read_backoffs);
     gamma_chains.back() >> gammas[i].Source();
   }
-  master >> Interpolate(std::max(master.Config().vocab_size_for_unk, counts[0] - 1 /* <s> is not included */), ChainPositions(gamma_chains), config.prune_thresholds);
+  master >> Interpolate(std::max(master.Config().vocab_size_for_unk, counts[0] - 1 /* <s> is not included */), util::stream::ChainPositions(gamma_chains), config.prune_thresholds);
   gamma_chains >> util::stream::kRecycle;
   master.BufferFinal(counts);
 }

@@ -6,9 +6,10 @@
 
 #include <vector>
 
+namespace util { namespace stream { class Chains; } }
+
 namespace lm {
 namespace builder {
-class Chains;
 
 struct InitialProbabilitiesConfig {
   // These should be small buffers to keep the adder from getting too far ahead
@@ -26,7 +27,13 @@ struct InitialProbabilitiesConfig {
  *   The values are bare floats and should be buffered for interpolation to
  *   use.  
  */
-void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Chains &primary, Chains &second_in, Chains &gamma_out, const std::vector<uint64_t> &prune_thresholds);
+void InitialProbabilities(
+    const InitialProbabilitiesConfig &config,
+    const std::vector<Discount> &discounts,
+    util::stream::Chains &primary,
+    util::stream::Chains &second_in,
+    util::stream::Chains &gamma_out,
+    const std::vector<uint64_t> &prune_thresholds);
 
 } // namespace builder
 } // namespace lm

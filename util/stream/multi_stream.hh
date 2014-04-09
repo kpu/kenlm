@@ -1,10 +1,10 @@
-#ifndef LM_BUILDER_MULTI_STREAM_H
-#define LM_BUILDER_MULTI_STREAM_H
+#ifndef UTIL_STREAM_MULTI_STREAM_H
+#define UTIL_STREAM_MULTI_STREAM_H
 
-#include "lm/builder/ngram_stream.hh"
 #include "util/fixed_array.hh"
 #include "util/scoped.hh"
 #include "util/stream/chain.hh"
+#include "util/stream/stream.hh"
 
 #include <cstddef>
 #include <new>
@@ -12,7 +12,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-namespace lm { namespace builder {
+namespace util { namespace stream {
 
 class Chains;
 
@@ -78,41 +78,46 @@ inline Chains &operator>>(Chains &chains, ChainPositions &positions) {
   return chains;
 }
 
-class NGramStreams : public util::FixedArray<NGramStream> {
+template <class T> class GenericStreams : public util::FixedArray<T> {
+  private:
+    typedef util::FixedArray<T> P;
   public:
-    NGramStreams() {}
+    GenericStreams() {}
 
-    // This puts a dummy NGramStream at the beginning (useful to algorithms that need to reference something at the beginning).
+    // This puts a dummy T at the beginning (useful to algorithms that need to reference something at the beginning).
     void InitWithDummy(const ChainPositions &positions) {
-      util::FixedArray<NGramStream>::Init(positions.size() + 1);
-      new (end()) NGramStream(); Constructed();
+      P::Init(positions.size() + 1);
+      new (P::end()) T();
+      P::Constructed();
       for (const util::stream::ChainPosition *i = positions.begin(); i != positions.end(); ++i) {
-        push_back(*i);
+        P::push_back(*i);
       }
     }
 
     // Limit restricts to positions[0,limit)
     void Init(const ChainPositions &positions, std::size_t limit) {
-      util::FixedArray<NGramStream>::Init(limit);
+      P::Init(limit);
       for (const util::stream::ChainPosition *i = positions.begin(); i != positions.begin() + limit; ++i) {
-        push_back(*i);
+        P::push_back(*i);
       }
     }
     void Init(const ChainPositions &positions) {
       Init(positions, positions.size());
     }
 
-    NGramStreams(const ChainPositions &positions) {
+    GenericStreams(const ChainPositions &positions) {
       Init(positions);
     }
 };
 
-inline Chains &operator>>(Chains &chains, NGramStreams &streams) {
+template <class T> inline Chains &operator>>(Chains &chains, GenericStreams<T> &streams) {
   ChainPositions positions;
   chains >> positions;
   streams.Init(positions);
   return chains;
 }
 
+typedef GenericStreams<Stream> Streams;
+
 }} // namespaces
-#endif // LM_BUILDER_MULTI_STREAM_H
+#endif // UTIL_STREAM_MULTI_STREAM_H

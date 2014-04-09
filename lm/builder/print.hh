@@ -2,7 +2,7 @@
 #define LM_BUILDER_PRINT_H
 
 #include "lm/builder/ngram.hh"
-#include "lm/builder/multi_stream.hh"
+#include "lm/builder/ngram_stream.hh"
 #include "lm/builder/header_info.hh"
 #include "util/file.hh"
 #include "util/mmap.hh"
@@ -59,7 +59,7 @@ template <class V> class Print {
   public:
     explicit Print(const VocabReconstitute &vocab, std::ostream &to) : vocab_(vocab), to_(to) {}
 
-    void Run(const ChainPositions &chains) {
+    void Run(const util::stream::ChainPositions &chains) {
       NGramStreams streams(chains);
       for (NGramStream *s = streams.begin(); s != streams.end(); ++s) {
         DumpStream(*s);
@@ -92,7 +92,7 @@ class PrintARPA {
     // Takes ownership of out_fd upon Run().
     explicit PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> &counts, const HeaderInfo* header_info, int out_fd);
 
-    void Run(const ChainPositions &positions);
+    void Run(const util::stream::ChainPositions &positions);
 
   private:
     const VocabReconstitute &vocab_;

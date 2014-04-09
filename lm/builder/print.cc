@@ -42,7 +42,7 @@ PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t>
   util::WriteOrThrow(out_fd, as_string.data(), as_string.size());
 }
 
-void PrintARPA::Run(const ChainPositions &positions) {
+void PrintARPA::Run(const util::stream::ChainPositions &positions) {
   util::scoped_fd closer(out_fd_);
   UTIL_TIMER("(%w s) Wrote ARPA file\n");
   util::FakeOFStream out(out_fd_);

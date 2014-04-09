@@ -2,7 +2,7 @@
 
 #include "lm/builder/hash_gamma.hh"
 #include "lm/builder/joint_order.hh"
-#include "lm/builder/multi_stream.hh"
+#include "lm/builder/ngram_stream.hh"
 #include "lm/builder/sort.hh"
 #include "lm/lm_exception.hh"
 #include "util/fixed_array.hh"
@@ -15,7 +15,7 @@ namespace {
 
 class Callback {
   public:
-    Callback(float uniform_prob, const ChainPositions &backoffs, const std::vector<uint64_t>& prune_thresholds)
+    Callback(float uniform_prob, const util::stream::ChainPositions &backoffs, const std::vector<uint64_t> &prune_thresholds)
       : backoffs_(backoffs.size()), probs_(backoffs.size() + 2), prune_thresholds_(prune_thresholds) {
       probs_[0] = uniform_prob;
       for (std::size_t i = 0; i < backoffs.size(); ++i) {
@@ -82,13 +82,13 @@ class Callback {
 };
 } // namespace
 
-Interpolate::Interpolate(uint64_t vocab_size, const ChainPositions &backoffs, const std::vector<uint64_t>& prune_thresholds)
+Interpolate::Interpolate(uint64_t vocab_size, const util::stream::ChainPositions &backoffs, const std::vector<uint64_t>& prune_thresholds)
   : uniform_prob_(1.0 / static_cast<float>(vocab_size)), // Includes <unk> but excludes <s>.
     backoffs_(backoffs),
     prune_thresholds_(prune_thresholds) {}
 
 // perform order-wise interpolation
-void Interpolate::Run(const ChainPositions &positions) {
+void Interpolate::Run(const util::stream::ChainPositions &positions) {
   assert(positions.size() == backoffs_.size() + 1);
   Callback callback(uniform_prob_, backoffs_, prune_thresholds_);
   JointOrder<Callback, SuffixOrder>(positions, callback);

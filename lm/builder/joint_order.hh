@@ -1,14 +1,14 @@
 #ifndef LM_BUILDER_JOINT_ORDER_H
 #define LM_BUILDER_JOINT_ORDER_H
 
-#include "lm/builder/multi_stream.hh"
+#include "lm/builder/ngram_stream.hh"
 #include "lm/lm_exception.hh"
 
 #include <string.h>
 
 namespace lm { namespace builder {
 
-template <class Callback, class Compare> void JointOrder(const ChainPositions &positions, Callback &callback) {
+template <class Callback, class Compare> void JointOrder(const util::stream::ChainPositions &positions, Callback &callback) {
   // Allow matching to reference streams[-1].
   NGramStreams streams_with_dummy;
   streams_with_dummy.InitWithDummy(positions);

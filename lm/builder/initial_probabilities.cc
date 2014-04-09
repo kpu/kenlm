@@ -245,7 +245,13 @@ class MergeRight {
 
 } // namespace
 
-void InitialProbabilities(const InitialProbabilitiesConfig &config, const std::vector<Discount> &discounts, Chains &primary, Chains &second_in, Chains &gamma_out, const std::vector<uint64_t> &prune_thresholds) {
+void InitialProbabilities(
+    const InitialProbabilitiesConfig &config,
+    const std::vector<Discount> &discounts,
+    util::stream::Chains &primary,
+    util::stream::Chains &second_in,
+    util::stream::Chains &gamma_out,
+    const std::vector<uint64_t> &prune_thresholds) {
   for (size_t i = 0; i < primary.size(); ++i) {
     util::stream::ChainConfig gamma_config = config.adder_out;
     if(prune_thresholds[i] > 0)

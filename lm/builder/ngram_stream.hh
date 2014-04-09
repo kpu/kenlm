@@ -3,6 +3,7 @@
 
 #include "lm/builder/ngram.hh"
 #include "util/stream/chain.hh"
+#include "util/stream/multi_stream.hh"
 #include "util/stream/stream.hh"
 
 #include <cstddef>
@@ -50,6 +51,8 @@ inline util::stream::Chain &operator>>(util::stream::Chain &chain, NGramStream &
   str.Init(chain.Add());
   return chain;
 }
+
+typedef util::stream::GenericStreams<NGramStream> NGramStreams;
 
 }} // namespaces
 #endif // LM_BUILDER_NGRAM_STREAM_H
