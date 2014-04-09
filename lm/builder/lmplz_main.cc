@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
       ("verbose_header", po::bool_switch(&pipeline.verbose_header), "Add a verbose header to the ARPA file that includes information such as token count, smoothing type, etc.")
       ("text", po::value<std::string>(&text), "Read text from a file instead of stdin")
       ("arpa", po::value<std::string>(&arpa), "Write ARPA to a file instead of stdout")
-      ("prune,P", po::value<std::vector<std::string> >(&pruning)->multitoken(), "Prune n-grams with count less than or equal to the given threshold.  Specify one value for each order i.e. 0 0 1 to prune singleton trigrams and above.  The sequence of values must be non-decreasing and the last value applies to any remaining orders.  Unigram pruning is not implemented, so the first value must be zero.  Default is to not prune, which is equivalent to -prune 0.");
+      ("prune,P", po::value<std::vector<std::string> >(&pruning)->multitoken(), "Prune n-grams with count less than or equal to the given threshold.  Specify one value for each order i.e. 0 0 1 to prune singleton trigrams and above.  The sequence of values must be non-decreasing and the last value applies to any remaining orders.  Unigram pruning is not implemented, so the first value must be zero.  Default is to not prune, which is equivalent to --prune 0.");
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, options), vm);
 
