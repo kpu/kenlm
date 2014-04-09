@@ -8,6 +8,7 @@
 #include <cstddef>
 
 #include <assert.h>
+#include <stdlib.h>
 
 namespace util {
 
