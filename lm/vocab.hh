@@ -4,6 +4,7 @@
 #include "lm/enumerate_vocab.hh"
 #include "lm/lm_exception.hh"
 #include "lm/virtual_interface.hh"
+#include "util/murmur_hash.hh"
 #include "util/pool.hh"
 #include "util/probing_hash_table.hh"
 #include "util/sorted_uniform.hh"
@@ -104,17 +105,16 @@ class SortedVocabulary : public base::Vocabulary {
 
 #pragma pack(push)
 #pragma pack(4)
-struct ProbingVocabuaryEntry {
+struct ProbingVocabularyEntry {
   uint64_t key;
   WordIndex value;
 
   typedef uint64_t Key;
-  uint64_t GetKey() const {
-    return key;
-  }
+  uint64_t GetKey() const { return key; }
+  void SetKey(uint64_t to) { key = to; }
 
-  static ProbingVocabuaryEntry Make(uint64_t key, WordIndex value) {
-    ProbingVocabuaryEntry ret;
+  static ProbingVocabularyEntry Make(uint64_t key, WordIndex value) {
+    ProbingVocabularyEntry ret;
     ret.key = key;
     ret.value = value;
     return ret;
@@ -159,7 +159,7 @@ class ProbingVocabulary : public base::Vocabulary {
   private:
     void InternalFinishedLoading();
 
-    typedef util::ProbingHashTable<ProbingVocabuaryEntry, util::IdentityHash> Lookup;
+    typedef util::ProbingHashTable<ProbingVocabularyEntry, util::IdentityHash> Lookup;
 
     Lookup lookup_;
 
@@ -180,6 +180,36 @@ template <class Vocab> void CheckSpecials(const Config &config, const Vocab &voc
   if (vocab.BeginSentence() == vocab.NotFound()) MissingSentenceMarker(config, "<s>");
   if (vocab.EndSentence() == vocab.NotFound()) MissingSentenceMarker(config, "</s>");
 }
+
+class GrowableVocab {
+  public:
+    static std::size_t MemUsage(WordIndex content) {
+      return Lookup::MemUsage(content > 2 ? content : 2);
+    }
+
+    explicit GrowableVocab(WordIndex initial_size) : lookup_(initial_size) {}
+
+    WordIndex Index(const StringPiece &str) const {
+      Lookup::ConstIterator i;
+      return lookup_.Find(detail::HashForVocab(str), i) ? i->value : 0;
+    }
+
+    // To see if it was just added, compare with Size() before insertion.
+    WordIndex FindOrInsert(const StringPiece &word) {
+      ProbingVocabularyEntry entry = ProbingVocabularyEntry::Make(util::MurmurHashNative(word.data(), word.size()), Size());
+      Lookup::MutableIterator it;
+      lookup_.FindOrInsert(entry, it);
+      UTIL_THROW_IF(Size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh");
+      return it->value;
+    }
+
+    WordIndex Size() const { return lookup_.Size(); }
+
+  private:
+    typedef util::AutoProbing<ProbingVocabularyEntry, util::IdentityHash> Lookup;
+
+    Lookup lookup_;
+};
 
 } // namespace ngram
 } // namespace lm

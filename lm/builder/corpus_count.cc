@@ -2,6 +2,7 @@
 
 #include "lm/builder/ngram.hh"
 #include "lm/lm_exception.hh"
+#include "lm/vocab.hh"
 #include "lm/word_index.hh"
 #include "util/fake_ofstream.hh"
 #include "util/file.hh"
@@ -42,14 +43,11 @@ const float kProbingMultiplier = 1.5;
 class VocabHandout {
   public:
     static std::size_t MemUsage(WordIndex initial_guess) {
-      if (initial_guess < 2) initial_guess = 2;
-      return util::CheckOverflow(Table::Size(initial_guess, kProbingMultiplier));
+      return ngram::GrowableVocab::MemUsage(initial_guess);
     }
 
-    explicit VocabHandout(int fd, WordIndex initial_guess) :
-        table_backing_(util::CallocOrThrow(MemUsage(initial_guess))),
-        table_(table_backing_.get(), MemUsage(initial_guess)),
-        double_cutoff_(std::max<std::size_t>(initial_guess * 1.1, 1)),
+    VocabHandout(int fd, WordIndex initial_guess) :
+        backing_(initial_guess),
         word_list_(fd) {
       Lookup("<unk>"); // Force 0
       Lookup("<s>"); // Force 1
@@ -57,36 +55,20 @@ class VocabHandout {
     }
 
     WordIndex Lookup(const StringPiece &word) {
-      VocabEntry entry;
-      entry.key = util::MurmurHashNative(word.data(), word.size());
-      entry.value = table_.SizeNoSerialization();
-
-      Table::MutableIterator it;
-      if (table_.FindOrInsert(entry, it))
-        return it->value;
-      word_list_ << word << '\0';
-      UTIL_THROW_IF(Size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh.");
-      if (Size() >= double_cutoff_) {
-        table_backing_.call_realloc(table_.DoubleTo());
-        table_.Double(table_backing_.get());
-        double_cutoff_ *= 2;
+      WordIndex old_size = backing_.Size();
+      WordIndex got = backing_.FindOrInsert(word);
+      if (got == old_size) {
+        word_list_ << word << '\0';
       }
-      return entry.value;
+      return got;
     }
 
     WordIndex Size() const {
-      return table_.SizeNoSerialization();
+      return backing_.Size();
     }
 
   private:
-    // TODO: factor out a resizable probing hash table.
-    // TODO: use mremap on linux to get all zeros on resizes.
-    util::scoped_malloc table_backing_;
-
-    typedef util::ProbingHashTable<VocabEntry, util::IdentityHash> Table;
-    Table table_;
-
-    std::size_t double_cutoff_;
+    ngram::GrowableVocab backing_;
     
     util::FakeOFStream word_list_;
 };

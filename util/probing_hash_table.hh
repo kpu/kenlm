@@ -258,6 +258,10 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
   private:
     typedef ProbingHashTable<EntryT, HashT, EqualT> Backend;
   public:
+    static std::size_t MemUsage(std::size_t size, float multiplier = 1.5) {
+      return Backend::Size(size, multiplier);
+    }
+
     typedef EntryT Entry;
     typedef typename Entry::Key Key;
     typedef const Entry *ConstIterator;
