@@ -61,19 +61,21 @@ BOOST_AUTO_TEST_CASE(Simple) {
     util::stream::ChainConfig config;
     config.total_memory = 100;
     config.block_count = 1;
-    Chains chains(4);
+    util::stream::Chains chains(4);
     for (unsigned i = 0; i < 4; ++i) {
       config.entry_size = NGram::TotalSize(i + 1);
       chains.push_back(config);
     }
 
     chains[3] >> WriteInput();
-    ChainPositions for_adjust(chains);
+    util::stream::ChainPositions for_adjust(chains);
     for (unsigned i = 0; i < 4; ++i) {
       chains[i] >> boost::ref(outputs[i]);
     }
     chains >> util::stream::kRecycle;
-    BOOST_CHECK_THROW(AdjustCounts(counts, discount).Run(for_adjust), BadDiscountException);
+    std::vector<uint64_t> counts_pruned(4);
+    std::vector<uint64_t> prune_thresholds(4);
+    BOOST_CHECK_THROW(AdjustCounts(counts, counts_pruned, discount, prune_thresholds).Run(for_adjust), BadDiscountException);
   }
   BOOST_REQUIRE_EQUAL(4UL, counts.size());
   BOOST_CHECK_EQUAL(4UL, counts[0]);
