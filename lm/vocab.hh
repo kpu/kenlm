@@ -204,7 +204,7 @@ class GrowableVocab {
     WordIndex FindOrInsert(const StringPiece &word) {
       ProbingVocabularyEntry entry = ProbingVocabularyEntry::Make(util::MurmurHashNative(word.data(), word.size()), Size());
       Lookup::MutableIterator it;
-      if (lookup_.FindOrInsert(entry, it)) {
+      if (!lookup_.FindOrInsert(entry, it)) {
         word_list_ << word << '\0';
         UTIL_THROW_IF(Size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh");
       }
