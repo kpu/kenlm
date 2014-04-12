@@ -178,7 +178,7 @@ template <class Build, class Activate, class Store> void ReadNGrams(
   typename Store::Entry entry;
   std::vector<typename Value::Weights *> between;
   for (size_t i = 0; i < count; ++i) {
-    ReadNGram(f, n, vocab, &*vocab_ids.begin(), entry.value, warn);
+    ReadNGram(f, n, vocab, vocab_ids.rbegin(), entry.value, warn);
     build.SetRest(&*vocab_ids.begin(), n, entry.value);
 
     keys[0] = detail::CombineWordHash(static_cast<uint64_t>(vocab_ids.front()), vocab_ids[1]);

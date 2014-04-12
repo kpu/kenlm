@@ -38,41 +38,6 @@ struct VocabEntry {
 };
 #pragma pack(pop)
 
-const float kProbingMultiplier = 1.5;
-
-class VocabHandout {
-  public:
-    static std::size_t MemUsage(WordIndex initial_guess) {
-      return ngram::GrowableVocab::MemUsage(initial_guess);
-    }
-
-    VocabHandout(int fd, WordIndex initial_guess) :
-        backing_(initial_guess),
-        word_list_(fd) {
-      Lookup("<unk>"); // Force 0
-      Lookup("<s>"); // Force 1
-      Lookup("</s>"); // Force 2
-    }
-
-    WordIndex Lookup(const StringPiece &word) {
-      WordIndex old_size = backing_.Size();
-      WordIndex got = backing_.FindOrInsert(word);
-      if (got == old_size) {
-        word_list_ << word << '\0';
-      }
-      return got;
-    }
-
-    WordIndex Size() const {
-      return backing_.Size();
-    }
-
-  private:
-    ngram::GrowableVocab backing_;
-    
-    util::FakeOFStream word_list_;
-};
-
 class DedupeHash : public std::unary_function<const WordIndex *, bool> {
   public:
     explicit DedupeHash(std::size_t order) : size_(order * sizeof(WordIndex)) {}
@@ -108,6 +73,10 @@ struct DedupeEntry {
     return ret;
   }
 };
+
+
+// TODO: don't have this here, should be with probing hash table defaults?
+const float kProbingMultiplier = 1.5;
 
 typedef util::ProbingHashTable<DedupeEntry, DedupeHash, DedupeEquals> Dedupe;
 
@@ -202,7 +171,7 @@ float CorpusCount::DedupeMultiplier(std::size_t order) {
 }
 
 std::size_t CorpusCount::VocabUsage(std::size_t vocab_estimate) {
-  return VocabHandout::MemUsage(vocab_estimate);
+  return ngram::GrowableVocab::MemUsage(vocab_estimate);
 }
 
 CorpusCount::CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count, WordIndex &type_count, std::size_t entries_per_block, WarningAction disallowed_symbol)
@@ -228,10 +197,10 @@ namespace {
 } // namespace
 
 void CorpusCount::Run(const util::stream::ChainPosition &position) {
-  VocabHandout vocab(vocab_write_, type_count_);
+  ngram::GrowableVocab vocab(type_count_, vocab_write_);
   token_count_ = 0;
   type_count_ = 0;
-  const WordIndex end_sentence = vocab.Lookup("</s>");
+  const WordIndex end_sentence = vocab.FindOrInsert("</s>");
   Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_);
   uint64_t count = 0;
   bool delimiters[256];
@@ -241,7 +210,7 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
       StringPiece line(from_.ReadLine());
       writer.StartSentence();
       for (util::TokenIter<util::BoolCharacter, true> w(line, delimiters); w; ++w) {
-        WordIndex word = vocab.Lookup(*w);
+        WordIndex word = vocab.FindOrInsert(*w);
         if (word <= 2) {
           ComplainDisallowed(*w, disallowed_symbol_action_);
           continue;

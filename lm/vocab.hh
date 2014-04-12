@@ -4,6 +4,7 @@
 #include "lm/enumerate_vocab.hh"
 #include "lm/lm_exception.hh"
 #include "lm/virtual_interface.hh"
+#include "util/fake_ofstream.hh"
 #include "util/murmur_hash.hh"
 #include "util/pool.hh"
 #include "util/probing_hash_table.hh"
@@ -187,19 +188,26 @@ class GrowableVocab {
       return Lookup::MemUsage(content > 2 ? content : 2);
     }
 
-    explicit GrowableVocab(WordIndex initial_size) : lookup_(initial_size) {}
+    // Does not take ownership of write_wordi
+    explicit GrowableVocab(WordIndex initial_size, int write_words_fd)
+    : lookup_(initial_size), word_list_(write_words_fd) {
+      FindOrInsert("<unk>"); // Force 0
+      FindOrInsert("<s>"); // Force 1
+      FindOrInsert("</s>"); // Force 2
+    }
 
     WordIndex Index(const StringPiece &str) const {
       Lookup::ConstIterator i;
       return lookup_.Find(detail::HashForVocab(str), i) ? i->value : 0;
     }
 
-    // To see if it was just added, compare with Size() before insertion.
     WordIndex FindOrInsert(const StringPiece &word) {
       ProbingVocabularyEntry entry = ProbingVocabularyEntry::Make(util::MurmurHashNative(word.data(), word.size()), Size());
       Lookup::MutableIterator it;
-      lookup_.FindOrInsert(entry, it);
-      UTIL_THROW_IF(Size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh");
+      if (lookup_.FindOrInsert(entry, it)) {
+        word_list_ << word << '\0';
+        UTIL_THROW_IF(Size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh");
+      }
       return it->value;
     }
 
@@ -209,6 +217,8 @@ class GrowableVocab {
     typedef util::AutoProbing<ProbingVocabularyEntry, util::IdentityHash> Lookup;
 
     Lookup lookup_;
+
+    util::FakeOFStream word_list_;
 };
 
 } // namespace ngram

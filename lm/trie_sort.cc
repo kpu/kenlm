@@ -16,6 +16,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <deque>
+#include <iterator>
 #include <limits>
 #include <vector>
 
@@ -248,11 +249,13 @@ void SortedFiles::ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vo
     uint8_t *out_end = out + std::min(count - done, batch_size) * entry_size;
     if (order == counts.size()) {
       for (; out != out_end; out += entry_size) {
-        ReadNGram(f, order, vocab, reinterpret_cast<WordIndex*>(out), *reinterpret_cast<Prob*>(out + words_size), warn);
+        std::reverse_iterator<WordIndex*> it(reinterpret_cast<WordIndex*>(out) + order);
+        ReadNGram(f, order, vocab, it, *reinterpret_cast<Prob*>(out + words_size), warn);
       }
     } else {
       for (; out != out_end; out += entry_size) {
-        ReadNGram(f, order, vocab, reinterpret_cast<WordIndex*>(out), *reinterpret_cast<ProbBackoff*>(out + words_size), warn);
+        std::reverse_iterator<WordIndex*> it(reinterpret_cast<WordIndex*>(out) + order);
+        ReadNGram(f, order, vocab, it, *reinterpret_cast<ProbBackoff*>(out + words_size), warn);
       }
     }
     // Sort full records by full n-gram.  

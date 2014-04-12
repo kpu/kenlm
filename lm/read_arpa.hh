@@ -72,15 +72,16 @@ template <class Voc, class Weights> void Read1Grams(util::FilePiece &f, std::siz
   vocab.FinishedLoading(unigrams);
 }
 
-template <class Voc, class Weights> void ReadNGram(util::FilePiece &f, const unsigned char n, const Voc &vocab, WordIndex *const reverse_indices, Weights &weights, PositiveProbWarn &warn) {
+// Read ngram, write vocab ids to indices_out.
+template <class Voc, class Weights, class Iterator> void ReadNGram(util::FilePiece &f, const unsigned char n, const Voc &vocab, Iterator indices_out, Weights &weights, PositiveProbWarn &warn) {
   try {
     weights.prob = f.ReadFloat();
     if (weights.prob > 0.0) {
       warn.Warn(weights.prob);
       weights.prob = 0.0;
     }
-    for (WordIndex *vocab_out = reverse_indices + n - 1; vocab_out >= reverse_indices; --vocab_out) {
-      *vocab_out = vocab.Index(f.ReadDelimited(kARPASpaces));
+    for (unsigned char i = 0; i < n; ++i, ++indices_out) {
+      *indices_out = vocab.Index(f.ReadDelimited(kARPASpaces));
     }
     ReadBackoff(f, weights);
   } catch(util::Exception &e) {
