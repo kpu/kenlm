@@ -91,6 +91,11 @@ template <class Compare> class Sorts : public util::FixedArray<util::stream::Sor
     typedef util::FixedArray<S> P;
 
   public:
+    // Must call Init.
+    Sorts() {}
+
+    explicit Sorts(std::size_t number) : util::FixedArray<util::stream::Sort<Compare> >(number) {}
+
     void push_back(util::stream::Chain &chain, const util::stream::SortConfig &config, const Compare &compare) {
       new (P::end()) S(chain, config, compare);
       P::Constructed();

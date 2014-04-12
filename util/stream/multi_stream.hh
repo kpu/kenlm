@@ -34,6 +34,9 @@ class Chains : public util::FixedArray<util::stream::Chain> {
     };
 
   public:
+    // Must call Init.
+    Chains() {}
+
     explicit Chains(std::size_t limit) : util::FixedArray<util::stream::Chain>(limit) {}
 
     template <class Worker> typename CheckForRun<Worker>::type &operator>>(const Worker &worker) {

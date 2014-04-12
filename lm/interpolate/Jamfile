@@ -1,0 +1,4 @@
+#TODO split off streaming ngram stuff into a separate directory?
+fakelib interpolate : ../builder//builder [ glob *.cc : *_main.cc ] ;
+
+exe example_sort : interpolate example_sort_main.cc ;
