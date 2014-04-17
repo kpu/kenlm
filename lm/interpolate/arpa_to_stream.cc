@@ -12,7 +12,7 @@ ARPAToStream::ARPAToStream(int fd, ngram::GrowableVocab &vocab)
     
   // Read the ARPA file header.
   //
-  // After this call, counts_ will be correctly initialized,
+  // After the following call, counts_ will be correctly initialized,
   // and in_ will be positioned for reading the body of the ARPA file.  
   ReadARPACounts(in_, counts_);
   
