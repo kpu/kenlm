@@ -97,7 +97,7 @@ template <class Compare> class Sorts : public util::FixedArray<util::stream::Sor
     explicit Sorts(std::size_t number) : util::FixedArray<util::stream::Sort<Compare> >(number) {}
 
     void push_back(util::stream::Chain &chain, const util::stream::SortConfig &config, const Compare &compare) {
-      new (P::end()) S(chain, config, compare);
+      new (P::end()) S(chain, config, compare); // use "placement new" syntax to initalize S in an already-allocated memory location
       P::Constructed();
     }
 };

@@ -62,7 +62,7 @@ template <class T> class FixedArray {
     const T &operator[](std::size_t i) const { return begin()[i]; }
 
     template <class C> void push_back(const C &c) {
-      new (end()) T(c);
+      new (end()) T(c); // use "placement new" syntax to initalize T in an already-allocated memory location
       Constructed();
     }
 

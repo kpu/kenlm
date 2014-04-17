@@ -561,6 +561,7 @@ template <class Quant, class Bhiksha> uint8_t *TrieSearch<Quant, Bhiksha>::Setup
   }
   // Crazy backwards thing so we initialize using pointers to ones that have already been initialized
   for (unsigned char i = counts.size() - 1; i >= 2; --i) {
+    // use "placement new" syntax to initalize Middle in an already-allocated memory location
     new (middle_begin_ + i - 2) Middle(
         middle_starts[i-2],
         quant_.MiddleBits(config),
