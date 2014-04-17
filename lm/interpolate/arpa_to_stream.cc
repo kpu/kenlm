@@ -9,7 +9,13 @@ namespace lm { namespace interpolate {
 
 ARPAToStream::ARPAToStream(int fd, ngram::GrowableVocab &vocab)
   : in_(fd), vocab_(vocab) {
+    
+  // Read the ARPA file header.
+  //
+  // After this call, counts_ will be correctly initialized,
+  // and in_ will be positioned for reading the body of the ARPA file.  
   ReadARPACounts(in_, counts_);
+  
 }
 
 void ARPAToStream::Run(const util::stream::ChainPositions &positions) {
