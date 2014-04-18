@@ -4,12 +4,15 @@
 #include "lm/builder/sort.hh"
 #include "lm/vocab.hh"
 #include "util/file.hh"
+#include "util/unistd.hh"
 
-#include <unistd.h>
 
 int main() {
+  
+  // TODO: Make these all command-line parameters
   const std::size_t ONE_GB = 1 << 30;
   const std::size_t SIXTY_FOUR_MB = 1 << 26;
+  const std::size_t NUMBER_OF_BLOCKS = 2;
   
   util::scoped_fd vocab_file(util::MakeTemp("/tmp/"));
   std::vector<uint64_t> counts;
@@ -27,15 +30,25 @@ int main() {
       
       // The following call to chains.push_back() invokes the Chain constructor
       //     and appends the newly created Chain object to the chains array
-      chains.push_back(util::stream::ChainConfig(lm::builder::NGram::TotalSize(i + 1), 2, ONE_GB));
+      chains.push_back(util::stream::ChainConfig(lm::builder::NGram::TotalSize(i + 1), NUMBER_OF_BLOCKS, ONE_GB));
       
     }
     
-    
-    // After the following call to the << method of chains, 
+    // The following call to the >> method of chains
+    //    constructs a ChainPosition for each chain in chains using Chain::Add();
+    //    that function begins with a call to Chain::Start()
+    //    that allocates memory for the chain.
+    //
+    // After the following call to the >> method of chains, 
     //    a new thread will be running
     //    and will be executing the reader.Run() method
-    //    to read through the body of the ARPA file from standard input
+    //    to read through the body of the ARPA file from standard input.
+    //
+    // For each n-gram line in the ARPA file,
+    //    the thread executing reader.Run() 
+    //    will write the probability, the n-gram, and the backoff
+    //    to the appropriate location in the appropriate chain 
+    //    (for details, see the ReadNGram() method in read_arpa.hh).
     //
     // Normally >> copies then runs so inline >> works.  But here we want a ref.
     chains >> boost::ref(reader);
@@ -56,10 +69,11 @@ int main() {
       // After the construction of the Sort object,
       //    two new threads will be running (each owned by the chains[i] object).
       //
-      // The first new thread will sort the n-gram entries of order (i+1)
+      // The first new thread will execute BlockSorter.Run() to sort the n-gram entries of order (i+1)
       //    that were previously read into chains[i] by the ARPA input reader thread.
       //
-      // The second new thread will write temporary data to disk.
+      // The second new thread will execute WriteAndRecycle.Run() 
+      //    to write each sorted block of data to disk as a temporary file.
       sorts.push_back(chains[i], sort_config, lm::builder::SuffixOrder(i + 1));
 
     }
@@ -67,10 +81,23 @@ int main() {
     // Output to the same chains.
     for (std::size_t i = 0; i < reader.Order(); ++i) {
       
-      // TODO: Describe what this call does
+      // The following call to Chain::Wait()
+      //     joins the threads owned by chains[i].
+      //
+      // As such the following call won't return
+      //     until all threads owned by chains[i] have completed.
+      //
+      // The following call also resets chain[i]
+      //     so that it can be reused 
+      //     (including free'ing the memory previously used by the chain)
       chains[i].Wait();
       
       // TODO: Describe what this call does
+      // The following call performs merge sort (if needed)
+      //     then lazily writes output to chain[i].
+      //
+      // Merge sort can also be invoked directly
+      //     so that merge sort memory doesn't coexist with Chain memory.
       sorts[i].Output(chains[i]);
     }
     
@@ -84,10 +111,13 @@ int main() {
   
   // After the following call to the << method of chains,
   //    a new thread will be running
-  //    and will be executing the run() method of PrintARPA
+  //    and will be executing the Run() method of PrintARPA
   //    to print the final sorted ARPA file to standard output.
   chains >> lm::builder::PrintARPA(reconstitute, counts, NULL, STDOUT_FILENO);
   
-  // TODO: Describe what this call does
+  // Joins all threads that chains owns, 
+  //    and does a for loop over each chain object in chains,
+  //    calling chain.Wait() on each such chain object
   chains.Wait(true);
+  
 }
