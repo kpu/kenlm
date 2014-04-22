@@ -21,3 +21,5 @@ previous.sh
 jam-files/bjam
 jam-files/engine/bin.*/
 jam-files/engine/bootstrap/
+doc/
+._*
