@@ -56,6 +56,9 @@ class Stream : boost::noncopyable {
       end_ = current_ + block_it_->ValidSize();
     }
 
+    // The following are pointers to raw memory
+    // current_ is the current record
+    // end_ is the end of the block (so we know when to move to the next block)
     uint8_t *current_, *end_;
 
     std::size_t entry_size_;

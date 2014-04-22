@@ -92,11 +92,30 @@ int main() {
       //     (including free'ing the memory previously used by the chain)
       chains[i].Wait();
       
-      // TODO: Describe what this call does
-      // The following call performs merge sort (if needed)
-      //     then lazily writes output to chain[i].
+      
+      // In an ideal world (without memory restrictions)
+      //     we could merge all of the previously sorted blocks
+      //     by reading them all completely into memory
+      //     and then running merge sort over them.
       //
-      // Merge sort can also be invoked directly
+      // In the real world, we have memory restrictions;
+      //     depending on how many blocks we have,
+      //     and how much memory we can use to read from each block (sort_config.buffer_size)
+      //     it may be the case that we have insufficient memory 
+      //     to read sort_config.buffer_size of data from each block from disk.
+      //
+      // If this occurs, then it will be necessary to perform one or more rounds of merge sort on disk;
+      //     doing so will reduce the number of blocks that we will eventually need to read from
+      //     when performing the final round of merge sort in memory.
+      //
+      // So, the following call determines whether it is necessary
+      //     to perform one or more rounds of merge sort on disk;
+      //     if such on-disk merge sorting is required, such sorting is performed.
+      //
+      // Finally, the following method launches a thread that calls OwningMergingReader.Run()
+      //     to perform the final round of merge sort in memory.
+      //
+      // Merge sort could have be invoked directly
       //     so that merge sort memory doesn't coexist with Chain memory.
       sorts[i].Output(chains[i]);
     }
