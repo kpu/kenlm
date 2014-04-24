@@ -28,6 +28,20 @@ template <class Child> class Comparator : public std::binary_function<const void
     std::size_t order_;
 };
 
+/**
+ * N-gram comparator that compares n-grams according to their reverse (suffix) order.
+ *
+ * This comparator compares n-grams lexicographically, one word at a time, 
+ * beginning with the last word of each n-gram and ending with the first word of each n-gram. 
+ *
+ * Some examples of n-gram comparisons as defined by this comparator:
+ * - a b c == a b c
+ * - a b c < a b d
+ * - a b c > a d b
+ * - a b c > a b b
+ * - a b c > x a c
+ * - a b c < x y z
+ */
 class SuffixOrder : public Comparator<SuffixOrder> {
   public:
     explicit SuffixOrder(std::size_t order) : Comparator<SuffixOrder>(order) {}
@@ -43,6 +57,22 @@ class SuffixOrder : public Comparator<SuffixOrder> {
     static const unsigned kMatchOffset = 1;
 };
 
+  
+/**
+  * N-gram comparator that compares n-grams according to the reverse (suffix) order of the n-gram context.
+  *
+  * This comparator compares n-grams lexicographically, one word at a time, 
+  * beginning with the penultimate word of each n-gram and ending with the first word of each n-gram;
+  * finally, this comparator compares the last word of each n-gram.
+  *
+  * Some examples of n-gram comparisons as defined by this comparator:
+  * - a b c == a b c
+  * - a b c < a b d
+  * - a b c < a d b
+  * - a b c > a b b
+  * - a b c > x a c
+  * - a b c < x y z
+  */
 class ContextOrder : public Comparator<ContextOrder> {
   public:
     explicit ContextOrder(std::size_t order) : Comparator<ContextOrder>(order) {}
@@ -56,6 +86,20 @@ class ContextOrder : public Comparator<ContextOrder> {
     }
 };
 
+/**
+ * N-gram comparator that compares n-grams according to their natural (prefix) order.
+ *
+ * This comparator compares n-grams lexicographically, one word at a time, 
+ * beginning with the first word of each n-gram and ending with the last word of each n-gram.
+ *
+ * Some examples of n-gram comparisons as defined by this comparator:
+ * - a b c == a b c
+ * - a b c < a b d
+ * - a b c < a d b
+ * - a b c > a b b
+ * - a b c < x a c
+ * - a b c < x y z
+ */
 class PrefixOrder : public Comparator<PrefixOrder> {
   public:
     explicit PrefixOrder(std::size_t order) : Comparator<PrefixOrder>(order) {}
