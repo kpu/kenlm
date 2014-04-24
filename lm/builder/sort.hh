@@ -14,14 +14,34 @@
 namespace lm {
 namespace builder {
 
+/**
+ * Abstract parent class for defining custom n-gram comparators.
+ */
 template <class Child> class Comparator : public std::binary_function<const void *, const void *, bool> {
   public:
+  
+    /**
+     * Constructs a comparator capable of comparing two n-grams.
+     *
+     * @param order Number of words in each n-gram
+     */
     explicit Comparator(std::size_t order) : order_(order) {}
 
+    /**
+     * Applies the comparator using the Compare method that must be defined in any class that inherits from this class.
+     *
+     * @param lhs A pointer to the n-gram on the left-hand side of the comparison
+     * @param rhs A pointer to the n-gram on the right-hand side of the comparison
+     *
+     * @see ContextOrder::Compare
+     * @see PrefixOrder::Compare
+     * @see SuffixOrder::Compare
+     */
     inline bool operator()(const void *lhs, const void *rhs) const {
       return static_cast<const Child*>(this)->Compare(static_cast<const WordIndex*>(lhs), static_cast<const WordIndex*>(rhs));
     }
 
+    /** Gets the n-gram order defined for this comparator. */
     std::size_t Order() const { return order_; }
 
   protected:
@@ -44,8 +64,21 @@ template <class Child> class Comparator : public std::binary_function<const void
  */
 class SuffixOrder : public Comparator<SuffixOrder> {
   public:
+  
+    /** 
+     * Constructs a comparator capable of comparing two n-grams.
+     *
+     * @param order Number of words in each n-gram
+     */
     explicit SuffixOrder(std::size_t order) : Comparator<SuffixOrder>(order) {}
 
+    /**
+     * Compares two n-grams lexicographically, one word at a time, 
+     * beginning with the last word of each n-gram and ending with the first word of each n-gram.
+     *
+     * @param lhs A pointer to the n-gram on the left-hand side of the comparison
+     * @param rhs A pointer to the n-gram on the right-hand side of the comparison
+     */
     inline bool Compare(const WordIndex *lhs, const WordIndex *rhs) const {
       for (std::size_t i = order_ - 1; i != 0; --i) {
         if (lhs[i] != rhs[i])
@@ -75,8 +108,22 @@ class SuffixOrder : public Comparator<SuffixOrder> {
   */
 class ContextOrder : public Comparator<ContextOrder> {
   public:
+  
+    /** 
+     * Constructs a comparator capable of comparing two n-grams.
+     *
+     * @param order Number of words in each n-gram
+     */
     explicit ContextOrder(std::size_t order) : Comparator<ContextOrder>(order) {}
 
+    /**
+     * Compares two n-grams lexicographically, one word at a time, 
+     * beginning with the penultimate word of each n-gram and ending with the first word of each n-gram;
+     * finally, this comparator compares the last word of each n-gram.
+     *
+     * @param lhs A pointer to the n-gram on the left-hand side of the comparison
+     * @param rhs A pointer to the n-gram on the right-hand side of the comparison
+     */
     inline bool Compare(const WordIndex *lhs, const WordIndex *rhs) const {
       for (int i = order_ - 2; i >= 0; --i) {
         if (lhs[i] != rhs[i])
@@ -102,8 +149,21 @@ class ContextOrder : public Comparator<ContextOrder> {
  */
 class PrefixOrder : public Comparator<PrefixOrder> {
   public:
+  
+    /** 
+     * Constructs a comparator capable of comparing two n-grams.
+     *
+     * @param order Number of words in each n-gram
+     */
     explicit PrefixOrder(std::size_t order) : Comparator<PrefixOrder>(order) {}
 
+    /**
+     * Compares two n-grams lexicographically, one word at a time, 
+     * beginning with the first word of each n-gram and ending with the last word of each n-gram.
+     *
+     * @param lhs A pointer to the n-gram on the left-hand side of the comparison
+     * @param rhs A pointer to the n-gram on the right-hand side of the comparison
+     */
     inline bool Compare(const WordIndex *lhs, const WordIndex *rhs) const {
       for (std::size_t i = 0; i < order_; ++i) {
         if (lhs[i] != rhs[i])
@@ -128,18 +188,50 @@ struct AddCombiner {
 };
 
 // The combiner is only used on a single chain, so I didn't bother to allow
-// that template.  
+// that template.
+/**
+ * Represents an @ref util::FixedArray "array" capable of storing @ref util::stream::Sort "Sort" objects.
+ *
+ * In the anticipated use case, an instance of this class will maintain one @ref util::stream::Sort "Sort" object
+ * for each n-gram order (ranging from 1 up to the maximum n-gram order being processed).
+ * Use in this manner would enable the n-grams each n-gram order to be sorted, in parallel.
+ *
+ * @tparam Compare An @ref Comparator "ngram comparator" to use during sorting.
+ */
 template <class Compare> class Sorts : public util::FixedArray<util::stream::Sort<Compare> > {
   private:
     typedef util::stream::Sort<Compare> S;
     typedef util::FixedArray<S> P;
 
   public:
-    // Must call Init.
+  
+    /**
+     * Constructs, but does not initialize.
+     * 
+     * @ref util::FixedArray::Init() "Init" must be called before use.
+     *
+     * @see util::FixedArray::Init()
+     */
     Sorts() {}
 
+    /**
+     * Constructs an @ref util::FixedArray "array" capable of storing a fixed number of @ref util::stream::Sort "Sort" objects.
+     *
+     * @param number The maximum number of @ref util::stream::Sort "sorters" that can be held by this @ref util::FixedArray "array"
+     * @see util::FixedArray::FixedArray()
+     */
     explicit Sorts(std::size_t number) : util::FixedArray<util::stream::Sort<Compare> >(number) {}
 
+    /** 
+     * Constructs a new @ref util::stream::Sort "Sort" object which is stored in this @ref util::FixedArray "array".
+     *
+     * The new @ref util::stream::Sort "Sort" object is constructed using the provided @ref util::stream::SortConfig "SortConfig" and @ref Comparator "ngram comparator";
+     * once constructed, a new worker @ref util::stream::Thread "thread" (owned by the @ref util::stream::Chain "chain") will sort the n-gram data stored
+     * in the @ref util::stream::Block "blocks" of the provided @ref util::stream::Chain "chain".
+     *
+     * @see util::stream::Sort::Sort()
+     * @see util::stream::Chain::operator>>()
+     */
     void push_back(util::stream::Chain &chain, const util::stream::SortConfig &config, const Compare &compare) {
       new (P::end()) S(chain, config, compare); // use "placement new" syntax to initalize S in an already-allocated memory location
       P::Constructed();
