@@ -55,7 +55,7 @@ class Block {
     }
 
     /**
-     * Returns true if this block encapsulates a valid block of memory.
+     * Returns true if this block encapsulates a valid (non-NULL) block of memory.
      * 
      * This method is a user-defined implicit conversion function to boolean;
      * among other things, this method enables bare instances of this class 
@@ -72,6 +72,12 @@ class Block {
  
   private:
     friend class Link;
+  
+    /**
+     * Points this block's memory at NULL.
+     *
+     * This class defines poison as a block whose memory pointer is NULL.
+     */
     void SetToPoison() {
       mem_ = NULL;
     }
