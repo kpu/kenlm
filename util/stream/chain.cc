@@ -126,7 +126,12 @@ Link::~Link() {
 //    abort();
   } else {
     if (!poisoned_) {
-      // Pass the poison!
+      // Poison is a block whose memory pointer is NULL.
+      //
+      // Because we're in the else block,
+      //   we know that the memory pointer of current_ is NULL.
+      //
+      // Pass the current (poison) block!
       out_->Produce(current_);
     }
   }
