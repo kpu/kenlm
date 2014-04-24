@@ -388,8 +388,10 @@ class BadSortConfig : public Exception {
     ~BadSortConfig() throw() {}
 };
 
+/** Foo */
 template <class Compare, class Combine = NeverCombine> class Sort {
   public:
+    /** Bar */
     Sort(Chain &in, const SortConfig &config, const Compare &compare = Compare(), const Combine &combine = Combine())
       : config_(config),
         data_(MakeTemp(config.temp_prefix)),
