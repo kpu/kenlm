@@ -46,7 +46,7 @@ class ChainPosition {
     WorkerProgress progress_;
 };
 
-//   
+ 
 /**
  * Encapsulates a worker thread processing data at a given position in the chain.
  *
