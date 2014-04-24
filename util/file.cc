@@ -5,28 +5,29 @@
 
 #include "util/exception.hh"
 
+#include <algorithm>
 #include <cstdlib>
 #include <cstdio>
-#include <sstream>
 #include <iostream>
+#include <limits>
+#include <sstream>
+
 
 #include <assert.h>
 #include <errno.h>
+#include <limits.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdint.h>
 
-#if defined __MINGW32__
+#if defined(__MINGW32__)
 #include <windows.h>
 #include <unistd.h>
 #warning "The file functions on MinGW have not been tested for file sizes above 2^31 - 1.  Please read https://stackoverflow.com/questions/12539488/determine-64-bit-file-size-in-c-on-mingw-32-bit and fix"
 #elif defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #include <io.h>
-#include <algorithm>
-#include <limits.h>
-#include <limits>
 #else
 #include <unistd.h>
 #endif
