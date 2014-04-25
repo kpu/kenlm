@@ -25,10 +25,10 @@ class Callback {
         full_backoffs_.push_back(backoffs[i]);
       }
       util::stream::ChainConfig write_qs;
-      write_qs.entry_size = 4;
       write_qs.total_memory = 1048576;
       write_qs.block_count = 2;
       for (std::size_t i = 0; i < backoffs.size() + 1; ++i) {
+        write_qs.entry_size = (i + 1) * sizeof(WordIndex) + 4;
         std::string file("q");
         file += boost::lexical_cast<std::string>(i + 1);
         q_files_.push_back(util::CreateOrThrow(file.c_str()));
@@ -74,8 +74,10 @@ class Callback {
         // Not a context.  
         pay.complete.backoff = ngram::kNoExtensionBackoff;
       }
-      // Write the q value ot to a stream.
-      *static_cast<float*>(q_out_[order_minus_1].Get()) = q_delta_[order_minus_1] * actual_prob;
+      // Write the q value to a stream with n-grams.
+      std::size_t gram_size = sizeof(WordIndex) * gram.Order();
+      memcpy(q_out_[order_minus_1].Get(), gram.begin(), gram_size);
+      *reinterpret_cast<float*>(static_cast<uint8_t*>(q_out_[order_minus_1].Get()) + gram_size) = q_delta_[order_minus_1] * actual_prob;
       ++q_out_[order_minus_1];
       binarize_.Enter(order_minus_1, gram);
     }
