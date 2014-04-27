@@ -87,7 +87,7 @@ class Thread {
 };
 
 /**
- * Represents a chain worker capable of resetting the blocks in a chain.
+ * This resets blocks to full valid size.  Used to close the loop in Chain by recycling blocks.
  */
 class Recycler {
   public:
@@ -102,7 +102,7 @@ class Recycler {
 
 extern const Recycler kRecycle;
 class WriteAndRecycle;
-
+class PWriteAndRecycle;
   
 /**
  * Represents a sequence of workers, through which @ref Block "blocks" can pass.
@@ -209,6 +209,7 @@ class Chain {
      * and runs that worker in a new Thread owned by this chain.
      */
     Chain &operator>>(const WriteAndRecycle &writer);
+    Chain &operator>>(const PWriteAndRecycle &writer);
 
     // Chains are reusable.  Call Wait to wait for everything to finish and free memory.  
     void Wait(bool release_memory = true);

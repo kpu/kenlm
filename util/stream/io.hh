@@ -41,6 +41,8 @@ class Write {
     int file_;
 };
 
+// It's a common case that stuff is written and then recycled.  So rather than
+// spawn another thread to Recycle, this combines the two roles.
 class WriteAndRecycle {
   public:
     explicit WriteAndRecycle(int fd) : file_(fd) {}
@@ -49,14 +51,23 @@ class WriteAndRecycle {
     int file_;
 };
 
+class PWriteAndRecycle {
+  public:
+    explicit PWriteAndRecycle(int fd) : file_(fd) {}
+    void Run(const ChainPosition &position);
+  private:
+    int file_;
+};
+
+
 // Reuse the same file over and over again to buffer output.  
 class FileBuffer {
   public:
     explicit FileBuffer(int fd) : file_(fd) {}
 
-    WriteAndRecycle Sink() const {
+    PWriteAndRecycle Sink() const {
       util::SeekOrThrow(file_.get(), 0);
-      return WriteAndRecycle(file_.get());
+      return PWriteAndRecycle(file_.get());
     }
 
     PRead Source() const {
