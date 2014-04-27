@@ -47,7 +47,7 @@ class Callback {
 
         if(prune_thresholds_[order_minus_1 + 1] > 0) {
           //Compute hash value for current context
-          uint64_t current_hash = util::MurmurHashNative(gram.begin(), gram.Order());
+          uint64_t current_hash = util::MurmurHashNative(gram.begin(), gram.Order() * sizeof(WordIndex));
           
           const HashGamma *hashed_backoff = static_cast<const HashGamma*>(backoffs_[order_minus_1].Get());
           while(backoffs_[order_minus_1] && current_hash != hashed_backoff->hash_value) {

@@ -146,9 +146,12 @@ class AddRight {
       util::stream::Stream out(output);
 
       std::vector<WordIndex> previous(in->Order() - 1);
+      // Silly windows requires this workaround to just get an invalid pointer when empty.
+      void *const previous_raw = previous.empty() ? NULL : static_cast<void*>(&previous[0]);
       const std::size_t size = sizeof(WordIndex) * previous.size();
+
       for(; in; ++out) {
-        memcpy(&previous[0], in->begin(), size);
+        memcpy(previous_raw, in->begin(), size);
         uint64_t denominator = 0;
         uint64_t normalizer = 0;
         
@@ -167,7 +170,7 @@ class AddRight {
           if(in->CutoffCount() > 0)
             ++counts[std::min(in->CutoffCount(), static_cast<uint64_t>(3))];
         
-        } while (++in && !memcmp(&previous[0], in->begin(), size));
+        } while (++in && !memcmp(previous_raw, in->begin(), size));
         
         BufferEntry &entry = *reinterpret_cast<BufferEntry*>(out.Get());
         entry.denominator = static_cast<float>(denominator);
@@ -176,7 +179,6 @@ class AddRight {
           entry.gamma += discount_.Get(i) * static_cast<float>(counts[i]);
         }
 
-        
         // Makes model sum to 1 with pruning (I hope).
         entry.gamma += normalizer;
         
@@ -185,7 +187,7 @@ class AddRight {
         if(pruning_) {
           // If pruning is enabled the stream actually contains HashBufferEntry, see InitialProbabilities(...),
           // so add a hash value that identifies the current ngram.
-          static_cast<HashBufferEntry*>(&entry)->hash_value = util::MurmurHashNative(previous.data(), previous.size());
+          static_cast<HashBufferEntry*>(&entry)->hash_value = util::MurmurHashNative(previous_raw, size);
         }
       }
       out.Poison();
@@ -265,8 +267,8 @@ void InitialProbabilities(
     gamma_out[i] >> AddRight(discounts[i], second, prune_thresholds[i] > 0);
 
     primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i]);
+
     // Don't bother with the OnlyGamma thread for something to discard.
-    
     if (i) gamma_out[i] >> OnlyGamma(prune_thresholds[i] > 0);
   }
 }
