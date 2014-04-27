@@ -149,7 +149,7 @@ void BinaryFormat::InitializeBinary(int fd, ModelType model_type, unsigned int s
 
 void BinaryFormat::ReadForConfig(void *to, std::size_t amount, uint64_t offset_excluding_header) const {
   assert(header_size_ != kInvalidSize);
-  util::PReadOrThrow(file_.get(), to, amount, offset_excluding_header + header_size_);
+  util::ErsatzPRead(file_.get(), to, amount, offset_excluding_header + header_size_);
 }
 
 void *BinaryFormat::LoadBinary(std::size_t size) {

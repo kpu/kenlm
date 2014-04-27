@@ -107,11 +107,19 @@ void ResizeOrThrow(int fd, uint64_t to);
 std::size_t PartialRead(int fd, void *to, std::size_t size);
 void ReadOrThrow(int fd, void *to, std::size_t size);
 std::size_t ReadOrEOF(int fd, void *to_void, std::size_t size);
-// Positioned: unix only for now.  
-void PReadOrThrow(int fd, void *to, std::size_t size, uint64_t off);
 
 void WriteOrThrow(int fd, const void *data_void, std::size_t size);
 void WriteOrThrow(FILE *to, const void *data, std::size_t size);
+
+/* These call pread/pwrite in a loop.  However, on Windows they call ReadFile/
+ * WriteFile which changes the file pointer.  So it's safe to call ErsatzPRead
+ * and ErsatzPWrite concurrently (or any combination thereof).  But it changes
+ * the file pointer on windows, so it's not safe to call concurrently with
+ * anything that uses the implicit file pointer e.g. the Read/Write functions
+ * above.
+ */
+void ErsatzPRead(int fd, void *to, std::size_t size, uint64_t off);
+void ErsatzPWrite(int fd, const void *data_void, std::size_t size, uint64_t off);
 
 void FSyncOrThrow(int fd);
 

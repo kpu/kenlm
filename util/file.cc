@@ -175,13 +175,44 @@ std::size_t ReadOrEOF(int fd, void *to_void, std::size_t amount) {
   return amount;
 }
 
-void PReadOrThrow(int fd, void *to_void, std::size_t size, uint64_t off) {
-  uint8_t *to = static_cast<uint8_t*>(to_void);
+void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
+  const uint8_t *data = static_cast<const uint8_t*>(data_void);
+  while (size) {
 #if defined(_WIN32) || defined(_WIN64)
-  UTIL_THROW(Exception, "This pread implementation for windows is broken.  Please send me a patch that does not change the file pointer.  Atomically.  Or send me an implementation of pwrite that is allowed to change the file pointer but can be called concurrently with pread.");
-  const std::size_t kMaxDWORD = static_cast<std::size_t>(4294967295UL);
+    int ret;
+#else
+    ssize_t ret;
 #endif
-  for (;size ;) {
+    errno = 0;
+    do {
+      ret =
+#if defined(_WIN32) || defined(_WIN64)
+        _write
+#else
+        write
+#endif
+        (fd, data, GuardLarge(size));
+    } while (ret == -1 && errno == EINTR);
+    UTIL_THROW_IF_ARG(ret < 1, FDException, (fd), "while writing " << size << " bytes");
+    data += ret;
+    size -= ret;
+  }
+}
+
+void WriteOrThrow(FILE *to, const void *data, std::size_t size) {
+  if (!size) return;
+  UTIL_THROW_IF(1 != std::fwrite(data, size, 1, to), ErrnoException, "Short write; requested size " << size);
+}
+
+#if defined(_WIN32) || defined(_WIN64)
+namespace {
+const std::size_t kMaxDWORD = static_cast<std::size_t>(4294967295UL);
+} // namespace
+#endif
+
+void ErsatzPRead(int fd, void *to_void, std::size_t size, uint64_t off) {
+  uint8_t *to = static_cast<uint8_t*>(to_void);
+  while (size) {
 #if defined(_WIN32) || defined(_WIN64)
     /* BROKEN: changes file pointer.  Even if you save it and change it back, it won't be safe to use concurrently with write() or read() which lmplz does. */
     // size_t might be 64-bit.  DWORD is always 32.
@@ -214,34 +245,41 @@ void PReadOrThrow(int fd, void *to_void, std::size_t size, uint64_t off) {
   }
 }
 
-void WriteOrThrow(int fd, const void *data_void, std::size_t size) {
-  const uint8_t *data = static_cast<const uint8_t*>(data_void);
-  while (size) {
+void ErsatzPWrite(int fd, const void *from_void, std::size_t size, uint64_t off) {
+  const uint8_t *from = static_cast<const uint8_t*>(from_void);
+  while(size) {
 #if defined(_WIN32) || defined(_WIN64)
-    int ret;
+    /* Changes file pointer.  Even if you save it and change it back, it won't be safe to use concurrently with write() or read() */
+    // size_t might be 64-bit.  DWORD is always 32.
+    DWORD writing = static_cast<DWORD>(std::min<std::size_t>(kMaxDWORD, size));
+    DWORD ret;
+    OVERLAPPED overlapped;
+    memset(&overlapped, 0, sizeof(OVERLAPPED));
+    overlapped.Offset = static_cast<DWORD>(off);
+    overlapped.OffsetHigh = static_cast<DWORD>(off >> 32);
+    UTIL_THROW_IF(!WriteFile((HANDLE)_get_osfhandle(fd), from, writing, &ret, &overlapped), Exception, "WriteFile failed for offset " << off);
 #else
     ssize_t ret;
-#endif
     errno = 0;
-    do {
-      ret =
-#if defined(_WIN32) || defined(_WIN64)
-        _write
+    ret =
+#ifdef OS_ANDROID
+      pwrite64
 #else
-        write
+      pwrite
 #endif
-        (fd, data, GuardLarge(size));
-    } while (ret == -1 && errno == EINTR);
-    UTIL_THROW_IF_ARG(ret < 1, FDException, (fd), "while writing " << size << " bytes");
-    data += ret;
+      (fd, from, GuardLarge(size), off);
+    if (ret <= 0) {
+      if (ret == -1 && errno == EINTR) continue;
+      UTIL_THROW_IF(ret == 0, EndOfFileException, " for writing " << size << " bytes at " << off << " from " << NameFromFD(fd));
+      UTIL_THROW_ARG(FDException, (fd), "while writing " << size << " bytes at offset " << off);
+    }
+#endif
     size -= ret;
+    off += ret;
+    from += ret;
   }
 }
 
-void WriteOrThrow(FILE *to, const void *data, std::size_t size) {
-  if (!size) return;
-  UTIL_THROW_IF(1 != std::fwrite(data, size, 1, to), ErrnoException, "Short write; requested size " << size);
-}
 
 void FSyncOrThrow(int fd) {
 // Apparently windows doesn't have fsync?

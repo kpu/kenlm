@@ -23,7 +23,7 @@ class Reader {
     };
 
     void operator()(const Request &request) {
-      util::PReadOrThrow(fd_, request.to, request.size, request.offset);
+      util::ErsatzPRead(fd_, request.to, request.size, request.offset);
     }
 
   private:
@@ -62,7 +62,7 @@ void ParallelRead(int fd, void *to, std::size_t amount, uint64_t offset) {
 
 namespace util {
 void ParallelRead(int fd, void *to, std::size_t amount, uint64_t offset) {
- util::PReadOrThrow(fd, to, amount, offset);
+ util::ErsatzPRead(fd, to, amount, offset);
 }
 } // namespace util
 
