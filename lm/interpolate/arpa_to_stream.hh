@@ -9,14 +9,17 @@ namespace util { namespace stream { class ChainPositions; } }
 
 namespace lm {
 
-namespace ngram { class GrowableVocab; }
+namespace ngram {
+template <class T> class GrowableVocab;
+class WriteUniqueWords;
+} // namespace ngram
 
 namespace interpolate {
 
 class ARPAToStream {
   public:
     // Takes ownership of fd.
-    explicit ARPAToStream(int fd, ngram::GrowableVocab &vocab);
+    explicit ARPAToStream(int fd, ngram::GrowableVocab<ngram::WriteUniqueWords> &vocab);
 
     std::size_t Order() const { return counts_.size(); }
 
@@ -29,7 +32,7 @@ class ARPAToStream {
 
     std::vector<uint64_t> counts_;
 
-    ngram::GrowableVocab &vocab_;
+    ngram::GrowableVocab<ngram::WriteUniqueWords> &vocab_;
 };
 
 }} // namespaces

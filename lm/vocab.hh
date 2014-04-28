@@ -182,15 +182,33 @@ template <class Vocab> void CheckSpecials(const Config &config, const Vocab &voc
   if (vocab.EndSentence() == vocab.NotFound()) MissingSentenceMarker(config, "</s>");
 }
 
-class GrowableVocab {
+class WriteUniqueWords {
+  public:
+    explicit WriteUniqueWords(int fd) : word_list_(fd) {}
+
+    void operator()(const StringPiece &word) {
+      word_list_ << word << '\0';
+    }
+
+  private:
+    util::FakeOFStream word_list_;
+};
+
+class NoOpUniqueWords {
+  public:
+    NoOpUniqueWords() {}
+    void operator()(const StringPiece &word) {}
+};
+
+template <class NewWordAction = NoOpUniqueWords> class GrowableVocab {
   public:
     static std::size_t MemUsage(WordIndex content) {
       return Lookup::MemUsage(content > 2 ? content : 2);
     }
 
     // Does not take ownership of write_wordi
-    explicit GrowableVocab(WordIndex initial_size, int write_words_fd)
-    : lookup_(initial_size), word_list_(write_words_fd) {
+    template <class NewWordConstruct> GrowableVocab(WordIndex initial_size, const NewWordConstruct &new_word_construct = NewWordAction())
+      : lookup_(initial_size), new_word_(new_word_construct) {
       FindOrInsert("<unk>"); // Force 0
       FindOrInsert("<s>"); // Force 1
       FindOrInsert("</s>"); // Force 2
@@ -205,7 +223,7 @@ class GrowableVocab {
       ProbingVocabularyEntry entry = ProbingVocabularyEntry::Make(util::MurmurHashNative(word.data(), word.size()), Size());
       Lookup::MutableIterator it;
       if (!lookup_.FindOrInsert(entry, it)) {
-        word_list_ << word << '\0';
+        new_word_(word);
         UTIL_THROW_IF(Size() >= std::numeric_limits<lm::WordIndex>::max(), VocabLoadException, "Too many vocabulary words.  Change WordIndex to uint64_t in lm/word_index.hh");
       }
       return it->value;
@@ -218,7 +236,7 @@ class GrowableVocab {
 
     Lookup lookup_;
 
-    util::FakeOFStream word_list_;
+    NewWordAction new_word_;
 };
 
 } // namespace ngram

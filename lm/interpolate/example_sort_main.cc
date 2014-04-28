@@ -14,12 +14,14 @@ int main() {
   const std::size_t SIXTY_FOUR_MB = 1 << 26;
   const std::size_t NUMBER_OF_BLOCKS = 2;
   
+  // Vocab strings will be written to this file, forgotten, and reconstituted
+  // later.  This saves memory.
   util::scoped_fd vocab_file(util::MakeTemp("/tmp/"));
   std::vector<uint64_t> counts;
   util::stream::Chains chains;
   {
     // Use consistent vocab ids across models.
-    lm::ngram::GrowableVocab vocab(10, vocab_file.get());
+    lm::ngram::GrowableVocab<lm::ngram::WriteUniqueWords> vocab(10, vocab_file.get());
     lm::interpolate::ARPAToStream reader(STDIN_FILENO, vocab);
     counts = reader.Counts();
 
