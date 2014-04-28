@@ -6,7 +6,7 @@ if
   [ ${#bjam} != 0 ] && #paranoia about which printing nothing then returning true
   ! grep UFIHGUFIHBDJKNCFZXAEVA "${bjam}" </dev/null >/dev/null && #bjam in path isn't this script
   "${bjam}" --sanity-test 2>/dev/null |grep Sane >/dev/null && #The test in jam-files/sanity.jam passes
-  (cd "${top}/jam-files/fail" && ! "${bjam}") >/dev/null && #Returns non-zero on failure
+  (cd "${top}/jam-files/fail" && ! "${bjam}") >/dev/null #Returns non-zero on failure
 then
   #Delegate to system bjam
   exec "${bjam}" "$@"
