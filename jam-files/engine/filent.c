@@ -4,286 +4,311 @@
  * This file is part of Jam - see jam.c for Copyright information.
  */
 
-/*  This file is ALSO:
- *  Copyright 2001-2004 David Abrahams.
- *  Copyright 2005 Rene Rivera.
- *  Distributed under the Boost Software License, Version 1.0.
- *  (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+/* This file is ALSO:
+ * Copyright 2001-2004 David Abrahams.
+ * Copyright 2005 Rene Rivera.
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at
+ * http://www.boost.org/LICENSE_1_0.txt)
  */
-
-# include "jam.h"
-
-# include "filesys.h"
-# include "pathsys.h"
-# include "strings.h"
-# include "object.h"
-
-# ifdef OS_NT
-
-# ifdef __BORLANDC__
-# if __BORLANDC__ < 0x550
-# include <dir.h>
-# include <dos.h>
-# endif
-# undef FILENAME    /* cpp namespace collision */
-# define _finddata_t ffblk
-# endif
-
-# include <io.h>
-# include <sys/stat.h>
-# include <ctype.h>
-# include <direct.h>
 
 /*
  * filent.c - scan directories and archives on NT
  *
  * External routines:
+ *  file_archscan()                 - scan an archive for files
+ *  file_mkdir()                    - create a directory
+ *  file_supported_fmt_resolution() - file modification timestamp resolution
  *
- *  file_dirscan() - scan a directory for files
- *  file_time() - get timestamp of file, if not done by file_dirscan()
- *  file_archscan() - scan an archive for files
- *
- * File_dirscan() and file_archscan() call back a caller provided function
- * for each file found.  A flag to this callback function lets file_dirscan()
- * and file_archscan() indicate that a timestamp is being provided with the
- * file.   If file_dirscan() or file_archscan() do not provide the file's
- * timestamp, interested parties may later call file_time().
- *
- * 07/10/95 (taylor)  Findfirst() returns the first file on NT.
- * 05/03/96 (seiwald) split apart into pathnt.c
+ * External routines called only via routines in filesys.c:
+ *  file_collect_dir_content_() - collects directory content information
+ *  file_dirscan_()             - OS specific file_dirscan() implementation
+ *  file_query_()               - query information about a path from the OS
  */
+
+#include "jam.h"
+#ifdef OS_NT
+#include "filesys.h"
+
+#include "object.h"
+#include "pathsys.h"
+#include "strings.h"
+
+#ifdef __BORLANDC__
+# undef FILENAME  /* cpp namespace collision */
+#endif
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#include <assert.h>
+#include <ctype.h>
+#include <direct.h>
+#include <io.h>
+
 
 /*
- * file_dirscan() - scan a directory for files
+ * file_collect_dir_content_() - collects directory content information
  */
 
-void file_dirscan( OBJECT * dir, scanback func, void * closure )
+int file_collect_dir_content_( file_info_t * const d )
 {
-    PROFILE_ENTER( FILE_DIRSCAN );
+    PATHNAME f;
+    string pathspec[ 1 ];
+    string pathname[ 1 ];
+    LIST * files = L0;
+    int d_length;
 
-    file_info_t * d = 0;
+    assert( d );
+    assert( d->is_dir );
+    assert( list_empty( d->files ) );
 
-    /* First enter directory itself */
+    d_length = strlen( object_str( d->name ) );
 
-    d = file_query( dir );
+    memset( (char *)&f, '\0', sizeof( f ) );
+    f.f_dir.ptr = object_str( d->name );
+    f.f_dir.len = d_length;
 
-    if ( !d || !d->is_dir )
+    /* Prepare file search specification for the FindXXX() Windows API. */
+    if ( !d_length )
+        string_copy( pathspec, ".\\*" );
+    else
     {
-        object_free( dir );
-        PROFILE_EXIT( FILE_DIRSCAN );
-        return;
+        /* We can not simply assume the given folder name will never include its
+         * trailing path separator or otherwise we would not support the Windows
+         * root folder specified without its drive letter, i.e. '\'.
+         */
+        char const trailingChar = object_str( d->name )[ d_length - 1 ] ;
+        string_copy( pathspec, object_str( d->name ) );
+        if ( ( trailingChar != '\\' ) && ( trailingChar != '/' ) )
+            string_append( pathspec, "\\" );
+        string_append( pathspec, "*" );
     }
 
-    if ( !d->files )
+    /* The following code for collecting information about all files in a folder
+     * needs to be kept synchronized with how the file_query() operation is
+     * implemented (collects information about a single file).
+     */
     {
-        PATHNAME f;
-        string filespec[ 1 ];
-        string filename[ 1 ];
-        long handle;
-        int ret;
-        struct _finddata_t finfo[ 1 ];
-        LIST * files = L0;
-        int d_length;
-
-        dir = short_path_to_long_path( dir );
-
-        d_length = strlen( object_str( dir ) );
-
-        memset( (char *)&f, '\0', sizeof( f ) );
-
-        f.f_dir.ptr = object_str( dir );
-        f.f_dir.len = d_length;
-
-        /* Now enter contents of directory */
-
-        /* Prepare file search specification for the findfirst() API. */
-        if ( d_length == 0 )
-            string_copy( filespec, ".\\*" );
-        else
+        /* FIXME: Avoid duplicate FindXXX Windows API calls here and in the code
+         * determining a normalized path.
+         */
+        WIN32_FIND_DATA finfo;
+        HANDLE const findHandle = FindFirstFileA( pathspec->value, &finfo );
+        if ( findHandle == INVALID_HANDLE_VALUE )
         {
-            /*
-             * We can not simply assume the given folder name will never include
-             * its trailing path separator or otherwise we would not support the
-             * Windows root folder specified without its drive letter, i.e. '\'.
-             */
-            char trailingChar = object_str( dir )[ d_length - 1 ] ;
-            string_copy( filespec, object_str( dir ) );
-            if ( ( trailingChar != '\\' ) && ( trailingChar != '/' ) )
-                string_append( filespec, "\\" );
-            string_append( filespec, "*" );
+            string_free( pathspec );
+            return -1;
         }
 
-        if ( DEBUG_BINDSCAN )
-            printf( "scan directory %s\n", dir );
-
-        #if defined(__BORLANDC__) && __BORLANDC__ < 0x550
-        if ( ret = findfirst( filespec->value, finfo, FA_NORMAL | FA_DIREC ) )
+        string_new( pathname );
+        do
         {
-            string_free( filespec );
-            object_free( dir );
-            PROFILE_EXIT( FILE_DIRSCAN );
-            return;
+            OBJECT * pathname_obj;
+
+            f.f_base.ptr = finfo.cFileName;
+            f.f_base.len = strlen( finfo.cFileName );
+
+            string_truncate( pathname, 0 );
+            path_build( &f, pathname );
+
+            pathname_obj = object_new( pathname->value );
+            path_register_key( pathname_obj );
+            files = list_push_back( files, pathname_obj );
+            {
+                int found;
+                file_info_t * const ff = file_info( pathname_obj, &found );
+                ff->is_dir = finfo.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+                ff->is_file = !ff->is_dir;
+                ff->exists = 1;
+                timestamp_from_filetime( &ff->time, &finfo.ftLastWriteTime );
+            }
         }
+        while ( FindNextFile( findHandle, &finfo ) );
 
-        string_new ( filename );
-        while ( !ret )
-        {
-            file_info_t * ff = 0;
-
-            f.f_base.ptr = finfo->ff_name;
-            f.f_base.len = strlen( finfo->ff_name );
-
-            string_truncate( filename, 0 );
-            path_build( &f, filename );
-
-            files = list_push_back( files, object_new(filename->value) );
-            ff = file_info( filename->value );
-            ff->is_file = finfo->ff_attrib & FA_DIREC ? 0 : 1;
-            ff->is_dir = finfo->ff_attrib & FA_DIREC ? 1 : 0;
-            ff->size = finfo->ff_fsize;
-            ff->time = (finfo->ff_ftime << 16) | finfo->ff_ftime;
-
-            ret = findnext( finfo );
-        }
-        # else
-        handle = _findfirst( filespec->value, finfo );
-
-        if ( ret = ( handle < 0L ) )
-        {
-            string_free( filespec );
-            object_free( dir );
-            PROFILE_EXIT( FILE_DIRSCAN );
-            return;
-        }
-
-        string_new( filename );
-        while ( !ret )
-        {
-            OBJECT * filename_obj;
-            file_info_t * ff = 0;
-
-            f.f_base.ptr = finfo->name;
-            f.f_base.len = strlen( finfo->name );
-
-            string_truncate( filename, 0 );
-            path_build( &f, filename, 0 );
-
-            filename_obj = object_new( filename->value );
-            path_add_key( filename_obj );
-            files = list_push_back( files, filename_obj );
-            ff = file_info( filename_obj );
-            ff->is_file = finfo->attrib & _A_SUBDIR ? 0 : 1;
-            ff->is_dir = finfo->attrib & _A_SUBDIR ? 1 : 0;
-            ff->size = finfo->size;
-            ff->time = finfo->time_write;
-
-            ret = _findnext( handle, finfo );
-        }
-
-        _findclose( handle );
-        # endif
-        string_free( filename );
-        string_free( filespec );
-        object_free( dir );
-
-        d->files = files;
+        FindClose( findHandle );
     }
 
-    /* Special case \ or d:\ : enter it */
-    {
-        unsigned long len = strlen( object_str( d->name ) );
-        if ( len == 1 && object_str( d->name )[0] == '\\' )
-        {
-            OBJECT * dir = short_path_to_long_path( d->name );
-            (*func)( closure, dir, 1 /* stat()'ed */, d->time );
-            object_free( dir );
-        }
-        else if ( len == 3 && object_str( d->name )[1] == ':' )
-        {
-            char buf[4];
-            OBJECT * dir1 = short_path_to_long_path( d->name );
-            OBJECT * dir2;
-            (*func)( closure, dir1, 1 /* stat()'ed */, d->time );
-            /* We've just entered 3-letter drive name spelling (with trailing
-               slash), into the hash table. Now enter two-letter variant,
-               without trailing slash, so that if we try to check whether
-               "c:" exists, we hit it.
+    string_free( pathname );
+    string_free( pathspec );
 
-               Jam core has workarounds for that. Given:
-                  x = c:\whatever\foo ;
-                  p = $(x:D) ;
-                  p2 = $(p:D) ;
-               There will be no trailing slash in $(p), but there will be one
-               in $(p2). But, that seems rather fragile.                
-            */
-            strcpy( buf, object_str( dir1 ) );
-            buf[2] = 0;
-            dir2 = object_new( buf );
-            (*func)( closure, dir2, 1 /* stat()'ed */, d->time );
-            object_free( dir2 );
-            object_free( dir1 );
-        }
-    }
-
-    /* Now enter contents of directory */
-    if ( !list_empty( d->files ) )
-    {
-        LIST * files = d->files;
-        LISTITER iter = list_begin( files ), end = list_end( files );
-        for ( ; iter != end; iter = list_next( iter ) )
-        {
-            file_info_t * ff = file_info( list_item( iter ) );
-            (*func)( closure, list_item( iter ), 1 /* stat()'ed */, ff->time );
-        }
-    }
-
-    PROFILE_EXIT( FILE_DIRSCAN );
-}
-
-file_info_t * file_query( OBJECT * filename )
-{
-    file_info_t * ff = file_info( filename );
-    if ( ! ff->time )
-    {
-        struct stat statbuf;
-
-        if ( stat( *object_str( filename ) ? object_str( filename ) : ".", &statbuf ) < 0 )
-            return 0;
-
-        ff->is_file = statbuf.st_mode & S_IFREG ? 1 : 0;
-        ff->is_dir = statbuf.st_mode & S_IFDIR ? 1 : 0;
-        ff->size = statbuf.st_size;
-        ff->time = statbuf.st_mtime ? statbuf.st_mtime : 1;
-    }
-    return ff;
-}
-
-/*
- * file_time() - get timestamp of file, if not done by file_dirscan()
- */
-
-int
-file_time(
-    OBJECT * filename,
-    time_t * time )
-{
-    file_info_t * ff = file_query( filename );
-    if ( !ff ) return -1;
-    *time = ff->time;
+    d->files = files;
     return 0;
 }
 
-int file_is_file( OBJECT * filename )
+
+/*
+ * file_dirscan_() - OS specific file_dirscan() implementation
+ */
+
+void file_dirscan_( file_info_t * const d, scanback func, void * closure )
 {
-    file_info_t * ff = file_query( filename );
-    if ( !ff ) return -1;
-    return ff->is_file;
+    assert( d );
+    assert( d->is_dir );
+
+    /* Special case \ or d:\ : enter it */
+    {
+        char const * const name = object_str( d->name );
+        if ( name[ 0 ] == '\\' && !name[ 1 ] )
+        {
+            (*func)( closure, d->name, 1 /* stat()'ed */, &d->time );
+        }
+        else if ( name[ 0 ] && name[ 1 ] == ':' && name[ 2 ] && !name[ 3 ] )
+        {
+            /* We have just entered a 3-letter drive name spelling (with a
+             * trailing slash), into the hash table. Now enter its two-letter
+             * variant, without the trailing slash, so that if we try to check
+             * whether "c:" exists, we hit it.
+             *
+             * Jam core has workarounds for that. Given:
+             *    x = c:\whatever\foo ;
+             *    p = $(x:D) ;
+             *    p2 = $(p:D) ;
+             * There will be no trailing slash in $(p), but there will be one in
+             * $(p2). But, that seems rather fragile.
+             */
+            OBJECT * const dir_no_slash = object_new_range( name, 2 );
+            (*func)( closure, d->name, 1 /* stat()'ed */, &d->time );
+            (*func)( closure, dir_no_slash, 1 /* stat()'ed */, &d->time );
+            object_free( dir_no_slash );
+        }
+    }
 }
 
-int file_mkdir( const char * pathname )
+
+/*
+ * file_mkdir() - create a directory
+ */
+
+int file_mkdir( char const * const path )
 {
-    return _mkdir(pathname);
+    return _mkdir( path );
 }
+
+
+/*
+ * file_query_() - query information about a path from the OS
+ *
+ * The following code for collecting information about a single file needs to be
+ * kept synchronized with how the file_collect_dir_content_() operation is
+ * implemented (collects information about all files in a folder).
+ */
+
+int try_file_query_root( file_info_t * const info )
+{
+    WIN32_FILE_ATTRIBUTE_DATA fileData;
+    char buf[ 4 ];
+    char const * const pathstr = object_str( info->name );
+    if ( !pathstr[ 0 ] )
+    {
+        buf[ 0 ] = '.';
+        buf[ 1 ] = 0;
+    }
+    else if ( pathstr[ 0 ] == '\\' && ! pathstr[ 1 ] )
+    {
+        buf[ 0 ] = '\\';
+        buf[ 1 ] = '\0';
+    }
+    else if ( pathstr[ 1 ] == ':' )
+    {
+        if ( !pathstr[ 2 ] )
+        {
+        }
+        else if ( !pathstr[ 2 ] || ( pathstr[ 2 ] == '\\' && !pathstr[ 3 ] ) )
+        {
+            buf[ 0 ] = pathstr[ 0 ];
+            buf[ 1 ] = ':';
+            buf[ 2 ] = '\\';
+            buf[ 3 ] = '\0';
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    else
+    {
+        return 0;
+    }
+        
+    /* We have a root path */
+    if ( !GetFileAttributesExA( buf, GetFileExInfoStandard, &fileData ) )
+    {
+        info->is_dir = 0;
+        info->is_file = 0;
+        info->exists = 0;
+        timestamp_clear( &info->time );
+    }
+    else
+    {
+        info->is_dir = fileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY;
+        info->is_file = !info->is_dir;
+        info->exists = 1;
+        timestamp_from_filetime( &info->time, &fileData.ftLastWriteTime );
+    }
+    return 1;
+}
+
+void file_query_( file_info_t * const info )
+{
+    char const * const pathstr = object_str( info->name );
+    const char * dir;
+    OBJECT * parent;
+    file_info_t * parent_info;
+
+    if ( try_file_query_root( info ) )
+        return;
+
+    if ( ( dir = strrchr( pathstr, '\\' ) ) )
+    {
+        parent = object_new_range( pathstr, dir - pathstr );
+    }
+    else
+    {
+        parent = object_copy( constant_empty );
+    }
+    parent_info = file_query( parent );
+    object_free( parent );
+    if ( !parent_info || !parent_info->is_dir )
+    {
+        info->is_dir = 0;
+        info->is_file = 0;
+        info->exists = 0;
+        timestamp_clear( &info->time );
+    }
+    else
+    {
+        info->is_dir = 0;
+        info->is_file = 0;
+        info->exists = 0;
+        timestamp_clear( &info->time );
+        if ( list_empty( parent_info->files ) )
+            file_collect_dir_content_( parent_info );
+    }
+}
+
+
+/*
+ * file_supported_fmt_resolution() - file modification timestamp resolution
+ *
+ * Returns the minimum file modification timestamp resolution supported by this
+ * Boost Jam implementation. File modification timestamp changes of less than
+ * the returned value might not be recognized.
+ *
+ * Does not take into consideration any OS or file system related restrictions.
+ *
+ * Return value 0 indicates that any value supported by the OS is also supported
+ * here.
+ */
+
+void file_supported_fmt_resolution( timestamp * const t )
+{
+    /* On Windows we support nano-second file modification timestamp resolution,
+     * just the same as the Windows OS itself.
+     */
+    timestamp_init( t, 0, 0 );
+}
+
 
 /*
  * file_archscan() - scan an archive for files
@@ -291,41 +316,37 @@ int file_mkdir( const char * pathname )
 
 /* Straight from SunOS */
 
-#define ARMAG   "!<arch>\n"
+#define ARMAG  "!<arch>\n"
 #define SARMAG  8
 
 #define ARFMAG  "`\n"
 
-struct ar_hdr {
-    char    ar_name[16];
-    char    ar_date[12];
-    char    ar_uid[6];
-    char    ar_gid[6];
-    char    ar_mode[8];
-    char    ar_size[10];
-    char    ar_fmag[2];
+struct ar_hdr
+{
+    char ar_name[ 16 ];
+    char ar_date[ 12 ];
+    char ar_uid[ 6 ];
+    char ar_gid[ 6 ];
+    char ar_mode[ 8 ];
+    char ar_size[ 10 ];
+    char ar_fmag[ 2 ];
 };
 
-# define SARFMAG 2
-# define SARHDR sizeof( struct ar_hdr )
+#define SARFMAG  2
+#define SARHDR  sizeof( struct ar_hdr )
 
-void
-file_archscan(
-    const char * archive,
-    scanback     func,
-    void       * closure )
+void file_archscan( char const * archive, scanback func, void * closure )
 {
     struct ar_hdr ar_hdr;
-    char *string_table = 0;
+    char * string_table = 0;
     char buf[ MAXJPATH ];
     long offset;
-    int fd;
+    int const fd = open( archive, O_RDONLY | O_BINARY, 0 );
 
-    if ( ( fd = open( archive, O_RDONLY | O_BINARY, 0 ) ) < 0 )
+    if ( fd < 0 )
         return;
 
-    if ( read( fd, buf, SARMAG ) != SARMAG ||
-        strncmp( ARMAG, buf, SARMAG ) )
+    if ( read( fd, buf, SARMAG ) != SARMAG || strncmp( ARMAG, buf, SARMAG ) )
     {
         close( fd );
         return;
@@ -337,43 +358,39 @@ file_archscan(
         printf( "scan archive %s\n", archive );
 
     while ( ( read( fd, &ar_hdr, SARHDR ) == SARHDR ) &&
-           !memcmp( ar_hdr.ar_fmag, ARFMAG, SARFMAG ) )
+        !memcmp( ar_hdr.ar_fmag, ARFMAG, SARFMAG ) )
     {
-        long    lar_date;
-        long    lar_size;
-        char   * name = 0;
-        char   * endname;
-        char   * c;
-        OBJECT * member;
+        long lar_date;
+        long lar_size;
+        char * name = 0;
+        char * endname;
 
         sscanf( ar_hdr.ar_date, "%ld", &lar_date );
         sscanf( ar_hdr.ar_size, "%ld", &lar_size );
 
         lar_size = ( lar_size + 1 ) & ~1;
 
-        if (ar_hdr.ar_name[0] == '/' && ar_hdr.ar_name[1] == '/' )
+        if ( ar_hdr.ar_name[ 0 ] == '/' && ar_hdr.ar_name[ 1 ] == '/' )
         {
-        /* this is the "string table" entry of the symbol table,
-        ** which holds strings of filenames that are longer than
-        ** 15 characters (ie. don't fit into a ar_name
-        */
-
-        string_table = BJAM_MALLOC_ATOMIC(lar_size+1);
-        if (read(fd, string_table, lar_size) != lar_size)
-            printf("error reading string table\n");
-        string_table[lar_size] = '\0';
-        offset += SARHDR + lar_size;
-        continue;
+            /* This is the "string table" entry of the symbol table, holding
+             * filename strings longer than 15 characters, i.e. those that do
+             * not fit into ar_name.
+             */
+            string_table = BJAM_MALLOC_ATOMIC( lar_size + 1 );
+            if ( read( fd, string_table, lar_size ) != lar_size )
+                printf( "error reading string table\n" );
+            string_table[ lar_size ] = '\0';
+            offset += SARHDR + lar_size;
+            continue;
         }
-        else if (ar_hdr.ar_name[0] == '/' && ar_hdr.ar_name[1] != ' ')
+        else if ( ar_hdr.ar_name[ 0 ] == '/' && ar_hdr.ar_name[ 1 ] != ' ' )
         {
-            /* Long filenames are recognized by "/nnnn" where nnnn is
-            ** the offset of the string in the string table represented
-            ** in ASCII decimals.
-            */
-
+            /* Long filenames are recognized by "/nnnn" where nnnn is the
+             * string's offset in the string table represented in ASCII
+             * decimals.
+             */
             name = string_table + atoi( ar_hdr.ar_name + 1 );
-            for ( endname = name; *endname && *endname != '\n'; ++endname) {}
+            for ( endname = name; *endname && *endname != '\n'; ++endname );
         }
         else
         {
@@ -385,21 +402,28 @@ file_archscan(
         /* strip trailing white-space, slashes, and backslashes */
 
         while ( endname-- > name )
-            if ( !isspace(*endname) && ( *endname != '\\' ) && ( *endname != '/' ) )
+            if ( !isspace( *endname ) && ( *endname != '\\' ) && ( *endname !=
+                '/' ) )
                 break;
         *++endname = 0;
 
         /* strip leading directory names, an NT specialty */
-
-        if ( c = strrchr( name, '/' ) )
-        name = c + 1;
-        if ( c = strrchr( name, '\\' ) )
-        name = c + 1;
+        {
+            char * c;
+            if ( c = strrchr( name, '/' ) )
+                name = c + 1;
+            if ( c = strrchr( name, '\\' ) )
+                name = c + 1;
+        }
 
         sprintf( buf, "%s(%.*s)", archive, endname - name, name );
-        member = object_new( buf );
-        (*func)( closure, member, 1 /* time valid */, (time_t)lar_date );
-        object_free( member );
+        {
+            OBJECT * const member = object_new( buf );
+            timestamp time;
+            timestamp_init( &time, (time_t)lar_date, 0 );
+            (*func)( closure, member, 1 /* time valid */, &time );
+            object_free( member );
+        }
 
         offset += SARHDR + lar_size;
         lseek( fd, offset, 0 );
@@ -408,4 +432,4 @@ file_archscan(
     close( fd );
 }
 
-# endif /* NT */
+#endif  /* OS_NT */

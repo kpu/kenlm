@@ -15,47 +15,43 @@
  */
 
 #ifndef FILESYS_DWA20011025_H
-# define FILESYS_DWA20011025_H
+#define FILESYS_DWA20011025_H
 
-# include "pathsys.h"
 #include "hash.h"
 #include "lists.h"
 #include "object.h"
+#include "pathsys.h"
+#include "timestamp.h"
 
-typedef void (*scanback)( void *closure, OBJECT * file, int found, time_t t );
 
-void file_dirscan( OBJECT * dir, scanback func, void * closure );
-void file_archscan( const char * arch, scanback func, void * closure );
-
-int file_time( OBJECT * filename, time_t * time );
-
-void file_build1(PATHNAME *f, string* file) ;
-int file_is_file( OBJECT * filename );
-int file_mkdir( const char * pathname );
-
-typedef struct file_info_t file_info_t ;
-struct file_info_t
+typedef struct file_info_t
 {
-    OBJECT        * name;
-    short           is_file;
-    short           is_dir;
-    unsigned long   size;
-    time_t          time;
-    LIST          * files;
-};
+    OBJECT * name;
+    char is_file;
+    char is_dir;
+    char exists;
+    timestamp time;
+    LIST * files;
+} file_info_t;
+
+typedef void (*scanback)( void * closure, OBJECT * path, int found,
+    timestamp const * const );
 
 
-/* Creates a pointer to information about file 'filename', creating it as
- * necessary. If created, the structure will be default initialized.
- */
-file_info_t * file_info( OBJECT * filename );
+void file_archscan( char const * arch, scanback func, void * closure );
+void file_build1( PATHNAME * const f, string * file ) ;
+void file_dirscan( OBJECT * dir, scanback func, void * closure );
+file_info_t * file_info( OBJECT * const path, int * found );
+int file_is_file( OBJECT * const path );
+int file_mkdir( char const * const path );
+file_info_t * file_query( OBJECT * const path );
+void file_remove_atexit( OBJECT * const path );
+void file_supported_fmt_resolution( timestamp * const );
+int file_time( OBJECT * const path, timestamp * const );
 
-/* Returns information about a file, queries the OS if needed. */
-file_info_t * file_query( OBJECT * filename );
+/* Internal utility worker functions. */
+void file_query_posix_( file_info_t * const );
 
 void file_done();
-
-/* Marks a path/file to be removed when jam exits. */
-void file_remove_atexit( OBJECT * path );
 
 #endif

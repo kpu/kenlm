@@ -12,9 +12,11 @@
 #define SEARCH_SW20111118_H
 
 #include "object.h"
-#include <time.h>
+#include "timestamp.h"
 
-OBJECT * search( OBJECT * target, time_t * time, OBJECT * * another_target, int file );
+void set_explicit_binding( OBJECT * target, OBJECT * locate );
+OBJECT * search( OBJECT * target, timestamp * const time,
+    OBJECT * * another_target, int const file );
 void search_done( void );
 
 #endif

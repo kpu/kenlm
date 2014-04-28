@@ -4,21 +4,16 @@
  * This file is part of Jam - see jam.c for Copyright information.
  */
 
-# include "jam.h"
-# include "object.h"
-# include "lists.h"
-# include "assert.h"
-
 /*
  * lists.c - maintain lists of objects
- *
- * 08/23/94 (seiwald) - new list_append()
- * 09/07/00 (seiwald) - documented lol_*() functions
  */
 
-struct freelist_node { struct freelist_node *next; };
+#include "jam.h"
+#include "lists.h"
 
-static struct freelist_node *freelist[32];  /* junkpile for list_free() */
+#include <assert.h>
+
+static LIST * freelist[ 32 ];  /* junkpile for list_dealloc() */
 
 static unsigned get_bucket( unsigned size )
 {
@@ -27,42 +22,35 @@ static unsigned get_bucket( unsigned size )
     return bucket;
 }
 
-static LIST * list_alloc( unsigned size )
+static LIST * list_alloc( unsigned const size )
 {
-    unsigned bucket = get_bucket( size );
+    unsigned const bucket = get_bucket( size );
     if ( freelist[ bucket ] )
     {
-        struct freelist_node * result = freelist[ bucket ];
-        freelist[ bucket ] = result->next;
-        return (LIST *)result;
+        LIST * result = freelist[ bucket ];
+        freelist[ bucket ] = result->impl.next;
+        return result;
     }
-    else
-    {
-        return (LIST *)BJAM_MALLOC( sizeof( LIST ) + ( 1u << bucket ) * sizeof( OBJECT * ) );
-    }
+    return (LIST *)BJAM_MALLOC( sizeof( LIST ) + ( 1u << bucket ) *
+        sizeof( OBJECT * ) );
 }
 
 static void list_dealloc( LIST * l )
 {
     unsigned size = list_length( l );
     unsigned bucket;
-    struct freelist_node * node = (struct freelist_node *)l;
+    LIST * node = l;
 
     if ( size == 0 ) return;
 
     bucket = get_bucket( size );;
 
 #ifdef BJAM_NO_MEM_CACHE
-
     BJAM_FREE( node );
-
 #else
-
-    node->next = freelist[ bucket ];
+    node->impl.next = freelist[ bucket ];
     freelist[ bucket ] = node;
-
 #endif
-
 }
 
 /*
@@ -71,74 +59,48 @@ static void list_dealloc( LIST * l )
 
 LIST * list_append( LIST * l, LIST * nl )
 {
-    if ( list_empty( nl ) )
+    if ( list_empty( l ) )
+        return nl;
+    if ( !list_empty( nl ) )
     {
-        /* Just return l */
-    }
-    else if ( list_empty( l ) )
-    {
-        l = nl;
-    }
-    else
-    {
-        int l_size = list_length( l );
-        int nl_size = list_length( nl );
-        int size = l_size + nl_size;
-        unsigned bucket;
-        int i;
+        int const l_size = list_length( l );
+        int const nl_size = list_length( nl );
+        int const size = l_size + nl_size;
+        unsigned const bucket = get_bucket( size );
 
-        bucket = get_bucket( size );
         /* Do we need to reallocate? */
-        if ( l_size <= ( 1u << (bucket - 1) ) )
+        if ( l_size <= ( 1u << ( bucket - 1 ) ) )
         {
             LIST * result = list_alloc( size );
-            memcpy( list_begin( result ), list_begin( l ), l_size * sizeof( OBJECT * ) );
+            memcpy( list_begin( result ), list_begin( l ), l_size * sizeof(
+                OBJECT * ) );
             list_dealloc( l );
             l = result;
         }
 
         l->impl.size = size;
-        memcpy( list_begin( l ) + l_size, list_begin( nl ), nl_size *  sizeof( OBJECT * ) );
+        memcpy( list_begin( l ) + l_size, list_begin( nl ), nl_size * sizeof(
+            OBJECT * ) );
         list_dealloc( nl );
-        return l;
     }
-
     return l;
 }
 
 LISTITER list_begin( LIST * l )
 {
-    if ( l )
-        return (LISTITER)( (char *)l + sizeof(LIST) );
-    else
-        return 0;
+    return l ? (LISTITER)( (char *)l + sizeof( LIST ) ) : 0;
 }
 
 LISTITER list_end( LIST * l )
 {
-    if ( l )
-        return list_begin( l ) + l->impl.size;
-    else
-        return 0;
+    return l ? list_begin( l ) + l->impl.size : 0;
 }
 
 LIST * list_new( OBJECT * value )
-{   
-    LIST * head;
-    if ( freelist[ 0 ] )
-    {
-        struct freelist_node * result = freelist[ 0 ];
-        freelist[ 0 ] = result->next;
-        head = (LIST *)result;
-    }
-    else
-    {
-        head = BJAM_MALLOC( sizeof( LIST * ) + sizeof( OBJECT * ) );
-    }
-
+{
+    LIST * const head = list_alloc( 1 ) ;
     head->impl.size = 1;
     list_begin( head )[ 0 ] = value;
-
     return head;
 }
 
@@ -189,19 +151,15 @@ LIST * list_copy( LIST * l )
     result = list_alloc( size );
     result->impl.size = size;
     for ( i = 0; i < size; ++i )
-    {
         list_begin( result )[ i ] = object_copy( list_begin( l )[ i ] );
-    }
     return result;
 }
 
 
-LIST * list_copy_range( LIST *l, LISTITER first, LISTITER last )
+LIST * list_copy_range( LIST * l, LISTITER first, LISTITER last )
 {
     if ( first == last )
-    {
         return L0;
-    }
     else
     {
         int size = last - first;
@@ -209,9 +167,7 @@ LIST * list_copy_range( LIST *l, LISTITER first, LISTITER last )
         LISTITER dest = list_begin( result );
         result->impl.size = size;
         for ( ; first != last; ++first, ++dest )
-        {
             *dest = object_copy( *first );
-        }
         return result;
     }
 }
@@ -235,7 +191,7 @@ static int str_ptr_compare( void const * va, void const * vb )
 {
     OBJECT * a = *( (OBJECT * *)va );
     OBJECT * b = *( (OBJECT * *)vb );
-    return strcmp(object_str(a), object_str(b));
+    return strcmp( object_str( a ), object_str( b ) );
 }
 
 
@@ -265,11 +221,10 @@ void list_free( LIST * head )
 {
     if ( !list_empty( head ) )
     {
-        LISTITER iter = list_begin( head ), end = list_end( head );
+        LISTITER iter = list_begin( head );
+        LISTITER const end = list_end( head );
         for ( ; iter != end; iter = list_next( iter ) )
-        {
             object_free( list_item( iter ) );
-        }
         list_dealloc( head );
     }
 }
@@ -282,7 +237,7 @@ void list_free( LIST * head )
 LIST * list_pop_front( LIST * l )
 {
     unsigned size = list_length( l );
-    assert( size != 0 );
+    assert( size );
     --size;
     object_free( list_front( l ) );
 
@@ -291,35 +246,33 @@ LIST * list_pop_front( LIST * l )
         list_dealloc( l );
         return L0;
     }
-    else if ( ( ( size - 1 ) & size ) == 0 )
+
+    if ( ( ( size - 1 ) & size ) == 0 )
     {
-        LIST * nl = list_alloc( size );
+        LIST * const nl = list_alloc( size );
         nl->impl.size = size;
-        memcpy( list_begin( nl ), list_begin( l ) + 1, size * sizeof( OBJECT * ) );
+        memcpy( list_begin( nl ), list_begin( l ) + 1, size * sizeof( OBJECT * )
+            );
         list_dealloc( l );
         return nl;
     }
-    else
-    {
-        l->impl.size = size;
-        memmove( list_begin( l ), list_begin( l ) + 1, size * sizeof( OBJECT * ) );
-        return l;
-    }
+
+    l->impl.size = size;
+    memmove( list_begin( l ), list_begin( l ) + 1, size * sizeof( OBJECT * ) );
+    return l;
 }
 
-LIST *  list_reverse( LIST * l )
+LIST * list_reverse( LIST * l )
 {
     int size = list_length( l );
     if ( size == 0 ) return L0;
-    else
     {
-        LIST * result = list_alloc( size );
+        LIST * const result = list_alloc( size );
         int i;
         result->impl.size = size;
         for ( i = 0; i < size; ++i )
-        {
-            list_begin( result )[ i ] = object_copy( list_begin( l )[ size - i - 1 ] );
-        }
+            list_begin( result )[ i ] = object_copy( list_begin( l )[ size - i -
+                1 ] );
         return result;
     }
 }
@@ -327,13 +280,15 @@ LIST *  list_reverse( LIST * l )
 int list_cmp( LIST * t, LIST * s )
 {
     int status = 0;
-    LISTITER t_it = list_begin( t ), t_end = list_end( t );
-    LISTITER s_it = list_begin( s ), s_end = list_end( s );
+    LISTITER t_it = list_begin( t );
+    LISTITER const t_end = list_end( t );
+    LISTITER s_it = list_begin( s );
+    LISTITER const s_end = list_end( s );
 
     while ( !status && ( t_it != t_end || s_it != s_end ) )
     {
-        const char *st = t_it != t_end ? object_str( list_item( t_it ) ) : "";
-        const char *ss = s_it != s_end ? object_str( list_item( s_it ) ) : "";
+        char const * st = t_it != t_end ? object_str( list_item( t_it ) ) : "";
+        char const * ss = s_it != s_end ? object_str( list_item( s_it ) ) : "";
 
         status = strcmp( st, ss );
 
@@ -346,12 +301,11 @@ int list_cmp( LIST * t, LIST * s )
 
 int list_is_sublist( LIST * sub, LIST * l )
 {
-    LISTITER iter = list_begin( sub ), end = list_end( sub );
+    LISTITER iter = list_begin( sub );
+    LISTITER const end = list_end( sub );
     for ( ; iter != end; iter = list_next( iter ) )
-    {
         if ( !list_in( l, list_item( iter ) ) )
             return 0;
-    }
     return 1;
 }
 
@@ -378,16 +332,14 @@ void list_print( LIST * l )
 
 int list_length( LIST * l )
 {
-    if ( l )
-        return l->impl.size;
-    else
-        return 0;
+    return l ? l->impl.size : 0;
 }
 
 
 int list_in( LIST * l, OBJECT * value )
 {
-    LISTITER iter = list_begin( l ), end = list_end( l );
+    LISTITER iter = list_begin( l );
+    LISTITER end = list_end( l );
     for ( ; iter != end; iter = list_next( iter ) )
         if ( object_equal( list_item( iter ), value ) )
             return 1;
@@ -415,15 +367,13 @@ LIST * list_unique( LIST * sorted_list )
 void list_done()
 {
     int i;
-    int total = 0;
     for ( i = 0; i < sizeof( freelist ) / sizeof( freelist[ 0 ] ); ++i )
     {
-        struct freelist_node *l, *tmp;
-        int bytes;
-        for( l = freelist[ i ]; l;  )
+        LIST * l = freelist[ i ];
+        while ( l )
         {
-            tmp = l;
-            l = l->next;
+            LIST * const tmp = l;
+            l = l->impl.next;
             BJAM_FREE( tmp );
         }
     }
@@ -481,7 +431,6 @@ LIST * lol_get( LOL * lol, int i )
 void lol_print( LOL * lol )
 {
     int i;
-
     for ( i = 0; i < lol->count; ++i )
     {
         if ( i )
@@ -492,32 +441,32 @@ void lol_print( LOL * lol )
 
 #ifdef HAVE_PYTHON
 
-PyObject *list_to_python(LIST *l)
+PyObject * list_to_python( LIST * l )
 {
-    PyObject *result = PyList_New(0);
-    LISTITER iter = list_begin( l ), end = list_end( l );
-
-    for (; iter != end; iter = list_next( iter ) )
+    PyObject * result = PyList_New( 0 );
+    LISTITER iter = list_begin( l );
+    LISTITER const end = list_end( l );
+    for ( ; iter != end; iter = list_next( iter ) )
     {
-        PyObject* s = PyString_FromString(object_str(list_item(iter)));
-        PyList_Append(result, s);
-        Py_DECREF(s);
+        PyObject * s = PyString_FromString( object_str( list_item( iter ) ) );
+        PyList_Append( result, s );
+        Py_DECREF( s );
     }
 
     return result;
 }
 
-LIST *list_from_python(PyObject *l)
+LIST * list_from_python( PyObject * l )
 {
     LIST * result = L0;
 
-    Py_ssize_t i, n;
-    n = PySequence_Size(l);
-    for (i = 0; i < n; ++i)
+    Py_ssize_t n = PySequence_Size( l );
+    Py_ssize_t i;
+    for ( i = 0; i < n; ++i )
     {
-        PyObject *v = PySequence_GetItem(l, i);        
-        result = list_push_back(result, object_new (PyString_AsString(v)));
-        Py_DECREF(v);
+        PyObject * v = PySequence_GetItem( l, i );
+        result = list_push_back( result, object_new( PyString_AsString( v ) ) );
+        Py_DECREF( v );
     }
 
     return result;

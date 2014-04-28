@@ -10,16 +10,17 @@
  * (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
  */
 
+/*
+ * parse.h - make and destroy parse trees as driven by the parser.
+ */
+
 #ifndef PARSE_DWA20011020_H
 #define PARSE_DWA20011020_H
 
 #include "frames.h"
-#include "modules.h"
 #include "lists.h"
+#include "modules.h"
 
-/*
- * parse.h - make and destroy parse trees as driven by the parser.
- */
 
 #define PARSE_APPEND    0
 #define PARSE_FOREACH   1
@@ -41,9 +42,12 @@
 #define PARSE_SWITCH    17
 #define PARSE_WHILE     18
 
+
 /*
  * Parse tree node.
  */
+
+typedef struct _PARSE PARSE;
 
 struct _PARSE {
     int      type;
@@ -59,20 +63,14 @@ struct _PARSE {
     int      line;
 };
 
-void    parse_file( OBJECT *, FRAME * );
-void    parse_save( PARSE * );
+void parse_file( OBJECT *, FRAME * );
+void parse_save( PARSE * );
 
-PARSE * parse_make(
-    int type,
-    PARSE  * left,
-    PARSE  * right,
-    PARSE  * third,
-    OBJECT * string,
-    OBJECT * string1,
-    int      num );
+PARSE * parse_make( int type, PARSE * left, PARSE * right, PARSE * third,
+    OBJECT * string, OBJECT * string1, int num );
 
-void   parse_refer   ( PARSE * );
-void   parse_free    ( PARSE * );
+void parse_refer( PARSE * );
+void parse_free( PARSE * );
 LIST * parse_evaluate( PARSE *, FRAME * );
 
 #endif

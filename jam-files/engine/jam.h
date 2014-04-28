@@ -4,35 +4,15 @@
  * This file is part of Jam - see jam.c for Copyright information.
  */
 
-/*  This file is ALSO:
- *  Copyright 2001-2004 David Abrahams.
- *  Distributed under the Boost Software License, Version 1.0.
- *  (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+/* This file is ALSO:
+ * Copyright 2001-2004 David Abrahams.
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at
+ * http://www.boost.org/LICENSE_1_0.txt)
  */
 
 /*
  * jam.h - includes and globals for jam
- *
- * 04/08/94 (seiwald) - Coherent/386 support added.
- * 04/21/94 (seiwald) - DGUX is __DGUX__, not just __DGUX.
- * 05/04/94 (seiwald) - new globs.jobs (-j jobs)
- * 11/01/94 (wingerd) - let us define path of Jambase at compile time.
- * 12/30/94 (wingerd) - changed command buffer size for NT (MS-DOS shell).
- * 02/22/95 (seiwald) - Jambase now in /usr/local/lib.
- * 04/30/95 (seiwald) - FreeBSD added.  Live Free or Die.
- * 05/10/95 (seiwald) - SPLITPATH character set up here.
- * 08/20/95 (seiwald) - added LINUX.
- * 08/21/95 (seiwald) - added NCR.
- * 10/23/95 (seiwald) - added SCO.
- * 01/03/96 (seiwald) - SINIX (nixdorf) added.
- * 03/13/96 (seiwald) - Jambase now compiled in; remove JAMBASE variable.
- * 04/29/96 (seiwald) - AIX now has 31 and 42 OSVERs.
- * 11/21/96 (peterk)  - added BeOS with MW CW mwcc
- * 12/21/96 (seiwald) - OSPLAT now defined for NT.
- * 07/19/99 (sickel)  - Mac OS X Server and Client support added
- * 02/18/00 (belmonte)- Support for Cygwin.
- * 09/12/00 (seiwald) - OSSYMS split to OSMAJOR/OSMINOR/OSPLAT
- * 12/29/00 (seiwald) - OSVER dropped.
  */
 
 #ifndef JAM_H_VP_2003_08_01
@@ -51,14 +31,14 @@
 
 #ifdef NT
 
-#include <fcntl.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <ctype.h>
+#include <fcntl.h>
 #include <malloc.h>
 #ifndef __MWERKS__
     #include <memory.h>
 #endif
+#include <stdio.h>
+#include <stdlib.h>
 #include <signal.h>
 #include <string.h>
 #include <time.h>
@@ -67,14 +47,9 @@
 #define OSMINOR "OS=NT"
 #define OS_NT
 #define SPLITPATH ';'
-/* Windows NT 3.51 only allows 996 chars per line, but we deal with the problem
- * in "execnt.c".
- */
-#define MAXLINE (maxline())    /* longest 'together' actions */
+#define MAXLINE (undefined__see_execnt_c)  /* max chars per command line */
 #define USE_EXECNT
-#define USE_PATHUNIX
 #define PATH_DELIM '\\'
-#define DOWNSHIFT_PATHS
 
 /* AS400 cross-compile from NT. */
 
@@ -92,7 +67,8 @@
     #undef HAVE_POPEN
 #endif
 
-# endif
+#endif  /* #ifdef NT */
+
 
 /*
  * Windows MingW32
@@ -114,13 +90,12 @@
 #define OSMINOR "OS=MINGW"
 #define OS_NT
 #define SPLITPATH ';'
-#define MAXLINE 996    /* longest 'together' actions */
+#define MAXLINE 996  /* max chars per command line */
 #define USE_EXECUNIX
-#define USE_PATHUNIX
 #define PATH_DELIM '\\'
-#define DOWNSHIFT_PATHS
 
-#endif
+#endif  /* #ifdef MINGW */
+
 
 /*
  * God fearing UNIX.
@@ -131,12 +106,11 @@
 #define OSMAJOR "UNIX=true"
 #define USE_EXECUNIX
 #define USE_FILEUNIX
-#define USE_PATHUNIX
 #define PATH_DELIM '/'
 
 #ifdef _AIX
     #define unix
-    #define MAXLINE 23552  /* 24k - 1k, longest 'together' actions */
+    #define MAXLINE 23552  /* 24k - 1k, max chars per command line */
     #define OSMINOR "OS=AIX"
     #define OS_AIX
     #define NO_VFORK
@@ -240,7 +214,7 @@
         #define OSMINOR "OS=QNX"
         #define OS_QNX
         #define NO_VFORK
-        #define MAXLINE 996
+        #define MAXLINE 996  /* max chars per command line */
     #endif
 #endif
 #ifdef NeXT
@@ -315,7 +289,6 @@
 /* All the UNIX includes */
 
 #include <sys/types.h>
-#include <sys/stat.h>
 
 #ifndef OS_MPEIX
     #include <sys/file.h>
@@ -349,7 +322,8 @@
     #include <malloc.h>
 #endif
 
-#endif
+#endif  /* #ifndef OSMINOR */
+
 
 /*
  * OSPLAT definitions - suppressed when it is a one-of-a-kind.
@@ -387,7 +361,6 @@
     #define OSPLAT "OSPLAT=X86_64"
 #endif
 
-
 #if defined( __sparc__ ) || \
     defined( __sparc   )
     #define OSPLAT "OSPLAT=SPARC"
@@ -413,12 +386,13 @@
     #define OSPLAT ""
 #endif
 
+
 /*
  * Jam implementation misc.
  */
 
 #ifndef MAXLINE
-    #define MAXLINE 102400 /* longest 'together' actions' */
+    #define MAXLINE 102400  /* max chars per command line */
 #endif
 
 #ifndef EXITOK
@@ -435,7 +409,7 @@
 #define MAXSYM   1024  /* longest symbol in the environment */
 #define MAXJPATH 1024  /* longest filename */
 
-#define MAXJOBS  64    /* silently enforced -j limit */
+#define MAXJOBS  64    /* internally enforced -j limit */
 #define MAXARGC  32    /* words in $(JAMSHELL) */
 
 /* Jam private definitions below. */
@@ -455,7 +429,12 @@ struct globs
     long   timeout;             /* number of seconds to limit actions to,
                                  * default 0 for no limit.
                                  */
-    int    dart;                /* output build and test results formatted for Dart */
+    int    dart;                /* output build and test results formatted for
+                                 * Dart
+                                 */
+    int    max_buf;             /* maximum amount of output saved from target
+                                 * (kb)
+                                 */
 };
 
 extern struct globs globs;
@@ -463,7 +442,7 @@ extern struct globs globs;
 #define DEBUG_MAKE     ( globs.debug[ 1 ] )   /* show actions when executed */
 #define DEBUG_MAKEQ    ( globs.debug[ 2 ] )   /* show even quiet actions */
 #define DEBUG_EXEC     ( globs.debug[ 2 ] )   /* show text of actons */
-#define DEBUG_MAKEPROG ( globs.debug[ 3 ] )   /* show progress of make0 */
+#define DEBUG_MAKEPROG ( globs.debug[ 3 ] )   /* show make0 progress */
 #define DEBUG_BIND     ( globs.debug[ 3 ] )   /* show when files bound */
 
 #define DEBUG_EXECCMD  ( globs.debug[ 4 ] )   /* show execcmds()'s work */
@@ -472,7 +451,7 @@ extern struct globs globs;
 
 #define DEBUG_HEADER   ( globs.debug[ 6 ] )   /* show result of header scan */
 #define DEBUG_BINDSCAN ( globs.debug[ 6 ] )   /* show result of dir scan */
-#define DEBUG_SEARCH   ( globs.debug[ 6 ] )   /* show attempts at binding */
+#define DEBUG_SEARCH   ( globs.debug[ 6 ] )   /* show binding attempts */
 
 #define DEBUG_VARSET   ( globs.debug[ 7 ] )   /* show variable settings */
 #define DEBUG_VARGET   ( globs.debug[ 8 ] )   /* show variable fetches */
@@ -485,7 +464,7 @@ extern struct globs globs;
 #define DEBUG_PROFILE  ( globs.debug[ 10 ] )  /* dump rule execution times */
 #define DEBUG_PARSE    ( globs.debug[ 11 ] )  /* debug parsing */
 #define DEBUG_GRAPH    ( globs.debug[ 12 ] )  /* debug dependencies */
-#define DEBUG_FATE     ( globs.debug[ 13 ] )  /* show changes to fate in make0() */
+#define DEBUG_FATE     ( globs.debug[ 13 ] )  /* show fate changes in make0() */
 
 /* Everyone gets the memory definitions. */
 #include "mem.h"

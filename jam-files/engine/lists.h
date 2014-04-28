@@ -13,9 +13,8 @@
 /*
  * lists.h - the LIST structure and routines to manipulate them
  *
- * The whole of jam relies on lists of objects as a datatype.  This
- * module, in conjunction with object.c, handles these relatively
- * efficiently.
+ * The whole of jam relies on lists of objects as a datatype. This module, in
+ * conjunction with object.c, handles these relatively efficiently.
  *
  * Structures defined:
  *
@@ -37,32 +36,28 @@
  *  lol_free() - free the LOL and its LISTs
  *  lol_get() - return one of the LISTs in the LOL
  *  lol_print() - debug print LISTS separated by ":"
- *
- * 04/13/94 (seiwald) - added shorthand L0 for null list pointer
- * 08/23/94 (seiwald) - new list_append()
  */
 
 #ifndef LISTS_DWA20011022_H
-# define LISTS_DWA20011022_H
+#define LISTS_DWA20011022_H
 
 #include "object.h"
 
 #ifdef HAVE_PYTHON
-#include <Python.h>
+# include <Python.h>
 #endif
 
 /*
  * LIST - list of strings
  */
 
-typedef struct _list LIST;
-
-struct _list {
+typedef struct _list {
     union {
         int size;
-        OBJECT *align;
+        struct _list * next;
+        OBJECT * align;
     } impl;
-};
+} LIST;
 
 typedef OBJECT * * LISTITER;
 
@@ -70,55 +65,49 @@ typedef OBJECT * * LISTITER;
  * LOL - list of LISTs
  */
 
-typedef struct _lol LOL;
-
-# define LOL_MAX 19
-
-struct _lol {
+#define LOL_MAX 19
+typedef struct _lol {
     int count;
-    LIST    *list[ LOL_MAX ];
-};
+    LIST * list[ LOL_MAX ];
+} LOL;
 
-LIST *  list_new( OBJECT * value );
-LIST *  list_append( LIST *l, LIST *nl );
-LIST *  list_copy( LIST  *l );
-LIST *  list_copy_range( LIST *l, LISTITER first, LISTITER last );
-void    list_free( LIST *head );
-LIST *  list_push_back( LIST *head, OBJECT *string );
-void    list_print( LIST *l );
-int list_length( LIST *l );
-LIST *  list_sublist( LIST *l, int start, int count );
-LIST *  list_pop_front( LIST *l );
-LIST *  list_sort( LIST *l);
-LIST *  list_unique( LIST *sorted_list);
-int     list_in(LIST* l, OBJECT* value);
-LIST *  list_reverse( LIST * );
-int     list_cmp( LIST * lhs, LIST * rhs );
-int     list_is_sublist( LIST * sub, LIST * l );
-void    list_done();
+LIST * list_new( OBJECT * value );
+LIST * list_append( LIST * destination, LIST * source );
+LIST * list_copy( LIST * );
+LIST * list_copy_range( LIST * destination, LISTITER first, LISTITER last );
+void   list_free( LIST * head );
+LIST * list_push_back( LIST * head, OBJECT * value );
+void   list_print( LIST * );
+int    list_length( LIST * );
+LIST * list_sublist( LIST *, int start, int count );
+LIST * list_pop_front( LIST * );
+LIST * list_sort( LIST * );
+LIST * list_unique( LIST * sorted_list );
+int    list_in( LIST *, OBJECT * value );
+LIST * list_reverse( LIST * );
+int    list_cmp( LIST * lhs, LIST * rhs );
+int    list_is_sublist( LIST * sub, LIST * l );
+void   list_done();
 
 LISTITER list_begin( LIST * );
 LISTITER list_end( LIST * );
-# define list_next( it ) ((it) + 1)
-# define list_item( it ) (*(it))
-# define list_empty( l ) ( (l) == L0 )
-# define list_front( l ) list_item( list_begin( l ) )
+#define list_next( it ) ((it) + 1)
+#define list_item( it ) (*(it))
+#define list_empty( l ) ((l) == L0)
+#define list_front( l ) list_item( list_begin( l ) )
 
-# define L0 ((LIST *)0)
+#define L0 ((LIST *)0)
 
-void    lol_add( LOL *lol, LIST *l );
-void    lol_init( LOL *lol );
-void    lol_free( LOL *lol );
-LIST *  lol_get( LOL *lol, int i );
-void    lol_print( LOL *lol );
-void    lol_build( LOL* lol, const char** elements );
+void   lol_add( LOL *, LIST * );
+void   lol_init( LOL * );
+void   lol_free( LOL * );
+LIST * lol_get( LOL *, int i );
+void   lol_print( LOL * );
+void   lol_build( LOL *, char const * * elements );
 
 #ifdef HAVE_PYTHON
-
-PyObject *list_to_python(LIST *l);
-LIST *list_from_python(PyObject *l);
-
+PyObject * list_to_python( LIST * );
+LIST * list_from_python( PyObject * );
 #endif
 
 #endif
-

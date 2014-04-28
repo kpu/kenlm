@@ -13,9 +13,10 @@
 
 #include "lists.h"
 #include "object.h"
+#include "rules.h"
 
 int make( LIST * targets, int anyhow );
-int make1( TARGET * t );
+int make1( LIST * t );
 
 typedef struct {
     int temp;
@@ -27,21 +28,17 @@ typedef struct {
 } COUNTS ;
 
 
-void make0( TARGET *t, TARGET  *p, int depth,
-            COUNTS *counts, int anyhow );
+void make0( TARGET * t, TARGET * p, int depth, COUNTS * counts, int anyhow,
+    TARGET * rescanning );
 
 
-/*
- * Specifies that the target should be updated.
- */
+/* Specifies that the target should be updated. */
 void mark_target_for_updating( OBJECT * target );
-/*
- * Returns the list of all the target previously passed to 'mark_target_for_updating'.
- */
+
+/* Returns targets previously passed to mark_target_for_updating(). */
 LIST * targets_to_update();
-/*
- * Cleasr/unmarks all targets that are currently marked for update.
- */
+
+/* Clears/unmarks all targets currently marked for update. */
 void clear_targets_to_update();
 
 #endif

@@ -15,33 +15,28 @@
  */
 
 #include "jam.h"
+#include "command.h"
 
 #include "lists.h"
-#include "parse.h"
-#include "variable.h"
 #include "rules.h"
 
-#include "command.h"
-#include <limits.h>
-#include <string.h>
+#include <assert.h>
 
 
 /*
- * cmd_new() - return a new CMD or 0 if too many args
+ * cmd_new() - return a new CMD.
  */
 
 CMD * cmd_new( RULE * rule, LIST * targets, LIST * sources, LIST * shell )
 {
     CMD * cmd = (CMD *)BJAM_MALLOC( sizeof( CMD ) );
-    LISTITER iter = list_begin( shell ), end = list_end( shell );
-    /* Lift line-length limitation entirely when JAMSHELL is just "%". */
-    int no_limit = ( iter != end && !strcmp( object_str( list_item( iter ) ), "%") && list_next( iter ) == end );
-    int max_line = MAXLINE;
-    FRAME frame[1];
+    FRAME frame[ 1 ];
 
+    assert( cmd );
     cmd->rule = rule;
     cmd->shell = shell;
     cmd->next = 0;
+    cmd->noop = 0;
 
     lol_init( &cmd->args );
     lol_add( &cmd->args, targets );
@@ -53,29 +48,9 @@ CMD * cmd_new( RULE * rule, LIST * targets, LIST * sources, LIST * shell )
     lol_init( frame->args );
     lol_add( frame->args, list_copy( targets ) );
     lol_add( frame->args, list_copy( sources ) );
-    function_run_actions( rule->actions->command, frame, stack_global(), cmd->buf );
+    function_run_actions( rule->actions->command, frame, stack_global(),
+        cmd->buf );
     frame_free( frame );
-
-    if ( !no_limit )
-    {
-        /* Bail if the result will not fit in MAXLINE. */
-        char * s = cmd->buf->value;
-        while ( *s )
-        {
-            size_t l = strcspn( s, "\n" );
-
-            if ( l > MAXLINE )
-            {
-                /* We do not free targets/sources/shell if bailing. */
-                cmd_free( cmd );
-                return 0;
-            }
-
-            s += l;
-            if ( *s )
-                ++s;
-        }
-    }
 
     return cmd;
 }
@@ -91,4 +66,19 @@ void cmd_free( CMD * cmd )
     list_free( cmd->shell );
     string_free( cmd->buf );
     BJAM_FREE( (void *)cmd );
+}
+
+
+/*
+ * cmd_release_targets_and_shell()
+ *
+ *   Makes the CMD release its hold on its targets & shell lists and forget
+ * about them. Useful in case caller still has references to those lists and
+ * wants to reuse them after freeing the CMD object.
+ */
+
+void cmd_release_targets_and_shell( CMD * cmd )
+{
+    cmd->args.list[ 0 ] = L0;  /* targets */
+    cmd->shell = L0;           /* shell   */
 }
