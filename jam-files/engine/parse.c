@@ -94,7 +94,7 @@ PARSE * parse_make(
     }
     else
     {
-        yyinput_stream( &p->file, &p->line );
+        yyinput_last_read_token( &p->file, &p->line );
         p->file = object_copy( p->file );
     }
 
