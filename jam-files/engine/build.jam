@@ -1,19 +1,20 @@
 #~ Copyright 2002-2007 Rene Rivera.
 #~ Distributed under the Boost Software License, Version 1.0.
-#~ (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+#~ (See accompanying file LICENSE_1_0.txt or copy at
+#~ http://www.boost.org/LICENSE_1_0.txt)
 
 # Clean env vars of any "extra" empty values.
 for local v in ARGV CC CFLAGS LIBS
 {
-	local values ;
-	for local x in $($(v))
-	{
-		if $(x) != ""
-		{
-			values += $(x) ;
-		}
-	}
-	$(v) = $(values) ;
+    local values ;
+    for local x in $($(v))
+    {
+        if $(x) != ""
+        {
+            values += $(x) ;
+        }
+    }
+    $(v) = $(values) ;
 }
 
 # Platform related specifics.
@@ -139,9 +140,8 @@ toolset-root = [ MATCH --toolset-root=(.*) : $(ARGV) ] ;
     toolset-root = $(toolset-root:J="") ;
 }
 
-# Configure the implemented toolsets. These are minimal
-# commands and options to compile the full Jam. When
-# adding new toolsets make sure to add them to the
+# Configure the implemented toolsets. These are minimal commands and options to
+# compile the full Jam. When adding new toolsets make sure to add them to the
 # "known" list also.
 
 rule toolset ( name command .type ? : opt.out + : opt.define * : flags * : linklibs * )
@@ -258,8 +258,9 @@ toolset kylix bc++ : -o : -D
     : -L$(--python-lib[1]) -l$(--python-lib[2]) ;
 ## Metrowerks CodeWarrior 8.x
 {
-    # Even though CW can compile all files at once, it crashes if it tries in the bjam case.
-    local mwcc = ; if $(OS) = NT { mwcc = mwcc ; } else { mwcc = mwc$(OSPLAT:L) ; }
+    # Even though CW can compile all files at once, it crashes if it tries in
+    # the bjam case.
+    local mwcc ; if $(OS) != NT { mwcc = mwc$(OSPLAT:L) ; }
     mwcc ?= mwcc ;
     toolset metrowerks $(mwcc) : "-o " : -D
         : -c -lang c -subsystem console -cwd include
@@ -372,11 +373,17 @@ toolset vc10 cl : /Fe /Fe /Fd /Fo : -D
     : kernel32.lib advapi32.lib user32.lib $(--python-lib[1]) ;
 toolset vc11 cl : /Fe /Fe /Fd /Fo : -D
     : /nologo
-    [ opt --release : /MT /O2 /Ob2 /Gy /GF /GA /wd4996 ]
+    [ opt --release : /GL /MT /O2 /Ob2 /Gy /GF /GA /wd4996 ]
     [ opt --debug : /MTd /DEBUG /Z7 /Od /Ob0 /wd4996 ]
     -I$(--python-include) -I$(--extra-include)
     : kernel32.lib advapi32.lib user32.lib $(--python-lib[1]) ;
-    
+toolset vc12 cl : /Fe /Fe /Fd /Fo : -D
+    : /nologo
+    [ opt --release : /GL /MT /O2 /Ob2 /Gy /GF /GA /wd4996 ]
+    [ opt --debug : /MTd /DEBUG /Z7 /Od /Ob0 /wd4996 ]
+    -I$(--python-include) -I$(--extra-include)
+    : kernel32.lib advapi32.lib user32.lib $(--python-lib[1]) ;
+
 # First set the build commands and options according to the
 # preset toolset.
 toolset = [ MATCH --toolset=(.*) : $(ARGV) ] ;
@@ -472,25 +479,21 @@ else
 
 if --show-locate-target in $(ARGV)
 {
-  ECHO $(locate-target) ;
+    ECHO $(locate-target) ;
 }
 
 # We have some different files for UNIX, and NT.
 jam.source =
-    command.c compile.c constants.c debug.c function.c glob.c
-    hash.c hcache.c headers.c hdrmacro.c
-    jam.c jambase.c jamgram.c
-    lists.c make.c make1.c mem.c object.c
-    option.c output.c parse.c regexp.c rules.c
-    scan.c search.c subst.c w32_getreg.c
-    timestamp.c variable.c modules.c strings.c filesys.c
-    builtins.c pwd.c class.c native.c md5.c modules/set.c
-    modules/path.c modules/regex.c modules/property-set.c
-    modules/sequence.c modules/order.c
-    ;
+    command.c compile.c constants.c debug.c execcmd.c frames.c function.c glob.c
+    hash.c hcache.c headers.c hdrmacro.c jam.c jambase.c jamgram.c lists.c
+    make.c make1.c mem.c object.c option.c output.c parse.c pathsys.c regexp.c
+    rules.c scan.c search.c subst.c w32_getreg.c timestamp.c variable.c
+    modules.c strings.c filesys.c builtins.c class.c cwd.c native.c md5.c
+    [ .path modules set.c ] [ .path modules path.c ] [ .path modules regex.c ]
+    [ .path modules property-set.c ] [ .path modules sequence.c ] [ .path modules order.c ] ;
 if $(OS) = NT
 {
-    jam.source += execnt.c filent.c pathunix.c ;
+    jam.source += execnt.c filent.c pathnt.c ;
 }
 else
 {
@@ -593,7 +596,7 @@ rule .exe
     .mkdir $(locate-target) ;
     if $(--link)
     {
-        local objs = ;
+        local objs ;
         for local s in $(>)
         {
             # Translate any subdir elements into a simple file name.
@@ -710,7 +713,8 @@ SUFEXE ?= "" ;
 
 yacc ?= [ GLOB $(PATH) : yacc$(SUFEXE) ] ;
 yacc ?= [ GLOB $(PATH) : bison$(SUFEXE) ] ;
-yacc ?= [ GLOB "$(ProgramFiles:J= )\\GnuWin32\\bin" "C:\\Program Files\\GnuWin32\\bin" : bison$(SUFEXE) ] ;
+yacc ?= [ GLOB "$(ProgramFiles:J= )\\GnuWin32\\bin"
+    "C:\\Program Files\\GnuWin32\\bin" : bison$(SUFEXE) ] ;
 yacc = $(yacc[1]) ;
 switch $(yacc:D=:S=)
 {
@@ -748,7 +752,8 @@ if $(UNIX) = true { actions [YACC] {
 } }
 if $(grammar) && ! $(yacc)
 {
-    EXIT "Could not find the 'yacc' tool, and therefore can not build the grammar." ;
+    EXIT Could not find the 'yacc' tool, and therefore can not build the
+        grammar. ;
 }
 if $(grammar) && $(yacc)
 {
@@ -778,7 +783,7 @@ rule .jam
 {
     $(>).exe = [ .exe $(>) : $(jam.source) ] ;
     DEPENDS all : $($(>).exe) ;
-    
+
     # Make a copy under the old name.
     $(<).exe = $(<:S=$($(>).exe:S)) ;
     LOCATE on $($(<).exe) = $(locate-target) ;
@@ -789,29 +794,33 @@ rule .jam
 
 
 # Scan sources for header dependencies.
-#	WARNING: Yes those are *REAL TABS* below. DO NOT CHANGE,
-#	under any circumstances, to spaces!! And the tabs
-#	indenting this are so that if someone is in the mood to
-#	replace tabs they hit this comment, and hopefully notice
-#	their error.
-rule .scan
+#
+# In order to keep things simple, we made a slight compromise here - we only
+# detect changes in headers included relative to the current folder as opposed
+# to those included from somewhere on the include path.
+rule .scan ( targets + )
 {
-    HDRRULE on $(<:D=) = .hdr.scan ;
-    HDRSCAN on $(<:D=) = "^[ 	]*#[ 	]*include[ 	]*([<\"][^\">]*[\">]).*$" ;
+    HDRRULE on $(targets) = .hdr.scan ;
+    HDRSCAN on $(targets) = "^[ \t]*#[ \t]*include[ \t]*\"([^\"]*)\".*$" ;
 }
-rule .hdr.scan
+rule .hdr.scan ( target : includes * : binding )
 {
-    local hdrs = [ GLOB . : $(>:D=) ] ;
-    INCLUDES $(<:D=) : $(hdrs:D=) ;
-    HDRRULE on $(>:D=) = .hdr.scan ;
-    HDRSCAN on $(>:D=) = "^[ 	]*#[ 	]*include[ 	]*([<\"][^\">]*[\">]).*$" ;
+    local target-path = [ NORMALIZE_PATH $(binding:D) ] ;
+    # Extra grist provides target name uniqueness when referencing same name
+    # header files from different folders.
+    local include-targets = <$(target-path)>$(includes) ;
+    NOCARE $(include-targets) ;
+    INCLUDES $(target) : $(include-targets) ;
+    SEARCH on $(include-targets) = $(target-path) ;
+    ISFILE $(include-targets) ;
+    .scan $(include-targets) ;
 }
-.scan [ GLOB . : *.c ] ;
+.scan $(jam.source) ;
 
-# Distribution making from here on out. Assumes that
-# the docs are already built as html at ../doc/html. If
-# they aren't, then the docs are not included in the dist
-# archive.
+
+# Distribution making from here on out. Assumes that the docs are already built
+# as HTML at ../doc/html. Otherwise they will not be included in the built
+# distribution archive.
 dist.license =
     [ GLOB . : $(LICENSE).txt ]
     ;
@@ -866,16 +875,16 @@ if $(OS) = NT
     switch $(zip:D=:S=)
     {
         case 7z* : zip += a -r -tzip -mx=9 ;
-        case zip  : zip += -9r ;
+        case zip : zip += -9r ;
     }
     actions piecemeal [PACK] {
-    "$(zip)" "$(<)" "$(>)"
+        "$(zip)" "$(<)" "$(>)"
     }
     actions piecemeal [ZIP] {
-    "$(zip)" "$(<)" "$(>)"
+        "$(zip)" "$(<)" "$(>)"
     }
     actions piecemeal [COPY] {
-    copy /Y "$(>)" "$(<)" >NUL:
+        copy /Y "$(>)" "$(<)" >NUL:
     }
 }
 if $(UNIX) = true
@@ -888,23 +897,23 @@ if $(UNIX) = true
         case * : tar += -c -f - ;
     }
     actions [PACK] {
-    "$(tar)" "$(>)" | gzip -c9 > "$(<)"
+        "$(tar)" "$(>)" | gzip -c9 > "$(<)"
     }
     #~ actions [PACK] {
-    #~ tar cf "$(<:S=.tar)" "$(>)"
+    #~     tar cf "$(<:S=.tar)" "$(>)"
     #~ }
     actions [ZIP] {
     gzip -c9 "$(>)" > "$(<)"
     }
     actions [COPY] {
-    cp -Rpf "$(>)" "$(<)"
+        cp -Rpf "$(>)" "$(<)"
     }
 }
 
 # The single binary, compressed.
 rule .binary
 {
-    local zip = ;
+    local zip ;
     if $(OS) = NT { zip = $($(<).exe:S=.zip) ; }
     if $(UNIX) = true { zip = $($(<).exe:S=.tgz) ; }
     zip = $(zip:S=)-$(VERSION)-$(RELEASE)-$(platform)$(zip:S) ;
@@ -937,7 +946,7 @@ rule .package ( dst-dir : src-files + )
         }
     }
 
-    local pack = ;
+    local pack ;
     if $(OS) = NT { pack = $(dst-dir).zip ; }
     if $(UNIX) = true { pack = $(dst-dir).tgz ; }
 
@@ -966,7 +975,7 @@ rpm-tool ?= [ GLOB $(PATH) : "rpm" ] ;
 rpm-tool = $(rpm-tool[1]) ;
 rule .rpm ( name : source )
 {
-    local rpm-arch = ;
+    local rpm-arch ;
     switch $(OSPLAT)
     {
         case X86       : rpm-arch ?= i386 ;
@@ -999,8 +1008,8 @@ actions [RPM] {
     rm -f rpm.out
 }
 
-# The distribution targets. Don't bother with the targets if
-# distribution build not requested.
+# The distribution targets. Do not bother with them unless this is a
+# distribution build.
 if dist in $(ARGV)
 {
     #~ .binary bjam ;

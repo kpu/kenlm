@@ -1,8 +1,8 @@
-# Copyright 2003 Douglas Gregor 
-# Copyright 2002, 2003, 2005 Rene Rivera 
-# Copyright 2002, 2003, 2004, 2005 Vladimir Prus 
-# Distributed under the Boost Software License, Version 1.0. 
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt) 
+# Copyright 2003 Douglas Gregor
+# Copyright 2002, 2003, 2005 Rene Rivera
+# Copyright 2002, 2003, 2004, 2005 Vladimir Prus
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
 
 # Utilities for generating format independent output. Using these
 # will help in generation of documentation in at minimum plain/console
@@ -242,7 +242,7 @@ rule split-at-words (
         local t = "" ;
         # divide s into the first X characters and the rest
         s = [ MATCH "^($(char-match))(.*)" : $(text) ] ;
-        
+
         if $(s[2])
         {
             # split the first half at a space
@@ -252,12 +252,12 @@ rule split-at-words (
         {
             t = $(s) ;
         }
-        
+
         if ! $(t[2])
         {
             t += "" ;
         }
-        
+
         text = $(t[2])$(s[2]) ;
         lines += $(t[1]) ;
     }
@@ -270,9 +270,9 @@ rule split-at-words (
 # split them with <br>.
 #
 rule lines (
-    text *  # The lines of text.
-    : indent ?  # Optional indentation prepended to each line after the first one.
-    outdent ?  # Optional indentation to prepend to the first line.
+    text *      # The lines of text.
+    : indent ?  # Optional indentation prepended to each line after the first.
+    outdent ?   # Optional indentation to prepend to the first line.
 )
 {
     text ?= "" ;
@@ -307,9 +307,10 @@ rule lines (
 # output using this rule.
 #
 rule text (
-    strings *  # The strings of text to output.
-    : overwrite ?  # true to overwrite the output (if it is a file)
-    : prefix-body-suffix ?  # Indication to output prefix, body, or suffix (for a file).
+    strings *               # The strings of text to output.
+    : overwrite ?           # True to overwrite the output (if it is a file).
+    : prefix-body-suffix ?  # Indication to output prefix, body, or suffix (for
+                            # a file).
 )
 {
     prefix-body-suffix ?= body ;
@@ -333,7 +334,7 @@ rule text (
         $(output-target).text-prefix = ;
         $(output-target).text-body = ;
         $(output-target).text-suffix = ;
-        
+
         nl on $(output-target) = "
 " ;
         text-redirect on $(output-target) = ">>" ;
@@ -342,7 +343,7 @@ rule text (
             text-redirect on $(output-target) = ">" ;
         }
         text-content on $(output-target) = ;
-        
+
         text-action $(output-target) ;
 
         if $(overwrite) && $(output-target) != console
@@ -412,11 +413,10 @@ rule get-scanner ( )
 }
 
 
-# The following code to update print targets when their contents
-# change is a horrible hack.  It basically creates a target which
-# binds to this file (print.jam) and installs a scanner on it
-# which reads the target and compares its contents to the new
-# contents that we're writing.
+# The following code to update print targets when their contents change is a
+# horrible hack. It basically creates a target which binds to this file
+# (print.jam) and installs a scanner on it which reads the target and compares
+# its contents to the new contents that we are writing.
 #
 rule check-for-update ( target )
 {
@@ -429,7 +429,7 @@ rule check-for-update ( target )
     ISFILE $(dependency-target) ;
     NOUPDATE $(dependency-target) ;
     base on $(dependency-target) = $(target) ;
-    scanner.install $(scanner) : $(dependency-target) none ;
+    scanner.install $(scanner) : $(dependency-target) ;
     return $(dependency-target) ;
 }
 
@@ -475,7 +475,7 @@ class print-scanner : scanner
 rule __test__ ( )
 {
     import assert ;
-    
+
     assert.result one two three   : split-at-words one two three : 5 ;
     assert.result "one two" three : split-at-words one two three : 8 ;
     assert.result "one two" three : split-at-words one two three : 9 ;

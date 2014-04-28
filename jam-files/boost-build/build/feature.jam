@@ -2,11 +2,11 @@
 # Copyright 2002, 2006 Rene Rivera
 # Copyright 2002, 2003, 2004, 2005, 2006 Vladimir Prus
 # Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 import assert : * ;
 import "class" : * ;
-import errors : lol->list ;
 import indirect ;
 import modules ;
 import regex ;
@@ -133,9 +133,10 @@ rule feature (
 
     if $(error)
     {
+        import errors ;
         errors.error $(error)
               : "in" feature declaration:
-              : feature [ lol->list $(1) : $(2) : $(3) ] ;
+              : feature [ errors.lol->list $(1) : $(2) : $(3) ] ;
     }
 
     $(name).values ?= ;
@@ -173,12 +174,14 @@ rule set-default ( feature : value )
     }
     if $(bad-attribute)
     {
-        errors.error "$(bad-attribute) property $(f) cannot have a default." ;
+        import errors ;
+        errors.error $(bad-attribute) property $(f) cannot have a default. ;
     }
     if ! $(value) in $($(f).values)
     {
-        errors.error "The specified default value, '$(value)' is invalid"
-          : "allowed values are: " $($(f).values) ;
+        import errors ;
+        errors.error The specified default value, '$(value)' is invalid :
+            allowed values are: $($(f).values) ;
     }
     $(f).default = $(value) ;
 }
@@ -220,7 +223,7 @@ rule valid ( names + )
 #
 rule attributes ( feature )
 {
-    return $($(:E=:G=$(feature)).attributes) ;
+    return $($(feature).attributes) ;
 }
 
 
@@ -266,11 +269,11 @@ rule is-implicit-value ( value-string )
 rule implied-feature ( implicit-value )
 {
     local components = [ regex.split $(implicit-value) "-" ] ;
-
     local feature = $($(components[1]).implicit-feature) ;
     if ! $(feature)
     {
-        errors.error \"$(implicit-value)\" is not a value of an implicit feature ;
+        import errors ;
+        errors.error \"$(implicit-value)\" is not an implicit feature value ;
         feature = "" ;  # Keep testing happy; it expects a result.
     }
     return $(feature) ;
@@ -282,9 +285,9 @@ local rule find-implied-subfeature ( feature subvalue : value-string ? )
     # Feature should be of the form <feature-name>.
     if $(feature) != $(feature:G)
     {
+        import errors ;
         errors.error invalid feature $(feature) ;
     }
-
     return $($(feature)$(value-string:E="")<>$(subvalue).subfeature) ;
 }
 
@@ -304,6 +307,7 @@ rule implied-subfeature (
     if ! $(subfeature)
     {
         value-string ?= "" ;
+        import errors ;
         errors.error \"$(subvalue)\" is not a known subfeature value of
             $(feature)$(value-string) ;
     }
@@ -317,6 +321,7 @@ local rule validate-feature ( feature )
 {
     if ! $(feature) in $(.all-features)
     {
+        import errors ;
         errors.error unknown feature \"$(feature)\" ;
     }
 }
@@ -439,7 +444,9 @@ local rule extend-feature ( feature : values * )
         {
             if $($(v).implicit-feature)
             {
-                errors.error $(v) is already associated with the \"$($(v).implicit-feature)\" feature ;
+                import errors ;
+                errors.error $(v) is already associated with the
+                    \"$($(v).implicit-feature)\" feature ;
             }
             $(v).implicit-feature = $(feature) ;
         }
@@ -469,8 +476,8 @@ rule validate-value-string ( feature value-string )
 
         if $($(feature).subfeatures)
         {
-            if ! ( $(value-string) in $($(feature).values) )
-               && ! ( $(value-string) in $($(feature).subfeatures) ) 
+            if ! $(value-string) in $($(feature).values)
+                $($(feature).subfeatures)
             {
                 values = [ regex.split $(value-string) - ] ;
             }
@@ -481,8 +488,9 @@ rule validate-value-string ( feature value-string )
             # An empty value is allowed for optional features.
             ( $(values[1]) || ! ( optional in $($(feature).attributes) ) )
         {
-            errors.error \"$(values[1])\" is not a known value of feature $(feature)
-                : legal values: \"$($(feature).values)\" ;
+            import errors ;
+            errors.error \"$(values[1])\" is not a known value of feature
+                $(feature) : legal values: \"$($(feature).values)\" ;
         }
 
         for local v in $(values[2-])
@@ -607,12 +615,12 @@ rule extend ( feature-or-property subfeature ? : values * )
         # value-string.
         if $(value-string)
         {
+            import errors ;
             errors.error can only specify a property as the first argument when
                 extending a subfeature
                 : usage:
                 : "    extend" feature ":" values...
-                : "  | extend" <feature>value-string subfeature ":" values...
-                ;
+                : "  | extend" <feature>value-string subfeature ":" values... ;
         }
 
         extend-feature $(feature) : $(values) ;
@@ -646,8 +654,9 @@ rule subfeature (
 
     if $(subfeature-name) in $($(feature).subfeatures)
     {
-        errors.error \"$(subfeature)\" already declared as a subfeature of \"$(feature)\"
-            "specific to "$(value-string) ;
+        import errors ;
+        errors.error \"$(subfeature)\" already declared as a subfeature of
+            \"$(feature)\" "specific to "$(value-string) ;
     }
     $(feature).subfeatures += $(subfeature-name) ;
 
@@ -667,18 +676,21 @@ rule compose ( composite-property : component-properties * )
     local feature = $(composite-property:G) ;
     if ! ( composite in [ attributes $(feature) ] )
     {
+        import errors ;
         errors.error "$(feature)" is not a composite feature ;
     }
 
     $(composite-property).components ?= ;
     if $($(composite-property).components)
     {
+        import errors ;
         errors.error components of "$(composite-property)" already set:
             $($(composite-property).components) ;
     }
 
     if $(composite-property) in $(component-properties)
     {
+        import errors ;
         errors.error composite property "$(composite-property)" cannot have itself as a component ;
     }
     $(composite-property).components = $(component-properties) ;
@@ -748,6 +760,7 @@ rule expand-composites ( properties * )
                     {
                         if $(f) in $(result:G)
                         {
+                            import errors ;
                             errors.error expansions of composite features result
                                 in conflicting values for $(f)
                                 : values: [ get-values $(f) : $(result) ] $(x:G=)
@@ -761,6 +774,7 @@ rule expand-composites ( properties * )
                 }
                 else if $(f) in $(result:G)
                 {
+                    import errors ;
                     errors.error explicitly-specified values of non-free feature
                         $(f) conflict :
                         "existing values:" [ get-values $(f) : $(properties) ] :
@@ -900,6 +914,7 @@ rule minimize ( properties * )
     local implicits = [ set.intersection $(p:G=) : $(p:G) ] ;
     if $(implicits)
     {
+        import errors ;
         errors.error minimize requires an expanded property set, but
             \"$(implicits[1])\" appears to be the value of an un-expanded
             implicit feature ;
@@ -1048,6 +1063,7 @@ rule add-defaults ( properties * )
     {
         if $(v) in $(properties)
         {
+            import errors ;
             errors.error add-defaults requires explicitly specified features,
                 but \"$(v)\" appears to be the value of an un-expanded implicit
                 feature ;
@@ -1216,7 +1232,6 @@ rule __test__ ( )
     subfeature fu : subfu2 : q r s ;
 
     assert.result optional : attributes <fu> ;
-    assert.result optional : attributes fu ;
 
     assert.result <runtime-link>static <define>foobar <optimization>on
         <toolset>gcc:<define>FOO <toolset>gcc <variant>debug <stdlib>native
@@ -1316,7 +1331,7 @@ rule __test__ ( )
     {
         implied-feature lackluster ;
     }
-    catch \"lackluster\" is not a value of an implicit feature ;
+    catch \"lackluster\" is not an implicit feature value ;
 
     try ;
     {

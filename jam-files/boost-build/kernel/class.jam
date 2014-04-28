@@ -2,11 +2,12 @@
 # Copyright 2002, 2005 Rene Rivera
 # Copyright 2002, 2003 Vladimir Prus
 # Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 # Polymorphic class system built on top of core Jam facilities.
 #
-# Classes are defined by 'class' keywords::
+# Classes are defined by 'class' keywords:
 #
 #     class myclass
 #     {
@@ -81,11 +82,12 @@ rule new ( class args * : * )
     .next-instance ?= 1 ;
     local id = object($(class))@$(.next-instance) ;
 
-    xinit $(id) : $(class) ;
-
     INSTANCE $(id) : class@$(class) ;
+    xinit $(id) : $(class) ;
     IMPORT_MODULE $(id) ;
-    $(id).__init__ $(args) : $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) : $(9) ;
+    $(id).__init__ $(args) : $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) :
+        $(9) : $(10) : $(11) : $(12) : $(13) : $(14) : $(15) : $(16) : $(17) :
+        $(18) : $(19) ;
 
     # Bump the next unique object name.
     .next-instance = [ numbers.increment $(.next-instance) ] ;
@@ -163,6 +165,7 @@ rule __test__ ( )
 {
     import assert ;
     import "class" : new ;
+    import errors : try catch ;
 
     # This will be the construction function for a class called 'myclass'.
     #
@@ -238,8 +241,7 @@ rule __test__ ( )
         {
             return $(foo) ;
         }
-    }
-#    class myclass ;
+    }  # class myclass ;
 
     class derived1 : myclass
     {
@@ -281,8 +283,7 @@ rule __test__ ( )
             local v = 10 ;
             assert.variable-not-empty v ;
         }
-    }
-#    class derived1 : myclass ;
+    }  # class derived1 : myclass ;
 
     class derived2 : myclass
     {
@@ -304,8 +305,7 @@ rule __test__ ( )
         {
             return [ myclass.get-x ] ;
         }
-    }
-#    class derived2 : myclass ;
+    }  # class derived2 : myclass ;
 
     class derived2a : derived2
     {
@@ -313,8 +313,7 @@ rule __test__ ( )
         {
             derived2.__init__ ;
         }
-    }
-#    class derived2a : derived2 ;
+    }  # class derived2a : derived2 ;
 
     local rule expect_derived2 ( [derived2] x ) { }
 
@@ -348,7 +347,8 @@ rule __test__ ( )
     #    new bad_subclass ;
     #}
     #catch
-    #  bad_subclass.bad_subclass failed to call base class constructor myclass.__init__
+    #    bad_subclass.bad_subclass failed to call base class constructor
+    #        myclass.__init__
     #  ;
 
     #try ;

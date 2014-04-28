@@ -2,7 +2,8 @@
 # Copyright 2006 Rene Rivera
 # Copyright 2002, 2003 Vladimir Prus
 # Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 import errors ;
 import modules ;
@@ -67,14 +68,17 @@ rule false ( rule-name args * : * )
     module [ CALLER_MODULE ]
     {
         modules.poke assert : result : [ $(1) : $(2) : $(3) : $(4) : $(5) : $(6)
-            : $(7) : $(8) : $(9) ] ;
+            : $(7) : $(8) : $(9) : $(10) : $(11) : $(12) : $(13) : $(14) : $(15)
+            : $(16) : $(17) : $(18) : $(19) ] ;
     }
 
     if $(result)
     {
         errors.error-skip-frames 3 assertion failure: Expected false result from
             "[" $(rule-name) [ errors.lol->list $(args) : $(2) : $(3) : $(4) :
-            $(5) : $(6) : $(7) : $(8) : $(9) ] "]" : Got: "[" \"$(result)\" "]" ;
+            $(5) : $(6) : $(7) : $(8) : $(9) : $(10) : $(11) : $(12) : $(13) :
+            $(14) : $(15) : $(16) : $(17) : $(18) : $(19) ] "]" : Got: "["
+            \"$(result)\" "]" ;
     }
 }
 
@@ -148,14 +152,16 @@ rule result ( expected * : rule-name args * : * )
     module [ CALLER_MODULE ]
     {
         modules.poke assert : result : [ $(2) : $(3) : $(4) : $(5) : $(6) : $(7)
-            : $(8) : $(9) ] ;
+            : $(8) : $(9) : $(10) : $(11) : $(12) : $(13) : $(14) : $(15) :
+            $(16) : $(17) : $(18) : $(19) ] ;
     }
 
     if ! [ exact-equal-test $(result) : $(expected) ]
     {
         errors.error-skip-frames 3 assertion failure: "[" $(rule-name) [
             errors.lol->list $(args) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) :
-            $(9) ] "]" : Expected: "[" \"$(expected)\" "]" : Got: "["
+            $(9) : $(10) : $(11) : $(12) : $(13) : $(14) : $(15) : $(16) : $(17)
+            : $(18) : $(19) ] "]" : Expected: "[" \"$(expected)\" "]" : Got: "["
             \"$(result)\" "]" ;
     }
 }
@@ -163,7 +169,7 @@ rule result ( expected * : rule-name args * : * )
 
 # Assert that EXPECTED is set-equal (i.e. duplicates and ordering are ignored)
 # to the result of calling RULE-NAME with the given arguments. Note that rules
-# called this way may accept at most 8 parameters.
+# called this way may accept at most 18 parameters.
 #
 rule result-set-equal ( expected * : rule-name args * : * )
 {
@@ -171,14 +177,16 @@ rule result-set-equal ( expected * : rule-name args * : * )
     module [ CALLER_MODULE ]
     {
         modules.poke assert : result : [ $(2) : $(3) : $(4) : $(5) : $(6) : $(7)
-            : $(8) : $(9) ] ;
+            : $(8) : $(9) : $(10) : $(11) : $(12) : $(13) : $(14) : $(15) :
+            $(16) : $(17) : $(18) : $(19) ] ;
     }
 
     if ! [ set-equal-test $(result) : $(expected) ]
     {
         errors.error-skip-frames 3 assertion failure: "[" $(rule-name) [
             errors.lol->list $(args) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) :
-            $(9) ] "]" : Expected: "[" \"$(expected)\" "]" : Got: "["
+            $(9) : $(10) : $(11) : $(12) : $(13) : $(14) : $(15) : $(16) : $(17)
+            : $(18) : $(19) ] "]" : Expected: "[" \"$(expected)\" "]" : Got: "["
             \"$(result)\" "]" ;
     }
 }
@@ -205,14 +213,16 @@ rule true ( rule-name args * : * )
     module [ CALLER_MODULE ]
     {
         modules.poke assert : result : [ $(1) : $(2) : $(3) : $(4) : $(5) : $(6)
-            : $(7) : $(8) : $(9) ] ;
+            : $(7) : $(8) : $(9) : $(10) : $(11) : $(12) : $(13) : $(14) : $(15)
+            : $(16) : $(17) : $(18) : $(19) ] ;
     }
 
     if ! $(result)
     {
         errors.error-skip-frames 3 assertion failure: Expected true result from
             "[" $(rule-name) [ errors.lol->list $(args) : $(2) : $(3) : $(4) :
-            $(5) : $(6) : $(7) : $(8) : $(9) ] "]" ;
+            $(5) : $(6) : $(7) : $(8) : $(9) : $(10) : $(11) : $(12) : $(13) :
+            $(14) : $(15) : $(16) : $(17) : $(18) : $(19) ] "]" ;
     }
 }
 
@@ -308,7 +318,7 @@ rule __test__ ( )
         $(not-equality-assert)   x                  : $(empty-strings-x) ;
         $(not-equality-assert)   "" x               : $(empty-strings-x) ;
             $(equality-assert)   "" "" x            : $(empty-strings-x) ;
-    }                                    
+    }
 
 
     # ---------------

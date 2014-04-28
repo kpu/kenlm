@@ -29,7 +29,7 @@ rule init ( version ? : command * : options * )
 
   common.handle-options pgi : $(condition) : $(l_command) : $(options) ;
     
-  command_c = $(command_c[1--2]) $(l_command[-1]:B=cc) ;
+  command_c = $(command_c[1--2]) $(l_command[-1]:B=pgcc) ;
 
   toolset.flags pgi CONFIG_C_COMMAND $(condition) : $(command_c) ;
 

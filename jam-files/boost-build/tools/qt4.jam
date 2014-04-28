@@ -34,7 +34,23 @@
 # compiled and linked in, you don't need any includes.
 #
 # This is consistent with Qt guidelines:
-# http://doc.trolltech.com/4.0/moc.html
+# http://qt-project.org/doc/qt-4.8/moc.html
+#
+# The .qrc processing utility supports various command line option (see
+# http://qt-project.org/doc/qt-4.8/rcc.html for a complete list). The
+# module provides default arguments for the "output file" and
+# "initialization function name" options. Other options can be set through
+# the <rccflags> build property. E.g. if you wish the compression settings
+# to be more aggressive than the defaults, you can apply them too all .qrc
+# files like this:
+#
+#   project my-qt-project :
+#               requirements
+#               <rccflags>"-compress 9 -threshold 10"
+#           ;
+#
+# Of course, this property can also be specified on individual targets.
+
 
 import modules ;
 import feature ;
@@ -70,6 +86,9 @@ feature.feature qt3support : off on : propagated link-incompatible ;
 # Valid are <qt>4.4 or <qt>4.5.0
 # Auto-detection via qmake sets '<qt>major.minor.patch'
 feature.feature qt : : propagated ;
+
+# Extra flags for rcc
+feature.feature rccflags : : free ;
 
 project.initialize $(__name__) ;
 project qt ;
@@ -221,7 +240,7 @@ rule init ( prefix : full_bin ? : full_inc ? : full_lib ? : version ? : conditio
             qt4.moc.inc : MOCCABLE_H : OBJ : <allow>qt4 ] ;
 
         # Generates .cpp files from .qrc files.
-        generators.register-standard qt4.rcc : QRC : CPP(qrc_%) ;
+        generators.register-standard qt4.rcc : QRC : CPP(qrc_%) : <allow>qt4 ;
 
         # dependency scanner for wrapped files.
         type.set-scanner QRC : qrc-scanner ;
@@ -297,12 +316,18 @@ rule init ( prefix : full_bin ? : full_inc ? : full_lib ? : version ? : conditio
    # Setup common pre-built Qt.
    # Special setup for QtCore on which everything depends
    {
+       local link = [ feature.get-values link : $(condition) ] ;
+
        local usage-requirements =
            <include>$(.incprefix)
            <library-path>$(.libprefix)
-           <dll-path>$(.libprefix)
            <threading>multi
            <allow>qt4 ;
+
+       if $(link) in shared
+       {
+           usage-requirements += <dll-path>$(.libprefix) ;
+       }
 
        local suffix ;
 
@@ -323,8 +348,11 @@ rule init ( prefix : full_bin ? : full_inc ? : full_lib ? : version ? : conditio
        {
            .have_separate_debug = TRUE ;
 
-           # On NT, the libs have "4" suffix, and "d" suffix in debug builds.
-           .suffix_version = "4" ;
+           # On NT, the shared libs have "4" suffix, and "d" suffix in debug builds.
+           if $(link) in shared
+           {
+                .suffix_version = "4" ;
+           }
            .suffix_debug = "d" ;
 
            # On Windows we must link against the qtmain library
@@ -691,11 +719,14 @@ actions moc.inc
 }
 
 
+# Get extra options for RCC
+flags qt4.rcc RCC_OPTIONS <rccflags> ;
+
 # Generates source files from resource files.
 #
 actions rcc
 {
-    $(.BINPREFIX[-1])/rcc $(>) -name $(>:B) -o $(<)
+    $(.BINPREFIX[-1])/rcc $(>) -name $(>:B) $(RCC_OPTIONS) -o $(<)
 }
 
 

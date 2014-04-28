@@ -50,6 +50,10 @@ rule transform ( function + : sequence * )
     return $(result) ;
 }
 
+if [ HAS_NATIVE_RULE sequence : transform : 1 ]
+{
+    NATIVE_RULE sequence : transform ;
+}
 
 rule reverse ( s * )
 {

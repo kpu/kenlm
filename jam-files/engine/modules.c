@@ -1,33 +1,34 @@
 /*
- *  Copyright 2001-2004 David Abrahams.
- *  Distributed under the Boost Software License, Version 1.0.
- *  (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+ * Copyright 2001-2004 David Abrahams.
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at
+ * http://www.boost.org/LICENSE_1_0.txt)
  */
-#include "jam.h"
 
+#include "jam.h"
 #include "modules.h"
-#include "string.h"
+
 #include "hash.h"
-#include "object.h"
 #include "lists.h"
+#include "native.h"
+#include "object.h"
 #include "parse.h"
 #include "rules.h"
-#include "variable.h"
 #include "strings.h"
-#include "native.h"
+#include "variable.h"
+
 #include <assert.h>
+#include <string.h>
 
 static struct hash * module_hash = 0;
 static module_t root;
 
+
 module_t * bindmodule( OBJECT * name )
 {
-
     if ( !name )
-    {
         return &root;
-    }
-    else
+
     {
         PROFILE_ENTER( BINDMODULE );
 
@@ -57,6 +58,7 @@ module_t * bindmodule( OBJECT * name )
         return m;
     }
 }
+
 
 /*
  * demand_rules() - Get the module's "rules" hash on demand.
@@ -92,6 +94,7 @@ static void delete_imported_modules( void * xmodule_name, void * data )
 {
     object_free( *(OBJECT * *)xmodule_name );
 }
+
 
 static void free_fixed_variable( void * xvar, void * data );
 
@@ -258,7 +261,7 @@ void modules_done()
         hashenumerate( class_hash, print_class_stats, (void *)0 );
         hash_free( class_hash );
     }
-    hashenumerate( module_hash, delete_module_, (void *)0 ); 
+    hashenumerate( module_hash, delete_module_, (void *)0 );
     hashdone( module_hash );
     module_hash = 0;
     delete_module( &root );
@@ -275,22 +278,23 @@ void import_module( LIST * module_names, module_t * target_module )
     PROFILE_ENTER( IMPORT_MODULE );
 
     struct hash * h;
-    LISTITER iter, end;
+    LISTITER iter;
+    LISTITER end;
 
     if ( !target_module->imported_modules )
-        target_module->imported_modules = hashinit( sizeof( char * ), "imported" );
+        target_module->imported_modules = hashinit( sizeof( char * ), "imported"
+            );
     h = target_module->imported_modules;
 
-    iter = list_begin( module_names ), end = list_end( module_names );
+    iter = list_begin( module_names );
+    end = list_end( module_names );
     for ( ; iter != end; iter = list_next( iter ) )
     {
         int found;
-        OBJECT * s = list_item( iter );
-        OBJECT * * ss = (OBJECT * *)hash_insert( h, s, &found );
-        if( !found )
-        {
+        OBJECT * const s = list_item( iter );
+        OBJECT * * const ss = (OBJECT * *)hash_insert( h, s, &found );
+        if ( !found )
             *ss = object_copy( s );
-        }
     }
 
     PROFILE_EXIT( IMPORT_MODULE );
@@ -299,9 +303,8 @@ void import_module( LIST * module_names, module_t * target_module )
 
 static void add_module_name( void * r_, void * result_ )
 {
-    OBJECT * * r = (OBJECT * *)r_;
-    LIST * * result = (LIST * *)result_;
-
+    OBJECT * * const r = (OBJECT * *)r_;
+    LIST * * const result = (LIST * *)result_;
     *result = list_push_back( *result, object_copy( *r ) );
 }
 
@@ -315,8 +318,8 @@ LIST * imported_modules( module_t * module )
 }
 
 
-FUNCTION * function_bind_variables( FUNCTION * f, module_t * module, int * counter );
-FUNCTION * function_unbind_variables( FUNCTION * f );
+FUNCTION * function_bind_variables( FUNCTION *, module_t *, int * counter );
+FUNCTION * function_unbind_variables( FUNCTION * );
 
 struct fixed_variable
 {
@@ -330,18 +333,22 @@ struct bind_vars_t
     int counter;
 };
 
+
 static void free_fixed_variable( void * xvar, void * data )
 {
     object_free( ( (struct fixed_variable *)xvar )->key );
 }
+
 
 static void bind_variables_for_rule( void * xrule, void * xdata )
 {
     RULE * rule = (RULE *)xrule;
     struct bind_vars_t * data = (struct bind_vars_t *)xdata;
     if ( rule->procedure && rule->module == data->module )
-        rule->procedure = function_bind_variables( rule->procedure, data->module, &data->counter );
+        rule->procedure = function_bind_variables( rule->procedure,
+            data->module, &data->counter );
 }
+
 
 void module_bind_variables( struct module_t * m )
 {
@@ -354,6 +361,7 @@ void module_bind_variables( struct module_t * m )
         module_set_fixed_variables( m, data.counter );
     }
 }
+
 
 int module_add_fixed_var( struct module_t * m, OBJECT * name, int * counter )
 {
@@ -375,6 +383,7 @@ int module_add_fixed_var( struct module_t * m, OBJECT * name, int * counter )
     return v->n;
 }
 
+
 LIST * var_get_and_clear_raw( module_t * m, OBJECT * name );
 
 static void load_fixed_variable( void * xvar, void * data )
@@ -382,10 +391,9 @@ static void load_fixed_variable( void * xvar, void * data )
     struct fixed_variable * var = (struct fixed_variable *)xvar;
     struct module_t * m = (struct module_t *)data;
     if ( var->n >= m->num_fixed_variables )
-    {
         m->fixed_variables[ var->n ] = var_get_and_clear_raw( m, var->key );
-    }
 }
+
 
 void module_set_fixed_variables( struct module_t * m, int n_variables )
 {
@@ -394,22 +402,18 @@ void module_set_fixed_variables( struct module_t * m, int n_variables )
     LIST * * fixed_variables = BJAM_MALLOC( n_variables * sizeof( LIST * ) );
     if ( m->fixed_variables )
     {
-        memcpy( fixed_variables, m->fixed_variables, n_variables * sizeof( LIST * ) );
+        memcpy( fixed_variables, m->fixed_variables, m->num_fixed_variables * sizeof( LIST * ) );
         BJAM_FREE( m->fixed_variables );
     }
     m->fixed_variables = fixed_variables;
-    if ( m->class_module )
-    {
-        variable_indices = m->class_module->variable_indices;
-    }
-    else
-    {
-        variable_indices = m->variable_indices;
-    }
+    variable_indices = m->class_module
+        ? m->class_module->variable_indices
+        : m->variable_indices;
     if ( variable_indices )
         hashenumerate( variable_indices, &load_fixed_variable, m );
     m->num_fixed_variables = n_variables;
 }
+
 
 int module_get_fixed_var( struct module_t * m_, OBJECT * name )
 {
@@ -417,20 +421,11 @@ int module_get_fixed_var( struct module_t * m_, OBJECT * name )
     struct module_t * m = m_;
 
     if ( m->class_module )
-    {
         m = m->class_module;
-    }
 
     if ( !m->variable_indices )
         return -1;
 
     v = (struct fixed_variable *)hash_find( m->variable_indices, name );
-    if ( v && v->n < m_->num_fixed_variables )
-    {
-        return v->n;
-    }
-    else
-    {
-        return -1;
-    }
+    return v && v->n < m_->num_fixed_variables ? v->n : -1;
 }

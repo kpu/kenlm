@@ -2,19 +2,18 @@
 #  distribute this software is granted provided this copyright notice appears in
 #  all copies. This software is provided "as is" without express or implied
 #  warranty, and with no claim as to its suitability for any purpose.
-#  
+#
 #  Copyright (c) 2006 Rene Rivera.
 #
 #  Use, modification and distribution is subject to the Boost Software
 #  License Version 1.0. (See accompanying file LICENSE_1_0.txt or
 #  http://www.boost.org/LICENSE_1_0.txt)
 
-import type ;
 import generators ;
 import feature ;
-import errors ;
 import scanner ;
 import toolset : flags ;
+import type ;
 
 if [ MATCH (--debug-configuration) : [ modules.peek : ARGV ] ]
 {
@@ -35,9 +34,9 @@ rule init ( )
 #
 # Even though the arguments are all optional, only when a command, condition,
 # and at minimum the rc-type option are given will the command be configured.
-# This is so that callers don't have to check auto-configuration values
-# before calling this. And still get the functionality of build failures when
-# the resource compiler can't be found.
+# This is so that callers don't have to check auto-configuration values before
+# calling this. And still get the functionality of build failures when the
+# resource compiler can not be found.
 #
 rule configure ( command ? : condition ? : options * )
 {
@@ -78,28 +77,29 @@ actions quietly compile.resource.null
     as /dev/null -o "$(<)"
 }
 
-# Since it's a common practice to write
-# exe hello : hello.cpp hello.rc
-# we change the name of object created from RC file, to
-# avoid conflict with hello.cpp.
-# The reason we generate OBJ and not RES, is that gcc does not
-# seem to like RES files, but works OK with OBJ.
-# See http://article.gmane.org/gmane.comp.lib.boost.build/5643/
+# Since it is common practice to write
+#   exe hello : hello.cpp hello.rc
+# we change the name of object created from RC file, to avoid conflict with
+# hello.cpp. The reason we generate OBJ and not RES, is that gcc does not seem
+# to like RES files, but works OK with OBJ (see
+# http://article.gmane.org/gmane.comp.lib.boost.build/5643).
 #
 # Using 'register-c-compiler' adds the build directory to INCLUDES
 generators.register-c-compiler rc.compile.resource : RC : OBJ(%_res) ;
 
 # Register scanner for resources
-class res-scanner : scanner 
+class res-scanner : scanner
 {
-    import regex virtual-target path scanner ;    
-    
+    import path ;
+    import regex ;
+    import scanner ;
+    import virtual-target ;
+
     rule __init__ ( includes * )
     {
         scanner.__init__ ;
-    
         self.includes = $(includes) ;
-    }    
+    }
 
     rule pattern ( )
     {
@@ -112,44 +112,43 @@ class res-scanner : scanner
         local quoted = [ regex.transform $(matches) : "#include[ ]*\"([^\"]+)\"" ] ;
         local res = [ regex.transform $(matches) : "[^ ]+[ ]+(BITMAP|CURSOR|FONT|ICON|MESSAGETABLE|RT_MANIFEST)[ ]+(([^ \"]+)|\"([^\"]+)\")" : 3 4 ] ;
 
-        # Icons and other includes may referenced as 
+        # Icons and other includes may be referenced as
         #
         # IDR_MAINFRAME ICON "res\\icon.ico"
         #
-        # so we have to replace double backslashes to single ones.
+        # so we have to replace double backslashes with single ones.
         res = [ regex.replace-list $(res) : "\\\\\\\\" : "/" ] ;
 
-        # CONSIDER: the new scoping rule seem to defeat "on target" variables.
-        local g = [ on $(target) return $(HDRGRIST) ] ;  
+        # CONSIDER: the new scoping rules seem to defeat "on target" variables.
+        local g = [ on $(target) return $(HDRGRIST) ] ;
         local b = [ NORMALIZE_PATH $(binding:D) ] ;
 
-        # Attach binding of including file to included targets.
-        # When target is directly created from virtual target
-        # this extra information is unnecessary. But in other
-        # cases, it allows to distinguish between two headers of the 
-        # same name included from different places.      
-        # We don't need this extra information for angle includes,
-        # since they should not depend on including file (we can't
-        # get literal "." in include path).
+        # Attach binding of including file to included targets. When a target is
+        # directly created from a virtual target this extra information is
+        # unnecessary. But in other cases, it allows us to distinguish between
+        # two headers of the same name included from different places. We do not
+        # need this extra information for angle includes, since they should not
+        # depend on the including file (we can not get literal "." in the
+        # include path).
         local g2 = $(g)"#"$(b) ;
-       
+
         angle = $(angle:G=$(g)) ;
         quoted = $(quoted:G=$(g2)) ;
         res = $(res:G=$(g2)) ;
-        
-        local all = $(angle) $(quoted) ;
+
+        local all = $(angle) $(quoted) $(res) ;
 
         INCLUDES $(target) : $(all) ;
-        DEPENDS $(target) : $(res) ;
-        NOCARE $(all) $(res) ;
+        NOCARE $(all) ;
         SEARCH on $(angle) = $(self.includes:G=) ;
-        SEARCH on $(quoted) = $(b) $(self.includes:G=) ;
-        SEARCH on $(res) = $(b) $(self.includes:G=) ;
-        
-        # Just propagate current scanner to includes, in a hope
-        # that includes do not change scanners. 
+        SEARCH on $(quoted) $(res) = $(b) $(self.includes:G=) ;
+
+        # Just propagate the current scanner to includes, in hope that includes
+        # do not change scanners.
         scanner.propagate $(__name__) : $(angle) $(quoted) : $(target) ;
-    }        
+
+        ISFILE $(all) ;
+    }
 }
 
 scanner.register res-scanner : include ;

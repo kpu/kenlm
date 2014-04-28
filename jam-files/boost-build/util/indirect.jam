@@ -1,7 +1,8 @@
 # Copyright 2003 Dave Abrahams
 # Copyright 2003 Vladimir Prus
 # Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 import modules ;
 import numbers ;
@@ -53,13 +54,13 @@ rule make-qualified ( rulename bound-args * : frames ? )
         frames ?= 1 ;
         # If the rule name includes a Jamfile module, grab it.
         local module-context = [ MATCH ^(Jamfile<[^>]*>)\\..* : $(rulename) ] ;
-        
+
         if ! $(module-context)
-        {                    
+        {
             # Take the first dot-separated element as module name. This disallows
             # module names with dots, but allows rule names with dots.
             module-context = [ MATCH ^([^.]*)\\..* : $(rulename) ] ;
-        }        
+        }
         module-context ?= [ CALLER_MODULE $(frames) ] ;
         return [ make $(rulename) $(bound-args) : $(module-context) ] ;
     }
@@ -92,8 +93,9 @@ rule get-rule ( [indirect-rule] x )
 #
 rule call ( [indirect-rule] r args * : * )
 {
-    return [ modules.call-in [ get-module $(r) ] : [ get-rule $(r) ] $(args)
-        : $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) : $(9) ] ;
+    return [ modules.call-in [ get-module $(r) ] : [ get-rule $(r) ] $(args) :
+        $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) : $(9) : $(10) : $(11) :
+        $(12) : $(13) : $(14) : $(15) : $(16) : $(17) : $(18) : $(19) ] ;
 }
 
 

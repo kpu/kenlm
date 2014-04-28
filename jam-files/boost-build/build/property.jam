@@ -2,9 +2,9 @@
 # Copyright 2006 Rene Rivera
 # Copyright 2002, 2003, 2004, 2005, 2006 Vladimir Prus
 # Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
-import errors ;
 import feature ;
 import indirect ;
 import path ;
@@ -22,67 +22,28 @@ import utility ;
 rule refine ( properties * : requirements * )
 {
     local result ;
-    local error ;
+    local unset ;
 
-    # All the 'requirements' elements should be present in the result. Record
-    # them so that we can handle 'properties'.
+    # Collect all non-free features in requirements
     for local r in $(requirements)
     {
         # Do not consider conditional requirements.
-        if ! [ MATCH (:) : $(r:G=) ]
+        if ! [ MATCH (:) : $(r:G=) ] && ! free in [ feature.attributes $(r:G) ]
         {
-            # Note: cannot use a local variable here, so use an ugly name.
-            __require__$(r:G) = $(r:G=) ;
+            unset += $(r:G) ;
         }
     }
 
+    # Remove properties that are overridden by requirements
     for local p in $(properties)
     {
-        if [ MATCH (:) : $(p:G=) ]
+        if [ MATCH (:) : $(p:G=) ] || ! $(p:G) in $(unset)
         {
-            # Do not modify conditional properties.
             result += $(p) ;
-        }
-        else if free in [ feature.attributes $(p:G) ]
-        {
-            # Do not modify free properties.
-            result += $(p) ;
-        }
-        else
-        {
-            local required-value = $(__require__$(p:G)) ;
-            if $(required-value)
-            {
-                if $(p:G=) != $(required-value)
-                {
-                    result += $(p:G)$(required-value) ;
-                }
-                else
-                {
-                    result += $(p) ;
-                }
-            }
-            else
-            {
-                result += $(p) ;
-            }
         }
     }
 
-    # Unset our ugly map.
-    for local r in $(requirements)
-    {
-        __require__$(r:G) = ;
-    }
-
-    if $(error)
-    {
-        return $(error) ;
-    }
-    else
-    {
-        return [ sequence.unique $(result) $(requirements) ] ;
-    }
+    return [ sequence.unique $(result) $(requirements) ] ;
 }
 
 
@@ -110,11 +71,11 @@ rule evaluate-conditionals-in-context ( properties * : context * )
     for local p in $(conditionals)
     {
         # Separate condition and property.
-        local s = [ MATCH (.*):(<.*) : $(p) ] ;
+        local s = [ MATCH ^(.*):(<.*) : $(p) ] ;
         # Split condition into individual properties.
         local condition = [ regex.split $(s[1]) "," ] ;
         # Evaluate condition.
-        if ! [ MATCH (!).* : $(condition:G=) ]
+        if ! [ MATCH ^(!).* : $(condition:G=) ]
         {
             # Only positive checks
             if $(condition) in $(context)
@@ -129,7 +90,7 @@ rule evaluate-conditionals-in-context ( properties * : context * )
             while $(condition)
             {
                 local c = $(condition[1]) ;
-                local m = [ MATCH !(.*) : $(c) ] ;
+                local m = [ MATCH ^!(.*) : $(c) ] ;
                 if $(m)
                 {
                     local p = $(m:G=$(c:G)) ;
@@ -137,23 +98,23 @@ rule evaluate-conditionals-in-context ( properties * : context * )
                     {
                         fail = true ;
                         c = ;
-                    }                    
-                }    
+                    }
+                }
                 else
                 {
                     if ! $(c) in $(context)
                     {
                         fail = true ;
                         c = ;
-                    }                    
+                    }
                 }
                 condition = $(condition[2-]) ;
             }
             if ! $(fail)
             {
                 result += $(s[2]) ;
-            }            
-        }                
+            }
+        }
     }
     return $(result) ;
 }
@@ -164,7 +125,7 @@ rule expand-subfeatures-in-conditions ( properties * )
     local result ;
     for local p in $(properties)
     {
-        local s = [ MATCH (.*):(<.*) : $(p) ] ;
+        local s = [ MATCH ^(.*):(<.*) : $(p) ] ;
         if ! $(s)
         {
             result += $(p) ;
@@ -325,6 +286,7 @@ local rule validate1 ( property )
     }
     if $(msg)
     {
+        import errors ;
         errors.error "Invalid property "'$(property:J=" ")'": "$(msg:J=" "). ;
     }
 }
@@ -367,6 +329,7 @@ rule make ( specification * )
         }
         else
         {
+            import errors ;
             errors.error "'$(e)' is not a valid property specification" ;
         }
     }
@@ -457,13 +420,149 @@ rule change ( properties * : feature value ? )
 #
 rule split-conditional ( property )
 {
-    local m = [ MATCH "(.+):<(.+)" : $(property) ] ;
-    if $(m)
+    return [ MATCH "^(.+):(<.+)" : $(property) ] ;
+}
+
+
+rule translate-path-value ( value : path )
+{
+    local t ;
+    for local v in [ regex.split $(value) "&&" ]
     {
-        return $(m[1]) <$(m[2]) ;
+        t += [ path.root [ path.make $(v) ] $(path) ] ;
+    }
+    return $(t:TJ="&&") ;
+}
+
+rule translate-dependency-value ( value : project-id : project-location )
+{
+    local split-target = [ regex.match ^(.*)//(.*) : $(value) ] ;
+    if $(split-target)
+    {
+        local rooted = [ path.root [ path.make $(split-target[1]) ]
+                [ path.root $(project-location) [ path.pwd ] ] ] ;
+        return $(rooted)//$(split-target[2]) ;
+    }
+    else if [ path.is-rooted $(value) ]
+    {
+        return $(value) ;
+    }
+    else
+    {
+        return $(project-id)//$(value) ;
     }
 }
 
+rule translate-indirect-value ( rulename : context-module )
+{
+    if [ MATCH "^([^%]*)%([^%]+)$" : $(rulename) ]
+    {
+        # Rule is already in the 'indirect-rule' format.
+        return @$(rulename) ;
+    }
+    else
+    {
+        local v ;
+        if ! [ MATCH "([.])" : $(rulename) ]
+        {
+            # This is an unqualified rule name. The user might want to
+            # set flags on this rule name and toolset.flag
+            # auto-qualifies it. Need to do the same here so flag
+            # setting works. We can arrange for toolset.flag to *not*
+            # auto-qualify the argument but then two rules defined in
+            # two Jamfiles would conflict.
+            rulename = $(context-module).$(rulename) ;
+        }
+        v = [ indirect.make $(rulename) : $(context-module) ] ;
+        return @$(v) ;
+    }
+
+}
+
+# Equivalent to a calling all of:
+#   translate-path
+#   translate-indirect
+#   translate-dependency
+#   expand-subfeatures-in-conditions
+#   make
+#
+rule translate ( properties * : project-id : project-location : context-module )
+{
+    local result ;
+    for local p in $(properties)
+    {
+        local split = [ split-conditional $(p) ] ;
+        local condition property ;
+
+        if $(split)
+        {
+            condition = $(split[1]) ;
+            property = $(split[2]) ;
+            
+            local e ;
+            for local c in [ regex.split $(condition) "," ]
+            {
+                e += [ feature.expand-subfeatures $(c) : true ] ;
+            }
+
+            condition = $(e:J=,): ;
+        }
+        else
+        {
+            property = $(p) ;
+        }
+
+        local feature = $(property:G) ;
+        if ! $(feature)
+        {
+            if [ feature.is-implicit-value $(property) ]
+            {
+                feature = [ feature.implied-feature $(property) ] ;
+                result += $(condition:E=)$(feature)$(property) ;
+            }
+            else
+            {
+                import errors ;
+                errors.error "'$(e)' is not a valid property specification" ;
+            }
+        } else {
+            local attributes = [ feature.attributes $(feature) ] ;
+            local value ;
+            # Only free features should be translated
+            if free in $(attributes)
+            {
+                if path in $(attributes)
+                {
+                    value = [ translate-path-value $(property:G=) : $(project-location) ] ;
+                    result += $(condition:E=)$(feature)$(value) ;
+                }
+                else if dependency in $(attributes)
+                {
+                    value = [ translate-dependency-value $(property:G=) : $(project-id) : $(project-location) ] ;
+                    result += $(condition:E=)$(feature)$(value) ;
+                }
+                else
+                {
+                    local m = [ MATCH ^@(.+) : $(property:G=) ] ;
+                    if $(m)
+                    {
+                        value = [ translate-indirect-value $(m) : $(context-module) ] ;
+                        result += $(condition:E=)$(feature)$(value) ;
+                    }
+                    else
+                    {
+                        result += $(condition:E=)$(property) ;
+                    }
+                }
+            }
+            else
+            {
+                result += $(condition:E=)$(property) ;
+            }
+        }
+    }
+    return $(result) ;
+}
 
 # Interpret all path properties in 'properties' as relative to 'path'. The
 # property values are assumed to be in system-specific form, and will be
@@ -524,7 +623,7 @@ rule translate-indirect ( specification * : context-module )
             }
             else
             {
-                if ! [ MATCH ".*([.]).*" : $(m) ]
+                if ! [ MATCH "([.])" : $(m) ]
                 {
                     # This is an unqualified rule name. The user might want to
                     # set flags on this rule name and toolset.flag
@@ -568,7 +667,7 @@ rule translate-dependencies ( specification * : project-id : location )
         }
         if dependency in [ feature.attributes $(p:G) ]
         {
-            local split-target = [ regex.match (.*)//(.*) : $(p:G=) ] ;
+            local split-target = [ regex.match ^(.*)//(.*) : $(p:G=) ] ;
             if $(split-target)
             {
                 local rooted = [ path.root [ path.make $(split-target[1]) ]
@@ -597,7 +696,6 @@ rule translate-dependencies ( specification * : project-id : location )
 #
 class property-map
 {
-    import errors ;
     import numbers ;
     import sequence ;
 
@@ -608,11 +706,10 @@ class property-map
 
     # Associate 'value' with 'properties'.
     #
-    rule insert ( properties + : value )
+    rule insert ( properties * : value )
     {
-        self.all-flags += $(self.next-flag) ;
-        self.properties.$(self.next-flag) = $(properties) ;
-        self.value.$(self.next-flag) = $(value) ;
+        self.all-flags += self.$(self.next-flag) ;
+        self.$(self.next-flag) = $(value) $(properties) ;
 
         self.next-flag = [ numbers.increment $(self.next-flag) ] ;
     }
@@ -621,37 +718,57 @@ class property-map
     # more than one subset has a value assigned to it, returns the value for the
     # longest subset, if it is unique.
     #
-    rule find ( properties + )
-    {
-        return [ find-replace $(properties) ] ;
-    }
-
-    # Returns the value associated with 'properties'. If 'value' parameter is
-    # given, replaces the found value.
-    #
-    rule find-replace ( properties + : value ? )
+    rule find ( property-set )
     {
         # First find all matches.
         local matches ;
         local match-ranks ;
         for local i in $(self.all-flags)
         {
-            if $(self.properties.$(i)) in $(properties)
+            local list = $($(i)) ;
+            if [ $(property-set).contains-raw $(list[2-]) ] 
             {
-                matches += $(i) ;
-                match-ranks += [ sequence.length $(self.properties.$(i)) ] ;
+                matches += $(list[1]) ;
+                match-ranks += [ sequence.length $(list) ] ;
             }
         }
         local best = [ sequence.select-highest-ranked $(matches)
             : $(match-ranks) ] ;
         if $(best[2])
-        {            
+        {
+            import errors : error : errors.error ;
             errors.error "Ambiguous key $(properties:J= :E=)" ;
         }
-        local original = $(self.value.$(best)) ;
+        return $(best) ;
+    }
+
+    # Returns the value associated with 'properties'. If 'value' parameter is
+    # given, replaces the found value.
+    #
+    rule find-replace ( properties * : value ? )
+    {
+        # First find all matches.
+        local matches ;
+        local match-ranks ;
+        for local i in $(self.all-flags)
+        {
+            if $($(i)[2-]) in $(properties)
+            {
+                matches += $(i) ;
+                match-ranks += [ sequence.length $($(i)) ] ;
+            }
+        }
+        local best = [ sequence.select-highest-ranked $(matches)
+            : $(match-ranks) ] ;
+        if $(best[2])
+        {
+            import errors : error : errors.error ;
+            errors.error "Ambiguous key $(properties:J= :E=)" ;
+        }
+        local original = $($(best)[1]) ;
         if $(value)
         {
-            self.value.$(best) = $(value) ;
+            $(best) = $(value) $($(best)[2-]) ;
         }
         return $(original) ;
     }
@@ -744,7 +861,7 @@ rule __test__ ( )
 
     try ;
         validate value : $(test-space) ;
-    catch "value" is not a value of an implicit feature ;
+    catch \"value\" is not an implicit feature value ;
 
     assert.result-set-equal <rtti>on
         : remove free implicit : <toolset>gcc <define>foo <rtti>on : $(test-space) ;
@@ -766,12 +883,12 @@ rule __test__ ( )
     $(pm).insert <toolset>gcc <os>NT : obj ;
     $(pm).insert <toolset>gcc <os>CYGWIN : obj ;
 
-    assert.equal o : [ $(pm).find <toolset>gcc ] ;
+    assert.equal o : [ $(pm).find-replace <toolset>gcc ] ;
 
-    assert.equal obj : [ $(pm).find <toolset>gcc <os>NT ] ;
+    assert.equal obj : [ $(pm).find-replace <toolset>gcc <os>NT ] ;
 
     try ;
-        $(pm).find <toolset>gcc <os>NT <os>CYGWIN ;
+        $(pm).find-replace <toolset>gcc <os>NT <os>CYGWIN ;
     catch "Ambiguous key <toolset>gcc <os>NT <os>CYGWIN" ;
 
     # Test ordinary properties.

@@ -8,6 +8,7 @@ import generators ;
 import toolset : flags ;
 import feature ;
 import type ;
+import os ;
 import common ;
 import fortran ;
 
@@ -54,6 +55,15 @@ rule init ( version ? : command * : options * )
 
   # always link lib rt to resolve clock_gettime()
   flags pathscale.link FINDLIBS-SA : rt : unchecked ;
+
+  switch [ os.name ]
+  {
+    case SOLARIS :
+        toolset.flags pathscale.link RPATH_OPTION $(condition) : -Wl,-R, -Wl, : unchecked ;
+
+    case * : # GNU
+        toolset.flags pathscale.link RPATH_OPTION $(condition) : -Wl,-rpath=  : unchecked ;
+  }
 }
 
 # Declare generators
@@ -146,7 +156,7 @@ rule link ( targets * : sources * : properties * )
 
 actions link bind LIBRARIES
 {
-    "$(CONFIG_COMMAND)" $(OPTIONS) $(USER_OPTIONS) -L"$(LINKPATH)" -Wl,$(RPATH_OPTION:E=-R)$(SPACE)-Wl,"$(RPATH)" -o "$(<)" "$(>)" "$(LIBRARIES)" -l$(FINDLIBS-SA) -l$(FINDLIBS-ST)
+    "$(CONFIG_COMMAND)" $(OPTIONS) $(USER_OPTIONS) -L"$(LINKPATH)" $(RPATH_OPTION:E=-Wl,-rpath=)"$(RPATH)" -o "$(<)" "$(>)" "$(LIBRARIES)" -l$(FINDLIBS-SA) -l$(FINDLIBS-ST)
 }
 
 # Slight mods for dlls
@@ -157,7 +167,7 @@ rule link.dll ( targets * : sources * : properties * )
 
 actions link.dll bind LIBRARIES
 {
-    "$(CONFIG_COMMAND)" $(OPTIONS) $(USER_OPTIONS) -L"$(LINKPATH)" -Wl,$(RPATH_OPTION:E=-R)$(SPACE)-Wl,"$(RPATH)" -o "$(<)" -Wl,-soname$(SPACE)-Wl,$(<[1]:D=) -shared "$(>)" "$(LIBRARIES)" -l$(FINDLIBS-SA) -l$(FINDLIBS-ST)
+    "$(CONFIG_COMMAND)" $(OPTIONS) $(USER_OPTIONS) -L"$(LINKPATH)" $(RPATH_OPTION:E=-Wl,-rpath=)"$(RPATH)" -o "$(<)" -Wl,-soname$(SPACE)-Wl,$(<[1]:D=) -shared "$(>)" "$(LIBRARIES)" -l$(FINDLIBS-SA) -l$(FINDLIBS-ST)
 }
 
 # Declare action for creating static libraries

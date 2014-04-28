@@ -1,4 +1,5 @@
 # Copyright (c) 2010 Vladimir Prus.
+# Copyright (c) 2013 Steven Watanabe
 #
 # Use, modification and distribution is subject to the Boost Software
 # License Version 1.0. (See accompanying file LICENSE_1_0.txt or
@@ -10,106 +11,109 @@ import modules ;
 import "class" ; 
 import errors ;
 import configure ;
+import project ;
+import virtual-target ;
+import generators ;
+import property ;
+import print ;
 
-rule find-include-path ( variable : properties : header 
-    : provided-path ? )
+project.initialize $(__name__) ;
+.project = [ project.current ] ;
+project ac ;
+
+rule generate-include ( target : sources * : properties * )
 {
-    # FIXME: document which properties affect this function by
-    # default.
-    local target-os = [ $(properties).get <target-os> ] ;
-    properties = [ property-set.create <target-os>$(toolset) ] ;    
-    if $($(variable)-$(properties))
-    {
-        return $($(variable)-$(properties)) ;
-    }
-    else
-    {
-        provided-path ?= [ modules.peek : $(variable) ] ;
-        includes = $(provided-path) ;
-        includes += [ $(properties).get <include> ] ;
-        if [ $(properties).get <target-os> ] != windows
-        {
-            # FIXME: use sysroot
-            includes += /usr/include ;
-        }
-        
-        local result ;
-        while ! $(result) && $(includes)
-        {            
-            local f = [ path.root $(header) $(includes[1]) ] ;
-            ECHO "Checking " $(f) ;
-            if [ path.exists $(f) ]
-            {
-                result = $(includes[1]) ;
-            }
-            else if $(provided-path)
-            {
-                errors.user-error "Could not find header" $(header)
-                  : "in the user-specified directory" $(provided-path) ;
-            }            
-            includes = $(includes[2-]) ;                
-        }        
-        $(variable)-$(properties) = $(result) ;
-        return $(result) ;
-    }        
+    local header = [ property.select <include> : $(properties) ] ;
+    print.output $(target) ;
+    print.text "#include <$(header:G=)>" : true ;
 }
 
-rule find-library ( variable : properties : names + : provided-path ? )
+rule generate-main ( target : sources * : properties * )
 {
-    local target-os = [ $(properties).get <target-os> ] ;
-    properties = [ property-set.create <target-os>$(toolset) ] ;
-    if $($(variable)-$(properties))
+    print.output $(target) ;
+    print.text "int main() {}" : true ;
+}
+
+rule find-include-path ( properties : header : provided-path ? )
+{
+    if $(provided-path) && [ path.exists [ path.root $(header) $(provided-path) ] ]
     {
-        return $($(variable)-$(properties)) ;
+        return $(provided-path) ;
     }
     else
     {
-        provided-path ?= [ modules.peek : $(variable) ] ;
-        paths = $(provided-path) ;
-        paths += [ $(properties).get <library-path> ] ;
-        if [ $(properties).get <target-os> ] != windows
+        local a = [ class.new action : ac.generate-include : [ property-set.create <include>$(header) ] ] ;
+        local cpp = [ class.new file-target $(header).cpp exact : CPP : $(.project) : $(a) ] ;
+        cpp = [ virtual-target.register $(cpp) ] ;
+        local result = [ generators.construct $(.project) $(header) : OBJ : $(properties) : $(cpp) : true ] ;
+        local jam-targets ;
+        for t in $(result[2-])
         {
-            paths += /usr/lib /usr/lib32 /usr/lib64 ;
+            jam-targets += [ $(t).actualize ] ;
         }
-        
-        local result ;               
-        while ! $(result) && $(paths)
-        {   
-            while ! $(result) && $(names)
-            {
-                local f ;
-                if $(target-os) = windows
-                {         
-                    f = $(paths[1])/$(names[1]).lib ;                
-                    if [ path.exists $(f) ] 
-                    {
-                        result = $(f) ;
-                    }
-                }
-                else
-                {
-                    # FIXME: check for .a as well, depending on
-                    # the 'link' feature.
-                    f = $(paths[1])/lib$(names[1]).so ;                
-                    ECHO "CHECKING $(f) " ;
-                    if [ path.exists $(f) ] 
-                    {
-                        result = $(f) ;
-                    }
-                }
-                if ! $(result) && $(provided-path)
-                {
-                    errors.user-error "Could not find either of: " $(names)
-                      : "in the user-specified directory" $(provided-path) ;
-                    
-                }                
-                names = $(names[2-]) ;
-            }
-            paths = $(paths[2-]) ;
-        }        
-        $(variable)-$(properties) = $(result) ;
-        return $(result) ;
+        if [ UPDATE_NOW $(jam-targets) : [ modules.peek configure : .log-fd ]
+            : ignore-minus-n : ignore-minus-q ]
+        {
+            return %default ;
+        }
     }
+}
+
+rule construct-library ( name : property-set : provided-path ? )
+{
+    property-set = [ $(property-set).refine [ property-set.create $(link-opt) ] ] ;
+    local lib-props = [ $(property-set).add-raw <name>$(name) <search>$(provided-path) ] ;
+    return [ generators.construct $(.project) lib-$(name)
+        : SEARCHED_LIB : $(lib-props) : : true ] ;
+}
+
+
+rule find-library ( properties : names + : provided-path ? )
+{
+    local result ;
+    if ! $(.main.cpp)
+    {
+        local a = [ class.new action : ac.generate-main :
+                    [ property-set.empty ] ] ;
+        .main.cpp = [ virtual-target.register
+            [ class.new file-target main.cpp exact
+                : CPP : $(.project) : $(a) ] ] ;
+    }
+    if [ $(properties).get <link> ] = shared
+    {
+        link-opts = <link>shared <link>static ;
+    }
+    else
+    {
+        link-opts = <link>static <link>shared ;
+    }
+    while $(link-opts)
+    {
+        local names-iter = $(names) ;
+        properties = [ $(properties).refine [ property-set.create $(link-opts[1]) ] ] ;
+        while $(names-iter)
+        {
+            local name = $(names-iter[1]) ;
+            local lib = [ construct-library $(name) : $(properties) : $(provided-path) ] ;
+            local test = [ generators.construct $(.project) $(name) : EXE
+                : [ $(properties).add $(lib[1]) ] : $(.main.cpp) $(lib[2-])
+                : true ] ;
+            local jam-targets ;
+            for t in $(test[2-])
+            {
+                jam-targets += [ $(t).actualize ] ;
+            }
+            if [ UPDATE_NOW $(jam-targets) : [ modules.peek configure : .log-fd ]
+                    : ignore-minus-n : ignore-minus-q ]
+            {
+                result = $(name) $(link-opts[1]) ;
+                names-iter = ; link-opts = ; # break
+            }
+            names-iter = $(names-iter[2-]) ;
+        }
+        link-opts = $(link-opts[2-]) ;
+    }
+    return $(result) ;
 }
 
 class ac-library : basic-target
@@ -119,13 +123,13 @@ class ac-library : basic-target
     import virtual-target ;
     import ac ;
     import configure ;
+    import config-cache ;
 
-    rule __init__ ( name : project : * : * )
+    rule __init__ ( name : project : requirements * : include-path ? : library-path ? : library-name ? )
     {
-        basic-target.__init__ $(name) : $(project) : $(sources)
-          : $(requirements) ;
+        basic-target.__init__ $(name) : $(project) : : $(requirements) ;
         
-        reconfigure $(3) : $(4) : $(5) : $(6) : $(7) : $(8) : $(9) ; 
+        reconfigure $(include-path) : $(library-path) : $(library-name) ; 
     }
     
     rule set-header ( header )
@@ -137,62 +141,163 @@ class ac-library : basic-target
     {
         self.default-names = $(names) ;
     }
-        
-    rule reconfigure ( * : * )
+
+    rule reconfigure ( include-path ? : library-path ? : library-name ? )
     {
-        ECHO "XXX" $(1) ;
-        if ! $(1)
+        if $(include-path) || $(library-path) || $(library-name)
         {
-            # This is 'using xxx ;'. Nothing to configure, really.
+            check-not-configured ;
+
+            self.include-path = $(include-path) ;
+            self.library-path = $(library-path) ;
+            self.library-name = $(library-name) ;
         }
-        else
+    }
+
+    rule set-target ( target )
+    {
+        check-not-configured ;
+        self.target = $(target) ;
+    }
+
+    rule check-not-configured ( )
+    {
+        if $(self.include-path) || $(self.library-path) || $(self.library-name) || $(self.target)
         {
-            for i in 1 2 3 4 5 6 7 8 9             
-            {
-                # FIXME: this naming is inconsistent with XXX_INCLUDE/XXX_LIBRARY
-                if ! ( $($(i)[1]) in root include-path library-path library-name condition )
-                {
-                    errors.user-error "Invalid named parameter" $($(i)[1]) ;
-                }   
-                local name = $($(i)[1]) ;
-                local value = $($(i)[2-]) ;
-                if $($(name)) && $($(name)) != $(value)
-                {
-                    errors.user-error "Attempt to change value of '$(name)'" ;
-                }
-                $(name) = $(value) ;
-            }
-            
-            include-path ?= $(root)/include ;
-            library-path ?= $(root)/lib ;            
-        }        
+            errors.user-error [ name ] "is already configured" ;
+        }
     }
     
     rule construct ( name : sources * : property-set )
     {
-        # FIXME: log results.
-        local libnames = $(library-name) ;
-        if ! $(libnames) && ! $(include-path) && ! $(library-path)
+        if $(self.target)
         {
-            libnames = [ modules.peek : $(name:U)_NAME ] ;
-            # Backward compatibility only.
-            libnames ?= [ modules.peek : $(name:U)_BINARY ] ;
-        }
-        libnames ?= $(self.default-names) ;
-                        
-        local includes = [ 
-          ac.find-include-path $(name:U)_INCLUDE : $(property-set) : $(self.header) : $(include-path) ] ;
-        local library = [ ac.find-library $(name:U)_LIBRARY : $(property-set) : $(libnames) : $(library-path) ] ;
-        if $(includes) && $(library)
-        {
-            library = [ virtual-target.from-file $(library) : . : $(self.project) ] ;
-            configure.log-library-search-result $(name) : "found" ;
-            return [ property-set.create <include>$(includes) <source>$(library) ] ;
+            return [ $(self.target).generate $(property-set) ] ;
         }
         else
         {
-            configure.log-library-search-result $(name) : "no found" ;
-        }        
+            local use-environment ;
+            if ! $(self.library-name) && ! $(self.include-path) && ! $(self.library-path)
+            {
+                use-environment = true ;
+            }
+            local libnames = $(self.library-name) ;
+            if ! $(libnames) && $(use-environment)
+            {
+                libnames = [ modules.peek : $(name:U)_NAME ] ;
+                # Backward compatibility only.
+                libnames ?= [ modules.peek : $(name:U)_BINARY ] ;
+            }
+            libnames ?= $(self.default-names) ;
+
+            local include-path = $(self.include-path) ;
+            if ! $(include-path) && $(use-environment)
+            {
+                include-path = [ modules.peek : $(name:U)_INCLUDE ] ;
+            }
+
+            local library-path = $(self.library-path) ;
+            if ! $(library-path) && $(use-environment)
+            {
+                library-path = [ modules.peek : $(name:U)_LIBRARY_PATH ] ;
+                # Backwards compatibility only
+                library-path ?= [ modules.peek : $(name:U)_LIBPATH ] ;
+            }
+
+            local toolset = [ $(property-set).get <toolset> ] ;
+            local toolset-version-property = "<toolset-$(toolset):version>" ;
+            local relevant = [ property.select <target-os> <toolset>
+                $(toolset-version-property) <link> <address-model> <architecture> :
+                [ $(property-set).raw ] ] ;
+
+            local key = ac-library-$(name)-$(relevant:J=-) ;
+            local lookup = [ config-cache.get $(key) ] ;
+
+            if $(lookup)
+            {
+                if $(lookup) = missing
+                {
+                    configure.log-library-search-result $(name) : "no  (cached)" ;
+                    return [ property-set.empty ] ;
+                }
+                else
+                {
+                    local includes = $(lookup[1]) ;
+                    if $(includes) = %default
+                    {
+                        includes = ;
+                    }
+                    local library = [ ac.construct-library $(lookup[2]) :
+                        [ $(property-set).refine [ property-set.create $(lookup[3]) ] ] : $(library-path) ] ;
+                    configure.log-library-search-result $(name) : "yes (cached)" ;
+                    return [ $(library[1]).add-raw <include>$(includes) ] $(library[2-]) ;
+                }
+            }
+            else
+            {
+                local includes = [ ac.find-include-path $(property-set) : $(self.header) : $(include-path) ] ;
+                local library = [ ac.find-library $(property-set) : $(libnames) : $(library-path) ] ;
+                if $(includes) && $(library)
+                {
+                    config-cache.set $(key) : $(includes) $(library) ;
+                    if $(includes) = %default
+                    {
+                        includes = ;
+                    }
+                    library = [ ac.construct-library $(library[1]) :
+                        [ $(property-set).refine [ property-set.create $(library[2]) ] ]  : $(library-path) ] ;
+                    configure.log-library-search-result $(name) : "yes" ;
+                    return [ $(library[1]).add-raw <include>$(includes) ] $(library[2-]) ;
+                }
+                else
+                {
+                    config-cache.set $(key) : missing ;
+                    configure.log-library-search-result $(name) : "no" ;
+                    return [ property-set.empty ] ;
+                }
+            }
+        }       
     }
 }
 
+class check-library-worker
+{
+    import property-set ;
+    import targets ;
+    import property ;
+
+    rule __init__ ( target : true-properties * : false-properties * )
+    {
+        self.target = $(target) ;
+        self.true-properties = $(true-properties) ;
+        self.false-properties = $(false-properties) ;
+    }
+
+    rule check ( properties * )
+    {
+        local choosen ;
+        local t = [ targets.current ] ;
+        local p =  [ $(t).project ] ;
+        local ps = [ property-set.create $(properties) ] ;
+        ps = [ $(ps).propagated ] ;
+        local generated =
+            [ targets.generate-from-reference $(self.target) : $(p) : $(ps) ] ;
+        if $(generated[2])
+        {
+            choosen = $(self.true-properties) ;
+        }
+        else
+        {
+            choosen = $(self.false-properties) ;
+        }
+        return [ property.evaluate-conditionals-in-context $(choosen) :
+            $(properties) ] ;
+    }
+}
+
+rule check-library ( target : true-properties * : false-properties * )
+{
+    local instance = [ class.new check-library-worker $(target) :
+        $(true-properties) : $(false-properties) ] ;
+    return <conditional>@$(instance).check ;
+}

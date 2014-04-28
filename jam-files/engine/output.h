@@ -8,23 +8,23 @@
 #define BJAM_OUTPUT_H
 
 #include "object.h"
-#include <time.h>
+#include "timestamp.h"
 
 #define EXIT_OK 0
 #define EXIT_FAIL 1
 #define EXIT_TIMEOUT 2
 
 void out_action(
-    const char * action,
-    const char * target,
-    const char * command,
-    const char * out_data,
-    const char * err_data,
-    int exit_reason
-    );
+    char const * const action,
+    char const * const target,
+    char const * const command,
+    char const * const out_data,
+    char const * const err_data,
+    int const exit_reason
+);
 
-OBJECT * outf_int( int value );
-OBJECT * outf_double( double value );
-OBJECT * outf_time( time_t value );
+OBJECT * outf_int( int const value );
+OBJECT * outf_double( double const value );
+OBJECT * outf_time( timestamp const * const value );
 
 #endif

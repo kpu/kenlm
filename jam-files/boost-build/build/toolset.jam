@@ -2,7 +2,8 @@
 # Copyright 2005 Rene Rivera
 # Copyright 2002, 2003, 2004, 2005, 2006 Vladimir Prus
 # Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 #  Support for toolset definition.
 
@@ -36,7 +37,8 @@ if --ignore-toolset-requirements in [ modules.peek : ARGV ]
 rule using ( toolset-module : * )
 {
     import $(toolset-module) ;
-    $(toolset-module).init $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) : $(9) ;
+    $(toolset-module).init $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) : $(9)
+        ;
 }
 
 
@@ -378,7 +380,8 @@ rule relevant-features ( rule-or-module )
 
 rule filter-property-set ( rule-or-module : property-set )
 {
-    if ! $(.filtered.property-set.$(rule-or-module).$(property-set))
+    local key = .filtered.property-set.$(rule-or-module).$(property-set) ;
+    if ! $($(key))
     {
         local relevant = [ relevant-features $(rule-or-module) ] ;
         local result ;
@@ -389,16 +392,16 @@ rule filter-property-set ( rule-or-module : property-set )
                 result += $(p) ;
             }
         }
-        .filtered.property-set.$(rule-or-module).$(property-set) = [ property-set.create $(result) ] ;
+        $(key) = [ property-set.create $(result) ] ;
     }
-    return $(.filtered.property-set.$(rule-or-module).$(property-set)) ;
+    return $($(key)) ;
 }
 
 rule set-target-variables ( rule-or-module targets + : property-set )
 {
     property-set = [ filter-property-set $(rule-or-module) : $(property-set) ] ;
-    local key = $(rule-or-module).$(property-set) ;
-    local settings = $(.stv.$(key)) ;
+    local key = .stv.$(rule-or-module).$(property-set) ;
+    local settings = $($(key)) ;
     if ! $(settings)
     {
         settings = [ set-target-variables-aux $(rule-or-module) :
@@ -408,7 +411,7 @@ rule set-target-variables ( rule-or-module targets + : property-set )
         {
             settings = none ;
         }
-        .stv.$(key) = $(settings) ;
+        $(key) = $(settings) ;
     }
 
     if $(settings) != none
@@ -497,8 +500,8 @@ rule inherit-flags ( toolset : base : prohibited-properties * : prohibited-vars 
         local rule-or-module = $(.rule-or-module.$(f)) ;
         if ( [ set.difference
             $(.$(rule-or-module).condition.$(f)) :
-                  $(prohibited-properties) ] 
-                  || ! $(.$(rule-or-module).condition.$(f)) 
+                  $(prohibited-properties) ]
+                  || ! $(.$(rule-or-module).condition.$(f))
         ) && ( ! $(.$(rule-or-module).variable.$(f)) in $(prohibited-vars) )
         {
             local rule_ = [ MATCH "[^.]*\.(.*)" : $(rule-or-module) ] ;
@@ -536,6 +539,7 @@ rule inherit-rules ( toolset : base : localize ? )
     IMPORT $(toolset) : $(rules) : : $(toolset).$(rules) ;
 }
 
+.requirements = [ property-set.empty ] ;
 
 # Return the list of global 'toolset requirements'. Those requirements will be
 # automatically added to the requirements of any main target.
@@ -555,7 +559,10 @@ rule add-requirements ( requirements * )
 {
     if ! $(.ignore-requirements)
     {
-        .requirements += $(requirements) ;
+        requirements = [ property.translate-indirect $(specification) : [ CALLER_MODULE ] ] ;
+        requirements = [ property.expand-subfeatures-in-conditions $(requirements) ] ;
+        requirements = [ property.make $(requirements) ] ;
+        .requirements = [ $(.requirements).add-raw $(requirements) ] ;
     }
 }
 

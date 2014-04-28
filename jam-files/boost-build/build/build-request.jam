@@ -142,7 +142,7 @@ rule from-command-line ( command-line * )
         {
             skip-next = ;
         }
-        else if ! [ MATCH "^(-).*" : $(e) ]
+        else if ! [ MATCH ^(-) : $(e) ]
         {
             # Build request spec either has "=" in it or completely consists of
             # implicit feature values.
@@ -153,7 +153,7 @@ rule from-command-line ( command-line * )
                 properties += [ convert-command-line-element $(e) :
                     $(feature-space) ] ;
             }
-            else
+            else if $(e)
             {
                 targets += $(e) ;
             }
@@ -193,8 +193,8 @@ local rule convert-command-line-element ( e )
         {
             lresult = [ regex.split $(p) "," ] ;
         }
-        
-        if $(feature) && free in [ feature.attributes $(feature) ]
+
+        if $(feature) && free in [ feature.attributes <$(feature)> ]
         {
             # If we have free feature, then the value is everything
             # until the end of the command line token. Slashes in
@@ -206,7 +206,7 @@ local rule convert-command-line-element ( e )
             lresult = <$(feature)>$(values) ;
             parts = ;
         }
-        
+
         if ! [ MATCH (.*-.*) : $(p) ]
         {
             # property.validate cannot handle subfeatures, so we avoid the check
@@ -225,7 +225,7 @@ local rule convert-command-line-element ( e )
         {
             result = $(result)/$(lresult) ;
         }
-        
+
         parts = $(parts[2-]) ;
     }
 
@@ -294,7 +294,7 @@ rule __test__ ( )
     {
         build-request.from-command-line bjam gcc/debug runtime-link=dynamic/static ;
     }
-    catch \"static\" is not a value of an implicit feature ;
+    catch \"static\" is not an implicit feature value ;
 
     r = [ build-request.from-command-line bjam -d2 --debug debug target runtime-link=dynamic ] ;
     assert.equal [ $(r).get-at 1 ] : target ;

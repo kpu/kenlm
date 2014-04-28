@@ -1,7 +1,8 @@
 # Copyright 2003 Dave Abrahams
 # Copyright 2004 Vladimir Prus
 # Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 # Print a stack backtrace leading to this rule's caller. Each argument
 # represents a line of output to be printed after the first line of the
@@ -13,8 +14,8 @@ rule backtrace ( skip-frames prefix messages * : * )
     local drop-elements = $(frame-skips[$(skip-frames)]) ;
     if ! ( $(skip-frames) in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 )
     {
-        ECHO "warning: backtrace doesn't support skipping $(skip-frames) frames;"
-            "using 1 instead." ;
+        ECHO "warning: backtrace doesn't support skipping $(skip-frames) "
+            "frames; using 1 instead." ;
         drop-elements = 5 ;
     }
 
@@ -22,10 +23,13 @@ rule backtrace ( skip-frames prefix messages * : * )
     if $(.user-modules-only)
     {
         local bt = [ nearest-user-location ] ;
-        ECHO "$(prefix) at $(bt) " ;
+        if $(bt)
+        {
+            ECHO $(prefix) at $(bt) ;
+        }
         for local n in $(args)
         {
-            if $($(n))-is-not-empty
+            if $($(n))-is-defined
             {
                 ECHO $(prefix) $($(n)) ;
             }
@@ -46,7 +50,7 @@ rule backtrace ( skip-frames prefix messages * : * )
             # The first time through, print each argument on a separate line.
             for local n in $(args)
             {
-                if $($(n))-is-not-empty
+                if $($(n))-is-defined
                 {
                     ECHO $(prefix) $($(n)) ;
                 }
@@ -59,7 +63,7 @@ rule backtrace ( skip-frames prefix messages * : * )
     }
 }
 
-.args ?= messages 2 3 4 5 6 7 8 9 ;
+.args ?= messages 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 ;
 .disabled ?= ;
 .last-error-$(.args) ?= ;
 
@@ -89,7 +93,7 @@ rule catch ( messages * : * )
 
     import sequence ;
 
-    if ! $(.last-error-$(.args))-is-not-empty
+    if ! $(.last-error-$(.args))-is-defined
     {
         error-skip-frames 3 expected an error, but none occurred ;
     }
@@ -116,15 +120,17 @@ rule error-skip-frames ( skip-frames messages * : * )
 {
     if ! $(.disabled)
     {
-        backtrace $(skip-frames) error: $(messages) : $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) : $(9) ;
+        backtrace $(skip-frames) error: $(messages) : $(2) : $(3) : $(4) : $(5)
+            : $(6) : $(7) : $(8) : $(9) : $(10) : $(11) : $(12) : $(13) : $(14)
+            : $(15) : $(16) : $(17) : $(18) : $(19) ;
         EXIT ;
     }
     else if ! $(.last-error-$(.args))
     {
         for local n in $(.args)
         {
-            # Add an extra empty string so that we always have
-            # something in the event of an error
+            # Add an extra empty string so that we always have something in the
+            # event of an error.
             .last-error-$(n) = $($(n)) "" ;
         }
     }
@@ -142,10 +148,11 @@ rule error ( messages * : * )
 {
     if $(.no-error-backtrace)
     {
+        local first-printed ;
         # Print each argument on a separate line.
         for local n in $(.args)
         {
-            if $($(n))-is-not-empty
+            if $($(n))-is-defined
             {
                 if ! $(first-printed)
                 {
@@ -162,7 +169,9 @@ rule error ( messages * : * )
     }
     else
     {
-        error-skip-frames 3 $(1) : $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) : $(9) ;
+        error-skip-frames 3 $(1) : $(2) : $(3) : $(4) : $(5) : $(6) : $(7) :
+            $(8) : $(9) : $(10) : $(11) : $(12) : $(13) : $(14) : $(15) : $(16)
+            : $(17) : $(18) : $(19) ;
     }
 }
 
@@ -172,7 +181,9 @@ rule error ( messages * : * )
 rule user-error ( messages * : * )
 {
     .user-modules-only = 1 ;
-    error-skip-frames 3 $(1) : $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) : $(9) ;
+    error-skip-frames 3 $(1) : $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) :
+        $(9) : $(10) : $(11) : $(12) : $(13) : $(14) : $(15) : $(16) : $(17) :
+        $(18) : $(19) ;
 }
 
 
@@ -180,7 +191,9 @@ rule user-error ( messages * : * )
 #
 rule warning
 {
-    backtrace 2 warning: $(1) : $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) : $(9) ;
+    backtrace 2 warning: $(1) : $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) :
+        $(9) : $(10) : $(11) : $(12) : $(13) : $(14) : $(15) : $(16) : $(17) :
+        $(18) : $(19) ;
 }
 
 
@@ -192,7 +205,7 @@ rule warning
 rule lol->list ( * )
 {
     local result ;
-    local remaining = 1 2 3 4 5 6 7 8 9 ;
+    local remaining = 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 ;
     while $($(remaining))
     {
         local n = $(remaining[1]) ;
@@ -219,7 +232,7 @@ rule nearest-user-location ( )
     while $(bt) && ! $(result)
     {
         local m = [ MATCH ^(.+)\\.$ : $(bt[3]) ] ;
-        local user-modules = ([Jj]amroot(.jam|.v2|)|([Jj]amfile(.jam|.v2|)|user-config.jam|site-config.jam|project-root.jam) ;
+        local user-modules = ([Jj]amroot(.jam|.v2|)|([Jj]amfile(.jam|.v2|)|user-config.jam|site-config.jam|project-config.jam|project-root.jam) ;
 
         if [ MATCH $(user-modules) : $(bt[1]:D=) ]
         {

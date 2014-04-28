@@ -34,7 +34,6 @@ import path ;
 import feature ;
 import set ;
 import builtin ;
-import version ;
 
 
 # Make this module a project.
@@ -477,14 +476,6 @@ local rule probe ( python-cmd )
         }
 
         # Invoke Python and ask it for all those values.
-        if [ version.check-jam-version 3 1 17 ] || ( [ os.name ] != NT )
-        {
-            # Prior to version 3.1.17 Boost Jam's SHELL command did not support
-            # quoted commands correctly on Windows. This means that on that
-            # platform we do not support using a Python command interpreter
-            # executable whose path contains a space character.
-            python-cmd = \"$(python-cmd)\" ;
-        }
         local full-cmd =
             $(python-cmd)" -c \"from sys import *; print('"$(format:J=\\n)"' % ("$(exprs:J=,)"))\"" ;
 
@@ -654,7 +645,7 @@ local rule system-library-dependencies ( target-os )
 
         case aix : return  <library>pthread <library>dl ;
 
-        case * : return  <library>pthread <library>dl 
+        case * : return  <library>pthread <library>dl
             <toolset>gcc:<library>util <toolset-intel:platform>linux:<library>util ;
     }
 }
@@ -855,7 +846,7 @@ local rule configure ( version ? : cmd-or-prefix ? : includes * : libraries ? :
         }
         target-requirements += <python>$(version:E=default) ;
     }
- 
+
     target-requirements += <target-os>$(target-os) ;
 
     # See if we can find a framework directory on darwin.
@@ -961,7 +952,7 @@ local rule configure ( version ? : cmd-or-prefix ? : includes * : libraries ? :
             # linux).
           : $(usage-requirements)
             <testing.launcher>$(set-PYTHONPATH)
-              <library-path>$(libraries) <dll-path>$(dll-path) <library>python.lib
+              <library-path>$(libraries) <library>python.lib
           ;
     }
 
@@ -1098,7 +1089,7 @@ class python-test-generator : generator
         local pyversion = [ $(property-set).get <python> ] ;
         local python ;
         local other-pythons ;
-    
+
         # Make new target that converting Python source by 2to3 when running with Python 3.
         local rule make-2to3-source ( source )
         {

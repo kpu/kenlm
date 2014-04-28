@@ -132,9 +132,16 @@ flags intel-darwin.compile OPTIONS <cxxflags> ;
 flags intel-darwin.compile OPTIONS <optimization>space : -O1 ; # no specific space optimization flag in icc
 
 # 
-cpu-type-em64t = prescott nocona ;
-flags intel-darwin.compile OPTIONS <instruction-set>$(cpu-type-em64t)/<address-model>32 : -m32 ; # -mcmodel=small ;
-flags intel-darwin.compile OPTIONS <instruction-set>$(cpu-type-em64t)/<address-model>64 : -m64 ; # -mcmodel=large ;
+.cpu-type-em64t    = prescott nocona core2 corei7 corei7-avx core-avx-i
+                     conroe conroe-xe conroe-l allendale merom
+                     merom-xe kentsfield kentsfield-xe penryn wolfdale
+                     yorksfield nehalem sandy-bridge ivy-bridge haswell ;
+.cpu-type-amd64    = k8 opteron athlon64 athlon-fx k8-sse3 opteron-sse3
+                     athlon64-sse3 amdfam10 barcelona bdver1 bdver2 bdver3 btver1 btver2 ;
+.cpu-type-x86-64   = $(.cpu-type-em64t) $(.cpu-type-amd64) ;
+
+flags intel-darwin.compile OPTIONS <instruction-set>$(.cpu-type-x86-64)/<address-model>32 : -m32 ; # -mcmodel=small ;
+flags intel-darwin.compile OPTIONS <instruction-set>$(.cpu-type-x86-64)/<address-model>64 : -m64 ; # -mcmodel=large ;
 
 flags intel-darwin.compile.c OPTIONS <warnings>off : -w0 ;
 flags intel-darwin.compile.c OPTIONS <warnings>on : -w1 ;

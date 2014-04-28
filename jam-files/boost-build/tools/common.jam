@@ -268,8 +268,9 @@ rule get-invocation-command-nodefault ( toolset : tool :
         command = [ find-tool $(tool) : $(additional-paths) : $(path-last) ] ;
         if ! $(command) && $(.debug-configuration)
         {
-            ECHO "warning: toolset $(toolset) initialization: can not find tool $(tool)" ;
-            ECHO "warning: initialized from" [ errors.nearest-user-location ] ;
+            ECHO warning: toolset $(toolset) initialization: can not find tool
+                $(tool) ;
+            ECHO warning: initialized from [ errors.nearest-user-location ] ;
         }
     }
     else
@@ -277,9 +278,10 @@ rule get-invocation-command-nodefault ( toolset : tool :
         command = [ check-tool $(user-provided-command) ] ;
         if ! $(command) && $(.debug-configuration)
         {
-            ECHO "warning: toolset $(toolset) initialization: " ;
-            ECHO "warning: can not find user-provided command " '$(user-provided-command)' ;
-            ECHO "warning: initialized from" [ errors.nearest-user-location ] ;
+            ECHO warning: toolset $(toolset) initialization: ;
+            ECHO warning: can not find user-provided command
+                '$(user-provided-command)' ;
+            ECHO warning: initialized from [ errors.nearest-user-location ] ;
         }
     }
 
@@ -322,7 +324,8 @@ rule get-absolute-tool-path ( command )
     }
     else
     {
-        local m = [ GLOB [ modules.peek : PATH Path path ] : $(command) $(command).exe ] ;
+        local m = [ GLOB [ modules.peek : PATH Path path ] : $(command)
+            $(command).exe ] ;
         return $(m[1]:D) ;
     }
 }
@@ -330,15 +333,16 @@ rule get-absolute-tool-path ( command )
 
 # Attempts to find tool (binary) named 'name' in PATH and in 'additional-paths'.
 # If found in PATH, returns 'name' and if found in additional paths, returns
-# absolute name. If the tool is found in several directories, returns the
-# first path found. Otherwise, returns an empty string. If 'path-last' is
-# specified, PATH is searched after 'additional-paths'.
+# absolute name. If the tool is found in several directories, returns the first
+# path found. Otherwise, returns an empty string. If 'path-last' is specified,
+# PATH is searched after 'additional-paths'.
 #
 rule find-tool ( name : additional-paths * : path-last ? )
 {
     local path = [ path.programs-path ] ;
     local match = [ path.glob $(path) : $(name) $(name).exe ] ;
-    local additional-match = [ path.glob $(additional-paths) : $(name) $(name).exe ] ;
+    local additional-match = [ path.glob $(additional-paths) : $(name)
+        $(name).exe ] ;
 
     local result ;
     if $(path-last)
@@ -365,7 +369,6 @@ rule find-tool ( name : additional-paths * : path-last ? )
         return [ path.native $(result[1]) ] ;
     }
 }
-
 
 # Checks if 'command' can be found either in path or is a full name to an
 # existing file.
@@ -421,7 +424,8 @@ rule handle-options ( toolset : condition * : command * : options * )
 {
     if $(.debug-configuration)
     {
-        ECHO "notice: will use '$(command)' for $(toolset), condition $(condition:E=(empty))" ;
+        ECHO notice: will use '$(command)' for $(toolset), condition
+            $(condition:E=(empty)) ;
     }
 
     #   The last parameter ('unchecked') says it is OK to set flags for another
@@ -469,10 +473,10 @@ if [ os.name ] = NT
     CP = copy /b ;
     IGNORE = "2>nul >nul & setlocal" ;
     LN ?= $(CP) ;
-    # Ugly hack to convince copy to set the timestamp of the
-    # destination to the current time by concatenating the
-    # source with a nonexistent file.  Note that this requires
-    # /b (binary) as the default when concatenating files is /a (ascii).
+    # Ugly hack to convince copy to set the timestamp of the destination to the
+    # current time by concatenating the source with a nonexistent file. Note
+    # that this requires /b (binary) as the default when concatenating files is
+    # /a (ascii).
     WINDOWS-CP-HACK = "+ this-file-does-not-exist-A698EE7806899E69" ;
 }
 else
@@ -495,17 +499,17 @@ rule copy-command ( )
 }
 
 
-if "\n" = "n" 
-{    
-    # Escape characters are not supported. Use ugly hacks that won't work,
-    # see below.
+if "\n" = "n"
+{
+    # Escape characters not supported so use ugly hacks. Will not work on Cygwin
+    # - see below.
     nl = "
 " ;
     q = "" ;
 }
 else
 {
-    nl = "\n" ; 
+    nl = "\n" ;
     q = "\"" ;
 }
 
@@ -523,10 +527,10 @@ rule variable-setting-command ( variable : value )
     }
     else
     {
-        # If we don't have escape characters support in bjam, the below blows
-        # up on CYGWIN, since the $(nl) variable holds a Windows new-line \r\n 
-        # sequence that messes up the executed export command which then reports
-        # that the passed variable name is incorrect.
+        # If we do not have escape character support in bjam, the cod below
+        # blows up on CYGWIN, since the $(nl) variable holds a Windows new-line
+        # \r\n sequence that messes up the executed export command which then
+        # reports that the passed variable name is incorrect.
         # But we have a check for cygwin in kernel/bootstrap.jam already.
         return "$(variable)=$(q)$(value)$(q)$(nl)export $(variable)$(nl)" ;
     }
@@ -759,27 +763,35 @@ rule format-name ( format * : name : type ? : property-set )
         switch $(f:G)
         {
             case <base> :
-                result += $(name:B) ;
-            
+		local matched = [ MATCH "^(boost.*python)-.*" : $(name) ] ;
+		if $(matched) = boost_python || $(matched) = boost_mpi_python
+		{
+			result += $(name) ;
+		}
+		else
+		{
+			result += $(name:B) ;
+		}
+
             case <toolset> :
                 result += [ join-tag $(f:G=) : [ toolset-tag $(name) : $(type) :
-                $(property-set) ] ] ;
-            
+                    $(property-set) ] ] ;
+
             case <threading> :
                 result += [ join-tag $(f:G=) : [ threading-tag $(name) : $(type)
-                : $(property-set) ] ] ;
-            
+                    : $(property-set) ] ] ;
+
             case <runtime> :
                 result += [ join-tag $(f:G=) : [ runtime-tag $(name) : $(type) :
-                $(property-set) ] ] ;
-            
+                    $(property-set) ] ] ;
+
             case <qt> :
-            result += [ join-tag $(f:G=) : [ qt-tag $(name) : $(type) :
-                $(property-set) ] ] ;
+                result += [ join-tag $(f:G=) : [ qt-tag $(name) : $(type) :
+                    $(property-set) ] ] ;
 
             case <address-model> :
-            result += [ join-tag $(f:G=) : [ address-model-tag $(name) : $(type) :
-                $(property-set) ] ] ;
+                result += [ join-tag $(f:G=) : [ address-model-tag $(name) :
+                    $(type) : $(property-set) ] ] ;
 
             case <version:*> :
                 local key = [ MATCH <version:(.*)> : $(f:G) ] ;
@@ -804,9 +816,8 @@ rule format-name ( format * : name : type ? : property-set )
                 result += $(f:G=) ;
         }
     }
-    result = [ virtual-target.add-prefix-and-suffix $(result:J=) : $(type) :
-      $(property-set) ] ;
-    return $(result) ;
+    return [ virtual-target.add-prefix-and-suffix $(result:J=) : $(type) :
+        $(property-set) ] ;
 }
 
 
@@ -865,7 +876,7 @@ local rule toolset-tag ( name : type ? : property-set )
         case tru64cxx* : tag += tru ;
         case vacpp* : tag += xlc ;
     }
-    local version = [ MATCH "<toolset.*version>([0123456789]+)[.]([0123456789]*)"
+    local version = [ MATCH <toolset.*version>([0123456789]+)[.]([0123456789]*)
         : $(properties) ] ;
     # For historical reasons, vc6.0 and vc7.0 use different naming.
     if $(tag) = vc
@@ -902,11 +913,10 @@ local rule toolset-tag ( name : type ? : property-set )
 
 local rule threading-tag ( name : type ? : property-set )
 {
-    local tag = ;
-    local properties = [ $(property-set).raw ] ;
-    if <threading>multi in $(properties) { tag = mt ; }
-
-    return $(tag:J=) ;
+    if <threading>multi in [ $(property-set).raw ]
+    {
+        return mt ;
+    }
 }
 
 
@@ -937,25 +947,24 @@ local rule runtime-tag ( name : type ? : property-set )
     return $(tag:J=) ;
 }
 
+
 # Create a tag for the Qt library version
 # "<qt>4.6.0" will result in tag "qt460"
 local rule qt-tag ( name : type ? : property-set )
 {
-    local properties = [ $(property-set).get <qt> ] ;
-    local version = [ MATCH "([0123456789]+)[.]?([0123456789]*)[.]?([0123456789]*)"
-        : $(properties) ] ;
-    local tag = "qt"$(version:J=) ;
-    return $(tag) ;
+    local v = [ MATCH ([0123456789]+)[.]?([0123456789]*)[.]?([0123456789]*) :
+        [ $(property-set).get <qt> ] ] ;
+    return qt$(v:J=) ;
 }
+
 
 # Create a tag for the address-model
 # <address-model>64 will simply generate "64"
 local rule address-model-tag ( name : type ? : property-set )
 {
-    local tag = ;
-    local version = [ $(property-set).get <address-model> ] ;
-    return $(version) ;
+    return [ $(property-set).get <address-model> ] ;
 }
+
 
 rule __test__ ( )
 {
@@ -964,18 +973,14 @@ rule __test__ ( )
     local save-os = [ modules.peek os : .name ] ;
 
     modules.poke os : .name : LINUX ;
-
     assert.result "PATH=\"foo:bar:baz\"\nexport PATH\n"
         : path-variable-setting-command PATH : foo bar baz ;
-
     assert.result "PATH=\"foo:bar:$PATH\"\nexport PATH\n"
         : prepend-path-variable-command PATH : foo bar ;
 
     modules.poke os : .name : NT ;
-
     assert.result "set PATH=foo;bar;baz\n"
         : path-variable-setting-command PATH : foo bar baz ;
-
     assert.result "set PATH=foo;bar;%PATH%\n"
         : prepend-path-variable-command PATH : foo bar ;
 

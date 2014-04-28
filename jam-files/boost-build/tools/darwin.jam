@@ -35,6 +35,8 @@ feature force-load : : free dependency incidental ;
 
 #############################################################################
 
+_ = " " ;
+
 if [ MATCH (--debug-configuration) : [ modules.peek : ARGV ] ]
 {
     .debug-configuration = true ;
@@ -227,6 +229,9 @@ local rule init-sdk ( condition * : root ? : version + : version-feature ? )
         }
     }
     
+    # leave compiler flags etc. up to the toolchain
+    return $(version-feature) ;
+
     if $(version-feature)
     {
         if $(.debug-configuration)
@@ -376,6 +381,7 @@ rule setup-address-model ( targets * : sources * : properties * )
 {
     local ps = [ property-set.create $(properties) ] ;
     local arch = [ $(ps).get <architecture> ] ;
+    local instruction-set = [ $(ps).get <instruction-set> ] ;
     local address-model = [ $(ps).get <address-model> ] ;
     local osx-version = [ $(ps).get <macosx-version> ] ;
     local gcc-version = [ $(ps).get <toolset-darwin:version> ] ;
@@ -402,7 +408,8 @@ rule setup-address-model ( targets * : sources * : properties * )
             support-ppc64 = ;
         }
     }
-    switch $(arch)
+    # Gentoo Prefix toolchain doesn't do multi-arch, so don't try either
+    switch $(donotaddarchpleaseXXXarch)
     {
         case combined : 
         {
@@ -454,8 +461,12 @@ rule setup-address-model ( targets * : sources * : properties * )
         
         case arm :
         {
-            options = -arch armv6 ;
-        }        
+            if $(instruction-set) {
+                options = -arch$(_)$(instruction-set) ;
+            } else {
+                options = -arch arm ;
+            }
+        }
     }
     
     if $(options)
@@ -525,8 +536,6 @@ flags darwin.link FORCE_LOAD <force-load> ;
 # This is flag is useful for debugging the link step
 # uncomment to see what libtool is doing under the hood
 #~ flags darwin.link.dll OPTIONS : -Wl,-v ;
-
-_ = " " ;
 
 # set up the -F option to include the paths to any frameworks used.
 local rule prepare-framework-path ( target + )

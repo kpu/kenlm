@@ -1,13 +1,13 @@
-# Copyright (c) 2003 David Abrahams.
-# Copyright (c) 2005 Vladimir Prus.
-# Copyright (c) 2005 Alexey Pakhunov.
-# Copyright (c) 2006 Bojan Resnik.
-# Copyright (c) 2006 Ilya Sokolov.
+# Copyright (c) 2003 David Abrahams
+# Copyright (c) 2005 Vladimir Prus
+# Copyright (c) 2005 Alexey Pakhunov
+# Copyright (c) 2006 Bojan Resnik
+# Copyright (c) 2006 Ilya Sokolov
 # Copyright (c) 2007 Rene Rivera
 # Copyright (c) 2008 Jurko Gospodnetic
 #
-# Use, modification and distribution is subject to the Boost Software
-# License Version 1.0. (See accompanying file LICENSE_1_0.txt or
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or copy at
 # http://www.boost.org/LICENSE_1_0.txt)
 
 ################################################################################
@@ -23,7 +23,6 @@
 
 import "class" : new ;
 import common ;
-import errors ;
 import feature ;
 import generators ;
 import mc ;
@@ -41,6 +40,7 @@ type.register MANIFEST : manifest ;
 feature.feature embed-manifest : on off : incidental propagated ;
 
 type.register PDB : pdb ;
+
 
 ################################################################################
 #
@@ -126,6 +126,7 @@ rule init (
     #   <setup-amd64>
     #   <setup-i386>
     #   <setup-ia64>
+    #   <setup-arm>
     #       Platform specific setup command to invoke before running any of the
     #     msvc tools used when builing a target for a specific platform, e.g.
     #     when building a 32 or 64 bit executable.
@@ -151,6 +152,7 @@ rule configure ( version ? : options * )
         case "all" :
             if $(options)
             {
+                import errors ;
                 errors.error "MSVC toolset configuration: options should be"
                     "empty when '$(version)' is specified." ;
             }
@@ -232,7 +234,6 @@ rule configure-version-specific ( toolset : version : conditions )
         toolset.flags $(toolset).compile CFLAGS $(conditions)/<optimization>space : /Os ;
 
         toolset.flags $(toolset).compile CFLAGS $(conditions)/$(.cpu-arch-i386)/<instruction-set> : /GB ;
-        toolset.flags $(toolset).compile CFLAGS $(conditions)/$(.cpu-arch-i386)/<instruction-set>i386 : /G3 ;
         toolset.flags $(toolset).compile CFLAGS $(conditions)/$(.cpu-arch-i386)/<instruction-set>i486 : /G4 ;
         toolset.flags $(toolset).compile CFLAGS $(conditions)/$(.cpu-arch-i386)/<instruction-set>$(.cpu-type-g5) : /G5 ;
         toolset.flags $(toolset).compile CFLAGS $(conditions)/$(.cpu-arch-i386)/<instruction-set>$(.cpu-type-g6) : /G6 ;
@@ -261,10 +262,11 @@ rule configure-version-specific ( toolset : version : conditions )
         toolset.flags $(toolset).link LINKFLAGS $(conditions)/$(.cpu-arch-amd64) : /MACHINE:X64 ;
         toolset.flags $(toolset).link LINKFLAGS $(conditions)/$(.cpu-arch-i386)  : /MACHINE:X86 ;
         toolset.flags $(toolset).link LINKFLAGS $(conditions)/$(.cpu-arch-ia64)  : /MACHINE:IA64 ;
-        
+        toolset.flags $(toolset).link LINKFLAGS $(conditions)/$(.cpu-arch-arm)   : /MACHINE:ARM ;
+
         # Make sure that manifest will be generated even if there is no
         # dependencies to put there.
-        toolset.flags $(toolset).link LINKFLAGS $(conditions)/<embed-manifest>off : /MANIFEST ;
+        toolset.flags $(toolset).link LINKFLAGS $(conditions) : /MANIFEST ;
     }
     toolset.pop-checking-for-flags-module ;
 }
@@ -356,15 +358,19 @@ toolset.flags msvc YLOPTION : "-Yl" ;
 #
 # WARNING: Synchronize any changes this in action with intel-win
 #
-# Notes regarding PDB generation, for when we use <debug-symbols>on/<debug-store>database
+# Notes regarding PDB generation, for when we use
+# <debug-symbols>on/<debug-store>database:
 #
-# 1. PDB_CFLAG is only set for <debug-symbols>on/<debug-store>database, ensuring that the /Fd flag is dropped if PDB_CFLAG is empty
+# 1. PDB_CFLAG is only set for <debug-symbols>on/<debug-store>database, ensuring
+#    that the /Fd flag is dropped if PDB_CFLAG is empty.
 #
-# 2. When compiling executables's source files, PDB_NAME is set on a per-source file basis by rule compile-c-c++. 
-#    The linker will pull these into the executable's PDB
+# 2. When compiling executables's source files, PDB_NAME is set on a per-source
+#    file basis by rule compile-c-c++. The linker will pull these into the
+#    executable's PDB.
 #
-# 3. When compiling library's source files, PDB_NAME is updated to <libname>.pdb for each source file by rule archive, 
-#    as in this case the compiler must be used to create a single PDB for our library.
+# 3. When compiling library's source files, PDB_NAME is updated to <libname>.pdb
+#    for each source file by rule archive, as in this case compiler must be used
+#    to create a single PDB for our library.
 #
 actions compile-c-c++ bind PDB_NAME
 {
@@ -380,7 +386,8 @@ rule compile-c-c++ ( targets + : sources * )
 {
     DEPENDS $(<[1]) : [ on $(<[1]) return $(PCH_HEADER) ] ;
     DEPENDS $(<[1]) : [ on $(<[1]) return $(PCH_FILE) ] ;
-    PDB_NAME on $(<) = $(<:S=.pdb) ;
+    PDB_NAME on $(<) = $(<[1]:S=.pdb) ;
+    LOCATE on $(<[1]:S=.pdb) = [ on $(<[1]) return $(LOCATE) ] ;
 }
 
 rule preprocess-c-c++ ( targets + : sources * )
@@ -388,6 +395,7 @@ rule preprocess-c-c++ ( targets + : sources * )
     DEPENDS $(<[1]) : [ on $(<[1]) return $(PCH_HEADER) ] ;
     DEPENDS $(<[1]) : [ on $(<[1]) return $(PCH_FILE) ] ;
     PDB_NAME on $(<) = $(<:S=.pdb) ;
+    LOCATE on $(<[1]:S=.pdb) = [ on $(<[1]) return $(LOCATE) ] ;
 }
 
 # Action for running the C/C++ compiler using precompiled headers. In addition
@@ -466,18 +474,18 @@ actions compile.rc
 rule link ( targets + : sources * : properties * )
 {
     if <embed-manifest>on in $(properties)
-    {        
+    {
         msvc.manifest $(targets) : $(sources) : $(properties) ;
-    }    
+    }
 }
 
 rule link.dll ( targets + : sources * : properties * )
 {
     DEPENDS $(<) : [ on $(<) return $(DEF_FILE) ] ;
     if <embed-manifest>on in $(properties)
-    {        
+    {
         msvc.manifest.dll $(targets) : $(sources) : $(properties) ;
-    }    
+    }
 }
 
 # Incremental linking a DLL causes no end of problems: if the actual exports do
@@ -497,14 +505,14 @@ if [ os.name ] in NT
         $(.LD) $(LINKFLAGS) /out:"$(<[1]:W)" /LIBPATH:"$(LINKPATH:W)" $(OPTIONS) @"@($(<[1]:W).rsp:E=$(.nl)"$(>)" $(.nl)$(LIBRARIES_MENTIONED_BY_FILE) $(.nl)$(LIBRARIES) $(.nl)"$(LIBRARY_OPTION)$(FINDLIBS_ST).lib" $(.nl)"$(LIBRARY_OPTION)$(FINDLIBS_SA).lib")"
         if %ERRORLEVEL% NEQ 0 EXIT %ERRORLEVEL%
     }
-    
+
     actions manifest
-    {        
+    {
         if exist "$(<[1]).manifest" (
             $(.MT) -manifest "$(<[1]).manifest" "-outputresource:$(<[1]);1"
         )
     }
-    
+
     actions link.dll bind DEF_FILE LIBRARIES_MENTIONED_BY_FILE
     {
         $(.LD) /DLL $(LINKFLAGS) /out:"$(<[1]:W)" /IMPLIB:"$(<[2]:W)" /LIBPATH:"$(LINKPATH:W)" /def:"$(DEF_FILE)" $(OPTIONS) @"@($(<[1]:W).rsp:E=$(.nl)"$(>)" $(.nl)$(LIBRARIES_MENTIONED_BY_FILE) $(.nl)$(LIBRARIES) $(.nl)"$(LIBRARY_OPTION)$(FINDLIBS_ST).lib" $(.nl)"$(LIBRARY_OPTION)$(FINDLIBS_SA).lib")"
@@ -512,49 +520,52 @@ if [ os.name ] in NT
     }
 
     actions manifest.dll
-    {        
+    {
         if exist "$(<[1]).manifest" (
             $(.MT) -manifest "$(<[1]).manifest" "-outputresource:$(<[1]);2"
         )
-    }    
+    }
 }
 else
-{        
+{
     actions link bind DEF_FILE LIBRARIES_MENTIONED_BY_FILE
     {
         $(.LD) $(LINKFLAGS) /out:"$(<[1]:W)" /LIBPATH:"$(LINKPATH:W)" $(OPTIONS) @"@($(<[1]:W).rsp:E=$(.nl)"$(>)" $(.nl)$(LIBRARIES_MENTIONED_BY_FILE) $(.nl)$(LIBRARIES) $(.nl)"$(LIBRARY_OPTION)$(FINDLIBS_ST).lib" $(.nl)"$(LIBRARY_OPTION)$(FINDLIBS_SA).lib")"
     }
 
     actions manifest
-    {        
+    {
         if test -e "$(<[1]).manifest"; then
             $(.MT) -manifest "$(<[1]:W).manifest" "-outputresource:$(<[1]:W);1"
         fi
     }
-    
+
     actions link.dll bind DEF_FILE LIBRARIES_MENTIONED_BY_FILE
     {
         $(.LD) /DLL $(LINKFLAGS) /out:"$(<[1]:W)" /IMPLIB:"$(<[2]:W)" /LIBPATH:"$(LINKPATH:W)" /def:"$(DEF_FILE)" $(OPTIONS) @"@($(<[1]:W).rsp:E=$(.nl)"$(>)" $(.nl)$(LIBRARIES_MENTIONED_BY_FILE) $(.nl)$(LIBRARIES) $(.nl)"$(LIBRARY_OPTION)$(FINDLIBS_ST).lib" $(.nl)"$(LIBRARY_OPTION)$(FINDLIBS_SA).lib")"
     }
-    
+
     actions manifest.dll
     {
         if test -e "$(<[1]).manifest"; then
-          $(.MT) -manifest "$(<[1]:W).manifest" "-outputresource:$(<[1]:W);2"
+            $(.MT) -manifest "$(<[1]:W).manifest" "-outputresource:$(<[1]:W);2"
         fi
-    }    
+    }
 }
 
-# this rule sets up the pdb file that will be used when generating static 
-# libraries and the debug-store option is database, so that the compiler 
-# puts all debug info into a single .pdb file named after the library
+# This rule sets up the pdb file that will be used when generating static
+# libraries and the debug-store option is database, so that the compiler puts
+# all the debug info into a single .pdb file named after the library.
 #
-# Poking at source targets this way is probably not clean, but it's the
+# Poking at source targets this way is probably not clean, but it is the
 # easiest approach.
+#
 rule archive ( targets + : sources * : properties * )
 {
-    PDB_NAME on $(>) = $(<:S=.pdb) ;
+    PDB_NAME on $(>) = $(<[1]:S=.pdb) ;
+    LOCATE on $(<[1]:S=.pdb) = [ on $(<[1]) return $(LOCATE) ] ;
 }
+
 
 ################################################################################
 #
@@ -587,6 +598,7 @@ class msvc-pch-generator : pch-generator
 
         if ! $(pch-header)
         {
+            import errors : user-error : errors.user-error ;
             errors.user-error "can not build pch without pch-header" ;
         }
 
@@ -700,6 +712,7 @@ local rule configure-really ( version ? : options * )
         # identical sets of options are used.
         if $(options) && ( $(options) != [ $(.versions).get $(version) : options ] )
         {
+            import errors ;
             errors.error "MSVC toolset configuration: Toolset version"
                 "'$(version)' already configured." ;
         }
@@ -736,7 +749,11 @@ local rule configure-really ( version ? : options * )
             # version from the path.
             # FIXME: We currently detect both Microsoft Visual Studio 9.0 and
             # 9.0express as 9.0 here.
-            if [ MATCH "(Microsoft Visual Studio 11)" : $(command) ]
+            if [ MATCH "(Microsoft Visual Studio 12)" : $(command) ]
+            {
+                version = 12.0 ;
+            }
+            else if [ MATCH "(Microsoft Visual Studio 11)" : $(command) ]
             {
                 version = 11.0 ;
             }
@@ -775,7 +792,7 @@ local rule configure-really ( version ? : options * )
 
         local below-8.0 = [ MATCH ^([67]\\.) : $(version) ] ;
 
-        local cpu = i386 amd64 ia64 ;
+        local cpu = i386 amd64 ia64 arm ;
         if $(below-8.0)
         {
             cpu = i386 ;
@@ -784,6 +801,7 @@ local rule configure-really ( version ? : options * )
         local setup-amd64 ;
         local setup-i386 ;
         local setup-ia64 ;
+        local setup-arm ;
 
         if $(command)
         {
@@ -797,9 +815,9 @@ local rule configure-really ( version ? : options * )
             # toolset version.
             command = [ common.get-absolute-tool-path $(command[-1]) ] ;
         }
-        
+
         if $(command)
-        {            
+        {
             local parent = [ path.make $(command) ] ;
             parent = [ path.parent $(parent) ] ;
             parent = [ path.native $(parent) ] ;
@@ -837,6 +855,7 @@ local rule configure-really ( version ? : options * )
             local default-setup-amd64 = vcvarsx86_amd64.bat ;
             local default-setup-i386  = vcvars32.bat ;
             local default-setup-ia64  = vcvarsx86_ia64.bat ;
+            local default-setup-arm   = vcvarsx86_arm.bat ;
 
             # http://msdn2.microsoft.com/en-us/library/x4d2c09s(VS.80).aspx and
             # http://msdn2.microsoft.com/en-us/library/x4d2c09s(vs.90).aspx
@@ -845,6 +864,7 @@ local rule configure-really ( version ? : options * )
             local default-global-setup-options-amd64 = x86_amd64 ;
             local default-global-setup-options-i386  = x86 ;
             local default-global-setup-options-ia64  = x86_ia64 ;
+            local default-global-setup-options-arm   = x86_arm ;
 
             # When using 64-bit Windows, and targeting 64-bit, it is possible to
             # use a native 64-bit compiler, selected by the "amd64" & "ia64"
@@ -926,6 +946,7 @@ local rule configure-really ( version ? : options * )
         local default-assembler-amd64 = ml64 ;
         local default-assembler-i386  = "ml -coff" ;
         local default-assembler-ia64  = ias ;
+        local default-assembler-ia64  = armasm ;
 
         assembler = [ feature.get-values <assembler> : $(options) ] ;
 
@@ -937,8 +958,9 @@ local rule configure-really ( version ? : options * )
 
         manifest-tool = [ feature.get-values <manifest-tool> : $(options) ] ;
         manifest-tool ?= mt ;
-        
-        local cc-filter = [ feature.get-values <compiler-filter> : $(options) ] ;
+
+        local cc-filter = [ feature.get-values <compiler-filter> : $(options) ]
+            ;
 
         for local c in $(cpu)
         {
@@ -1064,16 +1086,19 @@ class msvc-linking-generator : linking-generator
         {
             local name-main = [ $(result[0]).name ] ;
             local action = [ $(result[0]).action ] ;
-            
+
             if [ $(property-set).get <debug-symbols> ] = "on"
-            {		 
-                # We force exact name on PDB. The reason is tagging -- the tag rule may
-                # reasonably special case some target types, like SHARED_LIB. The tag rule
-                # will not catch PDB, and it cannot even easily figure if PDB is paired with
-                # SHARED_LIB or EXE or something else. Because PDB always get the
-                # same name as the main target, with .pdb as extension, just force it.
-                local target = [ class.new file-target $(name-main:S=.pdb) exact : PDB : $(project) : $(action) ] ;
-                local registered-target = [ virtual-target.register $(target) ] ;
+            {
+                # We force the exact name on PDB. The reason is tagging -- the
+                # tag rule may reasonably special case some target types, like
+                # SHARED_LIB. The tag rule will not catch PDBs, and it cannot
+                # even easily figure out if a PDB is paired with a SHARED_LIB,
+                # EXE or something else. Because PDBs always get the same name
+                # as the main target, with .pdb as extension, just force it.
+                local target = [ class.new file-target $(name-main:S=.pdb) exact
+                    : PDB : $(project) : $(action) ] ;
+                local registered-target = [ virtual-target.register $(target) ]
+                    ;
                 if $(target) != $(registered-target)
                 {
                     $(action).replace-targets $(target) : $(registered-target) ;
@@ -1083,11 +1108,14 @@ class msvc-linking-generator : linking-generator
 
             if [ $(property-set).get <embed-manifest> ] = "off"
             {
-                # Manifest is evil target. It has .manifest appened to the name of 
-                # main target, including extension. E.g. a.exe.manifest. We use 'exact'
-                # name because to achieve this effect.
-                local target = [ class.new file-target $(name-main).manifest exact : MANIFEST : $(project) : $(action) ] ;
-                local registered-target = [ virtual-target.register $(target) ] ;
+                # Manifest is an evil target. It has .manifest appened to the
+                # name of the main target, including extension, e.g.
+                # a.exe.manifest. We use the 'exact' name to achieve this
+                # effect.
+                local target = [ class.new file-target $(name-main).manifest
+                    exact : MANIFEST : $(project) : $(action) ] ;
+                local registered-target = [ virtual-target.register $(target) ]
+                    ;
                 if $(target) != $(registered-target)
                 {
                     $(action).replace-targets $(target) : $(registered-target) ;
@@ -1098,7 +1126,6 @@ class msvc-linking-generator : linking-generator
         return $(result) ;
     }
 }
-
 
 
 # Unsafe worker rule for the register-toolset() rule. Must not be called
@@ -1132,10 +1159,11 @@ local rule register-toolset-really ( )
         # TODO: Is it possible to combine these? Make the generators
         # non-composing so that they do not convert each source into a separate
         # .rsp file.
-        generators.register [ new msvc-linking-generator 
-            msvc.link : OBJ SEARCHED_LIB STATIC_LIB IMPORT_LIB : EXE : <toolset>msvc ] ;
-        generators.register [ new msvc-linking-generator 
-            msvc.link.dll : OBJ SEARCHED_LIB STATIC_LIB IMPORT_LIB : SHARED_LIB IMPORT_LIB : <toolset>msvc ] ;
+        generators.register [ new msvc-linking-generator msvc.link :
+            OBJ SEARCHED_LIB STATIC_LIB IMPORT_LIB : EXE : <toolset>msvc ] ;
+        generators.register [ new msvc-linking-generator msvc.link.dll :
+            OBJ SEARCHED_LIB STATIC_LIB IMPORT_LIB : SHARED_LIB IMPORT_LIB :
+            <toolset>msvc ] ;
 
         generators.register-archiver msvc.archive : OBJ : STATIC_LIB : <toolset>msvc ;
         generators.register-c-compiler msvc.compile.c++ : CPP : OBJ : <toolset>msvc ;
@@ -1289,7 +1317,8 @@ local rule register-configuration ( version : path ? )
         {
             if $(.debug-configuration)
             {
-                ECHO "notice: [msvc-cfg] msvc-$(version) detected, command: '$(command)'" ;
+                ECHO notice: [msvc-cfg] msvc-$(version) detected, command:
+                    '$(command)' ;
             }
 
             $(.versions).register $(version) ;
@@ -1336,6 +1365,9 @@ if [ MATCH (--debug-configuration) : [ modules.peek : ARGV ] ]
     <architecture>ia64/<address-model>
     <architecture>ia64/<address-model>64 ;
 
+.cpu-arch-arm =
+    <architecture>arm/<address-model>32 ;
+
 
 # Supported CPU types (only Itanium optimization options are supported from
 # VC++ 2005 on). See
@@ -1344,10 +1376,12 @@ if [ MATCH (--debug-configuration) : [ modules.peek : ARGV ] ]
 .cpu-type-g5       = i586 pentium pentium-mmx ;
 .cpu-type-g6       = i686 pentiumpro pentium2 pentium3 pentium3m pentium-m k6
                      k6-2 k6-3 winchip-c6 winchip2 c3 c3-2 ;
-.cpu-type-em64t    = prescott nocona conroe conroe-xe conroe-l allendale mermon
-                     mermon-xe kentsfield kentsfield-xe penryn wolfdale
-                     yorksfield nehalem ;
-.cpu-type-amd64    = k8 opteron athlon64 athlon-fx ;
+.cpu-type-em64t    = prescott nocona core2 corei7 corei7-avx core-avx-i
+                     conroe conroe-xe conroe-l allendale merom
+                     merom-xe kentsfield kentsfield-xe penryn wolfdale
+                     yorksfield nehalem sandy-bridge ivy-bridge haswell ;
+.cpu-type-amd64    = k8 opteron athlon64 athlon-fx k8-sse3 opteron-sse3
+                     athlon64-sse3 amdfam10 barcelona bdver1 bdver2 bdver3 btver1 btver2 ;
 .cpu-type-g7       = pentium4 pentium4m athlon athlon-tbird athlon-4 athlon-xp
                      athlon-mp $(.cpu-type-em64t) $(.cpu-type-amd64) ;
 .cpu-type-itanium  = itanium itanium1 merced ;
@@ -1355,7 +1389,8 @@ if [ MATCH (--debug-configuration) : [ modules.peek : ARGV ] ]
 
 
 # Known toolset versions, in order of preference.
-.known-versions = 11.0 10.0 10.0express 9.0 9.0express 8.0 8.0express 7.1 7.1toolkit 7.0 6.0 ;
+.known-versions = 12.0 11.0 10.0 10.0express 9.0 9.0express 8.0 8.0express 7.1
+    7.1toolkit 7.0 6.0 ;
 
 # Version aliases.
 .version-alias-6 = 6.0 ;
@@ -1365,6 +1400,7 @@ if [ MATCH (--debug-configuration) : [ modules.peek : ARGV ] ]
 .version-alias-9 = 9.0 ;
 .version-alias-10 = 10.0 ;
 .version-alias-11 = 11.0 ;
+.version-alias-12 = 12.0 ;
 
 # Names of registry keys containing the Visual C++ installation path (relative
 # to "HKEY_LOCAL_MACHINE\SOFTWARE\\Microsoft").
@@ -1378,6 +1414,7 @@ if [ MATCH (--debug-configuration) : [ modules.peek : ARGV ] ]
 .version-10.0-reg = "VisualStudio\\10.0\\Setup\\VC" ;
 .version-10.0express-reg = "VCExpress\\10.0\\Setup\\VC" ;
 .version-11.0-reg = "VisualStudio\\11.0\\Setup\\VC" ;
+.version-12.0-reg = "VisualStudio\\12.0\\Setup\\VC" ;
 
 # Visual C++ Toolkit 2003 does not store its installation path in the registry.
 # The environment variable 'VCToolkitInstallDir' and the default installation

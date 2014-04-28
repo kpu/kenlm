@@ -3,23 +3,22 @@
 # Copyright 2006 Rene Rivera
 # Copyright 2002, 2003, 2004, 2005, 2006 Vladimir Prus
 # Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
-#  This module defines the 'make' main target rule.
+# This module defines the 'make' main target rule.
 
 import "class" : new ;
-import errors : error ;
 import project ;
-import property ;
 import property-set ;
-import regex ;
 import targets ;
 
 
 class make-target-class : basic-target
 {
-    import type regex virtual-target ;
     import "class" : new ;
+    import type ;
+    import virtual-target ;
 
     rule __init__ ( name : project : sources * : requirements *
         : default-build * : usage-requirements * )
@@ -48,8 +47,6 @@ class make-target-class : basic-target
 rule make ( target-name : sources * : generating-rule + : requirements * :
     usage-requirements * )
 {
-    local project = [ project.current ] ;
-
     # The '@' sign causes the feature.jam module to qualify rule name with the
     # module name of current project, if needed.
     local m = [ MATCH ^(@).* : $(generating-rule) ] ;
@@ -57,15 +54,9 @@ rule make ( target-name : sources * : generating-rule + : requirements * :
     {
         generating-rule = @$(generating-rule) ;
     }
-    requirements += <action>$(generating-rule) ;
-
-    targets.main-target-alternative
-        [ new make-target-class $(target-name) : $(project)
-            : [ targets.main-target-sources $(sources) : $(target-name) ]
-            : [ targets.main-target-requirements $(requirements) : $(project) ]
-            : [ targets.main-target-default-build : $(project) ]
-            : [ targets.main-target-usage-requirements $(usage-requirements) :
-                $(project) ] ] ;
+    targets.create-metatarget make-target-class : [ project.current ] :
+        $(target-name) : $(sources) : $(requirements) <action>$(generating-rule)
+        : : $(usage-requirements) ;
 }
 
 

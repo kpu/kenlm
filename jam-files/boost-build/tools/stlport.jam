@@ -1,8 +1,8 @@
 # Copyright Gennadiy Rozental
-# Copyright 2006 Rene Rivera 
-# Copyright 2003, 2004, 2006 Vladimir Prus 
-# Distributed under the Boost Software License, Version 1.0. 
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt) 
+# Copyright 2006 Rene Rivera
+# Copyright 2003, 2004, 2006 Vladimir Prus
+# Distributed under the Boost Software License, Version 1.0.
+# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
 
 # The STLPort is usable by means of 'stdlib' feature. When
 # stdlib=stlport is specified, default version of STLPort will be used,
@@ -86,7 +86,7 @@ class stlport-target-class : basic-target
         self.libraries = $(libraries) ;
         self.version = $(version) ;
         self.version.5 = [ MATCH "^(5[.][0123456789]+).*" : $(version) ] ;
-        
+
         local requirements ;
         requirements += <stdlib-stlport:version>$(self.version) ;
         self.requirements = [ property-set.create $(requirements) ] ;
@@ -120,10 +120,10 @@ class stlport-target-class : basic-target
         if $(self.version.5)
         {
             # Version 5.x
-            
-            # STLport host IO streams no longer supported. So we always 
+
+            # STLport host IO streams no longer supported. So we always
             # need libraries.
-            
+
             # name: stlport(stl)?[dg]?(_static)?.M.R
             local name = stlport ;
             if [ feature.get-values <runtime-debugging> : $(raw) ] = "on"
@@ -142,31 +142,35 @@ class stlport-target-class : basic-target
                 name += _static ;
             }
 
-            # Starting with version 5.2.0, the STLport static libraries no longer
-            #  include a version number in their name
+            # Starting with version 5.2.0, the STLport static libraries no
+            # longer include a version number in their name
             local version.pre.5.2 = [ MATCH "^(5[.][01]+).*" : $(version) ] ;
-            if $(version.pre.5.2) || [ feature.get-values <runtime-link> : $(raw) ] != "static" 
+            if $(version.pre.5.2) || [ feature.get-values <runtime-link> :
+                $(raw) ] != "static"
             {
                 name += .$(self.version.5) ;
             }
-			
+
             name = $(name:J=) ;
-            
+
             if [ feature.get-values <install-dependencies> : $(raw) ] = "on"
             {
                 #~ Allow explicitly asking to install the STLport lib by
-                #~ refering to it directly: /stlport//stlport/<install-dependencies>on
-                #~ This allows for install packaging of all libs one might need for
-                #~ a standalone distribution.
+                #~ referring to it directly:
+                #~   /stlport//stlport/<install-dependencies>on
+                #~ This allows for install packaging of all libs one might need
+                #~ for a standalone distribution.
                 import path : make : path-make ;
                 local runtime-link
                     = [ feature.get-values <runtime-link> : $(raw) ] ;
                 local lib-file.props
                     = [ property-set.create $(raw) <link>$(runtime-link) ] ;
                 local lib-file.prefix
-                    = [ type.generated-target-prefix $(runtime-link:U)_LIB : $(lib-file.props) ] ;
+                    = [ type.generated-target-prefix $(runtime-link:U)_LIB :
+                        $(lib-file.props) ] ;
                 local lib-file.suffix
-                    = [ type.generated-target-suffix $(runtime-link:U)_LIB : $(lib-file.props) ] ;
+                    = [ type.generated-target-suffix $(runtime-link:U)_LIB :
+                        $(lib-file.props) ] ;
                 lib-file.prefix
                     ?= "" "lib" ;
                 lib-file.suffix
@@ -175,18 +179,20 @@ class stlport-target-class : basic-target
                     = [ GLOB $(self.libraries) [ modules.peek : PATH ] :
                         $(lib-file.prefix)$(name).$(lib-file.suffix) ] ;
                 lib-file
-                    = [ new file-reference [ path-make $(lib-file[1]) ] : $(self.project) ] ;
+                    = [ new file-reference [ path-make $(lib-file[1]) ] :
+                        $(self.project) ] ;
                 lib-file
                     = [ $(lib-file).generate "" ] ;
                 local lib-file.requirements
                     = [ targets.main-target-requirements
                         [ $(lib-file.props).raw ] <file>$(lib-file[-1])
                         : $(self.project) ] ;
-                return [ generators.construct $(self.project) $(name) : LIB : $(lib-file.requirements) ] ;
+                return [ generators.construct $(self.project) $(name) : LIB :
+                    $(lib-file.requirements) ] ;
             }
             else
             {
-                #~ Otherwise, it's just a regular usage of the library.
+                #~ Otherwise, it is just regular library usage.
                 return [ generators.construct
                     $(self.project) $(name) : SEARCHED_LIB : $(property-set) ] ;
             }
@@ -195,7 +201,7 @@ class stlport-target-class : basic-target
         {
             # We don't need libraries if host istreams are used. For
             # msvc, automatic library selection will be used.
-            
+
             # name: stlport_<toolset>(_stldebug)?
             local name = stlport ;
             name = $(name)_$(toolset) ;
@@ -259,7 +265,7 @@ class stlport-target-class : basic-target
                     <define>_STLP_THREADS=1 ;
             }
         }
-        
+
         return [ property-set.create $(usage-requirements) ] ;
     }
 }

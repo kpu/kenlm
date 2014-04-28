@@ -175,28 +175,38 @@ actions quietly updated ignore piecemeal together RmTemps
 actions unit-test
 {
     $(PATH_SETUP)
-    $(LAUNCHER) $(>) $(ARGS) && $(.MAKE_FILE) $(<)
+    $(LAUNCHER) "$(>)" $(ARGS) && $(.MAKE_FILE) "$(<)"
 }
 
+# Note that this rule may be called multiple times for a single target in case
+# there are multiple actions operating on the same target in sequence. One such
+# example are msvc exe targets first created by a linker action and then updated
+# with an embedded manifest file by a separate action.
 rule record-time ( target : source : start end user system )
 {
     local src-string = [$(source:G=:J=",")"] " ;
     USER_TIME on $(target) += $(src-string)$(user) ;
     SYSTEM_TIME on $(target) += $(src-string)$(system) ;
+
+    # We need the following variables because attempting to perform such
+    # variable expansion in actions would not work due to quotes getting treated
+    # as regular characters.
+    USER_TIME_SECONDS on $(target) += $(src-string)$(user)" seconds" ;
+    SYSTEM_TIME_SECONDS on $(target) += $(src-string)$(system)" seconds" ;
 }
 
-# Calling this rule requests that Boost Build time how long it taks to build the
-# 'source' target and display the results both on the standard output and in the
-# 'target' file.
+# Calling this rule requests that Boost Build time how long it takes to build
+# the 'source' target and display the results both on the standard output and in
+# the 'target' file.
 #
-rule time ( target : source : properties *  )
+rule time ( target : sources + : properties *  )
 {
     # Set up rule for recording timing information.
-    __TIMING_RULE__ on $(source) = testing.record-time $(target) ;
+    __TIMING_RULE__ on $(sources) = testing.record-time $(target) ;
 
-    # Make sure that the source is rebuilt any time we need to retrieve that
+    # Make sure the sources get rebuilt any time we need to retrieve that
     # information.
-    REBUILDS $(target) : $(source) ;
+    REBUILDS $(target) : $(sources) ;
 }
 
 
@@ -205,6 +215,6 @@ actions time
     echo user: $(USER_TIME)
     echo system: $(SYSTEM_TIME)
 
-    echo user: $(USER_TIME)" seconds" > "$(<)"
-    echo system: $(SYSTEM_TIME)" seconds" >> "$(<)"
+    echo user: $(USER_TIME_SECONDS) > "$(<)"
+    echo system: $(SYSTEM_TIME_SECONDS) >> "$(<)"
 }

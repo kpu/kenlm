@@ -1,10 +1,13 @@
-# Copyright David Abrahams 2004.
+# Copyright 2004 David Abrahams
 # Copyright 2002, 2003, 2004, 2005, 2006 Vladimir Prus
 # Copyright 2010 Rene Rivera
 # Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
-import type ;
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
+
 import scanner ;
+import type ;
+
 
 class c-scanner : scanner
 {
@@ -20,8 +23,8 @@ class c-scanner : scanner
 
         for local i in $(includes)
         {
-            self.includes += [ sequence.transform path.native
-                                : [ regex.split $(i:G=) "&&" ] ] ;
+            self.includes += [ sequence.transform path.native : [ regex.split
+                $(i:G=) "&&" ] ] ;
         }
     }
 
@@ -32,21 +35,22 @@ class c-scanner : scanner
 
     rule process ( target : matches * : binding )
     {
-        local angle  = [ regex.transform $(matches) : "<(.*)>"   ] ;
+        local angle = [ regex.transform $(matches) : "<(.*)>" ] ;
         angle = [ sequence.transform path.native : $(angle) ] ;
         local quoted = [ regex.transform $(matches) : "\"(.*)\"" ] ;
         quoted = [ sequence.transform path.native : $(quoted) ] ;
 
-        # CONSIDER: the new scoping rule seem to defeat "on target" variables.
+        # CONSIDER: the new scoping rules seem to defeat "on target" variables.
         local g = [ on $(target) return $(HDRGRIST) ] ;
         local b = [ NORMALIZE_PATH $(binding:D) ] ;
 
         # Attach binding of including file to included targets. When a target is
-        # directly created from virtual target this extra information is
+        # directly created from a virtual target this extra information is
         # unnecessary. But in other cases, it allows us to distinguish between
         # two headers of the same name included from different places. We do not
         # need this extra information for angle includes, since they should not
-        # depend on including file (we can not get literal "." in include path).
+        # depend on the including file (we can not get literal "." in the
+        # include path).
         local g2 = $(g)"#"$(b) ;
 
         angle = $(angle:G=$(g)) ;
@@ -59,11 +63,11 @@ class c-scanner : scanner
         SEARCH on $(angle) = $(self.includes:G=) ;
         SEARCH on $(quoted) = $(b) $(self.includes:G=) ;
 
-        # Just propagate the current scanner to includes in hope that includes
+        # Just propagate the current scanner to includes, in hope that includes
         # do not change scanners.
-        scanner.propagate $(__name__) : $(angle) $(quoted) : $(target) ;
+        scanner.propagate $(__name__) : $(all) : $(target) ;
 
-        ISFILE $(angle) $(quoted) ;
+        ISFILE $(all) ;
     }
 }
 

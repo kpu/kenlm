@@ -6,5 +6,7 @@ type UI : ui ;
 type QRC : qrc ;
 type MOCCABLE_CPP ;
 type MOCCABLE_H ;
+type MOCCABLE5_CPP ;
+type MOCCABLE5_H ;
 # Result of running moc.
 type MOC : moc : H ;

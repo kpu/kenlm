@@ -214,10 +214,12 @@ if [ os.name ] = NT
 # The 'c' letter suppresses warnings in case the archive does not exists yet.
 # That warning is produced only on some platforms, for whatever reasons.
 #
+# Use qcc driver to create archive, see
+#     http://www.qnx.com/developers/docs/6.3.2/neutrino/utilities/q/qcc.html
 actions piecemeal archive
 {
     $(RM) "$(<)"
-    ar rc "$(<)" "$(>)"
+    "$(CONFIG_COMMAND)" -A "$(<)" "$(>)"
 }
 
 

@@ -7,13 +7,12 @@
 #  typed targets.
 
 import "class" : new ;
-import errors ;
 import feature ;
 import generators : * ;
+import os ;
 import project ;
 import property ;
 import scanner ;
-import os ;
 
 # The following import would create a circular dependency:
 # project -> project-root -> builtin -> type -> targets -> project
@@ -39,20 +38,30 @@ rule register ( type : suffixes * : base-type ? )
     # decomposed.
     switch $(type)
     {
-        case *-* : errors.error "type name \"$(type)\" contains a hyphen" ;
+        case *-* :
+            import errors ;
+            errors.error "type name \"$(type)\" contains a hyphen" ;
     }
 
     if $(type) in $(.types)
     {
+        import errors ;
         errors.error "Type $(type) is already registered." ;
     }
-    else
+
     {
         .types += $(type) ;
         .base.$(type) = $(base-type) ;
         .derived.$(base-type) += $(type) ;
+        .bases.$(type) = $(type) $(.bases.$(base-type)) ;
 
-        if $(suffixes)-is-not-empty
+        # Store suffixes for generated targets.
+        .suffixes.$(type) = [ new property-map ] ;
+
+        # Store prefixes for generated targets (e.g. "lib" for library).
+        .prefixes.$(type) = [ new property-map ] ;
+
+        if $(suffixes)-is-defined
         {
             # Specify mapping from suffixes to type.
             register-suffixes $(suffixes) : $(type) ;
@@ -119,6 +128,7 @@ rule register-suffixes ( suffixes + : type )
         }
         else if $(.type.$(s)) != $(type)
         {
+            import errors ;
             errors.error Attempting to specify multiple types for suffix
                 \"$(s)\" : "Old type $(.type.$(s)), New type $(type)" ;
         }
@@ -143,6 +153,7 @@ rule validate ( type )
 {
     if ! [ registered $(type) ]
     {
+        import errors ;
         errors.error "Unknown target type $(type)" ;
     }
 }
@@ -182,13 +193,7 @@ rule base ( type )
 #
 rule all-bases ( type )
 {
-    local result = $(type) ;
-    while $(type)
-    {
-        type = [ base $(type) ] ;
-        result += $(type) ;
-    }
-    return $(result) ;
+    return $(.bases.$(type)) ;
 }
 
 
@@ -211,7 +216,7 @@ rule all-derived ( type )
 #
 rule is-derived ( type base )
 {
-    if $(base) in [ all-bases $(type) ]
+    if $(base) in $(.bases.$(type))
     {
         return true ;
     }
@@ -229,11 +234,6 @@ rule is-subtype ( type base )
 }
 
 
-# Store suffixes for generated targets.
-.suffixes = [ new property-map ] ;
-
-# Store prefixes for generated targets (e.g. "lib" for library).
-.prefixes = [ new property-map ] ;
 
 
 # Sets a file suffix to be used when generating a target of 'type' with the
@@ -305,15 +305,13 @@ rule generated-target-prefix ( type : property-set )
 
 local rule set-generated-target-ps ( ps : type : properties * : psval )
 {
-    properties = <target-type>$(type) $(properties) ;
-    $(.$(ps)es).insert $(properties) : $(psval) ;
+    $(.$(ps)es.$(type)).insert $(properties) : $(psval) ;
 }
 
 
 local rule change-generated-target-ps ( ps : type : properties * : psval )
 {
-    properties = <target-type>$(type) $(properties) ;
-    local prev = [ $(.$(ps)es).find-replace $(properties) : $(psval) ] ;
+    local prev = [ $(.$(ps)es.$(type)).find-replace $(properties) : $(psval) ] ;
     if ! $(prev)
     {
         set-generated-target-ps $(ps) : $(type) : $(properties) : $(psval) ;
@@ -326,17 +324,17 @@ local rule change-generated-target-ps ( ps : type : properties * : psval )
 # 'ps' can be either "prefix" or "suffix".  If no prefix/suffix is specified for
 # 'type', returns prefix/suffix for base type, if any.
 #
-local rule generated-target-ps-real ( ps : type : properties * )
+local rule generated-target-ps ( ps : type : property-set )
 {
     local result ;
     local found ;
     while $(type) && ! $(found)
     {
-        result = [ $(.$(ps)es).find <target-type>$(type) $(properties) ] ;
+        result = [ $(.$(ps)es.$(type)).find $(property-set) ] ;
         # If the prefix/suffix is explicitly set to an empty string, we consider
         # prefix/suffix to be found. If we were not to compare with "", there
         # would be no way to specify an empty prefix/suffix.
-        if $(result)-is-not-empty
+        if $(result)-is-defined
         {
             found = true ;
         }
@@ -350,28 +348,6 @@ local rule generated-target-ps-real ( ps : type : properties * )
 }
 
 
-local rule generated-target-ps ( ps : type : property-set )
-{
-    local key = .$(ps).$(type).$(property-set) ;
-    local v = $($(key)) ;
-    if ! $(v)
-    {
-        v = [ generated-target-ps-real $(ps) : $(type) : [ $(property-set).raw ]
-            ] ;
-        if ! $(v)
-        {
-            v = none ;
-        }
-        $(key) = $(v) ;
-    }
-
-    if $(v) != none
-    {
-        return $(v) ;
-    }
-}
-
-
 # Returns file type given its name. If there are several dots in filename, tries
 # each suffix. E.g. for name of "file.so.1.2" suffixes "2", "1", and "so" will
 # be tried.
@@ -381,7 +357,7 @@ rule type ( filename )
     if [ os.name ] in NT CYGWIN
     {
         filename = $(filename:L) ;
-    }    
+    }
     local type ;
     while ! $(type) && $(filename:S)
     {

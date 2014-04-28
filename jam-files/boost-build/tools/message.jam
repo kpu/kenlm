@@ -12,16 +12,17 @@ import property-set ;
 
 class message-target-class : basic-target
 {
-    rule __init__ ( name-and-dir : project : * )
+    rule set-message ( * )
     {
-        basic-target.__init__ $(name-and-dir) : $(project) ;
+        self.1 = $(1) ;
+        self.2 = $(2) ;
         self.3 = $(3) ;
         self.4 = $(4) ;
         self.5 = $(5) ;
         self.6 = $(6) ;
         self.7 = $(7) ;
         self.8 = $(8) ;        
-        self.9 = $(9) ;        
+        self.9 = $(9) ;      
         self.built = ;
     }
     
@@ -29,7 +30,7 @@ class message-target-class : basic-target
     {
         if ! $(self.built)
         {
-            for i in 3 4 5 6 7 8 9
+            for i in 1 2 3 4 5 6 7 8 9
             {
                 if $(self.$(i))
                 {
@@ -48,8 +49,14 @@ rule message ( name : * )
 {
     local project = [ project.current ] ;
 
-    targets.main-target-alternative
-      [ new message-target-class $(name) : $(project) 
-        : $(2) : $(3) : $(4) : $(5) : $(6) : $(7) ] ;
+    local result = [ targets.main-target-alternative
+        [ new message-target-class $(name) : $(project)
+            : [ targets.main-target-sources : $(name) ]
+            : [ targets.main-target-requirements : $(project) ]
+            : [ targets.main-target-default-build : $(project) ]
+            : [ targets.main-target-usage-requirements : $(project) ]
+        ] ] ;
+    $(result).set-message $(2) : $(3) : $(4) : $(5) : $(6) : $(7) : $(8) : $(9) ;
+    return $(result) ;
 }
 IMPORT $(__name__) : message : : message ;

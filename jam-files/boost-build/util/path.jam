@@ -1,10 +1,9 @@
-# Copyright Vladimir Prus 2002-2006.
-# Copyright Dave Abrahams 2003-2004.
-# Copyright Rene Rivera 2003-2006.
-#
+# Copyright 2002-2006. Vladimir Prus
+# Copyright 2003-2004. Dave Abrahams
+# Copyright 2003-2006. Rene Rivera
 # Distributed under the Boost Software License, Version 1.0.
-#    (See accompanying file LICENSE_1_0.txt or copy at
-#          http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 # Performs various path manipulations. Paths are always in a 'normalized'
 # representation. In it, a path may be either:
@@ -17,12 +16,10 @@
 # beginning, and it never ends in slash, except for path consisting of slash
 # only.
 
-import errors ;
 import modules ;
 import regex ;
 import sequence ;
 import set ;
-import version ;
 
 
 os = [ modules.peek : OS ] ;
@@ -124,6 +121,7 @@ rule parent ( path )
     }
     else
     {
+        import errors ;
         errors.error "Path '$(path)' has no parent" ;
     }
 }
@@ -140,13 +138,13 @@ rule reverse ( path )
     }
     else
     {
-        local tokens = [ regex.split $(path) "/" ] ;
+        local tokens = [ regex.split $(path) / ] ;
         local tokens2 ;
         for local i in $(tokens)
         {
             tokens2 += .. ;
         }
-        return [ sequence.join $(tokens2) : "/" ] ;
+        return [ sequence.join $(tokens2) : / ] ;
     }
 }
 
@@ -166,30 +164,11 @@ rule join ( elements + )
         {
             if [ is-rooted $(e) ]
             {
+                import errors ;
                 errors.error only the first element may be rooted ;
             }
         }
-        if [ version.check-jam-version 3 1 17 ]
-        {
-            return [ NORMALIZE_PATH "$(elements)" ] ;
-        }
-        else
-        {
-            # Boost Jam prior to version 3.1.17 had problems with its
-            # NORMALIZE_PATH rule in case you passed it a leading backslash
-            # instead of a slash, in some cases when you sent it an empty
-            # initial path element and possibly some others. At least some of
-            # those cases were being hit and relied upon when calling this rule
-            # from the path.make-NT rule.
-            if ! $(elements[1]) && $(elements[2])
-            {
-                return [ NORMALIZE_PATH "/" "$(elements[2-])" ] ;
-            }
-            else
-            {
-                return [ NORMALIZE_PATH "$(elements)" ] ;
-            }
-        }
+        return [ NORMALIZE_PATH "$(elements)" ] ;
     }
 }
 
@@ -320,13 +299,13 @@ NATIVE_RULE path : exists ;
 rule all-parents ( path : upper_limit ? : cwd ? )
 {
     cwd ?= [ pwd ] ;
-    local path_ele = [ regex.split [ root $(path) $(cwd) ] "/" ] ;
+    local path_ele = [ regex.split [ root $(path) $(cwd) ] / ] ;
 
     if ! $(upper_limit)
     {
         upper_limit = / ;
     }
-    local upper_ele = [ regex.split [ root $(upper_limit) $(cwd) ] "/" ] ;
+    local upper_ele = [ regex.split [ root $(upper_limit) $(cwd) ] / ] ;
 
     # Leave only elements in 'path_ele' below 'upper_ele'.
     while $(path_ele) && ( $(upper_ele[1]) = $(path_ele[1]) )
@@ -338,9 +317,10 @@ rule all-parents ( path : upper_limit ? : cwd ? )
     # Have all upper elements been removed ?
     if $(upper_ele)
     {
+        import errors ;
         errors.error "$(upper_limit) is not prefix of $(path)" ;
     }
-    
+
     # Create the relative paths to parents, number of elements in 'path_ele'.
     local result ;
     for local i in $(path_ele)
@@ -352,8 +332,8 @@ rule all-parents ( path : upper_limit ? : cwd ? )
 }
 
 
-# Search for 'pattern' in parent directories of 'dir', up till and including
-# 'upper_limit', if it is specified, or till the filesystem root otherwise.
+# Search for 'pattern' in parent directories of 'dir', up to and including
+# 'upper_limit', if it is specified, or up to the filesystem root otherwise.
 #
 rule glob-in-parents ( dir : patterns + : upper-limit ? )
 {
@@ -407,13 +387,14 @@ rule relative ( child parent : no-error ? )
                 }
                 else
                 {
+                    import errors ;
                     errors.error $(child) is not a subdir of $(parent) ;
-                }                        
+                }
             }
             else
             {
-                return [ join $(split2) ] ;    
-            }        
+                return [ join $(split2) ] ;
+            }
         }
         else
         {
@@ -423,7 +404,7 @@ rule relative ( child parent : no-error ? )
 }
 
 
-# Returns the minimal path to path2 that is relative path1.
+# Returns the minimal path to path2 that is relative to path1.
 #
 rule relative-to ( path1 path2 )
 {
@@ -448,8 +429,8 @@ rule relative-to ( path1 path2 )
 }
 
 
-# Returns the list of paths which are used by the operating system for looking
-# up programs.
+# Returns the list of paths used by the operating system for looking up
+# programs.
 #
 rule programs-path ( )
 {
@@ -465,6 +446,7 @@ rule programs-path ( )
     return $(result) ;
 }
 
+
 rule makedirs ( path )
 {
     local result = true ;
@@ -472,16 +454,18 @@ rule makedirs ( path )
     if ! [ exists $(native) ]
     {
         if [ makedirs [ parent $(path) ] ]
-        {            
+        {
             if ! [ MAKEDIR $(native) ]
             {
+                import errors ;
                 errors.error "Could not create directory '$(path)'" ;
                 result = ;
             }
-        }        
-    }    
+        }
+    }
     return $(result) ;
 }
+
 
 # Converts native Windows paths into our internal canonic path representation.
 # Supports 'invalid' paths containing multiple successive path separator
@@ -492,21 +476,7 @@ rule makedirs ( path )
 #
 rule make-NT ( native )
 {
-    local result ;
-
-    if [ version.check-jam-version 3 1 17 ]
-    {
-        result = [ NORMALIZE_PATH $(native) ] ;
-    }
-    else
-    {
-        # This old implementation is really fragile due to a not so clear way
-        # NORMALIZE_PATH rule worked in Boost.Jam versions prior to 3.1.17. E.g.
-        # path.join would mostly ignore empty path elements but would root the
-        # joined path in case the initial two path elements were empty or some
-        # similar accidental wierdness.
-        result = [ path.join [ regex.split $(native) "[/\\]" ] ] ;
-    }
+    local result = [ NORMALIZE_PATH $(native) ] ;
 
     # We need to add an extra '/' in front in case this is a rooted Windows path
     # starting with a drive letter and not a path separator character since the
@@ -523,17 +493,12 @@ rule make-NT ( native )
 
 rule native-NT ( path )
 {
-    local result ;
-    if [ is-rooted $(path) ] && ! [ regex.match "^/(.:)" : $(path) ]
+    local remove-slash = [ MATCH "^/(.:.*)" : $(path) ] ;
+    if $(remove-slash)
     {
-        result = $(path) ;
+        path = $(remove-slash) ;
     }
-    else
-    {
-        result = [ MATCH "^/?(.*)" : $(path) ] ;
-    }
-    result = [ sequence.join [ regex.split $(result) "/" ] : "\\" ] ;
-    return $(result) ;
+    return [ regex.replace $(path) / \\ ] ;
 }
 
 
@@ -542,6 +507,7 @@ rule make-UNIX ( native )
     # VP: I have no idea now 'native' can be empty here! But it can!
     if ! $(native)
     {
+        import errors ;
         errors.error "Empty path passed to 'make-UNIX'" ;
     }
     else
@@ -583,7 +549,8 @@ rule native-CYGWIN ( path )
 #
 rule split-path-VMS ( native )
 {
-    local matches = [ MATCH ([a-zA-Z0-9_-]+:)?(\\[[^\]]*\\])?(.*)?$   : $(native) ] ;
+    local matches = [ MATCH ([a-zA-Z0-9_-]+:)?(\\[[^\]]*\\])?(.*)?$ : $(native)
+        ] ;
     local device = $(matches[1]) ;
     local dir = $(matches[2]) ;
     local file = $(matches[3]) ;
@@ -604,6 +571,7 @@ rule make-VMS ( native )
 {
     if [ MATCH ^(\\[[a-zA-Z0-9]) : $(native) ]
     {
+        import errors ;
         errors.error "Can't handle default-device absolute paths: " $(native) ;
     }
 
@@ -695,10 +663,9 @@ rule native-VMS ( path )
     #
     # This is no exact science, just guess work:
     #
-    # If the last part of the current path spec
-    # includes some chars, followed by a dot,
-    # optionally followed by more chars -
-    # then it is a file (keep your fingers crossed).
+    # If the last part of the current path spec includes some chars, followed by
+    # a dot, optionally followed by more chars - then it is a file (keep your
+    # fingers crossed).
     #
     split = [ regex.split $(dir) / ] ;
     local maybe_file = $(split[-1]) ;
@@ -736,6 +703,9 @@ rule native-VMS ( path )
     return $(native) ;
 }
 
+# Remove one level of indirection
+IMPORT $(__name__) : make-$(os) native-$(os) : $(__name__) : make native ;
+EXPORT $(__name__) : make native ;
 
 rule __test__ ( )
 {
@@ -800,8 +770,10 @@ rule __test__ ( )
     local CWD = "/home/ghost/build" ;
     assert.result : all-parents . : . : $(CWD) ;
     assert.result . .. ../.. ../../..  : all-parents "Jamfile" : "" : $(CWD) ;
-    assert.result foo . .. ../.. ../../.. : all-parents "foo/Jamfile" : "" : $(CWD) ;
-    assert.result ../Work .. ../.. ../../.. : all-parents "../Work/Jamfile" : "" : $(CWD) ;
+    assert.result foo . .. ../.. ../../.. : all-parents "foo/Jamfile" : "" :
+        $(CWD) ;
+    assert.result ../Work .. ../.. ../../.. : all-parents "../Work/Jamfile" : ""
+        : $(CWD) ;
 
     local CWD = "/home/ghost" ;
     assert.result . .. : all-parents "Jamfile" : "/home" : $(CWD) ;
@@ -813,68 +785,70 @@ rule __test__ ( )
     local save-os = [ modules.peek path : os ] ;
     modules.poke path : os : NT ;
 
-    assert.result "foo/bar/giz" : make "foo/bar/giz" ;
-    assert.result "foo/bar/giz" : make "foo\\bar\\giz" ;
-    assert.result "foo" : make "foo/" ;
-    assert.result "foo" : make "foo\\" ;
-    assert.result "foo" : make "foo/." ;
-    assert.result "foo" : make "foo/bar/.." ;
-    assert.result "foo" : make "foo/bar/../" ;
-    assert.result "foo" : make "foo/bar/..\\" ;
-    assert.result "foo/bar" : make "foo/././././bar" ;
-    assert.result "/foo" : make "\\foo" ;
-    assert.result "/D:/My Documents" : make "D:\\My Documents" ;
-    assert.result "/c:/boost/tools/build/new/project.jam" : make "c:\\boost\\tools\\build\\test\\..\\new\\project.jam" ;
-    
-    #   Test processing 'invalid' paths containing multiple successive path
+    assert.result "foo/bar/giz" : make-NT "foo/bar/giz" ;
+    assert.result "foo/bar/giz" : make-NT "foo\\bar\\giz" ;
+    assert.result "foo" : make-NT "foo/" ;
+    assert.result "foo" : make-NT "foo\\" ;
+    assert.result "foo" : make-NT "foo/." ;
+    assert.result "foo" : make-NT "foo/bar/.." ;
+    assert.result "foo" : make-NT "foo/bar/../" ;
+    assert.result "foo" : make-NT "foo/bar/..\\" ;
+    assert.result "foo/bar" : make-NT "foo/././././bar" ;
+    assert.result "/foo" : make-NT "\\foo" ;
+    assert.result "/D:/My Documents" : make-NT "D:\\My Documents" ;
+    assert.result "/c:/boost/tools/build/new/project.jam" : make-NT
+        "c:\\boost\\tools\\build\\test\\..\\new\\project.jam" ;
+
+    # Test processing 'invalid' paths containing multiple successive path
     # separators.
-    assert.result "foo" : make "foo//" ;
-    assert.result "foo" : make "foo///" ;
-    assert.result "foo" : make "foo\\\\" ;
-    assert.result "foo" : make "foo\\\\\\" ;
-    assert.result "/foo" : make "//foo" ;
-    assert.result "/foo" : make "///foo" ;
-    assert.result "/foo" : make "\\\\foo" ;
-    assert.result "/foo" : make "\\\\\\foo" ;
-    assert.result "/foo" : make "\\/\\/foo" ;
-    assert.result "foo/bar" : make "foo//\\//\\\\bar//\\//\\\\\\//\\//\\\\" ;
-    assert.result "foo" : make "foo/bar//.." ;
-    assert.result "foo/bar" : make "foo/bar/giz//.." ;
-    assert.result "foo/giz" : make "foo//\\//\\\\bar///\\\\//\\\\////\\/..///giz\\//\\\\\\//\\//\\\\" ;
-    assert.result "../../../foo" : make "..///.//..///.//..////foo///" ;
+    assert.result "foo" : make-NT "foo//" ;
+    assert.result "foo" : make-NT "foo///" ;
+    assert.result "foo" : make-NT "foo\\\\" ;
+    assert.result "foo" : make-NT "foo\\\\\\" ;
+    assert.result "/foo" : make-NT "//foo" ;
+    assert.result "/foo" : make-NT "///foo" ;
+    assert.result "/foo" : make-NT "\\\\foo" ;
+    assert.result "/foo" : make-NT "\\\\\\foo" ;
+    assert.result "/foo" : make-NT "\\/\\/foo" ;
+    assert.result "foo/bar" : make-NT "foo//\\//\\\\bar//\\//\\\\\\//\\//\\\\" ;
+    assert.result "foo" : make-NT "foo/bar//.." ;
+    assert.result "foo/bar" : make-NT "foo/bar/giz//.." ;
+    assert.result "foo/giz" : make-NT
+        "foo//\\//\\\\bar///\\\\//\\\\////\\/..///giz\\//\\\\\\//\\//\\\\" ;
+    assert.result "../../../foo" : make-NT "..///.//..///.//..////foo///" ;
 
-    #   Test processing 'invalid' rooted paths with too many '..' path elements
+    # Test processing 'invalid' rooted paths with too many '..' path elements
     # that would place them before the root.
-    assert.result : make "/.." ;
-    assert.result : make "/../" ;
-    assert.result : make "/../." ;
-    assert.result : make "/.././" ;
-    assert.result : make "/foo/../bar/giz/.././././../../." ;
-    assert.result : make "/foo/../bar/giz/.././././../.././" ;
-    assert.result : make "//foo/../bar/giz/.././././../../." ;
-    assert.result : make "//foo/../bar/giz/.././././../.././" ;
-    assert.result : make "\\\\foo/../bar/giz/.././././../../." ;
-    assert.result : make "\\\\foo/../bar/giz/.././././../.././" ;
-    assert.result : make "/..///.//..///.//..////foo///" ;
+    assert.result : make-NT "/.." ;
+    assert.result : make-NT "/../" ;
+    assert.result : make-NT "/../." ;
+    assert.result : make-NT "/.././" ;
+    assert.result : make-NT "/foo/../bar/giz/.././././../../." ;
+    assert.result : make-NT "/foo/../bar/giz/.././././../.././" ;
+    assert.result : make-NT "//foo/../bar/giz/.././././../../." ;
+    assert.result : make-NT "//foo/../bar/giz/.././././../.././" ;
+    assert.result : make-NT "\\\\foo/../bar/giz/.././././../../." ;
+    assert.result : make-NT "\\\\foo/../bar/giz/.././././../.././" ;
+    assert.result : make-NT "/..///.//..///.//..////foo///" ;
 
-    assert.result "foo\\bar\\giz" : native "foo/bar/giz" ;
-    assert.result "foo" : native "foo" ;
-    assert.result "\\foo" : native "/foo" ;
-    assert.result "D:\\My Documents\\Work" : native "/D:/My Documents/Work" ;
+    assert.result "foo\\bar\\giz" : native-NT "foo/bar/giz" ;
+    assert.result "foo" : native-NT "foo" ;
+    assert.result "\\foo" : native-NT "/foo" ;
+    assert.result "D:\\My Documents\\Work" : native-NT "/D:/My Documents/Work" ;
 
     modules.poke path : os : UNIX ;
 
-    assert.result "foo/bar/giz" : make "foo/bar/giz" ;
-    assert.result "/sub1" : make "/sub1/." ;
-    assert.result "/sub1" : make "/sub1/sub2/.." ;
-    assert.result "sub1" : make "sub1/." ;
-    assert.result "sub1" : make "sub1/sub2/.." ;
-    assert.result "/foo/bar" : native "/foo/bar" ;
+    assert.result "foo/bar/giz" : make-UNIX "foo/bar/giz" ;
+    assert.result "/sub1" : make-UNIX "/sub1/." ;
+    assert.result "/sub1" : make-UNIX "/sub1/sub2/.." ;
+    assert.result "sub1" : make-UNIX "sub1/." ;
+    assert.result "sub1" : make-UNIX "sub1/sub2/.." ;
+    assert.result "/foo/bar" : native-UNIX "/foo/bar" ;
 
     modules.poke path : os : VMS ;
 
     #
-    # Don't really need to poke os before these
+    # Do not really need to poke os before these
     #
     assert.result "disk:" "[dir]"  "file" : split-path-VMS "disk:[dir]file" ;
     assert.result "disk:" "[dir]"  ""     : split-path-VMS "disk:[dir]" ;
@@ -896,39 +870,41 @@ rule __test__ ( )
     #
     # Make portable paths
     #
-    assert.result "/disk:" : make "disk:" ;
-    assert.result "foo/bar/giz" : make "[.foo.bar.giz]" ;
-    assert.result "foo" : make "[.foo]" ;
-    assert.result "foo" : make "[.foo.bar.-]" ;
-    assert.result ".." : make "[.-]" ;
-    assert.result ".." : make "[-]" ;
-    assert.result "." : make "[]" ;
-    assert.result "giz.h" : make "giz.h" ;
-    assert.result "foo/bar/giz.h" : make "[.foo.bar]giz.h" ;
-    assert.result "/disk:/my_docs" : make "disk:[my_docs]" ;
-    assert.result "/disk:/boost/tools/build/new/project.jam" : make "disk:[boost.tools.build.test.-.new]project.jam" ;
+    assert.result "/disk:" : make-VMS "disk:" ;
+    assert.result "foo/bar/giz" : make-VMS "[.foo.bar.giz]" ;
+    assert.result "foo" : make-VMS "[.foo]" ;
+    assert.result "foo" : make-VMS "[.foo.bar.-]" ;
+    assert.result ".." : make-VMS "[.-]" ;
+    assert.result ".." : make-VMS "[-]" ;
+    assert.result "." : make-VMS "[]" ;
+    assert.result "giz.h" : make-VMS "giz.h" ;
+    assert.result "foo/bar/giz.h" : make-VMS "[.foo.bar]giz.h" ;
+    assert.result "/disk:/my_docs" : make-VMS "disk:[my_docs]" ;
+    assert.result "/disk:/boost/tools/build/new/project.jam" : make-VMS
+        "disk:[boost.tools.build.test.-.new]project.jam" ;
 
     #
-    # Special case (adds '.' to end of file w/o extension to
-    # disambiguate from directory in portable path spec).
+    # Special case (adds '.' to end of file w/o extension to disambiguate from
+    # directory in portable path spec)
     #
-    assert.result "Jamfile." : make "Jamfile" ;
-    assert.result "dir/Jamfile." : make "[.dir]Jamfile" ;
-    assert.result "/disk:/dir/Jamfile." : make "disk:[dir]Jamfile" ;
+    assert.result "Jamfile." : make-VMS "Jamfile" ;
+    assert.result "dir/Jamfile." : make-VMS "[.dir]Jamfile" ;
+    assert.result "/disk:/dir/Jamfile." : make-VMS "disk:[dir]Jamfile" ;
 
     #
     # Make native paths
     #
-    assert.result "disk:" : native "/disk:" ;
-    assert.result "[.foo.bar.giz]" : native "foo/bar/giz" ;
-    assert.result "[.foo]" : native "foo" ;
-    assert.result "[.-]" : native ".." ;
-    assert.result "[.foo.-]" : native "foo/.." ;
-    assert.result "[]" : native "." ;
-    assert.result "disk:[my_docs.work]" : native "/disk:/my_docs/work" ;
-    assert.result "giz.h" : native "giz.h" ;
-    assert.result "disk:Jamfile." : native "/disk:Jamfile." ;
-    assert.result "disk:[my_docs.work]Jamfile." : native "/disk:/my_docs/work/Jamfile." ;
+    assert.result "disk:" : native-VMS "/disk:" ;
+    assert.result "[.foo.bar.giz]" : native-VMS "foo/bar/giz" ;
+    assert.result "[.foo]" : native-VMS "foo" ;
+    assert.result "[.-]" : native-VMS ".." ;
+    assert.result "[.foo.-]" : native-VMS "foo/.." ;
+    assert.result "[]" : native-VMS "." ;
+    assert.result "disk:[my_docs.work]" : native-VMS "/disk:/my_docs/work" ;
+    assert.result "giz.h" : native-VMS "giz.h" ;
+    assert.result "disk:Jamfile." : native-VMS "/disk:Jamfile." ;
+    assert.result "disk:[my_docs.work]Jamfile." : native-VMS
+        "/disk:/my_docs/work/Jamfile." ;
 
     modules.poke path : os : $(save-os) ;
 }

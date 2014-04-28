@@ -1,117 +1,330 @@
-/* Copyright Vladimir Prus 2003. Distributed under the Boost */
-/* Software License, Version 1.0. (See accompanying */
-/* file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt) */
-
-#include "../native.h"
-#include "../timestamp.h"
-#include "../object.h"
-#include "../strings.h"
-#include "../lists.h"
-#include "../variable.h"
-#include "../compile.h"
-
-LIST* get_grist(char* f)
-{
-    char* end = strchr(f, '>');
-    string s[1];
-    LIST* result;
-
-    string_new(s);
-
-    string_append_range(s, f, end+1);
-    result = list_new(object_new(s->value));
-
-    string_free(s);
-    return result;
-}
-
 /*
-rule create ( raw-properties * )
+ * Copyright 2013 Steven Watanabe
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at
+ * http://www.boost.org/LICENSE_1_0.txt)
+ */
+
+#include "../object.h"
+#include "../lists.h"
+#include "../modules.h"
+#include "../rules.h"
+#include "../variable.h"
+#include "../native.h"
+#include "../compile.h"
+#include "../mem.h"
+#include "../constants.h"
+#include "string.h"
+
+struct ps_map_entry
 {
-    raw-properties = [ sequence.unique
-        [ sequence.insertion-sort $(raw-properties) ] ] ;
+    struct ps_map_entry * next;
+    LIST * key;
+    OBJECT * value;
+};
 
-    local key = $(raw-properties:J=-:E=) ;
+struct ps_map
+{
+    struct ps_map_entry * * table;
+    size_t table_size;
+    size_t num_elems;
+};
 
-    if ! $(.ps.$(key))
+static unsigned list_hash(LIST * key)
+{
+    unsigned int hash = 0;
+    LISTITER iter = list_begin( key ), end = list_end( key );
+    for ( ; iter != end; ++iter )
     {
-        .ps.$(key) = [ new property-set $(raw-properties) ] ;
+        hash = hash * 2147059363 + object_hash( list_item( iter ) );
     }
-    return $(.ps.$(key)) ;
+    return hash;
 }
-*/
 
-LIST *property_set_create( FRAME *frame, int flags )
+static int list_equal( LIST * lhs, LIST * rhs )
 {
-    LIST* properties = lol_get( frame->args, 0 );
-    LIST* sorted = L0;
-#if 0
-    LIST* order_sensitive = 0;
-#endif
-    LIST* unique;
-    LIST* val;
-    string var[1];
-    OBJECT* name;
-    LISTITER iter, end;
-
-#if 0
-    /* Sort all properties which are not order sensitive */
-    for(tmp = properties; tmp; tmp = tmp->next) {
-        LIST* g = get_grist(tmp->string);
-        LIST* att = call_rule("feature.attributes", frame, g, 0);
-        if (list_in(att, "order-sensitive")) {
-            order_sensitive = list_new( order_sensitive, copystr(tmp->string));
-        } else {
-            sorted = list_new( sorted, copystr(tmp->string));
-        }
-        list_free(att);
-    }
-
-    sorted = list_sort(sorted);
-    sorted = list_append(sorted, order_sensitive);
-    unique = list_unique(sorted);
-#endif
-    sorted = list_sort(properties);
-    unique = list_unique(sorted);
-
-    string_new(var);
-    string_append(var, ".ps.");
-
-    iter = list_begin( unique ), end = list_end( unique );
-    for( ; iter != end; iter = list_next( iter ) ) {
-        string_append(var, object_str( list_item( iter ) ));
-        string_push_back(var, '-');
-    }
-    name = object_new(var->value);
-    val = var_get(frame->module, name);
-    if (list_empty(val))
+    LISTITER lhs_iter, lhs_end, rhs_iter;
+    if ( list_length( lhs ) != list_length( rhs ) )
     {
-        OBJECT* rulename = object_new("new");
-        val = call_rule(rulename, frame,
-                        list_append(list_new(object_new("property-set")), unique), 0);
-        object_free(rulename);
+        return 0;
+    }
+    lhs_iter = list_begin( lhs );
+    lhs_end = list_end( lhs );
+    rhs_iter = list_begin( rhs );
+    for ( ; lhs_iter != lhs_end; ++lhs_iter, ++rhs_iter )
+    {
+        if ( ! object_equal( list_item( lhs_iter ), list_item( rhs_iter ) ) )
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
 
-        var_set(frame->module, name, list_copy(val), VAR_SET);
+static void ps_map_init( struct ps_map * map )
+{
+    size_t i;
+    map->table_size = 2;
+    map->num_elems = 0;
+    map->table = BJAM_MALLOC( map->table_size * sizeof( struct ps_map_entry * ) );
+    for ( i = 0; i < map->table_size; ++i )
+    {
+        map->table[ i ] = NULL;
+    }
+}
+
+static void ps_map_destroy( struct ps_map * map )
+{
+    size_t i;
+    for ( i = 0; i < map->table_size; ++i )
+    {
+        struct ps_map_entry * pos;
+        for ( pos = map->table[ i ]; pos; )
+        {
+            struct ps_map_entry * tmp = pos->next;
+            BJAM_FREE( pos );
+            pos = tmp;
+        }
+    }
+    BJAM_FREE( map->table );
+}
+
+static void ps_map_rehash( struct ps_map * map )
+{
+    struct ps_map old = *map;
+    size_t i;
+    map->table = BJAM_MALLOC( map->table_size * 2 * sizeof( struct ps_map_entry * ) );
+    map->table_size *= 2;
+    for ( i = 0; i < map->table_size; ++i )
+    {
+        map->table[ i ] = NULL;
+    }
+    for ( i = 0; i < old.table_size; ++i )
+    {
+        struct ps_map_entry * pos;
+        for ( pos = old.table[ i ]; pos; )
+        {
+            struct ps_map_entry * tmp = pos->next;
+
+            unsigned hash_val = list_hash( pos->key );
+            unsigned bucket = hash_val % map->table_size;
+            pos->next = map->table[ bucket ];
+            map->table[ bucket ] = pos;
+
+            pos = tmp;
+        }
+    }
+    BJAM_FREE( old.table );
+}
+
+static struct ps_map_entry * ps_map_insert(struct ps_map * map, LIST * key)
+{
+    unsigned hash_val = list_hash( key );
+    unsigned bucket = hash_val % map->table_size;
+    struct ps_map_entry * pos;
+    for ( pos = map->table[bucket]; pos ; pos = pos->next )
+    {
+        if ( list_equal( pos->key, key ) )
+            return pos;
+    }
+
+    if ( map->num_elems >= map->table_size )
+    {
+        ps_map_rehash( map );
+        bucket = hash_val % map->table_size;
+    }
+    pos = BJAM_MALLOC( sizeof( struct ps_map_entry ) );
+    pos->next = map->table[bucket];
+    pos->key = key;
+    pos->value = 0;
+    map->table[bucket] = pos;
+    ++map->num_elems;
+    return pos;
+}
+
+static struct ps_map all_property_sets;
+
+LIST * property_set_create( FRAME * frame, int flags )
+{
+    LIST * properties = lol_get( frame->args, 0 );
+    LIST * sorted = list_sort( properties );
+    LIST * unique = list_unique( sorted );
+    struct ps_map_entry * pos = ps_map_insert( &all_property_sets, unique );
+    list_free( sorted );
+    if ( pos->value )
+    {
+        list_free( unique );
+        return list_new( object_copy( pos->value ) );
     }
     else
     {
-        list_free(unique);
-        val = list_copy(val);
+        OBJECT * rulename = object_new( "new" );
+        OBJECT * varname = object_new( "self.raw" );
+        LIST * val = call_rule( rulename, frame,
+            list_new( object_new( "property-set" ) ), 0 );
+        LISTITER iter, end;
+        object_free( rulename );
+        pos->value = list_front( val );
+        var_set( bindmodule( pos->value ), varname, unique, VAR_SET );
+        object_free( varname );
+
+        for ( iter = list_begin( unique ), end = list_end( unique ); iter != end; ++iter )
+        {
+            const char * str = object_str( list_item( iter ) );
+            if ( str[ 0 ] != '<' || ! strchr( str, '>' ) )
+            {
+                string message[ 1 ];
+                string_new( message );
+                string_append( message, "Invalid property: '" );
+                string_append( message, str );
+                string_append( message, "'" );
+                rulename = object_new( "errors.error" );
+                call_rule( rulename, frame,
+                    list_new( object_new( message->value ) ), 0 );
+                /* unreachable */
+                string_free( message );
+                object_free( rulename );
+            }
+        }
+
+        return val;
     }
-    object_free(name);
+}
 
-    string_free(var);
-    /* The 'unique' variable is freed in 'call_rule'. */
-    list_free(sorted);
+/* binary search for the property value */
+LIST * property_set_get( FRAME * frame, int flags )
+{
+    OBJECT * varname = object_new( "self.raw" );
+    LIST * props = var_get( frame->module, varname );
+    const char * name = object_str( list_front( lol_get( frame->args, 0 ) ) );
+    size_t name_len = strlen( name );
+    LISTITER begin, end;
+    LIST * result = L0;
+    object_free( varname );
 
-    return val;
+    /* Assumes random access */
+    begin = list_begin( props ), end = list_end( props );
 
+    while ( 1 )
+    {
+        ptrdiff_t diff = (end - begin);
+        LISTITER mid = begin + diff / 2;
+        int res;
+        if ( diff == 0 )
+        {
+            return L0;
+        }
+        res = strncmp( object_str( list_item( mid ) ), name, name_len );
+        if ( res < 0 )
+        {
+            begin = mid + 1;
+        }
+        else if ( res > 0 )
+        {
+            end = mid;
+        }
+        else /* We've found the property */
+        {
+            /* Find the beginning of the group */
+            LISTITER tmp = mid;
+            while ( tmp > begin )
+            {
+                --tmp;
+                res = strncmp( object_str( list_item( tmp ) ), name, name_len );
+                if ( res != 0 )
+                {
+                    ++tmp;
+                    break;
+                }
+            }
+            begin = tmp;
+            /* Find the end of the group */
+            tmp = mid + 1;
+            while ( tmp < end )
+            {
+                res = strncmp( object_str( list_item( tmp ) ), name, name_len );
+                if ( res != 0 ) break;
+                ++tmp;
+            }
+            end = tmp;
+            break;
+        }
+    }
+
+    for ( ; begin != end; ++begin )
+    {
+        result = list_push_back( result,
+            object_new( object_str( list_item( begin ) ) + name_len ) );
+    }
+
+    return result;
+}
+
+/* binary search for the property value */
+LIST * property_set_contains_features( FRAME * frame, int flags )
+{
+    OBJECT * varname = object_new( "self.raw" );
+    LIST * props = var_get( frame->module, varname );
+    LIST * features = lol_get( frame->args, 0 );
+    LIST * result = L0;
+    LISTITER features_iter = list_begin( features );
+    LISTITER features_end = list_end( features ) ;
+    object_free( varname );
+
+    for ( ; features_iter != features_end; ++features_iter )
+    {
+        const char * name = object_str( list_item( features_iter ) );
+        size_t name_len = strlen( name );
+        LISTITER begin, end;
+        /* Assumes random access */
+        begin = list_begin( props ), end = list_end( props );
+
+        while ( 1 )
+        {
+            ptrdiff_t diff = (end - begin);
+            LISTITER mid = begin + diff / 2;
+            int res;
+            if ( diff == 0 )
+            {
+                /* The feature is missing */
+                return L0;
+            }
+            res = strncmp( object_str( list_item( mid ) ), name, name_len );
+            if ( res < 0 )
+            {
+                begin = mid + 1;
+            }
+            else if ( res > 0 )
+            {
+                end = mid;
+            }
+            else /* We've found the property */
+            {
+                break;
+            }
+        }
+    }
+    return list_new( object_copy( constant_true ) );
 }
 
 void init_property_set()
 {
     {
-        const char* args[] = { "raw-properties", "*", 0 };
-        declare_native_rule("property-set", "create", args, property_set_create, 1);
+        char const * args[] = { "raw-properties", "*", 0 };
+        declare_native_rule( "property-set", "create", args, property_set_create, 1 );
     }
+    {
+        char const * args[] = { "feature", 0 };
+        declare_native_rule( "class@property-set", "get", args, property_set_get, 1 );
+    }
+    {
+        char const * args[] = { "features", "*", 0 };
+        declare_native_rule( "class@property-set", "contains-features", args, property_set_contains_features, 1 );
+    }
+    ps_map_init( &all_property_sets );
+}
+
+void property_set_done()
+{
+    ps_map_destroy( &all_property_sets );
 }

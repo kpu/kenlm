@@ -4,19 +4,6 @@
  * This file is part of Jam - see jam.c for Copyright information.
  */
 
-# include "jam.h"
-# include "lists.h"
-# include "parse.h"
-# include "variable.h"
-# include "rules.h"
-# include "object.h"
-# include "hash.h"
-# include "modules.h"
-# include "search.h"
-# include "lists.h"
-# include "pathsys.h"
-# include "timestamp.h"
-
 /*  This file is ALSO:
  *  Copyright 2001-2004 David Abrahams.
  *  Distributed under the Boost Software License, Version 1.0.
@@ -27,7 +14,6 @@
  * rules.c - access to RULEs, TARGETs, and ACTIONs
  *
  * External routines:
- *
  *    bindrule()     - return pointer to RULE, creating it if necessary.
  *    bindtarget()   - return pointer to TARGET, creating it if necessary.
  *    touch_target() - mark a target to simulate being new.
@@ -39,33 +25,70 @@
  *    popsettings()  - reset target specific variables to their pre-push values.
  *    freesettings() - delete a settings list.
  *    rules_done()   - free RULE and TARGET tables.
- *
- * 04/12/94 (seiwald) - actionlist() now just appends a single action.
- * 08/23/94 (seiwald) - Support for '+=' (append to variable)
  */
 
+#include "jam.h"
+#include "rules.h"
+
+#include "hash.h"
+#include "lists.h"
+#include "object.h"
+#include "parse.h"
+#include "pathsys.h"
+#include "search.h"
+#include "variable.h"
+
+
 static void set_rule_actions( RULE *, rule_actions * );
-static void set_rule_body   ( RULE *, FUNCTION * procedure );
+static void set_rule_body   ( RULE *, FUNCTION * );
 
 static struct hash * targethash = 0;
 
 
 /*
- * target_include() - adds the 'included' TARGET to the list of targets included
- * by the 'including' TARGET. Such targets are modeled as dependencies of the
- * internal include node belonging to the 'including' TARGET.
+ * get_target_includes() - lazy creates a target's internal includes node
+ *
+ * The newly created node is not entered into the hash table as there should
+ * never be a need to bind them directly from a target names. If you want to
+ * access an internal includes node by name, first access the actual target and
+ * then read the internal includes node from there.
  */
 
-void target_include( TARGET * including, TARGET * included )
+static TARGET * get_target_includes( TARGET * const t )
 {
-    TARGET * internal;
-    if ( !including->includes )
+    if ( !t->includes )
     {
-        including->includes = copytarget( including );
-        including->includes->original_target = including;
+        TARGET * const i = (TARGET *)BJAM_MALLOC( sizeof( *t ) );
+        memset( (char *)i, '\0', sizeof( *i ) );
+        i->name = object_copy( t->name );
+        i->boundname = object_copy( i->name );
+        i->flags |= T_FLAG_NOTFILE | T_FLAG_INTERNAL;
+        i->original_target = t;
+        t->includes = i;
     }
-    internal = including->includes;
+    return t->includes;
+}
+
+
+/*
+ * target_include() - adds a target to the given targe's 'included' list
+ * target_include_many() - adds targets to the given target's 'included' list
+ *
+ * Included targets are modeled as dependencies of the including target's
+ * internal include node.
+ */
+
+void target_include( TARGET * const including, TARGET * const included )
+{
+    TARGET * const internal = get_target_includes( including );
     internal->depends = targetentry( internal->depends, included );
+}
+
+void target_include_many( TARGET * const including, LIST * const included_names
+    )
+{
+    TARGET * const internal = get_target_includes( including );
+    internal->depends = targetlist( internal->depends, included_names );
 }
 
 
@@ -77,9 +100,8 @@ void target_include( TARGET * including, TARGET * included )
 static RULE * enter_rule( OBJECT * rulename, module_t * target_module )
 {
     int found;
-    RULE * r;
-
-    r = (RULE *)hash_insert( demand_rules(target_module), rulename, &found );
+    RULE * const r = (RULE *)hash_insert( demand_rules( target_module ),
+        rulename, &found );
     if ( !found )
     {
         r->name = object_copy( rulename );
@@ -99,19 +121,17 @@ static RULE * enter_rule( OBJECT * rulename, module_t * target_module )
  * src_module.
  */
 
-static RULE * define_rule
-(
-    module_t * src_module,
-    OBJECT   * rulename,
-    module_t * target_module
-)
+static RULE * define_rule( module_t * src_module, OBJECT * rulename,
+    module_t * target_module )
 {
-    RULE * r = enter_rule( rulename, target_module );
-    if ( r->module != src_module ) /* if the rule was imported from elsewhere, clear it now */
+    RULE * const r = enter_rule( rulename, target_module );
+    if ( r->module != src_module )
     {
+        /* If the rule was imported from elsewhere, clear it now. */
         set_rule_body( r, 0 );
         set_rule_actions( r, 0 );
-        r->module = src_module; /* r will be executed in the source module */
+        /* r will be executed in the source module. */
+        r->module = src_module;
     }
     return r;
 }
@@ -134,7 +154,7 @@ void rule_free( RULE * r )
  * bindtarget() - return pointer to TARGET, creating it if necessary.
  */
 
-TARGET * bindtarget( OBJECT * target_name )
+TARGET * bindtarget( OBJECT * const target_name )
 {
     int found;
     TARGET * t;
@@ -159,19 +179,13 @@ static void bind_explicitly_located_target( void * xtarget, void * data )
     TARGET * t = (TARGET *)xtarget;
     if ( !( t->flags & T_FLAG_NOTFILE ) )
     {
-        /* Check if there's a setting for LOCATE */
+        /* Check if there is a setting for LOCATE. */
         SETTINGS * s = t->settings;
         for ( ; s ; s = s->next )
         {
-            if ( strcmp( object_str( s->symbol ), "LOCATE" ) == 0 )
+            if ( object_equal( s->symbol, constant_LOCATE ) && ! list_empty( s->value ) )
             {
-                pushsettings( root_module(), t->settings );
-                /* We are binding a target with explicit LOCATE. So third
-                 * argument is of no use: nothing will be returned through it.
-                 */
-                object_free( t->boundname );
-                t->boundname = search( t->name, &t->time, 0, 0 );
-                popsettings( root_module(), t->settings );
+                set_explicit_binding( t->name, list_front( s->value ) );
                 break;
             }
         }
@@ -187,31 +201,32 @@ void bind_explicitly_located_targets()
 
 
 /*
- * copytarget() - make a new target with the old target's name.
- *
- * Not entered into hash table -- for internal nodes.
+ * touch_target() - mark a target to simulate being new.
  */
 
-TARGET * copytarget( const TARGET * ot )
+void touch_target( OBJECT * const t )
 {
-    TARGET * t = (TARGET *)BJAM_MALLOC( sizeof( *t ) );
-    memset( (char *)t, '\0', sizeof( *t ) );
-    t->name = object_copy( ot->name );
-    t->boundname = object_copy( t->name );
-
-    t->flags |= T_FLAG_NOTFILE | T_FLAG_INTERNAL;
-
-    return t;
+    bindtarget( t )->flags |= T_FLAG_TOUCHED;
 }
 
 
 /*
- * touch_target() - mark a target to simulate being new.
+ * target_scc() - returns the root of a strongly connected component that this
+ * target is a part of.
  */
 
-void touch_target( OBJECT * t )
+TARGET * target_scc( TARGET * t )
 {
-    bindtarget( t )->flags |= T_FLAG_TOUCHED;
+    TARGET * result = t;
+    while ( result->scc_root )
+        result = result->scc_root;
+    while ( t->scc_root )
+    {
+        TARGET * const tmp = t->scc_root;
+        t->scc_root = result;
+        t = tmp;
+    }
+    return result;
 }
 
 
@@ -219,13 +234,14 @@ void touch_target( OBJECT * t )
  * targetlist() - turn list of target names into a TARGET chain.
  *
  * Inputs:
- *  chain   existing TARGETS to append to
- *  targets list of target names
+ *  chain    existing TARGETS to append to
+ *  targets  list of target names
  */
 
 TARGETS * targetlist( TARGETS * chain, LIST * target_names )
 {
-    LISTITER iter = list_begin( target_names ), end = list_end( target_names );
+    LISTITER iter = list_begin( target_names );
+    LISTITER const end = list_end( target_names );
     for ( ; iter != end; iter = list_next( iter ) )
         chain = targetentry( chain, bindtarget( list_item( iter ) ) );
     return chain;
@@ -242,7 +258,7 @@ TARGETS * targetlist( TARGETS * chain, LIST * target_names )
 
 TARGETS * targetentry( TARGETS * chain, TARGET * target )
 {
-    TARGETS * c = (TARGETS *)BJAM_MALLOC( sizeof( TARGETS ) );
+    TARGETS * const c = (TARGETS *)BJAM_MALLOC( sizeof( TARGETS ) );
     c->target = target;
 
     if ( !chain ) chain = c;
@@ -258,27 +274,25 @@ TARGETS * targetentry( TARGETS * chain, TARGET * target )
  * targetchain() - append two TARGET chains.
  *
  * Inputs:
- *  chain   exisitng TARGETS to append to
+ *  chain   existing TARGETS to append to
  *  target  new target to append
  */
 
 TARGETS * targetchain( TARGETS * chain, TARGETS * targets )
 {
     if ( !targets ) return chain;
-    if ( !chain   ) return targets;
+    if ( !chain ) return targets;
 
     chain->tail->next = targets;
     chain->tail = targets->tail;
-
     return chain;
 }
 
 /*
- * action_free - decrement the ACTIONs refrence count
- * and (maybe) free it.
+ * action_free - decrement the ACTIONs refrence count and (maybe) free it.
  */
 
-void action_free ( ACTION * action )
+void action_free( ACTION * action )
 {
     if ( --action->refs == 0 )
     {
@@ -288,22 +302,20 @@ void action_free ( ACTION * action )
     }
 }
 
+
 /*
  * actionlist() - append to an ACTION chain.
  */
 
 ACTIONS * actionlist( ACTIONS * chain, ACTION * action )
 {
-    ACTIONS * actions = (ACTIONS *)BJAM_MALLOC( sizeof( ACTIONS ) );
-
+    ACTIONS * const actions = (ACTIONS *)BJAM_MALLOC( sizeof( ACTIONS ) );
     actions->action = action;
-
     ++action->refs;
     if ( !chain ) chain = actions;
     else chain->tail->next = actions;
     chain->tail = actions;
     actions->next = 0;
-
     return chain;
 }
 
@@ -315,11 +327,12 @@ static SETTINGS * settings_freelist;
  *
  * Adds a variable setting (varname=list) onto a chain of settings for a
  * particular target. 'flag' controls the relationship between new and old
- * values in the same way as in var_set() function (see variable.c). Returns
- * the head of the settings chain.
+ * values in the same way as in var_set() function (see variable.c). Returns the
+ * head of the settings chain.
  */
 
-SETTINGS * addsettings( SETTINGS * head, int flag, OBJECT * symbol, LIST * value )
+SETTINGS * addsettings( SETTINGS * head, int flag, OBJECT * symbol,
+    LIST * value )
 {
     SETTINGS * v;
 
@@ -334,7 +347,6 @@ SETTINGS * addsettings( SETTINGS * head, int flag, OBJECT * symbol, LIST * value
     if ( !v )
     {
         v = settings_freelist;
-
         if ( v )
             settings_freelist = v->next;
         else
@@ -405,7 +417,7 @@ void freetargets( TARGETS * chain )
 {
     while ( chain )
     {
-        TARGETS * n = chain->next;
+        TARGETS * const n = chain->next;
         BJAM_FREE( chain );
         chain = n;
     }
@@ -420,7 +432,7 @@ void freeactions( ACTIONS * chain )
 {
     while ( chain )
     {
-        ACTIONS * n = chain->next;
+        ACTIONS * const n = chain->next;
         action_free( chain->action );
         BJAM_FREE( chain );
         chain = n;
@@ -436,7 +448,7 @@ void freesettings( SETTINGS * v )
 {
     while ( v )
     {
-        SETTINGS * n = v->next;
+        SETTINGS * const n = v->next;
         object_free( v->symbol );
         list_free( v->value );
         v->next = settings_freelist;
@@ -448,7 +460,7 @@ void freesettings( SETTINGS * v )
 
 static void freetarget( void * xt, void * data )
 {
-    TARGET * t = (TARGET *)xt;
+    TARGET * const t = (TARGET *)xt;
     if ( t->name       ) object_free ( t->name       );
     if ( t->boundname  ) object_free ( t->boundname  );
     if ( t->settings   ) freesettings( t->settings   );
@@ -456,7 +468,6 @@ static void freetarget( void * xt, void * data )
     if ( t->dependants ) freetargets ( t->dependants );
     if ( t->parents    ) freetargets ( t->parents    );
     if ( t->actions    ) freeactions ( t->actions    );
-
     if ( t->includes   )
     {
         freetarget( t->includes, (void *)0 );
@@ -478,7 +489,7 @@ void rules_done()
     }
     while ( settings_freelist )
     {
-        SETTINGS * n = settings_freelist->next;
+        SETTINGS * const n = settings_freelist->next;
         BJAM_FREE( settings_freelist );
         settings_freelist = n;
     }
@@ -496,7 +507,7 @@ void actions_refer( rule_actions * a )
 
 
 /*
- * actions_free() - release a reference to the given actions.
+ * actions_free() - release a reference to given actions.
  */
 
 void actions_free( rule_actions * a )
@@ -508,6 +519,7 @@ void actions_free( rule_actions * a )
         BJAM_FREE( a );
     }
 }
+
 
 /*
  * set_rule_body() - set the argument list and procedure of the given rule.
@@ -534,7 +546,7 @@ static OBJECT * global_rule_name( RULE * r )
         return object_copy( r->name );
 
     {
-        char name[4096] = "";
+        char name[ 4096 ] = "";
         if ( r->module->name )
         {
             strncat( name, object_str( r->module->name ), sizeof( name ) - 1 );
@@ -547,7 +559,7 @@ static OBJECT * global_rule_name( RULE * r )
 
 
 /*
- * global_rule() - given a rule, produce the corresponding entry in the global
+ * global_rule() - given a rule, produce a corresponding entry in the global
  * module.
  */
 
@@ -557,8 +569,8 @@ static RULE * global_rule( RULE * r )
         return r;
 
     {
-        OBJECT * name = global_rule_name( r );
-        RULE * result = define_rule( r->module, name, root_module() );
+        OBJECT * const name = global_rule_name( r );
+        RULE * const result = define_rule( r->module, name, root_module() );
         object_free( name );
         return result;
     }
@@ -571,9 +583,10 @@ static RULE * global_rule( RULE * r )
  * exported to the global module as modulename.rulename.
  */
 
-RULE * new_rule_body( module_t * m, OBJECT * rulename, FUNCTION * procedure, int exported )
+RULE * new_rule_body( module_t * m, OBJECT * rulename, FUNCTION * procedure,
+    int exported )
 {
-    RULE * local = define_rule( m, rulename, m );
+    RULE * const local = define_rule( m, rulename, m );
     local->exported = exported;
     set_rule_body( local, procedure );
 
@@ -582,7 +595,7 @@ RULE * new_rule_body( module_t * m, OBJECT * rulename, FUNCTION * procedure, int
      * can use, e.g. in profiling output. Only do this once, since this could be
      * called multiple times with the same procedure.
      */
-    if ( function_rulename( procedure ) == 0 )
+    if ( !function_rulename( procedure ) )
         function_set_rulename( procedure, global_rule_name( local ) );
 
     return local;
@@ -599,9 +612,11 @@ static void set_rule_actions( RULE * rule, rule_actions * actions )
 }
 
 
-static rule_actions * actions_new( FUNCTION * command, LIST * bindlist, int flags )
+static rule_actions * actions_new( FUNCTION * command, LIST * bindlist,
+    int flags )
 {
-    rule_actions * result = (rule_actions *)BJAM_MALLOC( sizeof( rule_actions ) );
+    rule_actions * const result = (rule_actions *)BJAM_MALLOC( sizeof(
+        rule_actions ) );
     function_refer( command );
     result->command = command;
     result->bindlist = bindlist;
@@ -611,10 +626,11 @@ static rule_actions * actions_new( FUNCTION * command, LIST * bindlist, int flag
 }
 
 
-RULE * new_rule_actions( module_t * m, OBJECT * rulename, FUNCTION * command, LIST * bindlist, int flags )
+RULE * new_rule_actions( module_t * m, OBJECT * rulename, FUNCTION * command,
+    LIST * bindlist, int flags )
 {
-    RULE * local = define_rule( m, rulename, m );
-    RULE * global = global_rule( local );
+    RULE * const local = define_rule( m, rulename, m );
+    RULE * const global = global_rule( local );
     set_rule_actions( local, actions_new( command, bindlist, flags ) );
     set_rule_actions( global, local->actions );
     return local;
@@ -623,8 +639,8 @@ RULE * new_rule_actions( module_t * m, OBJECT * rulename, FUNCTION * command, LI
 
 /*
  * Looks for a rule in the specified module, and returns it, if found. First
- * checks if the rule is present in the module's rule table. Second, if name of
- * the rule is in the form name1.name2 and name1 is in the list of imported
+ * checks if the rule is present in the module's rule table. Second, if the
+ * rule's name is in the form name1.name2 and name1 is in the list of imported
  * modules, look in module 'name1' for rule 'name2'.
  */
 
@@ -642,23 +658,25 @@ RULE * lookup_rule( OBJECT * rulename, module_t * m, int local_only )
     else if ( !local_only && m->imported_modules )
     {
         /* Try splitting the name into module and rule. */
-        char *p = strchr( object_str( rulename ), '.' ) ;
+        char * p = strchr( object_str( rulename ), '.' ) ;
         if ( p )
         {
-            string buf[1];
-            OBJECT * module_part;
-            OBJECT * rule_part;
-            string_new( buf );
-            string_append_range( buf, object_str( rulename ), p );
-            module_part = object_new( buf->value );
-            rule_part = object_new( p + 1 );
-            /* Now, r->name keeps the module name, and p+1 keeps the rule name.
+            /* Now, r->name keeps the module name, and p + 1 keeps the rule
+             * name.
              */
+            OBJECT * rule_part = object_new( p + 1 );
+            OBJECT * module_part;
+            {
+                string buf[ 1 ];
+                string_new( buf );
+                string_append_range( buf, object_str( rulename ), p );
+                module_part = object_new( buf->value );
+                string_free( buf );
+            }
             if ( hash_find( m->imported_modules, module_part ) )
                 result = lookup_rule( rule_part, bindmodule( module_part ), 1 );
-            object_free( rule_part );
             object_free( module_part );
-            string_free( buf );
+            object_free( rule_part );
         }
     }
 
@@ -666,18 +684,17 @@ RULE * lookup_rule( OBJECT * rulename, module_t * m, int local_only )
     {
         if ( local_only && !result->exported )
             result = 0;
-        else
+        else if ( original_module != m )
         {
             /* Lookup started in class module. We have found a rule in class
              * module, which is marked for execution in that module, or in some
-             * instances. Mark it for execution in the instance where we started
+             * instance. Mark it for execution in the instance where we started
              * the lookup.
              */
-            int execute_in_class = ( result->module == m );
-            int execute_in_some_instance = ( result->module->class_module &&
-                ( result->module->class_module == m ) );
-            if ( ( original_module != m ) &&
-                ( execute_in_class || execute_in_some_instance ) )
+            int const execute_in_class = result->module == m;
+            int const execute_in_some_instance =
+                result->module->class_module == m;
+            if ( execute_in_class || execute_in_some_instance )
                 result->module = original_module;
         }
     }
@@ -703,7 +720,7 @@ RULE * bindrule( OBJECT * rulename, module_t * m )
 
 RULE * import_rule( RULE * source, module_t * m, OBJECT * name )
 {
-    RULE * dest = define_rule( source->module, name, m );
+    RULE * const dest = define_rule( source->module, name, m );
     set_rule_body( dest, source->procedure );
     set_rule_actions( dest, source->actions );
     return dest;
@@ -721,4 +738,3 @@ void rule_localize( RULE * rule, module_t * m )
         rule->procedure = procedure;
     }
 }
-

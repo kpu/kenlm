@@ -1,21 +1,20 @@
 /*
-    Copyright Rene Rivera 2005.
-    Distributed under the Boost Software License, Version 1.0.
-    (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
-*/
+ * Copyright 2005. Rene Rivera
+ * Distributed under the Boost Software License, Version 1.0.
+ * (See accompanying file LICENSE_1_0.txt or copy at
+ * http://www.boost.org/LICENSE_1_0.txt)
+ */
 
 #include "jam.h"
+#include "debug.h"
 
 #include "hash.h"
-
-#include <time.h>
-#include <assert.h>
 
 
 static profile_frame * profile_stack = 0;
 static struct hash   * profile_hash  = 0;
-static profile_info    profile_other = { 0, 0, 0, 0, 0, 0 };
-static profile_info    profile_total = { 0, 0, 0, 0, 0, 0 };
+static profile_info    profile_other = { 0 };
+static profile_info    profile_total = { 0 };
 
 
 profile_frame * profile_init( OBJECT * rulename, profile_frame * frame )
@@ -42,7 +41,11 @@ void profile_enter( OBJECT * rulename, profile_frame * frame )
             if ( !found )
             {
                 p->name = rulename;
-                p->cumulative = p->net = p->num_entries = p->stack_count = p->memory = 0;
+                p->cumulative = 0;
+                p->net = 0;
+                p->num_entries = 0;
+                p->stack_count = 0;
+                p->memory = 0;
             }
         }
         else
@@ -82,8 +85,8 @@ void profile_exit( profile_frame * frame )
     if ( DEBUG_PROFILE )
     {
         /* Cumulative time for this call. */
-        clock_t t = clock() - frame->entry_time - frame->overhead;
-        /* If this rule is already present on the stack, don't add the time for
+        clock_t const t = clock() - frame->entry_time - frame->overhead;
+        /* If this rule is already present on the stack, do not add the time for
          * this instance.
          */
         if ( frame->info->stack_count == 1 )
@@ -108,7 +111,8 @@ void profile_exit( profile_frame * frame )
 static void dump_profile_entry( void * p_, void * ignored )
 {
     profile_info * p = (profile_info *)p_;
-    unsigned long mem_each = ( p->memory / ( p->num_entries ? p->num_entries : 1 ) );
+    unsigned long mem_each = ( p->memory / ( p->num_entries ? p->num_entries : 1
+        ) );
     double cumulative = p->cumulative;
     double net = p->net;
     double q = p->net;

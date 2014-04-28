@@ -2,36 +2,35 @@
 #~ Distributed under the Boost Software License, Version 1.0.
 #~ (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
 
-# Automatic configuration for Python tools and librries. To use, just import this module.
+# Automatic configuration for the xsltproc toolset. To use, just import this
+# module.
 
 import os ;
 import toolset : using ;
 
-if [ os.name ] = NT
+
+local rule locate-executable ( name )
 {
-    local xsltproc-path = [ GLOB [ modules.peek : PATH ] "C:\\Boost\\bin" : xsltproc\.exe ] ;
-    xsltproc-path = $(xsltproc-path[1]) ;
-    
-    if $(xsltproc-path)
+    local path = [ modules.peek : PATH ] ;
+    local exe ;
+    if [ os.name ] = NT
     {
-        if --debug-configuration in [ modules.peek : ARGV ]
-        {
-            ECHO "notice:" using xsltproc ":" $(xsltproc-path) ;
-        }
-        using xsltproc : $(xsltproc-path) ;
+        exe = [ GLOB $(path) "C:\\Boost\\bin" : $(name)\.exe ] ;
     }
+    else
+    {
+        exe = [ GLOB $(path) : $(name) ] ;
+    }
+    return $(exe[1]) ;
 }
-else
+
+
+local xsltproc-exe = [ locate-executable xsltproc ] ;
+if $(xsltproc-exe)
 {
-    local xsltproc-path = [ GLOB [ modules.peek : PATH ] : xsltproc ] ;
-    xsltproc-path = $(xsltproc-path[1]) ;
-    
-    if $(xsltproc-path)
+    if --debug-configuration in [ modules.peek : ARGV ]
     {
-        if --debug-configuration in [ modules.peek : ARGV ]
-        {
-            ECHO "notice:" using xsltproc ":" $(xsltproc-path) ;
-        }
-        using xsltproc : $(xsltproc-path) ;
+        ECHO notice: using xsltproc ":" $(xsltproc-exe) ;
     }
+    using xsltproc : $(xsltproc-exe) ;
 }

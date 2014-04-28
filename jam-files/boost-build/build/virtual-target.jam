@@ -2,22 +2,14 @@
 # Copyright 2005, 2006 Rene Rivera
 # Copyright 2002, 2003, 2004, 2005, 2006 Vladimir Prus
 # Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 # Implements virtual targets, which correspond to actual files created during a
 # build, but are not yet targets in Jam sense. They are needed, for example,
 # when searching for possible transformation sequences, when it is not yet known
 # whether a particular target should be created at all.
-
-import "class" : new ;
-import errors ;
-import path ;
-import sequence ;
-import set ;
-import type ;
-import utility ;
-
-
+#
 #                       +--------------------------+
 #                       | virtual-target           |
 #                       +==========================+
@@ -64,6 +56,13 @@ import utility ;
 #
 # The 'compile-action' and 'link-action' classes are not defined here but in
 # builtin.jam modules. They are shown in the diagram to give the big picture.
+
+import "class" : new ;
+import path ;
+import sequence ;
+import set ;
+import type ;
+import utility ;
 
 
 # Models a potential target. It can be converted into a Jam target and used in
@@ -113,12 +112,12 @@ class virtual-target
     {
         return $(self.dependencies) ;
     }
-    
+
     rule always ( )
     {
         .always = 1 ;
     }
-    
+
     # Generates all the actual targets and sets up build actions for this
     # target.
     #
@@ -133,12 +132,12 @@ class virtual-target
     rule actualize ( scanner ? )
     {
         local actual-name = [ actualize-no-scanner ] ;
-        
+
         if $(.always)
         {
             ALWAYS $(actual-name) ;
         }
-        
+
         if ! $(scanner)
         {
             return $(actual-name) ;
@@ -146,19 +145,15 @@ class virtual-target
         else
         {
             # Add the scanner instance to the grist for name.
-            local g = [ sequence.join
-                [ utility.ungrist $(actual-name:G) ] $(scanner) : - ] ;
+            local g = [ sequence.join [ utility.ungrist $(actual-name:G) ]
+                $(scanner) : - ] ;
             local name = $(actual-name:G=$(g)) ;
 
-            if ! $(self.made.$(name))
+            if ! $(self.made.$(scanner))
             {
-                self.made.$(name) = true ;
-
-                DEPENDS $(name) : $(actual-name) ;
-
+                self.made.$(scanner) = true ;
                 actualize-location $(name) ;
-
-                scanner.install $(scanner) : $(name) $(__name__) ;
+                scanner.install $(scanner) : $(name) ;
             }
             return $(name) ;
         }
@@ -171,6 +166,7 @@ class virtual-target
     #
     rule actualize-action ( target )
     {
+        import errors : error : errors.error ;
         errors.error "method should be defined in derived classes" ;
     }
 
@@ -178,6 +174,7 @@ class virtual-target
     #
     rule actualize-location ( target )
     {
+        import errors : error : errors.error ;
         errors.error "method should be defined in derived classes" ;
     }
 
@@ -186,6 +183,7 @@ class virtual-target
     #
     rule path ( )
     {
+        import errors : error : errors.error ;
         errors.error "method should be defined in derived classes" ;
     }
 
@@ -194,6 +192,7 @@ class virtual-target
     #
     rule actual-name ( )
     {
+        import errors : error : errors.error ;
         errors.error "method should be defined in derived classes" ;
     }
 
@@ -203,7 +202,8 @@ class virtual-target
         # In fact, we just need to merge virtual-target with
         # abstract-file-target as the latter is the only class derived from the
         # former. But that has been left for later.
-	
+
+        import errors : error : errors.error ;
         errors.error "method should be defined in derived classes" ;
     }
 }
@@ -289,8 +289,8 @@ class abstract-file-target : virtual-target
 
     # Gets or sets the subvariant which created this target. Subvariant is set
     # when target is brought into existance and is never changed after that. In
-    # particular, if a target is shared by a subvariant, only the first is
-    # stored.
+    # particular, if a target is shared by multiple subvariants, only the first
+    # one is stored.
     #
     rule creating-subvariant ( s ?  # If specified, specifies the value to set,
                                     # which should be a 'subvariant' class
@@ -433,13 +433,6 @@ class abstract-file-target : virtual-target
             ps = [ property-set.empty ] ;
         }
 
-        # We add ourselves to the properties so that any tag rule can get more
-        # direct information about the target than just that available through
-        # the properties. This is useful in implementing name changes based on
-        # the sources of the target. For example to make unique names of object
-        # files based on the source file.  --grafik
-        ps = [ property-set.create [ $(ps).raw ] <target>$(__name__) ] ;
-
         local tag = [ $(ps).get <tag> ] ;
 
         if $(tag)
@@ -449,8 +442,9 @@ class abstract-file-target : virtual-target
             {
                 if $(tag[2])
                 {
-                    errors.error "<tag>@rulename is present but is not the only"
-                        "<tag> feature" ;
+                    import errors : error : errors.error ;
+                    errors.error <tag>@rulename is present but is not the only
+                        <tag> feature. ;
                 }
 
                 self.name = [ indirect.call $(rule-name) $(specified-name)
@@ -458,8 +452,8 @@ class abstract-file-target : virtual-target
             }
             else
             {
-                errors.error
-                    "The value of the <tag> feature must be '@rule-name'" ;
+                import errors : error : errors.error ;
+                errors.error <tag> property value must be '@rule-name'. ;
             }
         }
 
@@ -476,9 +470,9 @@ class abstract-file-target : virtual-target
         local name = [ actual-name ] ;
 
         # Do anything only on the first invocation.
-        if ! $(self.made.$(name))
+        if ! $(self.made-no-scanner)
         {
-            self.made.$(name) = true ;
+            self.made-no-scanner = true ;
 
             if $(self.action)
             {
@@ -550,7 +544,6 @@ class file-target : abstract-file-target
 {
     import "class" : new ;
     import common ;
-    import errors ;
 
     rule __init__ (
         name exact ?
@@ -574,7 +567,31 @@ class file-target : abstract-file-target
 
     rule actualize-location ( target )
     {
-        if $(self.action)
+        # Scanner targets are always bound to already existing files in already
+        # existing folder. They need to be marked as depending on their base
+        # target (i.e. the target being scanned) but, unlike regular
+        # dependencies set up by the DEPENDS rule, they must not depend on any
+        # targets already marked as included by the base target. Otherwise such
+        # an included file being newer than the file being scanned would cause
+        # the scanner target to be updated, further causing any target depending
+        # on that scanner target to be rebuilt. This is the exact relationship
+        # as set up by Boost Jam's SEARCH binding method (needed to support
+        # searching for generated targets) so we want to bind scanner targets
+        # using this method instead of explicitly specifying their location
+        # using LOCATE.
+        #
+        # FIXME: We recognize scanner targets by their given name being
+        # different from this target's actual name. This is a hack and should be
+        # cleaned up by reorganizing who knows about scanners in the
+        # virtual-target/abstract-file-target/file-target/notfile-target/
+        # searched-lib-target/... class hierarchy.
+        local is-scanner-target ;
+        if $(target) != [ actual-name ]
+        {
+            is-scanner-target = true ;
+        }
+
+        if $(self.action) && ! $(is-scanner-target)
         {
             # This is a derived file.
             local path = [ path ] ;
@@ -597,12 +614,12 @@ class file-target : abstract-file-target
             # For a real file target, we create a fake target depending on the
             # real target. This allows us to run
             #
-            #    bjam hello.o
+            #    b2 hello.o
             #
             # without trying to guess the name of the real target. Note that the
             # target has no directory name and uses a special <e> grist.
             #
-            # First, that means that "bjam hello.o" will build all known hello.o
+            # First, that means that "b2 hello.o" will build all known hello.o
             # targets. Second, the <e> grist makes sure this target will not be
             # confused with other targets, for example, if we have subdir 'test'
             # with target 'test' in it that includes a 'test.o' file, then the
@@ -610,7 +627,7 @@ class file-target : abstract-file-target
             # will be <ptest/bin/gcc/debug>test.o and the target we create below
             # will be <e>test.o
             DEPENDS $(target:G=e) : $(target) ;
-            # Allow bjam <path-to-file>/<file> to work. This will not catch all
+            # Allow b2 <path-to-file>/<file> to work. This will not catch all
             # possible ways to refer to the path (relative/absolute, extra ".",
             # various "..", but should help in obvious cases.
             DEPENDS $(target:G=e:R=$(path)) : $(target) ;
@@ -681,13 +698,12 @@ class notfile-target : abstract-file-target
 class action
 {
     import "class" ;
-    import errors ;
-    import type ;
-    import toolset ;
-    import property-set ;
     import indirect ;
     import path ;
+    import property-set ;
     import set : difference ;
+    import toolset ;
+    import type ;
 
     rule __init__ ( sources * : action-name + : property-set ? )
     {
@@ -702,6 +718,7 @@ class action
 
         if ! [ class.is-instance $(property-set) ]
         {
+            import errors : error : errors.error ;
             errors.error "Property set instance required" ;
         }
 
@@ -760,22 +777,9 @@ class action
 
             DEPENDS $(actual-targets) : $(self.actual-sources)
                 $(self.dependency-only-sources) ;
-            
-            # This works around a bug with -j and actions that
-            # produce multiple target, where:
-            # - dependency on the first output is found, and
-            #   the action is started
-            # - dependency on the second output is found, and
-            #   bjam noticed that command is already running
-            # - instead of waiting for the command, dependents
-            #   of the second targets are immediately updated.
-            if $(actual-targets[2])
-            {                
-                INCLUDES $(actual-targets) : $(actual-targets) ;
-            }
-            
-            # Action name can include additional argument to rule, which should
-            # not be passed to 'set-target-variables'
+
+            # Action name can include additional rule arguments, which should
+            # not be passed to 'set-target-variables'.
             toolset.set-target-variables
                 [ indirect.get-rule $(self.action-name[1]) ] $(actual-targets)
                 : $(properties) ;
@@ -831,15 +835,15 @@ class action
         self.actual-sources +=
             [ actualize-source-type $(sources) : $(property-set) ] ;
 
-        # This is used to help bjam find dependencies in generated headers and
+        # This is used to help b2 find dependencies in generated headers and
         # other main targets, e.g. in:
         #
         #   make a.h : ....... ;
         #   exe hello : hello.cpp : <implicit-dependency>a.h ;
         #
-        # For bjam to find the dependency the generated target must be
+        # For b2 to find the dependency the generated target must be
         # actualized (i.e. have its Jam target constructed). In the above case,
-        # if we are building just hello ("bjam hello"), 'a.h' will not be
+        # if we are building just hello ("b2 hello"), 'a.h' will not be
         # actualized unless we do it here.
         local implicit = [ $(self.properties).get <implicit-dependency> ] ;
         for local i in $(implicit)
@@ -955,8 +959,8 @@ rule from-file ( file : file-loc : project )
 #
 rule register ( target )
 {
-    local signature = [ sequence.join
-        [ $(target).path ] [ $(target).name ] : - ] ;
+    local signature = [ sequence.join [ $(target).path ] [ $(target).name ] : -
+        ] ;
 
     local result ;
     for local t in $(.cache.$(signature))
@@ -970,22 +974,19 @@ rule register ( target )
             {
                 result = $(t) ;
             }
-            else
+            else if $(a1) && $(a2) &&
+                ( [ $(a1).action-name ] = [ $(a2).action-name ] ) &&
+                ( [ $(a1).sources     ] = [ $(a2).sources     ] )
             {
-                if $(a1) && $(a2) &&
-                    ( [ $(a1).action-name ] = [ $(a2).action-name ] ) &&
-                    ( [ $(a1).sources     ] = [ $(a2).sources     ] )
+                local ps1 = [ $(a1).properties ] ;
+                local ps2 = [ $(a2).properties ] ;
+                local p1 = [ $(ps1).base ] [ $(ps1).free ] [ set.difference
+                    [ $(ps1).dependency ] : [ $(ps1).incidental ] ] ;
+                local p2 = [ $(ps2).base ] [ $(ps2).free ] [ set.difference
+                    [ $(ps2).dependency ] : [ $(ps2).incidental ] ] ;
+                if $(p1) = $(p2)
                 {
-                    local ps1 = [ $(a1).properties ] ;
-                    local ps2 = [ $(a2).properties ] ;
-                    local p1 = [ $(ps1).base ] [ $(ps1).free ] [ set.difference
-                        [ $(ps1).dependency ] : [ $(ps1).incidental ] ] ;
-                    local p2 = [ $(ps2).base ] [ $(ps2).free ] [ set.difference
-                        [ $(ps2).dependency ] : [ $(ps2).incidental ] ] ;
-                    if $(p1) = $(p2)
-                    {
-                        result = $(t) ;
-                    }
+                    result = $(t) ;
                 }
             }
         }
@@ -1051,9 +1052,26 @@ rule register-actual-name ( actual-name : virtual-target )
     if $(.actual.$(actual-name))
     {
         local cs1 = [ $(.actual.$(actual-name)).creating-subvariant ] ;
+        local cmt1-name ;
+        if $(cs1)-is-defined
+        {
+            local cmt1 = [ $(cs1).main-target ] ;
+            cmt1-name = [ $(cmt1).full-name ] ;
+        }
         local cs2 = [ $(virtual-target).creating-subvariant ] ;
-        local cmt1 = [ $(cs1).main-target ] ;
-        local cmt2 = [ $(cs2).main-target ] ;
+        local cmt2-name ;
+        if $(cs2)-is-defined
+        {
+            local cmt2 = [ $(cs2).main-target ] ;
+            cmt2-name = [ $(cmt2).full-name ] ;
+        }
+        local extra-error-information ;
+        if ! $(cs1)-is-defined || ! $(cs2)-is-defined
+        {
+            extra-error-information = Encountered a virtual-target without a
+                creating subvariant. It could be the virtual target has not been
+                registered via the virtual-target.register rule. ;
+        }
 
         local action1 = [ $(.actual.$(actual-name)).action ] ;
         local action2 = [ $(virtual-target).action ] ;
@@ -1070,13 +1088,15 @@ rule register-actual-name ( actual-name : virtual-target )
             properties-added = [ set.difference $(p2) : $(p1) ] ;
             properties-added ?= "none" ;
         }
+        import errors : error : errors.error ;
         errors.error "Duplicate name of actual target:" $(actual-name)
             : "previous virtual target" [ $(.actual.$(actual-name)).str ]
-            : "created from"            [ $(cmt1).full-name ]
+            : "created from"            $(cmt1-name)
             : "another virtual target"  [ $(virtual-target).str ]
-            : "created from"            [ $(cmt2).full-name ]
+            : "created from"            $(cmt2-name)
             : "added properties:"       $(properties-added)
-            : "removed properties:"     $(properties-removed) ;
+            : "removed properties:"     $(properties-removed)
+            : $(extra-error-information) ;
     }
     else
     {
@@ -1104,7 +1124,8 @@ rule traverse ( target : include-roots ? : include-sources ? )
         {
             if ! [ $(t).root ]
             {
-                result += [ traverse $(t) : $(include-roots) : $(include-sources) ] ;
+                result += [ traverse $(t) : $(include-roots) :
+                    $(include-sources) ] ;
             }
             else if $(include-roots)
             {
@@ -1125,7 +1146,8 @@ rule traverse ( target : include-roots ? : include-sources ? )
 # 'new-rule-name' and 'new-properties', if those are specified. Returns the
 # cloned action.
 #
-rule clone-action ( action : new-project : new-action-name ? : new-properties ? )
+rule clone-action ( action : new-project : new-action-name ? : new-properties ?
+    )
 {
     if ! $(new-action-name)
     {
@@ -1245,7 +1267,7 @@ class subvariant
             {
                 $(theset).add $(t) ;
                 r += [ $(t:G=).creating-subvariant ] ;
-            }            
+            }
         }
         r = [ sequence.unique $(r) ] ;
         for local s in $(r)
@@ -1259,7 +1281,7 @@ class subvariant
 
     # Returns the properties specifying implicit include paths to generated
     # headers. This traverses all targets in this subvariant and subvariants
-    # referred by <implcit-dependecy> properties. For all targets of type
+    # referred by <implicit-dependecy> properties. For all targets of type
     # 'target-type' (or for all targets, if 'target-type' is not specified), the
     # result will contain <$(feature)>path-to-that-target.
     #

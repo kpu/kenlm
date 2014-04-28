@@ -63,6 +63,9 @@ flags cray.compile DEFINES <define> ;
 flags cray.compile INCLUDES <include> ;
 flags cray.link OPTIONS <linkflags> ;
 
+flags cray.compile OPTIONS <link>shared : -fPIC ;
+flags cray.link OPTIONS <link>shared : -fPIC ;
+
 flags cray.link LIBPATH <library-path> ;
 flags cray.link LIBRARIES <library-file> ;
 flags cray.link FINDLIBS-ST <find-static-library> ;

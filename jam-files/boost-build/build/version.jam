@@ -1,18 +1,20 @@
 # Copyright 2002, 2003, 2004, 2006 Vladimir Prus
-# Copyright 2008 Jurko Gospodnetic
+# Copyright 2008, 2012 Jurko Gospodnetic
 # Distributed under the Boost Software License, Version 1.0.
 # (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
 
-import errors ;
 import numbers ;
 
-major = "2011" ;
-minor = "12" ;
+
+.major = "2011" ;
+.minor = "12" ;
+
 
 rule boost-build ( )
 {
-    return "$(major).$(minor)-svn" ;
+    return "$(.major).$(.minor)-svn" ;
 }
+
 
 rule print ( )
 {
@@ -22,11 +24,12 @@ rule print ( )
     }    
 }
 
+
 rule verify-engine-version ( )
 {
     local v = [ modules.peek : JAM_VERSION ] ;
     
-    if $(v[1]) != $(major) || $(v[2]) != $(minor)
+    if $(v[1]) != $(.major) || $(v[2]) != $(.minor)
     {
         local argv = [ modules.peek : ARGV ] ;
         local e = $(argv[1]) ;
@@ -42,7 +45,6 @@ rule verify-engine-version ( )
         return true ;
     }    
 }
-
 
 
 # Utility rule for testing whether all elements in a sequence are equal to 0.
@@ -105,14 +107,16 @@ rule check-jam-version ( version + )
     local version-tag = $(version:J=.) ;
     if ! $(version-tag)
     {
+        import errors ;
         errors.error Invalid version specifier: : $(version:E="(undefined)") ;
     }
 
-    if ! $(.jam-version-check.$(version-tag))-is-not-empty
+    if ! $(.jam-version-check.$(version-tag))-is-defined
     {
         local jam-version = [ modules.peek : JAM_VERSION ] ;
         if ! $(jam-version)
         {
+            import errors ;
             errors.error "Unable to deduce Boost Jam version. Your Boost Jam"
                 "installation is most likely terribly outdated." ;
         }

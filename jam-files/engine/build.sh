@@ -2,13 +2,14 @@
 
 #~ Copyright 2002-2005 Rene Rivera.
 #~ Distributed under the Boost Software License, Version 1.0.
-#~ (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+#~ (See accompanying file LICENSE_1_0.txt or copy at
+#~ http://www.boost.org/LICENSE_1_0.txt)
 
 # Reset the toolset.
 BOOST_JAM_TOOLSET=
 
-# Run a command, and echo before doing so. Also checks the exit
-# status and quits if there was an error.
+# Run a command, and echo before doing so. Also checks the exit status and quits
+# if there was an error.
 echo_run ()
 {
     echo "$@"
@@ -35,7 +36,7 @@ error_exit ()
     echo "### A special toolset; cc, is available which is used as a fallback"
     echo "### when a more specific toolset is not found and the cc command is"
     echo "### detected. The 'cc' toolset will use the CC, CFLAGS, and LIBS"
-    echo "### envrironment variables, if present."
+    echo "### environment variables, if present."
     echo "###"
     exit 1
 }
@@ -153,11 +154,10 @@ case $BOOST_JAM_TOOLSET in
         BOOST_JAM_TOOLSET_ROOT=/opt/intel/compiler50/ia32/
     fi
     if test -r ${BOOST_JAM_TOOLSET_ROOT}bin/iccvars.sh ; then
-        # iccvars doesn't change LD_RUN_PATH. We adjust LD_RUN_PATH
-        # here in order not to have to rely on ld.so.conf knowing the
-        # icc library directory. We do this before running iccvars.sh
-        # in order to allow a user to add modifications to LD_RUN_PATH
-        # in iccvars.sh.
+        # iccvars does not change LD_RUN_PATH. We adjust LD_RUN_PATH here in
+        # order not to have to rely on ld.so.conf knowing the icc library
+        # directory. We do this before running iccvars.sh in order to allow a
+        # user to add modifications to LD_RUN_PATH in iccvars.sh.
         if test -z "${LD_RUN_PATH}"; then
             LD_RUN_PATH="${BOOST_JAM_TOOLSET_ROOT}lib"
         else
@@ -245,25 +245,25 @@ echo "###"
 YYACC_SOURCES="yyacc.c"
 MKJAMBASE_SOURCES="mkjambase.c"
 BJAM_SOURCES="\
- command.c compile.c constants.c debug.c function.c glob.c hash.c\
- hdrmacro.c headers.c jam.c jambase.c jamgram.c lists.c make.c make1.c\
- object.c option.c output.c parse.c pathunix.c regexp.c\
- rules.c scan.c search.c subst.c timestamp.c variable.c modules.c\
- strings.c filesys.c builtins.c pwd.c class.c native.c md5.c w32_getreg.c\
- modules/set.c modules/path.c modules/regex.c modules/property-set.c\
- modules/sequence.c modules/order.c"
+ command.c compile.c constants.c debug.c execcmd.c frames.c function.c glob.c\
+ hash.c hdrmacro.c headers.c jam.c jambase.c jamgram.c lists.c make.c make1.c\
+ object.c option.c output.c parse.c pathsys.c regexp.c rules.c\
+ scan.c search.c subst.c timestamp.c variable.c modules.c strings.c filesys.c\
+ builtins.c class.c cwd.c native.c md5.c w32_getreg.c modules/set.c\
+ modules/path.c modules/regex.c modules/property-set.c modules/sequence.c\
+ modules/order.c"
 case $BOOST_JAM_TOOLSET in
     mingw)
-    BJAM_SOURCES="${BJAM_SOURCES} execnt.c filent.c"
+    BJAM_SOURCES="${BJAM_SOURCES} execnt.c filent.c pathnt.c"
     ;;
 
     *)
-    BJAM_SOURCES="${BJAM_SOURCES} execunix.c fileunix.c"
+    BJAM_SOURCES="${BJAM_SOURCES} execunix.c fileunix.c pathunix.c"
     ;;
 esac
 
 BJAM_UPDATE=
-if test "$1" = "--update" -o "$2" = "--update" -o "$3" = "--update" -o "$4" = "--update"  ; then
+if test "$1" = "--update" -o "$2" = "--update" -o "$3" = "--update" -o "$4" = "--update" ; then
     BJAM_UPDATE="update"
 fi
 if test "${BJAM_UPDATE}" = "update" -a ! -x "./bootstrap/jam0" ; then

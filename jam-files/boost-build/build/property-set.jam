@@ -1,7 +1,8 @@
 # Copyright 2003 Dave Abrahams
 # Copyright 2003, 2004, 2005, 2006 Vladimir Prus
 # Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 import "class" : new ;
 import feature ;
@@ -37,7 +38,7 @@ class property-set
     import property ;
     import property-set ;
     import set ;
-    
+
     rule __init__ ( raw-properties * )
     {
         self.raw = $(raw-properties) ;
@@ -155,7 +156,8 @@ class property-set
     {
         if ! $(self.expanded)
         {
-            self.expanded = [ property-set.create [ feature.expand $(self.raw) ] ] ;
+            self.expanded = [ property-set.create [ feature.expand $(self.raw) ]
+                ] ;
         }
         return $(self.expanded) ;
     }
@@ -176,7 +178,8 @@ class property-set
         if ! $(self.evaluated.$(context))
         {
             self.evaluated.$(context) = [ property-set.create
-                [ property.evaluate-conditionals-in-context $(self.raw) : [ $(context).raw ] ] ] ;
+                [ property.evaluate-conditionals-in-context $(self.raw) : [
+                $(context).raw ] ] ] ;
         }
         return $(self.evaluated.$(context)) ;
     }
@@ -235,9 +238,8 @@ class property-set
             }
             else
             {
-                local p = [ as-path ] ;
-                p = [ property-set.hash-maybe $(p) ] ;
-                
+                local p = [ property-set.hash-maybe [ as-path ] ] ;
+
                 # A real ugly hack. Boost regression test system requires
                 # specific target paths, and it seems that changing it to handle
                 # other directory layout is really hard. For that reason, we
@@ -267,7 +269,8 @@ class property-set
     {
         if ! $(self.added.$(ps))
         {
-            self.added.$(ps) = [ property-set.create $(self.raw) [ $(ps).raw ] ] ;
+            self.added.$(ps) = [ property-set.create $(self.raw) [ $(ps).raw ] ]
+                ;
         }
         return $(self.added.$(ps)) ;
     }
@@ -294,7 +297,29 @@ class property-set
         }
         return $($(feature)) ;
     }
-    
+
+    # Returns true if the property-set contains all the
+    # specified properties.
+    #
+    rule contains-raw ( properties * )
+    {
+        if $(properties) in $(self.raw)
+        {
+            return true ;
+        }
+    }
+
+    # Returns true if the property-set has values for
+    # all the specified features
+    #
+    rule contains-features ( features * )
+    {
+        if $(features) in $(self.raw:G)
+        {
+            return true ;
+        }
+    }
+
     # private
 
     rule init-base ( )
@@ -324,9 +349,7 @@ class property-set
     {
         for local p in $(self.raw)
         {
-            local att = [ feature.attributes $(p:G) ] ;
-
-            if dependency in $(att)
+            if dependency in [ feature.attributes $(p:G) ]
             {
                 self.dependency += $(p) ;
             }
@@ -342,6 +365,10 @@ class property-set
     {
         for local p in $(self.raw)
         {
+            # TODO: Note that non-conditional properties may contain colon (':')
+            # characters as well, e.g. free or indirect properties. Indirect
+            # properties for example contain a full Jamfile path in their value
+            # which on Windows file systems contains ':' as the drive separator.
             if [ MATCH (:) : $(p:G=) ]
             {
                 self.conditional += $(p) ;
@@ -374,9 +401,18 @@ rule create ( raw-properties * )
 }
 NATIVE_RULE property-set : create ;
 
+if [ HAS_NATIVE_RULE class@property-set : get : 1 ]
+{
+    NATIVE_RULE class@property-set : get ;
+}
+
+if [ HAS_NATIVE_RULE class@property-set : contains-features : 1 ]
+{
+    NATIVE_RULE class@property-set : contains-features ;
+}
 
 # Creates a new 'property-set' instance after checking that all properties are
-# valid and converting incidental properties into gristed form.
+# valid and converting implicit properties into gristed form.
 #
 rule create-with-validation ( raw-properties * )
 {
@@ -390,18 +426,10 @@ rule create-with-validation ( raw-properties * )
 #
 rule create-from-user-input ( raw-properties * : jamfile-module location )
 {
-    local specification = [ property.translate-paths $(raw-properties)
-        : $(location) ] ;
-    specification = [ property.translate-indirect $(specification)
-        : $(jamfile-module) ] ;
     local project-id = [ project.attribute $(jamfile-module) id ] ;
     project-id ?= [ path.root $(location) [ path.pwd ] ] ;
-    specification = [ property.translate-dependencies
-                      $(specification) : $(project-id) : $(location) ] ;
-    specification =
-        [ property.expand-subfeatures-in-conditions $(specification) ] ;
-    specification = [ property.make $(specification) ] ;
-    return [ property-set.create $(specification) ] ;
+    return [ property-set.create [ property.translate $(raw-properties)
+        : $(project-id) : $(location) : $(jamfile-module) ] ] ;
 }
 
 
@@ -471,8 +499,9 @@ rule empty ( )
     return $(.empty) ;
 }
 
+
 if [ option.get hash : : yes ] = yes
-{    
+{
     rule hash-maybe ( path ? )
     {
         path ?= "" ;
@@ -484,6 +513,5 @@ else
     rule hash-maybe ( path ? )
     {
         return $(path) ;
-    }    
+    }
 }
-

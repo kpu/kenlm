@@ -24,7 +24,6 @@
 # > simpler than defining a main target rule.
 
 import "class" : new ;
-import errors ;
 import project ;
 import property-set ;
 import targets ;
@@ -49,12 +48,12 @@ class cast-target-class : typed-target
         {
             if ! [ class.is-a $(s) : file-target ]
             {
-                import errors ;
+                import errors : user-error : errors.user-error ;
                 errors.user-error Source to the 'cast' rule is not a file! ;
             }
             if [ $(s).action ]
             {
-                import errors ;
+                import errors : user-error : errors.user-error ;
                 errors.user-error Only non-derived target are allowed for
                     'cast'. : when building [ full-name ] ;
             }
@@ -74,6 +73,7 @@ rule cast ( name type : sources * : requirements * : default-build * :
     local real-type = [ type.type-from-rule-name $(type) ] ;
     if ! $(real-type)
     {
+        import errors ;
         errors.user-error No type corresponds to the main target rule name
             '$(type)' : "Hint: try a lowercase name" ;
     }

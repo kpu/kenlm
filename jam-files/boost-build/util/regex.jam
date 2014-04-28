@@ -3,7 +3,8 @@
 # Copyright 2003 Rene Rivera
 # Copyright 2002, 2003, 2004, 2005 Vladimir Prus
 # Distributed under the Boost Software License, Version 1.0.
-# (See accompanying file LICENSE_1_0.txt or http://www.boost.org/LICENSE_1_0.txt)
+# (See accompanying file LICENSE_1_0.txt or copy at
+# http://www.boost.org/LICENSE_1_0.txt)
 
 #
 #   Returns a list of the following substrings:
@@ -36,6 +37,10 @@ rule split ( string separator )
     return $(s) $(result) ;
 }
 
+if [ HAS_NATIVE_RULE regex : split : 1 ]
+{
+    NATIVE_RULE regex : split ;
+}
 
 # Returns the concatenated results of Applying regex.split to every element of
 # the list using the separator pattern.
@@ -63,7 +68,7 @@ rule match ( pattern : string : indices * )
 
 # Matches all elements of 'list' agains the 'pattern' and returns a list of
 # elements indicated by indices of all successful matches. If 'indices' is
-# omitted returns a list of first paranthethised groups of all successful
+# omitted returns a list of first parenthesised groups of all successful
 # matches.
 #
 rule transform ( list * : pattern : indices * )
@@ -131,6 +136,11 @@ rule replace (
     string ?= "" ;
     result = "$(string)$(result)" ;
     return $(result) ;
+}
+
+if [ HAS_NATIVE_RULE regex : replace : 1 ]
+{
+    NATIVE_RULE regex : replace ;
 }
 
 
