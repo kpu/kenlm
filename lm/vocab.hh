@@ -133,13 +133,18 @@ class ProbingVocabulary : public base::Vocabulary {
       return lookup_.Find(detail::HashForVocab(str), i) ? i->value : 0;
     }
 
+    static uint64_t Size(uint64_t entries, float probing_multiplier);
+    // This just unwraps Config to get the probing_multiplier.
     static uint64_t Size(uint64_t entries, const Config &config);
 
     // Vocab words are [0, Bound()).  
     WordIndex Bound() const { return bound_; }
 
     // Everything else is for populating.  I'm too lazy to hide and friend these, but you'll only get a const reference anyway.
-    void SetupMemory(void *start, std::size_t allocated, std::size_t entries, const Config &config);
+    void SetupMemory(void *start, std::size_t allocated);
+    void SetupMemory(void *start, std::size_t allocated, std::size_t /*entries*/, const Config &/*config*/) {
+      SetupMemory(start, allocated);
+    }
 
     void Relocate(void *new_start);
 
@@ -148,8 +153,9 @@ class ProbingVocabulary : public base::Vocabulary {
     WordIndex Insert(const StringPiece &str);
 
     template <class Weights> void FinishedLoading(Weights * /*reorder_vocab*/) {
-      InternalFinishedLoading();
+      FinishedLoading();
     }
+    void FinishedLoading();
 
     std::size_t UnkCountChangePadding() const { return 0; }
 
@@ -158,8 +164,6 @@ class ProbingVocabulary : public base::Vocabulary {
     void LoadedBinary(bool have_words, int fd, EnumerateVocab *to, uint64_t offset);
 
   private:
-    void InternalFinishedLoading();
-
     typedef util::ProbingHashTable<ProbingVocabularyEntry, util::IdentityHash> Lookup;
 
     Lookup lookup_;
