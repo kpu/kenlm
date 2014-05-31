@@ -17,13 +17,37 @@
 namespace lm {
 namespace ngram {
 
-template <class Model> void Query(const Model &model, bool sentence_context) {
+struct BasicPrint {
+  void Word(StringPiece, WordIndex, const FullScoreReturn &) const {}
+  void Line(uint64_t oov, float total) const {
+    std::cout << "Total: " << total << " OOV: " << oov << '\n';
+  }
+  void Summary(double, double, uint64_t, uint64_t) {}
+  
+};
+
+struct FullPrint : public BasicPrint {
+  void Word(StringPiece surface, WordIndex vocab, const FullScoreReturn &ret) const {
+    std::cout << surface << '=' << vocab << ' ' << static_cast<unsigned int>(ret.ngram_length)  << ' ' << ret.prob << '\t';
+  }
+
+  void Summary(double ppl_including_oov, double ppl_excluding_oov, uint64_t corpus_oov, uint64_t corpus_tokens) {
+    std::cout << 
+      "Perplexity including OOVs:\t" << ppl_including_oov << "\n"
+      "Perplexity excluding OOVs:\t" << ppl_excluding_oov << "\n"
+      "OOVs:\t" << corpus_oov << "\n"
+      "Tokenss:\t" << corpus_tokens << '\n'
+      ;
+  }
+};
+
+template <class Model, class Printer> void Query(const Model &model, bool sentence_context) {
+  Printer printer;
   typename Model::State state, out;
   lm::FullScoreReturn ret;
   StringPiece word;
 
   util::FilePiece in(0);
-  std::ostream &out_stream = std::cout;
 
   double corpus_total = 0.0;
   double corpus_total_oov_only = 0.0;
@@ -43,7 +67,7 @@ template <class Model> void Query(const Model &model, bool sentence_context) {
         corpus_total_oov_only += ret.prob;
       }
       total += ret.prob;
-      out_stream << word << '=' << vocab << ' ' << static_cast<unsigned int>(ret.ngram_length)  << ' ' << ret.prob << '\t';
+      printer.Word(word, vocab, ret);
       ++corpus_tokens;
       state = out;
     }
@@ -56,23 +80,26 @@ template <class Model> void Query(const Model &model, bool sentence_context) {
       ret = model.FullScore(state, model.GetVocabulary().EndSentence(), out);
       total += ret.prob;
       ++corpus_tokens;
-      out_stream << "</s>=" << model.GetVocabulary().EndSentence() << ' ' << static_cast<unsigned int>(ret.ngram_length)  << ' ' << ret.prob << '\t';
+      printer.Word("</s>", model.GetVocabulary().EndSentence(), ret);
     }
-    out_stream << "Total: " << total << " OOV: " << oov << '\n';
+    printer.Line(oov, total);
     corpus_total += total;
     corpus_oov += oov;
   }
-  out_stream << 
-    "Perplexity including OOVs:\t" << pow(10.0, -(corpus_total / static_cast<double>(corpus_tokens))) << "\n"
-    "Perplexity excluding OOVs:\t" << pow(10.0, -((corpus_total - corpus_total_oov_only) / static_cast<double>(corpus_tokens - corpus_oov))) << "\n"
-    "OOVs:\t" << corpus_oov << "\n"
-    ;
+  printer.Summary(
+      pow(10.0, -(corpus_total / static_cast<double>(corpus_tokens))), // PPL including OOVs
+      pow(10.0, -((corpus_total - corpus_total_oov_only) / static_cast<double>(corpus_tokens - corpus_oov))), // PPL excluding OOVs
+      corpus_oov,
+      corpus_tokens);
 }
 
-template <class M> void Query(const char *file, bool sentence_context) {
-  Config config;
-  M model(file, config);
-  Query(model, sentence_context);
+template <class Model> void Query(const char *file, const Config &config, bool sentence_context, bool show_words) {
+  Model model(file, config);
+  if (show_words) {
+    Query<Model, FullPrint>(model, sentence_context);
+  } else {
+    Query<Model, BasicPrint>(model, sentence_context);
+  }
 }
 
 } // namespace ngram

@@ -1,4 +1,5 @@
 #include "lm/ngram_query.hh"
+#include "util/getopt.hh"
 
 #ifdef WITH_NPLM
 #include "lm/wrappers/nplm.hh"
@@ -7,47 +8,76 @@
 #include <stdlib.h>
 
 void Usage(const char *name) {
-  std::cerr << "KenLM was compiled with maximum order " << KENLM_MAX_ORDER << "." << std::endl;
-  std::cerr << "Usage: " << name << " [-n] lm_file" << std::endl;
-  std::cerr << "Input is wrapped in <s> and </s> unless -n is passed." << std::endl;
+  std::cerr <<
+    "KenLM was compiled with maximum order " << KENLM_MAX_ORDER << ".\n"
+    "Usage: " << name << " [-n] [-s] lm_file\n"
+    "-n: Do not wrap the input in <s> and </s>.\n"
+    "-s: Sentence totals only.\n"
+    "-l lazy|populate|read|parallel: Load lazily, with populate, or malloc+read\n"
+    "The default loading method is populate on Linux and read on others.\n";
   exit(1);
 }
 
 int main(int argc, char *argv[]) {
+  if (argc == 1 || (argc == 2 && !strcmp(argv[1], "--help")))
+    Usage(argv[0]);
+
+  lm::ngram::Config config;
   bool sentence_context = true;
-  const char *file = NULL;
-  for (char **arg = argv + 1; arg != argv + argc; ++arg) {
-    if (!strcmp(*arg, "-n")) {
-      sentence_context = false;
-    } else if (!strcmp(*arg, "-h") || !strcmp(*arg, "--help") || file) {
-      Usage(argv[0]);
-    } else {
-      file = *arg;
+  bool show_words = true;
+
+  int opt;
+  while ((opt = getopt(argc, argv, "hnsl:")) != -1) {
+    switch (opt) {
+      case 'n':
+        sentence_context = false;
+        break;
+      case 's':
+        show_words = false;
+        break;
+      case 'l':
+        if (!strcmp(optarg, "lazy")) {
+          config.load_method = util::LAZY;
+        } else if (!strcmp(optarg, "populate")) {
+          config.load_method = util::POPULATE_OR_READ;
+        } else if (!strcmp(optarg, "read")) {
+          config.load_method = util::READ;
+        } else if (!strcmp(optarg, "parallel")) {
+          config.load_method = util::PARALLEL_READ;
+        } else {
+          Usage(argv[0]);
+        }
+        break;
+      case 'h':
+      default:
+        Usage(argv[0]);
     }
   }
-  if (!file) Usage(argv[0]);
+  if (optind + 1 != argc)
+    Usage(argv[0]);
+  const char *file = argv[optind];
   try {
     using namespace lm::ngram;
     ModelType model_type;
     if (RecognizeBinary(file, model_type)) {
       switch(model_type) {
         case PROBING:
-          Query<lm::ngram::ProbingModel>(file, sentence_context);
+          Query<lm::ngram::ProbingModel>(file, config, sentence_context, show_words);
           break;
         case REST_PROBING:
-          Query<lm::ngram::RestProbingModel>(file, sentence_context);
+          Query<lm::ngram::RestProbingModel>(file, config, sentence_context, show_words);
           break;
         case TRIE:
-          Query<TrieModel>(file, sentence_context);
+          Query<TrieModel>(file, config, sentence_context, show_words);
           break;
         case QUANT_TRIE:
-          Query<QuantTrieModel>(file, sentence_context);
+          Query<QuantTrieModel>(file, config, sentence_context, show_words);
           break;
         case ARRAY_TRIE:
-          Query<ArrayTrieModel>(file, sentence_context);
+          Query<ArrayTrieModel>(file, config, sentence_context, show_words);
           break;
         case QUANT_ARRAY_TRIE:
-          Query<QuantArrayTrieModel>(file, sentence_context);
+          Query<QuantArrayTrieModel>(file, config, sentence_context, show_words);
           break;
         default:
           std::cerr << "Unrecognized kenlm model type " << model_type << std::endl;
@@ -56,10 +86,14 @@ int main(int argc, char *argv[]) {
 #ifdef WITH_NPLM
     } else if (lm::np::Model::Recognize(file)) {
       lm::np::Model model(file);
-      Query(model, sentence_context);
+      if (show_words) {
+        Query<lm::np::Model, lm::ngram::FullPrint>(model, sentence_context);
+      } else {
+        Query<lm::np::Model, lm::ngram::BasicPrint>(model, sentence_context);
+      }
 #endif
     } else {
-      Query<ProbingModel>(file, sentence_context);
+      Query<ProbingModel>(file, config, sentence_context, show_words);
     }
     std::cerr << "Total time including destruction:\n";
     util::PrintUsage(std::cerr);
