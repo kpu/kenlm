@@ -36,7 +36,7 @@ struct FullPrint : public BasicPrint {
       "Perplexity including OOVs:\t" << ppl_including_oov << "\n"
       "Perplexity excluding OOVs:\t" << ppl_excluding_oov << "\n"
       "OOVs:\t" << corpus_oov << "\n"
-      "Tokenss:\t" << corpus_tokens << '\n'
+      "Tokens:\t" << corpus_tokens << '\n'
       ;
   }
 };
