@@ -13,13 +13,15 @@
 #ifndef LM_BHIKSHA_H
 #define LM_BHIKSHA_H
 
-#include <stdint.h>
-#include <assert.h>
-
 #include "lm/model_type.hh"
 #include "lm/trie.hh"
 #include "util/bit_packing.hh"
 #include "util/sorted_uniform.hh"
+
+#include <algorithm>
+
+#include <stdint.h>
+#include <assert.h>
 
 namespace lm {
 namespace ngram {
@@ -73,15 +75,24 @@ class ArrayBhiksha {
     ArrayBhiksha(void *base, uint64_t max_offset, uint64_t max_value, const Config &config);
 
     void ReadNext(const void *base, uint64_t bit_offset, uint64_t index, uint8_t total_bits, NodeRange &out) const {
-      const uint64_t *begin_it = util::BinaryBelow(util::IdentityAccessor<uint64_t>(), offset_begin_, offset_end_, index);
+      // Some assertions are commented out because they are expensive.
+      // assert(*offset_begin_ == 0);
+      // std::upper_bound returns the first element that is greater.  Want the
+      // last element that is <= to the index.
+      const uint64_t *begin_it = std::upper_bound(offset_begin_, offset_end_, index) - 1;
+      // Since *offset_begin_ == 0, the position should be in range.
+      // assert(begin_it >= offset_begin_);
       const uint64_t *end_it;
-      for (end_it = begin_it; (end_it < offset_end_) && (*end_it <= index + 1); ++end_it) {}
+      for (end_it = begin_it + 1; (end_it < offset_end_) && (*end_it <= index + 1); ++end_it) {}
+      // assert(end_it == std::upper_bound(offset_begin_, offset_end_, index + 1));
       --end_it;
+      // assert(end_it >= begin_it);
       out.begin = ((begin_it - offset_begin_) << next_inline_.bits) | 
         util::ReadInt57(base, bit_offset, next_inline_.bits, next_inline_.mask);
       out.end = ((end_it - offset_begin_) << next_inline_.bits) | 
         util::ReadInt57(base, bit_offset + total_bits, next_inline_.bits, next_inline_.mask);
-      //assert(out.end >= out.begin);
+      // If this fails, consider rebuilding your model using KenLM after 1e333d786b748555e8f368d2bbba29a016c98052
+      assert(out.end >= out.begin);
     }
 
     void WriteNext(void *base, uint64_t bit_offset, uint64_t index, uint64_t value) {
