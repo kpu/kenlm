@@ -99,8 +99,11 @@ template <class Bhiksha> util::BitAddress BitPackedMiddle<Bhiksha>::Find(WordInd
 }
 
 template <class Bhiksha> void BitPackedMiddle<Bhiksha>::FinishedLoading(uint64_t next_end, const Config &config) {
-  uint64_t last_next_write = (insert_index_ + 1) * total_bits_ - bhiksha_.InlineBits();
-  bhiksha_.WriteNext(base_, last_next_write, insert_index_ + 1, next_end);
+  // Write at insert_index. . .
+  uint64_t last_next_write = insert_index_ * total_bits_ + 
+    // at the offset where the next pointers are stored.
+    (total_bits_ - bhiksha_.InlineBits());
+  bhiksha_.WriteNext(base_, last_next_write, insert_index_, next_end);
   bhiksha_.FinishedLoading(config);
 }
 
