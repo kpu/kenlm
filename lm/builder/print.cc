@@ -54,9 +54,8 @@ void PrintARPA::Run(const util::stream::ChainPositions &positions) {
       for (const WordIndex *i = stream->begin() + 1; i != stream->end(); ++i) {
         out << ' ' << vocab_.Lookup(*i);
       }
-      float backoff = stream->Value().complete.backoff;
-      if (backoff != 0.0)
-        out << '\t' << backoff;
+      if (order != positions.size())
+        out << '\t' << stream->Value().complete.backoff;
       out << '\n';
     
     }
