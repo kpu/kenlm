@@ -302,33 +302,40 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
       "Not enough memory to fit " << (config.order * config.block_count) << " blocks with minimum size " << config.minimum_block << ".  Increase memory to " << (config.minimum_block * config.order * config.block_count) << " bytes or decrease the minimum block size.");
 
   UTIL_TIMER("(%w s) Total wall time elapsed\n");
+
   Master master(config);
+  // master's destructor will wait for chains.  But they might be deadlocked if
+  // this thread dies because e.g. it ran out of memory.
+  try {
+    util::scoped_fd vocab_file(config.vocab_file.empty() ? 
+        util::MakeTemp(config.TempPrefix()) : 
+        util::CreateOrThrow(config.vocab_file.c_str()));
+    uint64_t token_count;
+    std::string text_file_name;
+    CountText(text_file, vocab_file.get(), master, token_count, text_file_name);
 
-  util::scoped_fd vocab_file(config.vocab_file.empty() ? 
-      util::MakeTemp(config.TempPrefix()) : 
-      util::CreateOrThrow(config.vocab_file.c_str()));
-  uint64_t token_count;
-  std::string text_file_name;
-  CountText(text_file, vocab_file.get(), master, token_count, text_file_name);
+    std::vector<uint64_t> counts;
+    std::vector<uint64_t> counts_pruned;
+    std::vector<Discount> discounts;
+    master >> AdjustCounts(counts, counts_pruned, discounts, config.prune_thresholds);
 
-  std::vector<uint64_t> counts;
-  std::vector<uint64_t> counts_pruned;
-  std::vector<Discount> discounts;
-  master >> AdjustCounts(counts, counts_pruned, discounts, config.prune_thresholds);
+    {
+      util::FixedArray<util::stream::FileBuffer> gammas;
+      Sorts<SuffixOrder> primary;
+      InitialProbabilities(counts, counts_pruned, discounts, master, primary, gammas, config.prune_thresholds);
+      InterpolateProbabilities(counts_pruned, master, primary, gammas);
+    }
 
-  {
-    util::FixedArray<util::stream::FileBuffer> gammas;
-    Sorts<SuffixOrder> primary;
-    InitialProbabilities(counts, counts_pruned, discounts, master, primary, gammas, config.prune_thresholds);
-    InterpolateProbabilities(counts_pruned, master, primary, gammas);
+    std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
+    VocabReconstitute vocab(vocab_file.get());
+    UTIL_THROW_IF(vocab.Size() != counts[0], util::Exception, "Vocab words don't match up.  Is there a null byte in the input?");
+    HeaderInfo header_info(text_file_name, token_count);
+    master >> PrintARPA(vocab, counts_pruned, (config.verbose_header ? &header_info : NULL), out_arpa) >> util::stream::kRecycle;
+    master.MutableChains().Wait(true);
+  } catch (const util::Exception &e) {
+    std::cerr << e.what() << std::endl;
+    abort();
   }
-
-  std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
-  VocabReconstitute vocab(vocab_file.get());
-  UTIL_THROW_IF(vocab.Size() != counts[0], util::Exception, "Vocab words don't match up.  Is there a null byte in the input?");
-  HeaderInfo header_info(text_file_name, token_count);
-  master >> PrintARPA(vocab, counts_pruned, (config.verbose_header ? &header_info : NULL), out_arpa) >> util::stream::kRecycle;
-  master.MutableChains().Wait(true);
 }
 
 }} // namespaces
