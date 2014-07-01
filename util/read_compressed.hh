@@ -62,6 +62,10 @@ class ReadCompressed {
 
     std::size_t Read(void *to, std::size_t amount);
 
+    // Repeatedly call read to fill a buffer unless EOF is hit.
+    // Return number of bytes read.
+    std::size_t ReadOrEOF(void *const to, std::size_t amount);
+
     uint64_t RawAmount() const { return raw_amount_; }
 
   private:

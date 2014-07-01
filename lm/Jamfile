@@ -37,4 +37,4 @@ for local p in [ glob *_main.cc ] {
   exes += $(name) ;
 }
 
-alias programs : $(exes) filter//filter : <threading>multi:<source>builder//lmplz ;
+alias programs : $(exes) filter//filter builder//dump_counts : <threading>multi:<source>builder//lmplz ;
