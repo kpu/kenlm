@@ -374,7 +374,6 @@ ReadBase *ReadFactory(int fd, uint64_t &raw_amount, const void *already_data, co
     header.resize(original + got);
   }
   if (header.empty()) {
-    hold.release();
     return new Complete();
   }
   switch (DetectMagic(&header[0], header.size())) {
