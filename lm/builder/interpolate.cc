@@ -55,10 +55,9 @@ class Callback {
           uint64_t current_hash = util::MurmurHashNative(gram.begin(), gram.Order() * sizeof(WordIndex));
             
           const HashGamma *hashed_backoff = static_cast<const HashGamma*>(backoffs_[order_minus_1].Get());
-          while(backoffs_[order_minus_1] && current_hash != hashed_backoff->hash_value) {
-            ++backoffs_[order_minus_1];
+          
+          while(current_hash != hashed_backoff->hash_value && ++backoffs_[order_minus_1])
             hashed_backoff = static_cast<const HashGamma*>(backoffs_[order_minus_1].Get());
-          }
                     
           if(current_hash == hashed_backoff->hash_value) {
             pay.complete.backoff = log10(hashed_backoff->gamma);
