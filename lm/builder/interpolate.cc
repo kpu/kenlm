@@ -25,6 +25,11 @@ class Callback {
 
     ~Callback() {
       for (std::size_t i = 0; i < backoffs_.size(); ++i) {
+        
+        if(prune_thresholds_[i + 1] > 0)
+          while(backoffs_[i])
+            ++backoffs_[i];
+          
         if (backoffs_[i]) {
           std::cerr << "Backoffs do not match for order " << (i + 1) << std::endl;
           abort();
@@ -36,7 +41,7 @@ class Callback {
       Payload &pay = gram.Value();
       pay.complete.prob = pay.uninterp.prob + pay.uninterp.gamma * probs_[order_minus_1];
       probs_[order_minus_1 + 1] = pay.complete.prob;
-      pay.complete.prob = log10(pay.complete.prob);
+      pay.complete.prob = log10(pay.complete.prob);          
       
       if (order_minus_1 < backoffs_.size() && *(gram.end() - 1) != kUNK && *(gram.end() - 1) != kEOS) {
         // This skips over ngrams if backoffs have been exhausted.
@@ -48,13 +53,13 @@ class Callback {
         if(prune_thresholds_[order_minus_1 + 1] > 0) {
           //Compute hash value for current context
           uint64_t current_hash = util::MurmurHashNative(gram.begin(), gram.Order() * sizeof(WordIndex));
-          
+            
           const HashGamma *hashed_backoff = static_cast<const HashGamma*>(backoffs_[order_minus_1].Get());
           while(backoffs_[order_minus_1] && current_hash != hashed_backoff->hash_value) {
-            hashed_backoff = static_cast<const HashGamma*>(backoffs_[order_minus_1].Get());
             ++backoffs_[order_minus_1];
+            hashed_backoff = static_cast<const HashGamma*>(backoffs_[order_minus_1].Get());
           }
-          
+                    
           if(current_hash == hashed_backoff->hash_value) {
             pay.complete.backoff = log10(hashed_backoff->gamma);
             ++backoffs_[order_minus_1];
