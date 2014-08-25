@@ -183,7 +183,7 @@ class AddRight {
         entry.gamma += normalizer;
         
         entry.gamma /= entry.denominator;
-        
+                
         if(pruning_) {
           // If pruning is enabled the stream actually contains HashBufferEntry, see InitialProbabilities(...),
           // so add a hash value that identifies the current ngram.
