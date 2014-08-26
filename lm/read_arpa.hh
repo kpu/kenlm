@@ -81,7 +81,12 @@ template <class Voc, class Weights, class Iterator> void ReadNGram(util::FilePie
       weights.prob = 0.0;
     }
     for (unsigned char i = 0; i < n; ++i, ++indices_out) {
-      *indices_out = vocab.Index(f.ReadDelimited(kARPASpaces));
+      StringPiece word(f.ReadDelimited(kARPASpaces));
+      WordIndex index = vocab.Index(word);
+      *indices_out = index;
+      // Check for words mapped to <unk> that are not the string <unk>.
+      UTIL_THROW_IF(index == 0 /* mapped to <unk> */ && (word != StringPiece("<unk>", 5)) && (word != StringPiece("<UNK>", 5)),
+          FormatLoadException, "Word " << word << " was not seen in the unigrams (which are supposed to list the entire vocabulary) but appears");
     }
     ReadBackoff(f, weights);
   } catch(util::Exception &e) {

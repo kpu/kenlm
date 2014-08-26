@@ -176,7 +176,7 @@ template <class M> void MinimalState(const M &model) {
   AppendTest("to", 1, -1.687872, false);
   AppendTest("look", 2, -0.2922095, true);
   BOOST_CHECK_EQUAL(2, state.length);
-  AppendTest("good", 3, -7, true);
+  AppendTest("a", 3, -7, true);
 }
 
 template <class M> void ExtendLeftTest(const M &model) {
