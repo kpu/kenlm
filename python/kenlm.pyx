@@ -29,22 +29,29 @@ cdef class LanguageModel:
         def __get__(self):
             return self.model.Order()
     
-    def score(self, sentence):
+    def score(self, sentence, bos = True, eos = True):
         cdef list words = as_str(sentence).split()
         cdef State state
-        self.model.BeginSentenceWrite(&state)
+        if bos:
+            self.model.BeginSentenceWrite(&state)
+        else:
+            self.model.NullContextWrite(&state)
         cdef State out_state
         cdef float total = 0
         for word in words:
             total += self.model.BaseScore(&state, self.vocab.Index(word), &out_state)
             state = out_state
-        total += self.model.BaseScore(&state, self.vocab.EndSentence(), &out_state)
+        if eos:
+            total += self.model.BaseScore(&state, self.vocab.EndSentence(), &out_state)
         return total
-
-    def full_scores(self, sentence):
+    
+    def full_scores(self, sentence, bos = True, eos = True):
         cdef list words = as_str(sentence).split()
         cdef State state
-        self.model.BeginSentenceWrite(&state)
+        if bos:
+            self.model.BeginSentenceWrite(&state)
+        else:
+            self.model.NullContextWrite(&state)
         cdef State out_state
         cdef FullScoreReturn ret
         cdef float total = 0
@@ -53,8 +60,9 @@ cdef class LanguageModel:
                 self.vocab.Index(word), &out_state)
             yield (ret.prob, ret.ngram_length)
             state = out_state
-        ret = self.model.BaseFullScore(&state,
-            self.vocab.EndSentence(), &out_state)
+        if eos:
+            ret = self.model.BaseFullScore(&state,
+                self.vocab.EndSentence(), &out_state)
         yield (ret.prob, ret.ngram_length)
     
     def __contains__(self, word):
