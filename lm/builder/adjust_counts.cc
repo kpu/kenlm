@@ -29,28 +29,44 @@ class StatCollector {
 
     ~StatCollector() {}
 
-    void CalculateDiscounts() {
+    void CalculateDiscounts(const DiscountConfig &config) {
       counts_.resize(orders_.size());
       counts_pruned_.resize(orders_.size());
-      discounts_.resize(orders_.size());
       for (std::size_t i = 0; i < orders_.size(); ++i) {
         const OrderStat &s = orders_[i];
         counts_[i] = s.count;
         counts_pruned_[i] = s.count_pruned;
+      }
 
-        for (unsigned j = 1; j < 4; ++j) {
-          // TODO: Specialize error message for j == 3, meaning 3+
-          UTIL_THROW_IF(s.n[j] == 0, BadDiscountException, "Could not calculate Kneser-Ney discounts for "
-              << (i+1) << "-grams with adjusted count " << (j+1) << " because we didn't observe any "
-              << (i+1) << "-grams with adjusted count " << j << "; Is this small or artificial data?");
-        }
+      discounts_ = config.overwrite;
+      discounts_.resize(orders_.size());
+      for (std::size_t i = config.overwrite.size(); i < orders_.size(); ++i) {
+        const OrderStat &s = orders_[i];
+        try {
+          for (unsigned j = 1; j < 4; ++j) {
+            // TODO: Specialize error message for j == 3, meaning 3+
+            UTIL_THROW_IF(s.n[j] == 0, BadDiscountException, "Could not calculate Kneser-Ney discounts for "
+                << (i+1) << "-grams with adjusted count " << (j+1) << " because we didn't observe any "
+                << (i+1) << "-grams with adjusted count " << j << "; Is this small or artificial data?");
+          }
 
-        // See equation (26) in Chen and Goodman.
-        discounts_[i].amount[0] = 0.0;
-        float y = static_cast<float>(s.n[1]) / static_cast<float>(s.n[1] + 2.0 * s.n[2]);
-        for (unsigned j = 1; j < 4; ++j) {
-          discounts_[i].amount[j] = static_cast<float>(j) - static_cast<float>(j + 1) * y * static_cast<float>(s.n[j+1]) / static_cast<float>(s.n[j]);
-          UTIL_THROW_IF(discounts_[i].amount[j] < 0.0 || discounts_[i].amount[j] > j, BadDiscountException, "ERROR: " << (i+1) << "-gram discount out of range for adjusted count " << j << ": " << discounts_[i].amount[j]);
+          // See equation (26) in Chen and Goodman.
+          discounts_[i].amount[0] = 0.0;
+          float y = static_cast<float>(s.n[1]) / static_cast<float>(s.n[1] + 2.0 * s.n[2]);
+          for (unsigned j = 1; j < 4; ++j) {
+            discounts_[i].amount[j] = static_cast<float>(j) - static_cast<float>(j + 1) * y * static_cast<float>(s.n[j+1]) / static_cast<float>(s.n[j]);
+            UTIL_THROW_IF(discounts_[i].amount[j] < 0.0 || discounts_[i].amount[j] > j, BadDiscountException, "ERROR: " << (i+1) << "-gram discount out of range for adjusted count " << j << ": " << discounts_[i].amount[j]);
+          }
+        } catch (const BadDiscountException &e) {
+          switch (config.bad_action) {
+            case THROW_UP:
+              throw;
+            case COMPLAIN:
+              std::cerr << e.what() << "  Substituting fallback discounts D1=" << config.fallback.amount[1] << " D2=" << config.fallback.amount[2] << " D3+=" << config.fallback.amount[3];
+            case SILENT:
+              break;
+          }
+          discounts_[i] = config.fallback;
         }
       }
     }
@@ -179,7 +195,7 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
     for (NGramStream full(positions[0]); full; ++full) 
       stats.AddFull(full->Count());
 
-    stats.CalculateDiscounts();
+    stats.CalculateDiscounts(discount_config_);
     return;
   }
 
@@ -262,7 +278,7 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
   for (NGramStream *s = streams.begin(); s != streams.end(); ++s)
     s->Poison();
 
-  stats.CalculateDiscounts();
+  stats.CalculateDiscounts(discount_config_);
 
   // NOTE: See special early-return case for unigrams near the top of this function
 }

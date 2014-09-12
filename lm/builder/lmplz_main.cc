@@ -66,6 +66,18 @@ std::vector<uint64_t> ParsePruning(const std::vector<std::string> &param, std::s
   return prune_thresholds;
 }
 
+lm::builder::Discount ParseDiscountFallback(const std::vector<std::string> &param) {
+  lm::builder::Discount ret;
+  UTIL_THROW_IF(param.size() > 3, util::Exception, "Specify at most three fallback discounts: 1, 2, and 3+");
+  UTIL_THROW_IF(param.empty(), util::Exception, "Fallback discounting enabled, but no discount specified");
+  ret.amount[0] = 0.0;
+  for (unsigned i = 0; i < 3; ++i) {
+    float discount = boost::lexical_cast<float>(param[i < param.size() ? i : (param.size() - 1)]);
+    UTIL_THROW_IF(discount < 0.0 || discount > static_cast<float>(i+1), util::Exception, "The discount for count " << (i+1) << " was parsed as " << discount << " which is not in the range [0, " << (i+1) << "].");
+    ret.amount[i + 1] = discount;
+  }
+  return ret;
+}
 
 } // namespace
 
@@ -77,7 +89,8 @@ int main(int argc, char *argv[]) {
 
     std::string text, arpa;
     std::vector<std::string> pruning;
-
+    std::vector<std::string> discount_fallback;
+    std::vector<std::string> default_discount_fallback(1, "0.5");
 
     options.add_options()
       ("help,h", po::bool_switch(), "Show this help message")
@@ -99,7 +112,8 @@ int main(int argc, char *argv[]) {
       ("verbose_header", po::bool_switch(&pipeline.verbose_header), "Add a verbose header to the ARPA file that includes information such as token count, smoothing type, etc.")
       ("text", po::value<std::string>(&text), "Read text from a file instead of stdin")
       ("arpa", po::value<std::string>(&arpa), "Write ARPA to a file instead of stdout")
-      ("prune", po::value<std::vector<std::string> >(&pruning)->multitoken(), "Prune n-grams with count less than or equal to the given threshold.  Specify one value for each order i.e. 0 0 1 to prune singleton trigrams and above.  The sequence of values must be non-decreasing and the last value applies to any remaining orders.  Unigram pruning is not implemented, so the first value must be zero.  Default is to not prune, which is equivalent to --prune 0.");
+      ("prune", po::value<std::vector<std::string> >(&pruning)->multitoken(), "Prune n-grams with count less than or equal to the given threshold.  Specify one value for each order i.e. 0 0 1 to prune singleton trigrams and above.  The sequence of values must be non-decreasing and the last value applies to any remaining orders.  Unigram pruning is not implemented, so the first value must be zero.  Default is to not prune, which is equivalent to --prune 0.")
+      ("discount_fallback", po::value<std::vector<std::string> >(&discount_fallback)->multitoken()->implicit_value(default_discount_fallback, default_discount_fallback[0]), "The closed-form estimate for Kneser-Ney discounts does not work without singletons or doubletons.  It can also fail if these values are out of range.  Use this option to provide a discount to be used for orders where discounting fails.  Note that this option is generally a bad idea: you should deduplicate your corpus instead.  However, class-based models need custom discounts because they lack singleton unigrams.  Provide up to three discounts (for adjusted counts 1, 2, and 3+), which will be applied to all orders where the closed-form estimates fail.");
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, options), vm);
 
@@ -151,6 +165,15 @@ int main(int argc, char *argv[]) {
       pipeline.disallowed_symbol_action = lm::COMPLAIN;
     } else {
       pipeline.disallowed_symbol_action = lm::THROW_UP;
+    }
+
+    if (vm.count("discount_fallback")) {
+      pipeline.discount.fallback = ParseDiscountFallback(discount_fallback);
+      pipeline.discount.bad_action = lm::COMPLAIN;
+    } else {
+      // Unused, just here to prevent the compiler from complaining about uninitialized.
+      pipeline.discount.fallback = lm::builder::Discount();
+      pipeline.discount.bad_action = lm::THROW_UP;
     }
 
     // parse pruning thresholds.  These depend on order, so it is not done as a notifier.

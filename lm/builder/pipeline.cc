@@ -317,7 +317,7 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
     std::vector<uint64_t> counts;
     std::vector<uint64_t> counts_pruned;
     std::vector<Discount> discounts;
-    master >> AdjustCounts(counts, counts_pruned, discounts, config.prune_thresholds);
+    master >> AdjustCounts(config.prune_thresholds, counts, counts_pruned, config.discount, discounts);
 
     {
       util::FixedArray<util::stream::FileBuffer> gammas;
