@@ -33,7 +33,6 @@ std::vector<uint64_t> ParsePruning(const std::vector<std::string> &param, std::s
   // convert to vector of integers
   std::vector<uint64_t> prune_thresholds;
   prune_thresholds.reserve(order);
-  std::cerr << "Pruning ";
   for (std::vector<std::string>::const_iterator it(param.begin()); it != param.end(); ++it) {
     try {
       prune_thresholds.push_back(boost::lexical_cast<uint64_t>(*it));
