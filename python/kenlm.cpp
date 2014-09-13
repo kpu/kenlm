@@ -443,8 +443,8 @@ struct __pyx_obj_5kenlm_LanguageModel {
  *         return total
  * 
  *     def full_scores(self, sentence, bos = True, eos = True):             # <<<<<<<<<<<<<<
- *         cdef list words = as_str(sentence).split()
- *         cdef State state
+ *         """
+ *         full_scores(sentence, bos = True, eos = Ture) -> generate full scores (prob, ngram lenght, oov)
  */
 struct __pyx_obj_5kenlm___pyx_scope_struct__full_scores {
   PyObject_HEAD
@@ -456,6 +456,7 @@ struct __pyx_obj_5kenlm___pyx_scope_struct__full_scores {
   PyObject *__pyx_v_sentence;
   struct lm::ngram::State __pyx_v_state;
   float __pyx_v_total;
+  lm::WordIndex __pyx_v_wid;
   PyObject *__pyx_v_word;
   PyObject *__pyx_v_words;
   PyObject *__pyx_t_0;
@@ -1609,12 +1610,13 @@ static PyObject *__pyx_gb_5kenlm_13LanguageModel_8generator(__pyx_GeneratorObjec
  *         return total
  * 
  *     def full_scores(self, sentence, bos = True, eos = True):             # <<<<<<<<<<<<<<
- *         cdef list words = as_str(sentence).split()
- *         cdef State state
+ *         """
+ *         full_scores(sentence, bos = True, eos = Ture) -> generate full scores (prob, ngram lenght, oov)
  */
 
 /* Python wrapper */
 static PyObject *__pyx_pw_5kenlm_13LanguageModel_7full_scores(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static char __pyx_doc_5kenlm_13LanguageModel_6full_scores[] = "\n        full_scores(sentence, bos = True, eos = Ture) -> generate full scores (prob, ngram lenght, oov)\n        @param sentence is a string (do not use boundary symbols)\n        @param bos should kenlm add a bos state\n        @param eos should kenlm add an eos state\n        ";
 static PyObject *__pyx_pw_5kenlm_13LanguageModel_7full_scores(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_sentence = 0;
   PyObject *__pyx_v_bos = 0;
@@ -1741,6 +1743,7 @@ static PyObject *__pyx_gb_5kenlm_13LanguageModel_8generator(__pyx_GeneratorObjec
   Py_ssize_t __pyx_t_5;
   char *__pyx_t_6;
   PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -1757,16 +1760,16 @@ static PyObject *__pyx_gb_5kenlm_13LanguageModel_8generator(__pyx_GeneratorObjec
   __pyx_L3_first_run:;
   if (unlikely(!__pyx_sent_value)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-  /* "kenlm.pyx":49
- * 
- *     def full_scores(self, sentence, bos = True, eos = True):
+  /* "kenlm.pyx":55
+ *         @param eos should kenlm add an eos state
+ *         """
  *         cdef list words = as_str(sentence).split()             # <<<<<<<<<<<<<<
  *         cdef State state
  *         if bos:
  */
-  __pyx_t_2 = __pyx_f_5kenlm_as_str(__pyx_cur_scope->__pyx_v_sentence); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_2 = __pyx_f_5kenlm_as_str(__pyx_cur_scope->__pyx_v_sentence); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_split); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_split); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_t_2 = NULL;
@@ -1780,29 +1783,29 @@ static PyObject *__pyx_gb_5kenlm_13LanguageModel_8generator(__pyx_GeneratorObjec
     }
   }
   if (__pyx_t_2) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (!(likely(PyList_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_1)->tp_name), 0))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (!(likely(PyList_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_1)->tp_name), 0))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GIVEREF(__pyx_t_1);
   __pyx_cur_scope->__pyx_v_words = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":51
+  /* "kenlm.pyx":57
  *         cdef list words = as_str(sentence).split()
  *         cdef State state
  *         if bos:             # <<<<<<<<<<<<<<
  *             self.model.BeginSentenceWrite(&state)
  *         else:
  */
-  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_cur_scope->__pyx_v_bos); if (unlikely(__pyx_t_4 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_cur_scope->__pyx_v_bos); if (unlikely(__pyx_t_4 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   if (__pyx_t_4) {
 
-    /* "kenlm.pyx":52
+    /* "kenlm.pyx":58
  *         cdef State state
  *         if bos:
  *             self.model.BeginSentenceWrite(&state)             # <<<<<<<<<<<<<<
@@ -1814,7 +1817,7 @@ static PyObject *__pyx_gb_5kenlm_13LanguageModel_8generator(__pyx_GeneratorObjec
   }
   /*else*/ {
 
-    /* "kenlm.pyx":54
+    /* "kenlm.pyx":60
  *             self.model.BeginSentenceWrite(&state)
  *         else:
  *             self.model.NullContextWrite(&state)             # <<<<<<<<<<<<<<
@@ -1825,78 +1828,84 @@ static PyObject *__pyx_gb_5kenlm_13LanguageModel_8generator(__pyx_GeneratorObjec
   }
   __pyx_L4:;
 
-  /* "kenlm.pyx":57
+  /* "kenlm.pyx":63
  *         cdef State out_state
  *         cdef FullScoreReturn ret
  *         cdef float total = 0             # <<<<<<<<<<<<<<
+ *         cdef WordIndex wid
  *         for word in words:
- *             ret = self.model.BaseFullScore(&state,
  */
   __pyx_cur_scope->__pyx_v_total = 0.0;
 
-  /* "kenlm.pyx":58
- *         cdef FullScoreReturn ret
+  /* "kenlm.pyx":65
  *         cdef float total = 0
+ *         cdef WordIndex wid
  *         for word in words:             # <<<<<<<<<<<<<<
- *             ret = self.model.BaseFullScore(&state,
- *                 self.vocab.Index(word), &out_state)
+ *             wid = self.vocab.Index(word)
+ *             ret = self.model.BaseFullScore(&state, wid, &out_state)
  */
   if (unlikely(__pyx_cur_scope->__pyx_v_words == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 65; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   __pyx_t_1 = __pyx_cur_scope->__pyx_v_words; __Pyx_INCREF(__pyx_t_1); __pyx_t_5 = 0;
   for (;;) {
     if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_1)) break;
     #if CYTHON_COMPILING_IN_CPYTHON
-    __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 65; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     #else
-    __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 65; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     #endif
     __Pyx_XGOTREF(__pyx_cur_scope->__pyx_v_word);
     __Pyx_XDECREF_SET(__pyx_cur_scope->__pyx_v_word, __pyx_t_3);
     __Pyx_GIVEREF(__pyx_t_3);
     __pyx_t_3 = 0;
 
-    /* "kenlm.pyx":60
+    /* "kenlm.pyx":66
+ *         cdef WordIndex wid
  *         for word in words:
- *             ret = self.model.BaseFullScore(&state,
- *                 self.vocab.Index(word), &out_state)             # <<<<<<<<<<<<<<
- *             yield (ret.prob, ret.ngram_length)
+ *             wid = self.vocab.Index(word)             # <<<<<<<<<<<<<<
+ *             ret = self.model.BaseFullScore(&state, wid, &out_state)
+ *             yield (ret.prob, ret.ngram_length, wid == 0)
+ */
+    __pyx_t_6 = __Pyx_PyObject_AsString(__pyx_cur_scope->__pyx_v_word); if (unlikely((!__pyx_t_6) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 66; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_cur_scope->__pyx_v_wid = __pyx_cur_scope->__pyx_v_self->vocab->Index(__pyx_t_6);
+
+    /* "kenlm.pyx":67
+ *         for word in words:
+ *             wid = self.vocab.Index(word)
+ *             ret = self.model.BaseFullScore(&state, wid, &out_state)             # <<<<<<<<<<<<<<
+ *             yield (ret.prob, ret.ngram_length, wid == 0)
  *             state = out_state
  */
-    __pyx_t_6 = __Pyx_PyObject_AsString(__pyx_cur_scope->__pyx_v_word); if (unlikely((!__pyx_t_6) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 60; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_cur_scope->__pyx_v_ret = __pyx_cur_scope->__pyx_v_self->model->BaseFullScore((&__pyx_cur_scope->__pyx_v_state), __pyx_cur_scope->__pyx_v_wid, (&__pyx_cur_scope->__pyx_v_out_state));
 
-    /* "kenlm.pyx":59
- *         cdef float total = 0
- *         for word in words:
- *             ret = self.model.BaseFullScore(&state,             # <<<<<<<<<<<<<<
- *                 self.vocab.Index(word), &out_state)
- *             yield (ret.prob, ret.ngram_length)
- */
-    __pyx_cur_scope->__pyx_v_ret = __pyx_cur_scope->__pyx_v_self->model->BaseFullScore((&__pyx_cur_scope->__pyx_v_state), __pyx_cur_scope->__pyx_v_self->vocab->Index(__pyx_t_6), (&__pyx_cur_scope->__pyx_v_out_state));
-
-    /* "kenlm.pyx":61
- *             ret = self.model.BaseFullScore(&state,
- *                 self.vocab.Index(word), &out_state)
- *             yield (ret.prob, ret.ngram_length)             # <<<<<<<<<<<<<<
+    /* "kenlm.pyx":68
+ *             wid = self.vocab.Index(word)
+ *             ret = self.model.BaseFullScore(&state, wid, &out_state)
+ *             yield (ret.prob, ret.ngram_length, wid == 0)             # <<<<<<<<<<<<<<
  *             state = out_state
  *         if eos:
  */
-    __pyx_t_3 = PyFloat_FromDouble(__pyx_cur_scope->__pyx_v_ret.prob); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_3 = PyFloat_FromDouble(__pyx_cur_scope->__pyx_v_ret.prob); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_2 = __Pyx_PyInt_From_unsigned_char(__pyx_cur_scope->__pyx_v_ret.ngram_length); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __Pyx_PyInt_From_unsigned_char(__pyx_cur_scope->__pyx_v_ret.ngram_length); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_7 = PyTuple_New(2); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_7 = __Pyx_PyBool_FromLong((__pyx_cur_scope->__pyx_v_wid == 0)); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_7);
-    PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_3);
+    __pyx_t_8 = PyTuple_New(3); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_8);
+    PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_3);
     __Pyx_GIVEREF(__pyx_t_3);
-    PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_t_2);
+    PyTuple_SET_ITEM(__pyx_t_8, 1, __pyx_t_2);
     __Pyx_GIVEREF(__pyx_t_2);
+    PyTuple_SET_ITEM(__pyx_t_8, 2, __pyx_t_7);
+    __Pyx_GIVEREF(__pyx_t_7);
     __pyx_t_3 = 0;
     __pyx_t_2 = 0;
-    __pyx_r = __pyx_t_7;
     __pyx_t_7 = 0;
+    __pyx_r = __pyx_t_8;
+    __pyx_t_8 = 0;
     __Pyx_XGIVEREF(__pyx_t_1);
     __pyx_cur_scope->__pyx_t_0 = __pyx_t_1;
     __pyx_cur_scope->__pyx_t_1 = __pyx_t_5;
@@ -1910,84 +1919,87 @@ static PyObject *__pyx_gb_5kenlm_13LanguageModel_8generator(__pyx_GeneratorObjec
     __pyx_cur_scope->__pyx_t_0 = 0;
     __Pyx_XGOTREF(__pyx_t_1);
     __pyx_t_5 = __pyx_cur_scope->__pyx_t_1;
-    if (unlikely(!__pyx_sent_value)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (unlikely(!__pyx_sent_value)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "kenlm.pyx":62
- *                 self.vocab.Index(word), &out_state)
- *             yield (ret.prob, ret.ngram_length)
+    /* "kenlm.pyx":69
+ *             ret = self.model.BaseFullScore(&state, wid, &out_state)
+ *             yield (ret.prob, ret.ngram_length, wid == 0)
  *             state = out_state             # <<<<<<<<<<<<<<
  *         if eos:
  *             ret = self.model.BaseFullScore(&state,
  */
     __pyx_cur_scope->__pyx_v_state = __pyx_cur_scope->__pyx_v_out_state;
 
-    /* "kenlm.pyx":58
- *         cdef FullScoreReturn ret
+    /* "kenlm.pyx":65
  *         cdef float total = 0
+ *         cdef WordIndex wid
  *         for word in words:             # <<<<<<<<<<<<<<
- *             ret = self.model.BaseFullScore(&state,
- *                 self.vocab.Index(word), &out_state)
+ *             wid = self.vocab.Index(word)
+ *             ret = self.model.BaseFullScore(&state, wid, &out_state)
  */
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":63
- *             yield (ret.prob, ret.ngram_length)
+  /* "kenlm.pyx":70
+ *             yield (ret.prob, ret.ngram_length, wid == 0)
  *             state = out_state
  *         if eos:             # <<<<<<<<<<<<<<
  *             ret = self.model.BaseFullScore(&state,
  *                 self.vocab.EndSentence(), &out_state)
  */
-  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_cur_scope->__pyx_v_eos); if (unlikely(__pyx_t_4 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_cur_scope->__pyx_v_eos); if (unlikely(__pyx_t_4 < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   if (__pyx_t_4) {
 
-    /* "kenlm.pyx":64
+    /* "kenlm.pyx":71
  *             state = out_state
  *         if eos:
  *             ret = self.model.BaseFullScore(&state,             # <<<<<<<<<<<<<<
  *                 self.vocab.EndSentence(), &out_state)
- *         yield (ret.prob, ret.ngram_length)
+ *             yield (ret.prob, ret.ngram_length, False)
  */
     __pyx_cur_scope->__pyx_v_ret = __pyx_cur_scope->__pyx_v_self->model->BaseFullScore((&__pyx_cur_scope->__pyx_v_state), __pyx_cur_scope->__pyx_v_self->vocab->EndSentence(), (&__pyx_cur_scope->__pyx_v_out_state));
-    goto __pyx_L8;
-  }
-  __pyx_L8:;
 
-  /* "kenlm.pyx":66
+    /* "kenlm.pyx":73
  *             ret = self.model.BaseFullScore(&state,
  *                 self.vocab.EndSentence(), &out_state)
- *         yield (ret.prob, ret.ngram_length)             # <<<<<<<<<<<<<<
+ *             yield (ret.prob, ret.ngram_length, False)             # <<<<<<<<<<<<<<
  * 
  *     def __contains__(self, word):
  */
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_cur_scope->__pyx_v_ret.prob); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 66; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_7 = __Pyx_PyInt_From_unsigned_char(__pyx_cur_scope->__pyx_v_ret.ngram_length); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 66; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 66; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_2);
-  PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1);
-  __Pyx_GIVEREF(__pyx_t_1);
-  PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_t_7);
-  __Pyx_GIVEREF(__pyx_t_7);
-  __pyx_t_1 = 0;
-  __pyx_t_7 = 0;
-  __pyx_r = __pyx_t_2;
-  __pyx_t_2 = 0;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  /* return from generator, yielding value */
-  __pyx_generator->resume_label = 2;
-  return __pyx_r;
-  __pyx_L9_resume_from_yield:;
-  if (unlikely(!__pyx_sent_value)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 66; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = PyFloat_FromDouble(__pyx_cur_scope->__pyx_v_ret.prob); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_8 = __Pyx_PyInt_From_unsigned_char(__pyx_cur_scope->__pyx_v_ret.ngram_length); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_8);
+    __pyx_t_7 = PyTuple_New(3); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_7);
+    PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_1);
+    __Pyx_GIVEREF(__pyx_t_1);
+    PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_t_8);
+    __Pyx_GIVEREF(__pyx_t_8);
+    __Pyx_INCREF(Py_False);
+    PyTuple_SET_ITEM(__pyx_t_7, 2, Py_False);
+    __Pyx_GIVEREF(Py_False);
+    __pyx_t_1 = 0;
+    __pyx_t_8 = 0;
+    __pyx_r = __pyx_t_7;
+    __pyx_t_7 = 0;
+    __Pyx_XGIVEREF(__pyx_r);
+    __Pyx_RefNannyFinishContext();
+    /* return from generator, yielding value */
+    __pyx_generator->resume_label = 2;
+    return __pyx_r;
+    __pyx_L9_resume_from_yield:;
+    if (unlikely(!__pyx_sent_value)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    goto __pyx_L8;
+  }
+  __pyx_L8:;
 
   /* "kenlm.pyx":48
  *         return total
  * 
  *     def full_scores(self, sentence, bos = True, eos = True):             # <<<<<<<<<<<<<<
- *         cdef list words = as_str(sentence).split()
- *         cdef State state
+ *         """
+ *         full_scores(sentence, bos = True, eos = Ture) -> generate full scores (prob, ngram lenght, oov)
  */
 
   /* function exit code */
@@ -1998,6 +2010,7 @@ static PyObject *__pyx_gb_5kenlm_13LanguageModel_8generator(__pyx_GeneratorObjec
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
   __Pyx_AddTraceback("full_scores", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_r);
@@ -2007,8 +2020,8 @@ static PyObject *__pyx_gb_5kenlm_13LanguageModel_8generator(__pyx_GeneratorObjec
   return NULL;
 }
 
-/* "kenlm.pyx":68
- *         yield (ret.prob, ret.ngram_length)
+/* "kenlm.pyx":75
+ *             yield (ret.prob, ret.ngram_length, False)
  * 
  *     def __contains__(self, word):             # <<<<<<<<<<<<<<
  *         cdef bytes w = as_str(word)
@@ -2039,31 +2052,31 @@ static int __pyx_pf_5kenlm_13LanguageModel_9__contains__(struct __pyx_obj_5kenlm
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__contains__", 0);
 
-  /* "kenlm.pyx":69
+  /* "kenlm.pyx":76
  * 
  *     def __contains__(self, word):
  *         cdef bytes w = as_str(word)             # <<<<<<<<<<<<<<
  *         return (self.vocab.Index(w) != 0)
  * 
  */
-  __pyx_t_1 = __pyx_f_5kenlm_as_str(__pyx_v_word); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __pyx_f_5kenlm_as_str(__pyx_v_word); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 76; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_v_w = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":70
+  /* "kenlm.pyx":77
  *     def __contains__(self, word):
  *         cdef bytes w = as_str(word)
  *         return (self.vocab.Index(w) != 0)             # <<<<<<<<<<<<<<
  * 
  *     def __repr__(self):
  */
-  __pyx_t_2 = __Pyx_PyObject_AsString(__pyx_v_w); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_2 = __Pyx_PyObject_AsString(__pyx_v_w); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_r = (__pyx_v_self->vocab->Index(__pyx_t_2) != 0);
   goto __pyx_L0;
 
-  /* "kenlm.pyx":68
- *         yield (ret.prob, ret.ngram_length)
+  /* "kenlm.pyx":75
+ *             yield (ret.prob, ret.ngram_length, False)
  * 
  *     def __contains__(self, word):             # <<<<<<<<<<<<<<
  *         cdef bytes w = as_str(word)
@@ -2081,7 +2094,7 @@ static int __pyx_pf_5kenlm_13LanguageModel_9__contains__(struct __pyx_obj_5kenlm
   return __pyx_r;
 }
 
-/* "kenlm.pyx":72
+/* "kenlm.pyx":79
  *         return (self.vocab.Index(w) != 0)
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -2116,7 +2129,7 @@ static PyObject *__pyx_pf_5kenlm_13LanguageModel_11__repr__(struct __pyx_obj_5ke
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__repr__", 0);
 
-  /* "kenlm.pyx":73
+  /* "kenlm.pyx":80
  * 
  *     def __repr__(self):
  *         return '<LanguageModel from {0}>'.format(os.path.basename(self.path))             # <<<<<<<<<<<<<<
@@ -2124,14 +2137,14 @@ static PyObject *__pyx_pf_5kenlm_13LanguageModel_11__repr__(struct __pyx_obj_5ke
  *     def __reduce__(self):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_LanguageModel_from_0, __pyx_n_s_format); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_LanguageModel_from_0, __pyx_n_s_format); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = __Pyx_GetModuleGlobalName(__pyx_n_s_os); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_4 = __Pyx_GetModuleGlobalName(__pyx_n_s_os); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_path); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_path); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_basename); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_basename); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_t_5 = NULL;
@@ -2145,16 +2158,16 @@ static PyObject *__pyx_pf_5kenlm_13LanguageModel_11__repr__(struct __pyx_obj_5ke
     }
   }
   if (!__pyx_t_5) {
-    __pyx_t_3 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_v_self->path); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_3 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_v_self->path); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_3);
   } else {
-    __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_6);
     PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_5); __Pyx_GIVEREF(__pyx_t_5); __pyx_t_5 = NULL;
     __Pyx_INCREF(__pyx_v_self->path);
     PyTuple_SET_ITEM(__pyx_t_6, 0+1, __pyx_v_self->path);
     __Pyx_GIVEREF(__pyx_v_self->path);
-    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   }
@@ -2170,17 +2183,17 @@ static PyObject *__pyx_pf_5kenlm_13LanguageModel_11__repr__(struct __pyx_obj_5ke
     }
   }
   if (!__pyx_t_4) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_GOTREF(__pyx_t_1);
   } else {
-    __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_6);
     PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_4); __Pyx_GIVEREF(__pyx_t_4); __pyx_t_4 = NULL;
     PyTuple_SET_ITEM(__pyx_t_6, 0+1, __pyx_t_3);
     __Pyx_GIVEREF(__pyx_t_3);
     __pyx_t_3 = 0;
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_6, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_6, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   }
@@ -2189,7 +2202,7 @@ static PyObject *__pyx_pf_5kenlm_13LanguageModel_11__repr__(struct __pyx_obj_5ke
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":72
+  /* "kenlm.pyx":79
  *         return (self.vocab.Index(w) != 0)
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -2213,7 +2226,7 @@ static PyObject *__pyx_pf_5kenlm_13LanguageModel_11__repr__(struct __pyx_obj_5ke
   return __pyx_r;
 }
 
-/* "kenlm.pyx":75
+/* "kenlm.pyx":82
  *         return '<LanguageModel from {0}>'.format(os.path.basename(self.path))
  * 
  *     def __reduce__(self):             # <<<<<<<<<<<<<<
@@ -2243,18 +2256,18 @@ static PyObject *__pyx_pf_5kenlm_13LanguageModel_13__reduce__(struct __pyx_obj_5
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__reduce__", 0);
 
-  /* "kenlm.pyx":76
+  /* "kenlm.pyx":83
  * 
  *     def __reduce__(self):
  *         return (LanguageModel, (self.path,))             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 76; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 83; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(__pyx_v_self->path);
   PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_v_self->path);
   __Pyx_GIVEREF(__pyx_v_self->path);
-  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 76; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 83; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_INCREF(((PyObject *)((PyObject*)__pyx_ptype_5kenlm_LanguageModel)));
   PyTuple_SET_ITEM(__pyx_t_2, 0, ((PyObject *)((PyObject*)__pyx_ptype_5kenlm_LanguageModel)));
@@ -2266,7 +2279,7 @@ static PyObject *__pyx_pf_5kenlm_13LanguageModel_13__reduce__(struct __pyx_obj_5
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":75
+  /* "kenlm.pyx":82
  *         return '<LanguageModel from {0}>'.format(os.path.basename(self.path))
  * 
  *     def __reduce__(self):             # <<<<<<<<<<<<<<
@@ -2445,7 +2458,7 @@ static int __pyx_setprop_5kenlm_13LanguageModel_path(PyObject *o, PyObject *v, C
 
 static PyMethodDef __pyx_methods_5kenlm_LanguageModel[] = {
   {"score", (PyCFunction)__pyx_pw_5kenlm_13LanguageModel_5score, METH_VARARGS|METH_KEYWORDS, 0},
-  {"full_scores", (PyCFunction)__pyx_pw_5kenlm_13LanguageModel_7full_scores, METH_VARARGS|METH_KEYWORDS, 0},
+  {"full_scores", (PyCFunction)__pyx_pw_5kenlm_13LanguageModel_7full_scores, METH_VARARGS|METH_KEYWORDS, __pyx_doc_5kenlm_13LanguageModel_6full_scores},
   {"__reduce__", (PyCFunction)__pyx_pw_5kenlm_13LanguageModel_14__reduce__, METH_NOARGS, 0},
   {0, 0, 0, 0}
 };

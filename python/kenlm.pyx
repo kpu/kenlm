@@ -46,6 +46,12 @@ cdef class LanguageModel:
         return total
     
     def full_scores(self, sentence, bos = True, eos = True):
+        """
+        full_scores(sentence, bos = True, eos = Ture) -> generate full scores (prob, ngram lenght, oov)
+        @param sentence is a string (do not use boundary symbols)
+        @param bos should kenlm add a bos state
+        @param eos should kenlm add an eos state
+        """
         cdef list words = as_str(sentence).split()
         cdef State state
         if bos:
@@ -55,15 +61,16 @@ cdef class LanguageModel:
         cdef State out_state
         cdef FullScoreReturn ret
         cdef float total = 0
+        cdef WordIndex wid
         for word in words:
-            ret = self.model.BaseFullScore(&state,
-                self.vocab.Index(word), &out_state)
-            yield (ret.prob, ret.ngram_length)
+            wid = self.vocab.Index(word)
+            ret = self.model.BaseFullScore(&state, wid, &out_state)
+            yield (ret.prob, ret.ngram_length, wid == 0)
             state = out_state
         if eos:
             ret = self.model.BaseFullScore(&state,
                 self.vocab.EndSentence(), &out_state)
-        yield (ret.prob, ret.ngram_length)
+            yield (ret.prob, ret.ngram_length, False)
     
     def __contains__(self, word):
         cdef bytes w = as_str(word)
