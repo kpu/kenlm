@@ -1,0 +1,4 @@
+external-lib cmph ;
+fakelib cmphwrap : cmph cmph_builder.cc iterator_adapter.cc ../../util//kenutil ;
+
+exe iterator_adapter_ex1 : iterator_adapter_ex1.cc cmphwrap ;
