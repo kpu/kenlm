@@ -75,7 +75,10 @@ BOOST_AUTO_TEST_CASE(Simple) {
     chains >> util::stream::kRecycle;
     std::vector<uint64_t> counts_pruned(4);
     std::vector<uint64_t> prune_thresholds(4);
-    BOOST_CHECK_THROW(AdjustCounts(counts, counts_pruned, discount, prune_thresholds).Run(for_adjust), BadDiscountException);
+    DiscountConfig discount_config;
+    discount_config.fallback = Discount();
+    discount_config.bad_action = THROW_UP;
+    BOOST_CHECK_THROW(AdjustCounts(prune_thresholds, counts, counts_pruned, discount_config, discount).Run(for_adjust), BadDiscountException);
   }
   BOOST_REQUIRE_EQUAL(4UL, counts.size());
   BOOST_CHECK_EQUAL(4UL, counts[0]);
