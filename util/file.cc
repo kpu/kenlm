@@ -41,9 +41,9 @@ scoped_fd::~scoped_fd() {
   }
 }
 
-scoped_FILE::~scoped_FILE() {
-  if (file_ && std::fclose(file_)) {
-    std::cerr << "Could not close file " << std::endl;
+void scoped_FILE_closer::Close(std::FILE *file) {
+  if (file && std::fclose(file)) {
+    std::cerr << "Could not close file " << file << std::endl;
     std::abort();
   }
 }

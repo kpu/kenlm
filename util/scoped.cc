@@ -32,10 +32,6 @@ void *CallocOrThrow(std::size_t requested) {
   return InspectAddr(std::calloc(1, requested), requested, "calloc");
 }
 
-scoped_malloc::~scoped_malloc() {
-  std::free(p_);
-}
-
 void scoped_malloc::call_realloc(std::size_t requested) {
   p_ = InspectAddr(std::realloc(p_, requested), requested, "realloc");
 }

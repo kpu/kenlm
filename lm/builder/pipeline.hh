@@ -1,6 +1,7 @@
 #ifndef LM_BUILDER_PIPELINE_H
 #define LM_BUILDER_PIPELINE_H
 
+#include "lm/builder/adjust_counts.hh"
 #include "lm/builder/initial_probabilities.hh"
 #include "lm/builder/header_info.hh"
 #include "lm/lm_exception.hh"
@@ -34,6 +35,9 @@ struct PipelineConfig {
   // n-gram count thresholds for pruning. 0 values means no pruning for
   // corresponding n-gram order
   std::vector<uint64_t> prune_thresholds; //mjd
+
+  // What to do with discount failures.
+  DiscountConfig discount;
   
   /* Computing the perplexity of LMs with different vocabularies is hard.  For
    * example, the lowest perplexity is attained by a unigram model that
