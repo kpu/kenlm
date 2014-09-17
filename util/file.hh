@@ -2,6 +2,7 @@
 #define UTIL_FILE_H
 
 #include "util/exception.hh"
+#include "util/scoped.hh"
 #include "util/string_piece.hh"
 
 #include <cstddef>
@@ -42,29 +43,10 @@ class scoped_fd {
     scoped_fd &operator=(const scoped_fd &);
 };
 
-class scoped_FILE {
-  public:
-    explicit scoped_FILE(std::FILE *file = NULL) : file_(file) {}
-
-    ~scoped_FILE();
-
-    std::FILE *get() { return file_; }
-    const std::FILE *get() const { return file_; }
-
-    void reset(std::FILE *to = NULL) {
-      scoped_FILE other(file_);
-      file_ = to;
-    }
-
-    std::FILE *release() {
-      std::FILE *ret = file_;
-      file_ = NULL;
-      return ret;
-    }
-
-  private:
-    std::FILE *file_;
+struct scoped_FILE_closer {
+  static void Close(std::FILE *file);
 };
+typedef scoped<std::FILE, scoped_FILE_closer> scoped_FILE;
 
 /* Thrown for any operation where the fd is known. */
 class FDException : public ErrnoException {
