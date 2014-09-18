@@ -9,6 +9,7 @@
 #include "util/murmur_hash.hh"
 
 #include <assert.h>
+#include <math.h>
 
 namespace lm { namespace builder {
 namespace {
@@ -56,7 +57,8 @@ class OutputProbBackoff {
     explicit OutputProbBackoff(std::size_t /*order*/) {}
 
     void Gram(unsigned /*order_minus_1*/, float full_backoff, ProbBackoff &out) const {
-      out.prob = log10(out.prob);
+      // Correcting for numerical precision issues.  Take that IRST.
+      out.prob = std::min(0.0f, log10f(out.prob));
       out.backoff = log10(full_backoff);
     }
 };
@@ -132,17 +134,24 @@ template <class Output> class Callback {
 };
 } // namespace
 
-Interpolate::Interpolate(uint64_t vocab_size, const util::stream::ChainPositions &backoffs, const std::vector<uint64_t>& prune_thresholds)
+Interpolate::Interpolate(uint64_t vocab_size, const util::stream::ChainPositions &backoffs, const std::vector<uint64_t>& prune_thresholds, bool output_q)
   : uniform_prob_(1.0 / static_cast<float>(vocab_size)), // Includes <unk> but excludes <s>.
     backoffs_(backoffs),
-    prune_thresholds_(prune_thresholds) {}
+    prune_thresholds_(prune_thresholds),
+    output_q_(output_q) {}
 
 // perform order-wise interpolation
 void Interpolate::Run(const util::stream::ChainPositions &positions) {
   assert(positions.size() == backoffs_.size() + 1);
-  typedef Callback<OutputProbBackoff> C;
-  C callback(uniform_prob_, backoffs_, prune_thresholds_);
-  JointOrder<C, SuffixOrder>(positions, callback);
+  if (output_q_) {
+    typedef Callback<OutputQ> C;
+    C callback(uniform_prob_, backoffs_, prune_thresholds_);
+    JointOrder<C, SuffixOrder>(positions, callback);
+  } else {
+    typedef Callback<OutputProbBackoff> C;
+    C callback(uniform_prob_, backoffs_, prune_thresholds_);
+    JointOrder<C, SuffixOrder>(positions, callback);
+  }
 }
 
 }} // namespaces
