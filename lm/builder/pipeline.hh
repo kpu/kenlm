@@ -20,6 +20,8 @@ struct PipelineConfig {
   util::stream::SortConfig sort;
   InitialProbabilitiesConfig initial_probs;
   util::stream::ChainConfig read_backoffs;
+
+  // Include a header in the ARPA with some statistics?
   bool verbose_header;
 
   // Estimated vocabulary size.  Used for sizing CorpusCount memory and
