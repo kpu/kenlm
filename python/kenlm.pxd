@@ -1,4 +1,4 @@
-cdef extern from "lm/word_index.hh":
+cdef extern from "lm/word_index.hh" namespace "lm":
     ctypedef unsigned WordIndex
 
 cdef extern from "lm/return.hh" namespace "lm":

@@ -11,14 +11,16 @@ print(model.score(sentence))
 
 # Check that total full score = direct score
 def score(s):
-    return sum(prob for prob, _ in model.full_scores(s))
+    return sum(prob for prob, _, _ in model.full_scores(s))
 
 assert (abs(score(sentence) - model.score(sentence)) < 1e-3)
 
 # Show scores and n-gram matches
 words = ['<s>'] + sentence.split() + ['</s>']
-for i, (prob, length) in enumerate(model.full_scores(sentence)):
-    print('{0} {1} : {2}'.format(prob, length, ' '.join(words[i+2-length:i+2])))
+for i, (prob, length, oov) in enumerate(model.full_scores(sentence)):
+    print('{0} {1}: {2}'.format(prob, length, ' '.join(words[i+2-length:i+2])))
+    if oov:
+        print '\t"{0}" is an OOV'.format(words[i+1])
 
 # Find out-of-vocabulary words
 for w in words:
