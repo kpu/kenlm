@@ -40,7 +40,7 @@ class OutputQ {
       } else {
         q_del = full_backoff;
       }
-      out.prob = log10(out.prob * q_del);
+      out.prob = log10f(out.prob * q_del);
       // TODO: stop wastefully outputting this!
       out.backoff = 0.0;
     }
@@ -59,7 +59,7 @@ class OutputProbBackoff {
     void Gram(unsigned /*order_minus_1*/, float full_backoff, ProbBackoff &out) const {
       // Correcting for numerical precision issues.  Take that IRST.
       out.prob = std::min(0.0f, log10f(out.prob));
-      out.backoff = log10(full_backoff);
+      out.backoff = log10f(full_backoff);
     }
 };
 
