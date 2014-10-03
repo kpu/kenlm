@@ -29,33 +29,48 @@ cdef class LanguageModel:
         def __get__(self):
             return self.model.Order()
     
-    def score(self, sentence):
+    def score(self, sentence, bos = True, eos = True):
         cdef list words = as_str(sentence).split()
         cdef State state
-        self.model.BeginSentenceWrite(&state)
+        if bos:
+            self.model.BeginSentenceWrite(&state)
+        else:
+            self.model.NullContextWrite(&state)
         cdef State out_state
         cdef float total = 0
         for word in words:
             total += self.model.BaseScore(&state, self.vocab.Index(word), &out_state)
             state = out_state
-        total += self.model.BaseScore(&state, self.vocab.EndSentence(), &out_state)
+        if eos:
+            total += self.model.BaseScore(&state, self.vocab.EndSentence(), &out_state)
         return total
-
-    def full_scores(self, sentence):
+    
+    def full_scores(self, sentence, bos = True, eos = True):
+        """
+        full_scores(sentence, bos = True, eos = Ture) -> generate full scores (prob, ngram lenght, oov)
+        @param sentence is a string (do not use boundary symbols)
+        @param bos should kenlm add a bos state
+        @param eos should kenlm add an eos state
+        """
         cdef list words = as_str(sentence).split()
         cdef State state
-        self.model.BeginSentenceWrite(&state)
+        if bos:
+            self.model.BeginSentenceWrite(&state)
+        else:
+            self.model.NullContextWrite(&state)
         cdef State out_state
         cdef FullScoreReturn ret
         cdef float total = 0
+        cdef WordIndex wid
         for word in words:
-            ret = self.model.BaseFullScore(&state,
-                self.vocab.Index(word), &out_state)
-            yield (ret.prob, ret.ngram_length)
+            wid = self.vocab.Index(word)
+            ret = self.model.BaseFullScore(&state, wid, &out_state)
+            yield (ret.prob, ret.ngram_length, wid == 0)
             state = out_state
-        ret = self.model.BaseFullScore(&state,
-            self.vocab.EndSentence(), &out_state)
-        yield (ret.prob, ret.ngram_length)
+        if eos:
+            ret = self.model.BaseFullScore(&state,
+                self.vocab.EndSentence(), &out_state)
+            yield (ret.prob, ret.ngram_length, False)
     
     def __contains__(self, word):
         cdef bytes w = as_str(word)

@@ -20,6 +20,8 @@ struct PipelineConfig {
   util::stream::SortConfig sort;
   InitialProbabilitiesConfig initial_probs;
   util::stream::ChainConfig read_backoffs;
+
+  // Include a header in the ARPA with some statistics?
   bool verbose_header;
 
   // Estimated vocabulary size.  Used for sizing CorpusCount memory and
@@ -38,6 +40,9 @@ struct PipelineConfig {
 
   // What to do with discount failures.
   DiscountConfig discount;
+
+  // Compute collapsed q values instead of probability and backoff
+  bool output_q;
   
   /* Computing the perplexity of LMs with different vocabularies is hard.  For
    * example, the lowest perplexity is attained by a unigram model that

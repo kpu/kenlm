@@ -69,9 +69,12 @@ class PruneNGramStream {
         block_->SetValidSize(dest_.Base() - block_base);
         ++block_;
         StartBlock();
+        if (block_) {
+          currentCount_ = current_.CutoffCount();
+        }
+      } else {                
+        currentCount_ = current_.CutoffCount();
       }
-                
-      currentCount_ = current_.CutoffCount();
       
       return *this;
     }
