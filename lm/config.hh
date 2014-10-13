@@ -66,9 +66,9 @@ struct Config {
 
   // Template for temporary directory appropriate for passing to mkdtemp.
   // The characters XXXXXX are appended before passing to mkdtemp.  Only
-  // applies to trie.  If NULL, defaults to write_mmap.  If that's NULL,
+  // applies to trie.  If empty, defaults to write_mmap.  If that's NULL,
   // defaults to input file name.
-  const char *temporary_directory_prefix;
+  std::string temporary_directory_prefix;
 
   // Level of complaining to do when loading from ARPA instead of binary format.
   enum ARPALoadComplain {ALL, EXPENSIVE, NONE};

@@ -137,6 +137,7 @@ int main(int argc, char *argv[]) {
         case 't': // legacy
         case 'T':
           config.temporary_directory_prefix = optarg;
+          util::NormalizeTempPrefix(config.temporary_directory_prefix);
           break;
         case 'm': // legacy
           config.building_memory = ParseUInt(optarg) * 1048576;
