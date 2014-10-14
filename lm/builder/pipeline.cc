@@ -329,8 +329,8 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
     std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
     VocabReconstitute vocab(vocab_file.get());
     UTIL_THROW_IF(vocab.Size() != counts[0], util::Exception, "Vocab words don't match up.  Is there a null byte in the input?");
-    HeaderInfo header_info(text_file_name, token_count);
-    master >> PrintARPA(vocab, counts_pruned, (config.verbose_header ? &header_info : NULL), out_arpa) >> util::stream::kRecycle;
+    HeaderInfo header_info(text_file_name, token_count, counts_pruned);
+    master >> PrintARPA(vocab, header_info, config.verbose_header, out_arpa) >> util::stream::kRecycle;
     master.MutableChains().Wait(true);
   } catch (const util::Exception &e) {
     std::cerr << e.what() << std::endl;

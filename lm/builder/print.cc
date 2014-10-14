@@ -24,18 +24,18 @@ VocabReconstitute::VocabReconstitute(int fd) {
   map_.push_back(i);
 }
 
-PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> &counts, const HeaderInfo* header_info, int out_fd) 
+PrintARPA::PrintARPA(const VocabReconstitute &vocab, const HeaderInfo &header_info, bool verbose_header, int out_fd) 
   : vocab_(vocab), out_fd_(out_fd) {
   std::stringstream stream;
 
-  if (header_info) {
-    stream << "# Input file: " << header_info->input_file << '\n';
-    stream << "# Token count: " << header_info->token_count << '\n';
+  if (verbose_header) {
+    stream << "# Input file: " << header_info.input_file << '\n';
+    stream << "# Token count: " << header_info.token_count << '\n';
     stream << "# Smoothing: Modified Kneser-Ney" << '\n';
   }
   stream << "\\data\\\n";
-  for (size_t i = 0; i < counts.size(); ++i) {
-    stream << "ngram " << (i+1) << '=' << counts[i] << '\n';
+  for (size_t i = 0; i < header_info.counts_pruned.size(); ++i) {
+    stream << "ngram " << (i+1) << '=' << header_info.counts_pruned[i] << '\n';
   }
   stream << '\n';
   std::string as_string(stream.str());
