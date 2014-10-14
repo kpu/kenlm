@@ -8,9 +8,11 @@
 // Some configuration info that is used to add
 // comments to the beginning of an ARPA file
 struct HeaderInfo {
-  const std::string input_file;
-  const uint64_t token_count;
-  const std::vector<uint64_t> counts_pruned;
+  std::string input_file;
+  uint64_t token_count;
+  std::vector<uint64_t> counts_pruned;
+
+  HeaderInfo() {}
 
   HeaderInfo(const std::string& input_file_in, uint64_t token_count_in, const std::vector<uint64_t> &counts_pruned_in)
     : input_file(input_file_in), token_count(token_count_in), counts_pruned(counts_pruned_in) {}

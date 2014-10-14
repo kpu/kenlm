@@ -3,7 +3,7 @@
 
 #include "lm/builder/ngram.hh"
 #include "lm/builder/ngram_stream.hh"
-#include "lm/builder/header_info.hh"
+#include "lm/builder/output.hh"
 #include "util/file.hh"
 #include "util/mmap.hh"
 #include "util/string_piece.hh"
@@ -86,17 +86,16 @@ template <class V> class Print {
     std::ostream &to_;
 };
 
-class PrintARPA {
+class PrintARPA : public OutputHook {
   public:
-    // header_info may be NULL to disable the header.
-    // Takes ownership of out_fd upon Run().
-    explicit PrintARPA(const VocabReconstitute &vocab, const HeaderInfo &header_info, bool verbose_header, int out_fd);
+    explicit PrintARPA(int fd, bool verbose_header)
+      : OutputHook(PROB_SEQUENTIAL_HOOK), out_fd_(fd), verbose_header_(verbose_header) {}
 
     void Run(const util::stream::ChainPositions &positions);
 
   private:
-    const VocabReconstitute &vocab_;
-    int out_fd_;
+    util::scoped_fd out_fd_;
+    bool verbose_header_;
 };
 
 }} // namespaces

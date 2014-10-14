@@ -5,7 +5,7 @@
 #include "lm/builder/hash_gamma.hh"
 #include "lm/builder/initial_probabilities.hh"
 #include "lm/builder/interpolate.hh"
-#include "lm/builder/print.hh"
+#include "lm/builder/output.hh"
 #include "lm/builder/sort.hh"
 
 #include "lm/sizes.hh"
@@ -36,7 +36,7 @@ void PrintStatistics(const std::vector<uint64_t> &counts, const std::vector<uint
 
 class Master {
   public:
-    explicit Master(const PipelineConfig &config) 
+    explicit Master(PipelineConfig &config) 
       : config_(config), chains_(config.order), files_(config.order) {
       config_.minimum_block = std::max(NGram::TotalSize(config_.order), config_.minimum_block);
     }
@@ -200,7 +200,7 @@ class Master {
       std::cerr << std::endl;
     }
 
-    PipelineConfig config_;
+    PipelineConfig &config_;
 
     util::stream::Chains chains_;
     // Often only unigrams, but sometimes all orders.  
@@ -287,7 +287,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
 
 } // namespace
 
-void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
+void Pipeline(PipelineConfig &config, int text_file, Output &output) {
   // Some fail-fast sanity checks.
   if (config.sort.buffer_size * 4 > config.TotalMemory()) {
     config.sort.buffer_size = config.TotalMemory() / 4;
@@ -310,6 +310,7 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
     util::scoped_fd vocab_file(config.vocab_file.empty() ? 
         util::MakeTemp(config.TempPrefix()) : 
         util::CreateOrThrow(config.vocab_file.c_str()));
+    output.SetVocabFD(vocab_file.get());
     uint64_t token_count;
     std::string text_file_name;
     CountText(text_file, vocab_file.get(), master, token_count, text_file_name);
@@ -327,10 +328,10 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
     }
 
     std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
-    VocabReconstitute vocab(vocab_file.get());
-    UTIL_THROW_IF(vocab.Size() != counts[0], util::Exception, "Vocab words don't match up.  Is there a null byte in the input?");
-    HeaderInfo header_info(text_file_name, token_count, counts_pruned);
-    master >> PrintARPA(vocab, header_info, config.verbose_header, out_arpa) >> util::stream::kRecycle;
+
+    output.SetHeader(HeaderInfo(text_file_name, token_count, counts_pruned));
+    output.Apply(PROB_SEQUENTIAL_HOOK, master.MutableChains());
+    master >> util::stream::kRecycle;
     master.MutableChains().Wait(true);
   } catch (const util::Exception &e) {
     std::cerr << e.what() << std::endl;
