@@ -242,7 +242,7 @@ rule install-bin-libs ( deps * ) {
   install prefix-lib : $(deps) : <location>$(LIBDIR) <install-dependencies>on <install-type>LIB <link>shared:<dll-path>$(LIBDIR) ;
 }
 rule install-headers ( name : list * : source-root ? ) {
-  local includedir = [ option.get "includedir" : $(prefix)/include ] ;
+  local includedir = [ option.get "includedir" : $(PREFIX)/include ] ;
   source-root ?= "." ;
   install $(name) : $(list) : <location>$(includedir) <install-source-root>$(source-root) ;
 }
