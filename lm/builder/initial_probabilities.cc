@@ -51,15 +51,14 @@ class PruneNGramStream {
     PruneNGramStream &operator++() {
       assert(block_);
       
-      if (current_.Order() > 1) {
-        if(currentCount_ > 0) {
-          if(dest_.Base() < current_.Base()) {
-            memcpy(dest_.Base(), current_.Base(), current_.TotalSize());
-          }
-          dest_.NextInMemory();
+      WordIndex w = *current_.begin();
+      if(current_.Order() == 1 && (w == kBOS || w == kEOS || w == kUNK))
+        dest_.NextInMemory();
+      else if(currentCount_ > 0) {
+        if(dest_.Base() < current_.Base()) {
+          memcpy(dest_.Base(), current_.Base(), current_.TotalSize());
         }
-      } else {
-        dest_.NextInMemory();          
+        dest_.NextInMemory();
       }
       
       current_.NextInMemory();
@@ -78,7 +77,7 @@ class PruneNGramStream {
       
       return *this;
     }
-
+    
   private:
     void StartBlock() {
       for (; ; ++block_) {
@@ -270,7 +269,7 @@ void InitialProbabilities(
     gamma_out[i] >> AddRight(discounts[i], second, prune_thresholds[i] > 0);
 
     primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i]);
-
+    
     // Don't bother with the OnlyGamma thread for something to discard.
     if (i) gamma_out[i] >> OnlyGamma(prune_thresholds[i] > 0);
   }

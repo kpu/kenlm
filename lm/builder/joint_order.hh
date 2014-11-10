@@ -30,8 +30,11 @@ template <class Callback, class Compare> void JointOrder(const util::stream::Cha
       assert(current > 0);
       --current;
       callback.Exit(current, *streams[current]);
+      
       if (++streams[current]) break;
+      
       UTIL_THROW_IF(order != current + 1, FormatLoadException, "Detected n-gram without matching suffix");
+      
       order = current;
       if (!order) return;
     }

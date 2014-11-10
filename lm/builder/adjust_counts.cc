@@ -192,8 +192,17 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
   if (order == 1) {
 
     // Only unigrams.  Just collect stats.  
-    for (NGramStream full(positions[0]); full; ++full) 
-      stats.AddFull(full->Count());
+    for (NGramStream full(positions[0]); full; ++full) {
+      
+      if(order > 1 || (*full->begin() != kBOS && *full->begin() != kEOS && *full->begin() != kUNK)) {
+        uint64_t realCount = full->Count();
+        if(prune_thresholds_[0] && realCount <= prune_thresholds_[0])
+          full->Mark();
+      }
+      
+      stats.AddFull(full->UnmarkedCount(), full->IsMarked());
+      //stats.AddFull(full->Count());
+    }
 
     stats.CalculateDiscounts(discount_config_);
     return;
@@ -225,10 +234,10 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
     // Output all the valid ones that changed.
     for (; lower_valid >= &streams[same]; --lower_valid) {
       
-      // mjd: review this!
       uint64_t order = (*lower_valid)->Order();
       uint64_t realCount = lower_counts[order - 1];
-      if(order > 1 && prune_thresholds_[order - 1] && realCount <= prune_thresholds_[order - 1])
+      
+      if(prune_thresholds_[order - 1] && realCount <= prune_thresholds_[order - 1])
         (*lower_valid)->Mark();
       
       stats.Add(lower_valid - streams.begin(), (*lower_valid)->UnmarkedCount(), (*lower_valid)->IsMarked());
@@ -259,7 +268,6 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
       NGramStream &to = *++lower_valid;
       std::copy(bos, full_end, to->begin());
 
-      // mjd: what is this doing?
       to->Count() = full->UnmarkedCount(); 
     } else {
       stats.AddFull(full->UnmarkedCount(), full->IsMarked()); 
