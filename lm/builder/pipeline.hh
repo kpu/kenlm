@@ -37,6 +37,7 @@ struct PipelineConfig {
   // n-gram count thresholds for pruning. 0 values means no pruning for
   // corresponding n-gram order
   std::vector<uint64_t> prune_thresholds; //mjd
+  bool prune_vocab;
 
   // What to do with discount failures.
   DiscountConfig discount;

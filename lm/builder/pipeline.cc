@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 #include <vector>
 
 namespace lm { namespace builder {
@@ -236,7 +237,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
 }
 
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<uint64_t> &counts_pruned, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary,
-                          util::FixedArray<util::stream::FileBuffer> &gammas, const std::vector<uint64_t> &prune_thresholds) {
+                          util::FixedArray<util::stream::FileBuffer> &gammas, const std::vector<uint64_t> &prune_thresholds, bool prune_vocab) {
   const PipelineConfig &config = master.Config();
   util::stream::Chains second(config.order);
 
@@ -250,7 +251,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
   }
 
   util::stream::Chains gamma_chains(config.order);
-  InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second, gamma_chains, prune_thresholds);
+  InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second, gamma_chains, prune_thresholds, prune_vocab);
   // Don't care about gamma for 0.  
   gamma_chains[0] >> util::stream::kRecycle;
   gammas.Init(config.order - 1);
@@ -272,7 +273,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
     util::stream::ChainConfig read_backoffs(config.read_backoffs);
 
     // Add 1 because here we are skipping unigrams
-    if(config.prune_thresholds[i + 1] > 0)
+    if(config.prune_vocab || config.prune_thresholds[i + 1] > 0)
         read_backoffs.entry_size = sizeof(HashGamma);
     else
         read_backoffs.entry_size = sizeof(float);
@@ -280,7 +281,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
     gamma_chains.push_back(read_backoffs);
     gamma_chains.back() >> gammas[i].Source();
   }
-  master >> Interpolate(std::max(master.Config().vocab_size_for_unk, counts[0] - 1 /* <s> is not included */), util::stream::ChainPositions(gamma_chains), config.prune_thresholds, config.output_q);
+  master >> Interpolate(std::max(master.Config().vocab_size_for_unk, counts[0] - 1 /* <s> is not included */), util::stream::ChainPositions(gamma_chains), config.prune_thresholds, config.prune_vocab, config.output_q);
   gamma_chains >> util::stream::kRecycle;
   master.BufferFinal(counts);
 }
@@ -303,6 +304,7 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
 
   UTIL_TIMER("(%w s) Total wall time elapsed\n");
 
+  config.prune_vocab = true;
   Master master(config);
   // master's destructor will wait for chains.  But they might be deadlocked if
   // this thread dies because e.g. it ran out of memory.
@@ -314,15 +316,41 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
     std::string text_file_name;
     CountText(text_file, vocab_file.get(), master, token_count, text_file_name);
 
+    // for compact size
+    std::set<std::string> keepSet;
+    std::string line;
+    std::ifstream keepFile("keep.txt");
+    while(std::getline(keepFile, line)) {
+      std::cerr << "Adding: " << line << std::endl;
+      keepSet.insert(line);
+    }
+    
+    std::vector<bool> prune_words;
+    {
+      // TODO: create this in corpus_count!!!
+      VocabReconstitute vocab(vocab_file.get());
+      prune_words.resize(vocab.Size(), true);
+      prune_words[kUNK] = false;
+      prune_words[kBOS] = false;
+      prune_words[kEOS] = false;
+      for(size_t i = 3; i < vocab.Size(); ++i)
+        if(keepSet.count(vocab.Lookup(i))) {
+          std::cerr << "Keeping: " << vocab.Lookup(i) << " " << i << std::endl;
+          prune_words[i] = false;
+        }
+    }
+    std::cerr << "Config: " << config.prune_vocab << std::endl;
+    std::cerr << "Config: " << master.Config().prune_vocab << std::endl;
+    
     std::vector<uint64_t> counts;
     std::vector<uint64_t> counts_pruned;
     std::vector<Discount> discounts;
-    master >> AdjustCounts(config.prune_thresholds, counts, counts_pruned, config.discount, discounts);
+    master >> AdjustCounts(config.prune_thresholds, counts, counts_pruned, prune_words, config.discount, discounts);
 
     {
       util::FixedArray<util::stream::FileBuffer> gammas;
       Sorts<SuffixOrder> primary;
-      InitialProbabilities(counts, counts_pruned, discounts, master, primary, gammas, config.prune_thresholds);
+      InitialProbabilities(counts, counts_pruned, discounts, master, primary, gammas, config.prune_thresholds, config.prune_vocab);
       InterpolateProbabilities(counts_pruned, master, primary, gammas);
     }
 

@@ -108,9 +108,10 @@ class StatCollector {
 // order but we don't care because the data is going to be sorted again.
 class CollapseStream {
   public:
-    CollapseStream(const util::stream::ChainPosition &position, uint64_t prune_threshold) :
+    CollapseStream(const util::stream::ChainPosition &position, uint64_t prune_threshold, const std::vector<bool>& prune_words) :
       current_(NULL, NGram::OrderFromSize(position.GetChain().EntrySize())),
       prune_threshold_(prune_threshold),
+      prune_words_(prune_words),
       block_(position) { 
       StartBlock();
     }
@@ -132,6 +133,15 @@ class CollapseStream {
           current_.Mark(); 
         }
         
+        if(!prune_words_.empty()) {
+          for(WordIndex* i = current_.begin(); i != current_.end(); i++) {
+            if(prune_words_[*i]) {
+              current_.Mark(); 
+              break;
+            }
+          }
+        }
+        
       }
     
       current_.NextInMemory();
@@ -145,6 +155,15 @@ class CollapseStream {
       // Mark highest order n-grams for later pruning
       if(current_.Count() <= prune_threshold_) {
         current_.Mark(); 
+      }
+
+      if(!prune_words_.empty()) {
+        for(WordIndex* i = current_.begin(); i != current_.end(); i++) {
+          if(prune_words_[*i]) {
+            current_.Mark(); 
+            break;
+          }
+        }
       }
       
       return *this;
@@ -164,6 +183,15 @@ class CollapseStream {
       if(current_.Count() <= prune_threshold_) {
         current_.Mark(); 
       }
+
+      if(!prune_words_.empty()) {
+        for(WordIndex* i = current_.begin(); i != current_.end(); i++) {
+          if(prune_words_[*i]) {
+            current_.Mark(); 
+            break;
+          }
+        }
+      }
       
     }
 
@@ -179,6 +207,7 @@ class CollapseStream {
     // Goes backwards in the block
     uint8_t *copy_from_;
     uint64_t prune_threshold_;
+    const std::vector<bool>& prune_words_;
     util::stream::Link block_;
 };
 
@@ -194,14 +223,16 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
     // Only unigrams.  Just collect stats.  
     for (NGramStream full(positions[0]); full; ++full) {
       
-      if(order > 1 || (*full->begin() != kBOS && *full->begin() != kEOS && *full->begin() != kUNK)) {
+      if(*full->begin() != kBOS && *full->begin() != kEOS && *full->begin() != kUNK) {
         uint64_t realCount = full->Count();
         if(prune_thresholds_[0] && realCount <= prune_thresholds_[0])
+          full->Mark();
+      
+        if(!prune_words_.empty() && prune_words_[*full->begin()])
           full->Mark();
       }
       
       stats.AddFull(full->UnmarkedCount(), full->IsMarked());
-      //stats.AddFull(full->Count());
     }
 
     stats.CalculateDiscounts(discount_config_);
@@ -211,7 +242,7 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
   NGramStreams streams;
   streams.Init(positions, positions.size() - 1);
   
-  CollapseStream full(positions[positions.size() - 1], prune_thresholds_.back());
+  CollapseStream full(positions[positions.size() - 1], prune_thresholds_.back(), prune_words_);
 
   // Initialization: <unk> has count 0 and so does <s>.
   NGramStream *lower_valid = streams.begin();
@@ -246,7 +277,16 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
       
       if(!special && prune_thresholds_[order - 1] && realCount <= prune_thresholds_[order - 1])
         (*lower_valid)->Mark();
-      
+        
+      if(!prune_words_.empty()) {
+        for(WordIndex* i = (*lower_valid)->begin(); i != (*lower_valid)->end(); i++) {
+          if(prune_words_[*i]) {
+            (*lower_valid)->Mark(); 
+            break;
+          }
+        }
+      }
+
       stats.Add(lower_valid - streams.begin(), (*lower_valid)->UnmarkedCount(), (*lower_valid)->IsMarked());
       ++*lower_valid;
     }
@@ -286,6 +326,16 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
   for (NGramStream *s = streams.begin(); s <= lower_valid; ++s) {
     if((*s)->Count() <= prune_thresholds_[(*s)->Order() - 1])
       (*s)->Mark();
+      
+    if(!prune_words_.empty()) {
+      for(WordIndex* i = (*s)->begin(); i != (*s)->end(); i++) {
+        if(prune_words_[*i]) {
+          (*s)->Mark(); 
+          break;
+        }
+      }
+    }
+      
     stats.Add(s - streams.begin(), (*s)->UnmarkedCount(), (*s)->IsMarked());
     ++*s;
   }
