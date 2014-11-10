@@ -237,7 +237,14 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
       uint64_t order = (*lower_valid)->Order();
       uint64_t realCount = lower_counts[order - 1];
       
-      if(prune_thresholds_[order - 1] && realCount <= prune_thresholds_[order - 1])
+      bool special = false;
+      if(order == 1) {
+        WordIndex w = *(*lower_valid)->begin();
+        if(w == kBOS || w == kEOS || w == kUNK)
+          special = true;
+      }
+      
+      if(!special && prune_thresholds_[order - 1] && realCount <= prune_thresholds_[order - 1])
         (*lower_valid)->Mark();
       
       stats.Add(lower_valid - streams.begin(), (*lower_valid)->UnmarkedCount(), (*lower_valid)->IsMarked());
