@@ -267,13 +267,9 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
       
       uint64_t lower_order = (*lower_valid)->Order();
       uint64_t lower_count = lower_counts[lower_order - 1];
-      if(lower_order > 1 && lower_count <= prune_thresholds_[lower_order - 1])
+      if(lower_count <= prune_thresholds_[lower_order - 1] && (lower_order > 1 || (lower_order == 1 && *(*lower_valid)->begin() > 2)))
         (*lower_valid)->Mark();
       
-      // Do not prune unigrams <unk> <s> </s>
-      if(lower_order == 1 && *(*lower_valid)->begin() > 2 && lower_count <= prune_thresholds_[0])
-        (*lower_valid)->Mark();
-        
       if(!prune_words_.empty()) {
         for(WordIndex* i = (*lower_valid)->begin(); i != (*lower_valid)->end(); i++) {
           if(prune_words_[*i]) {

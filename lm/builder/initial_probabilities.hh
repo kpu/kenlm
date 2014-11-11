@@ -34,7 +34,7 @@ void InitialProbabilities(
     util::stream::Chains &second_in,
     util::stream::Chains &gamma_out,
     const std::vector<uint64_t> &prune_thresholds,
-    bool vocabPruning);
+    bool prune_vocab);
 
 } // namespace builder
 } // namespace lm

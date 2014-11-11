@@ -51,8 +51,7 @@ class PruneNGramStream {
     PruneNGramStream &operator++() {
       assert(block_);
       
-      WordIndex w = *current_.begin();
-      if(current_.Order() == 1 && (w == kBOS || w == kEOS || w == kUNK))
+      if(current_.Order() == 1 && *current_.begin() <= 2)
         dest_.NextInMemory();
       else if(currentCount_ > 0) {
         if(dest_.Base() < current_.Base()) {

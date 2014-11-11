@@ -96,7 +96,7 @@ template <class Output> class Callback {
 
       float out_backoff;
       if (order_minus_1 < backoffs_.size() && *(gram.end() - 1) != kUNK && *(gram.end() - 1) != kEOS) {
-        if(prune_vocab_ || prune_thresholds_[order_minus_1 + 1] > 0) {
+        if(prune_vocab_ || prune_thresholds_[order_minus_1] > 0) {
           //Compute hash value for current context
           uint64_t current_hash = util::MurmurHashNative(gram.begin(), gram.Order() * sizeof(WordIndex));
           
