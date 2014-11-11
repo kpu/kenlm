@@ -304,7 +304,6 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
 
   UTIL_TIMER("(%w s) Total wall time elapsed\n");
 
-  config.prune_vocab = true;
   Master master(config);
   // master's destructor will wait for chains.  But they might be deadlocked if
   // this thread dies because e.g. it ran out of memory.
@@ -315,30 +314,23 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
     uint64_t token_count;
     std::string text_file_name;
     CountText(text_file, vocab_file.get(), master, token_count, text_file_name);
-
-    
-    // for compact size
-    std::set<std::string> keepSet;
-    std::string line;
-    std::ifstream keepFile("keep.txt");
-    while(std::getline(keepFile, line)) {
-      std::cerr << "Adding: " << line << std::endl;
-      keepSet.insert(line);
-    }
     
     std::vector<bool> prune_words;
-    {
-      // TODO: create this in corpus_count!!!
+    if(config.prune_vocab) {
+      std::set<std::string> keep_set;
+      std::string vocab_item;
+      std::ifstream keep_file(config.prune_vocab_file.c_str());
+      while(keep_file >> vocab_item)
+        keep_set.insert(vocab_item);
+      
       VocabReconstitute vocab(vocab_file.get());
       prune_words.resize(vocab.Size(), true);
       prune_words[kUNK] = false;
       prune_words[kBOS] = false;
       prune_words[kEOS] = false;
       for(size_t i = 3; i < vocab.Size(); ++i)
-        if(keepSet.count(vocab.Lookup(i))) {
-          std::cerr << "Keeping: " << vocab.Lookup(i) << " " << i << std::endl;
+        if(keep_set.count(vocab.Lookup(i)))
           prune_words[i] = false;
-        }
     }
     
     std::vector<uint64_t> counts;

@@ -38,6 +38,7 @@ struct PipelineConfig {
   // corresponding n-gram order
   std::vector<uint64_t> prune_thresholds; //mjd
   bool prune_vocab;
+  std::string prune_vocab_file;
 
   // What to do with discount failures.
   DiscountConfig discount;

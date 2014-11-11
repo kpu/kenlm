@@ -223,9 +223,9 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
     // Only unigrams.  Just collect stats.  
     for (NGramStream full(positions[0]); full; ++full) {
       
-      if(*full->begin() != kBOS && *full->begin() != kEOS && *full->begin() != kUNK) {
-        uint64_t realCount = full->Count();
-        if(prune_thresholds_[0] && realCount <= prune_thresholds_[0])
+      // Do not prune <s> </s> <unk>
+      if(*full->begin() > 2) {
+        if(full->Count() <= prune_thresholds_[0])
           full->Mark();
       
         if(!prune_words_.empty() && prune_words_[*full->begin()])
@@ -267,17 +267,11 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
       
       uint64_t lower_order = (*lower_valid)->Order();
       uint64_t lower_count = lower_counts[lower_order - 1];
-      if(lower_order > 1 && prune_thresholds_[lower_order - 1] && lower_count <= prune_thresholds_[lower_order - 1])
+      if(lower_order > 1 && lower_count <= prune_thresholds_[lower_order - 1])
         (*lower_valid)->Mark();
       
-      bool special = false;
-      if(lower_order == 1) {
-        WordIndex w = *(*lower_valid)->begin();
-        if(w == kBOS || w == kEOS || w == kUNK)
-          special = true;
-      }
-      
-      if(!special && prune_thresholds_[lower_order - 1] && lower_count <= prune_thresholds_[lower_order - 1])
+      // Do not prune unigrams <unk> <s> </s>
+      if(lower_order == 1 && *(*lower_valid)->begin() > 2 && lower_count <= prune_thresholds_[0])
         (*lower_valid)->Mark();
         
       if(!prune_words_.empty()) {

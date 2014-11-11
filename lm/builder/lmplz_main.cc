@@ -115,6 +115,7 @@ int main(int argc, char *argv[]) {
       ("arpa", po::value<std::string>(&arpa), "Write ARPA to a file instead of stdout")
       ("collapse_values", po::bool_switch(&pipeline.output_q), "Collapse probability and backoff into a single value, q that yields the same sentence-level probabilities.  See http://kheafield.com/professional/edinburgh/rest_paper.pdf for more details, including a proof.")
       ("prune", po::value<std::vector<std::string> >(&pruning)->multitoken(), "Prune n-grams with count less than or equal to the given threshold.  Specify one value for each order i.e. 0 0 1 to prune singleton trigrams and above.  The sequence of values must be non-decreasing and the last value applies to any remaining orders. Default is to not prune, which is equivalent to --prune 0.")
+      ("limit_vocab_file", po::value<std::string>(&pipeline.prune_vocab_file)->default_value(""), "Read allowed vocabulary separated by whitespace. N-grams that contain vocabulary items not in this list will be pruned. Can be combined with --prune arg")
       ("discount_fallback", po::value<std::vector<std::string> >(&discount_fallback)->multitoken()->implicit_value(discount_fallback_default, "0.5 1 1.5"), "The closed-form estimate for Kneser-Ney discounts does not work without singletons or doubletons.  It can also fail if these values are out of range.  This option falls back to user-specified discounts when the closed-form estimate fails.  Note that this option is generally a bad idea: you should deduplicate your corpus instead.  However, class-based models need custom discounts because they lack singleton unigrams.  Provide up to three discounts (for adjusted counts 1, 2, and 3+), which will be applied to all orders where the closed-form estimates fail.");
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, options), vm);
@@ -180,6 +181,13 @@ int main(int argc, char *argv[]) {
 
     // parse pruning thresholds.  These depend on order, so it is not done as a notifier.
     pipeline.prune_thresholds = ParsePruning(pruning, pipeline.order);
+
+    if (!vm["limit_vocab_file"].as<std::string>().empty()) {
+      pipeline.prune_vocab = true;
+    }
+    else {
+      pipeline.prune_vocab = false;
+    }
     
     util::NormalizeTempPrefix(pipeline.sort.temp_prefix);
 
