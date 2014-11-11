@@ -316,6 +316,7 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
     std::string text_file_name;
     CountText(text_file, vocab_file.get(), master, token_count, text_file_name);
 
+    
     // for compact size
     std::set<std::string> keepSet;
     std::string line;
@@ -339,8 +340,6 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
           prune_words[i] = false;
         }
     }
-    std::cerr << "Config: " << config.prune_vocab << std::endl;
-    std::cerr << "Config: " << master.Config().prune_vocab << std::endl;
     
     std::vector<uint64_t> counts;
     std::vector<uint64_t> counts_pruned;

@@ -4,6 +4,7 @@
 #include "lm/builder/ngram.hh"
 #include "lm/builder/ngram_stream.hh"
 #include "lm/builder/header_info.hh"
+#include "util/fake_ofstream.hh"
 #include "util/file.hh"
 #include "util/mmap.hh"
 #include "util/string_piece.hh"
@@ -43,47 +44,59 @@ class VocabReconstitute {
 };
 
 // Not defined, only specialized.  
-template <class T> void PrintPayload(std::ostream &to, const Payload &payload);
-template <> inline void PrintPayload<uint64_t>(std::ostream &to, const Payload &payload) {
-  to << payload.count;
+template <class T> void PrintPayload(util::FakeOFStream &to, const Payload &payload);
+template <> inline void PrintPayload<uint64_t>(util::FakeOFStream &to, const Payload &payload) {
+  // TODO slow
+  to << boost::lexical_cast<std::string>(payload.count);
 }
-template <> inline void PrintPayload<Uninterpolated>(std::ostream &to, const Payload &payload) {
+template <> inline void PrintPayload<Uninterpolated>(util::FakeOFStream &to, const Payload &payload) {
   to << log10(payload.uninterp.prob) << ' ' << log10(payload.uninterp.gamma);
 }
-template <> inline void PrintPayload<ProbBackoff>(std::ostream &to, const Payload &payload) {
+template <> inline void PrintPayload<ProbBackoff>(util::FakeOFStream &to, const Payload &payload) {
   to << payload.complete.prob << ' ' << payload.complete.backoff;
 }
 
 // template parameter is the type stored.  
 template <class V> class Print {
   public:
-    explicit Print(const VocabReconstitute &vocab, std::ostream &to) : vocab_(vocab), to_(to) {}
+    static void DumpSeparateFiles(const VocabReconstitute &vocab, const std::string &file_base, util::stream::Chains &chains) {
+      for (unsigned int i = 0; i < chains.size(); ++i) {
+        std::string file(file_base + boost::lexical_cast<std::string>(i));
+        chains[i] >> Print(vocab, util::CreateOrThrow(file.c_str()));
+      }
+    }
+
+    explicit Print(const VocabReconstitute &vocab, int fd) : vocab_(vocab), to_(fd) {}
 
     void Run(const util::stream::ChainPositions &chains) {
+      util::scoped_fd fd(to_);
+      util::FakeOFStream out(to_);
       NGramStreams streams(chains);
       for (NGramStream *s = streams.begin(); s != streams.end(); ++s) {
-        DumpStream(*s);
+        DumpStream(*s, out);
       }
     }
 
     void Run(const util::stream::ChainPosition &position) {
+      util::scoped_fd fd(to_);
+      util::FakeOFStream out(to_);
       NGramStream stream(position);
-      DumpStream(stream);
+      DumpStream(stream, out);
     }
 
   private:
-    void DumpStream(NGramStream &stream) {
+    void DumpStream(NGramStream &stream, util::FakeOFStream &to) {
       for (; stream; ++stream) {
-        PrintPayload<V>(to_, stream->Value());
+        PrintPayload<V>(to, stream->Value());
         for (const WordIndex *w = stream->begin(); w != stream->end(); ++w) {
-          to_ << ' ' << vocab_.Lookup(*w) << '=' << *w;
+          to << ' ' << vocab_.Lookup(*w) << '=' << *w;
         }
-        to_ << '\n';
+        to << '\n';
       }
     }
 
     const VocabReconstitute &vocab_;
-    std::ostream &to_;
+    int to_;
 };
 
 class PrintARPA {

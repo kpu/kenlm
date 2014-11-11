@@ -265,17 +265,19 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
     // Output all the valid ones that changed.
     for (; lower_valid >= &streams[same]; --lower_valid) {
       
-      uint64_t order = (*lower_valid)->Order();
-      uint64_t realCount = lower_counts[order - 1];
+      uint64_t lower_order = (*lower_valid)->Order();
+      uint64_t lower_count = lower_counts[lower_order - 1];
+      if(lower_order > 1 && prune_thresholds_[lower_order - 1] && lower_count <= prune_thresholds_[lower_order - 1])
+        (*lower_valid)->Mark();
       
       bool special = false;
-      if(order == 1) {
+      if(lower_order == 1) {
         WordIndex w = *(*lower_valid)->begin();
         if(w == kBOS || w == kEOS || w == kUNK)
           special = true;
       }
       
-      if(!special && prune_thresholds_[order - 1] && realCount <= prune_thresholds_[order - 1])
+      if(!special && prune_thresholds_[lower_order - 1] && lower_count <= prune_thresholds_[lower_order - 1])
         (*lower_valid)->Mark();
         
       if(!prune_words_.empty()) {
@@ -322,9 +324,11 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
     assert(lower_valid >= &streams[0]);
   }
 
+  // mjd: what is this actually doing?
   // Output everything valid.
   for (NGramStream *s = streams.begin(); s <= lower_valid; ++s) {
-    if((*s)->Count() <= prune_thresholds_[(*s)->Order() - 1])
+    uint64_t lower_count = lower_counts[(*s)->Order() - 1];
+    if(lower_count <= prune_thresholds_[(*s)->Order() - 1])
       (*s)->Mark();
       
     if(!prune_words_.empty()) {
@@ -336,7 +340,7 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
       }
     }
       
-    stats.Add(s - streams.begin(), (*s)->UnmarkedCount(), (*s)->IsMarked());
+    stats.Add(s - streams.begin(), lower_count, (*s)->IsMarked());
     ++*s;
   }
   // Poison everyone!  Except the N-grams which were already poisoned by the input.
