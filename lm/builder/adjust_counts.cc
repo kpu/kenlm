@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <limits>
 
 namespace lm { namespace builder {
 
@@ -257,6 +258,8 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
   // This keeps track of actual counts for lower orders.  It is not output
   // (only adjusted counts are), but used to determine pruning.
   std::vector<uint64_t> actual_counts(positions.size(), 0);
+  // Something of a hack: don't prune <s>.
+  actual_counts[0] = std::numeric_limits<uint64_t>::max();
   
   // Iterate over full (the stream of the highest order ngrams)
   for (; full; ++full) {
@@ -266,8 +269,7 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
     // STEP 1: Output all the n-grams that changed.
     for (; lower_valid >= &streams[same]; --lower_valid) {
       uint64_t order_minus_1 = lower_valid - streams_begin;
-      if(actual_counts[order_minus_1] <= prune_thresholds_[order_minus_1]
-         && (order_minus_1 || (order_minus_1 == 0 && *(*lower_valid)->begin() > 2)))
+      if(actual_counts[order_minus_1] <= prune_thresholds_[order_minus_1])
         (*lower_valid)->Mark();
       
       if(!prune_words_.empty()) {
