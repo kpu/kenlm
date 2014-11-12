@@ -208,7 +208,7 @@ class Master {
     util::FixedArray<util::stream::FileBuffer> files_;
 };
 
-void CountText(int text_file /* input */, int vocab_file /* output */, Master &master, uint64_t &token_count, std::string &text_file_name) {
+void CountText(int text_file /* input */, int vocab_file /* output */, Master &master, uint64_t &token_count, std::string &text_file_name, std::vector<bool> &prune_words) {
   const PipelineConfig &config = master.Config();
   std::cerr << "=== 1/5 Counting and sorting n-grams ===" << std::endl;
 
@@ -226,7 +226,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
   WordIndex type_count = config.vocab_estimate;
   util::FilePiece text(text_file, NULL, &std::cerr);
   text_file_name = text.FileName();
-  CorpusCount counter(text, vocab_file, token_count, type_count, chain.BlockSize() / chain.EntrySize(), config.disallowed_symbol_action);
+  CorpusCount counter(text, vocab_file, token_count, type_count, prune_words, config.prune_vocab_file, chain.BlockSize() / chain.EntrySize(), config.disallowed_symbol_action);
   chain >> boost::ref(counter);
 
   util::stream::Sort<SuffixOrder, AddCombiner> sorter(chain, config.sort, SuffixOrder(config.order), AddCombiner());
@@ -312,25 +312,9 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
         util::CreateOrThrow(config.vocab_file.c_str()));
     uint64_t token_count;
     std::string text_file_name;
-    CountText(text_file, vocab_file.get(), master, token_count, text_file_name);
     
     std::vector<bool> prune_words;
-    if(config.prune_vocab) {
-      std::set<std::string> keep_set;
-      std::string vocab_item;
-      std::ifstream keep_file(config.prune_vocab_file.c_str());
-      while(keep_file >> vocab_item)
-        keep_set.insert(vocab_item);
-      
-      VocabReconstitute vocab(vocab_file.get());
-      prune_words.resize(vocab.Size(), true);
-      prune_words[kUNK] = false;
-      prune_words[kBOS] = false;
-      prune_words[kEOS] = false;
-      for(size_t i = 3; i < vocab.Size(); ++i)
-        if(keep_set.count(vocab.Lookup(i)))
-          prune_words[i] = false;
-    }
+    CountText(text_file, vocab_file.get(), master, token_count, text_file_name, prune_words);
     
     std::vector<uint64_t> counts;
     std::vector<uint64_t> counts_pruned;
