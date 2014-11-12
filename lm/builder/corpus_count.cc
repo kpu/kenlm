@@ -234,18 +234,15 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
       try {
         while (true) {
           StringPiece line(prune_vocab_file.ReadLine());
-          for (util::TokenIter<util::BoolCharacter, true> w(line, delimiters); w; ++w) {
-            WordIndex i = vocab.Index(*w);
-            if (i > 2)
-              prune_words_[i] = false;
-          }
+          for (util::TokenIter<util::BoolCharacter, true> w(line, delimiters); w; ++w)
+            prune_words_[vocab.Index(*w)] = false;
         }
       } catch (const util::EndOfFileException &e) {}
       
       // Never prune <unk>, <s>, </s>
-      prune_words_[0] = false;
-      prune_words_[1] = false;
-      prune_words_[2] = false;
+      prune_words_[kUNK] = false;
+      prune_words_[kBOS] = false;
+      prune_words_[kEOS] = false;
       
     } catch (const util::Exception &e) {
       std::cerr << e.what() << std::endl;
