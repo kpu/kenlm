@@ -51,15 +51,13 @@ class PruneNGramStream {
     PruneNGramStream &operator++() {
       assert(block_);
       
-      if (current_.Order() > 1) {
-        if(currentCount_ > 0) {
-          if(dest_.Base() < current_.Base()) {
-            memcpy(dest_.Base(), current_.Base(), current_.TotalSize());
-          }
-          dest_.NextInMemory();
+      if(current_.Order() == 1 && *current_.begin() <= 2)
+        dest_.NextInMemory();
+      else if(currentCount_ > 0) {
+        if(dest_.Base() < current_.Base()) {
+          memcpy(dest_.Base(), current_.Base(), current_.TotalSize());
         }
-      } else {
-        dest_.NextInMemory();          
+        dest_.NextInMemory();
       }
       
       current_.NextInMemory();
@@ -78,7 +76,7 @@ class PruneNGramStream {
       
       return *this;
     }
-
+    
   private:
     void StartBlock() {
       for (; ; ++block_) {
@@ -256,10 +254,11 @@ void InitialProbabilities(
     util::stream::Chains &primary,
     util::stream::Chains &second_in,
     util::stream::Chains &gamma_out,
-    const std::vector<uint64_t> &prune_thresholds) {
+    const std::vector<uint64_t> &prune_thresholds,
+    bool prune_vocab) {
   for (size_t i = 0; i < primary.size(); ++i) {
     util::stream::ChainConfig gamma_config = config.adder_out;
-    if(prune_thresholds[i] > 0)
+    if(prune_vocab || prune_thresholds[i] > 0)
       gamma_config.entry_size = sizeof(HashBufferEntry);
     else
       gamma_config.entry_size = sizeof(BufferEntry);
@@ -267,12 +266,12 @@ void InitialProbabilities(
     util::stream::ChainPosition second(second_in[i].Add());
     second_in[i] >> util::stream::kRecycle;
     gamma_out.push_back(gamma_config);
-    gamma_out[i] >> AddRight(discounts[i], second, prune_thresholds[i] > 0);
+    gamma_out[i] >> AddRight(discounts[i], second, prune_vocab || prune_thresholds[i] > 0);
 
     primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i]);
-
+    
     // Don't bother with the OnlyGamma thread for something to discard.
-    if (i) gamma_out[i] >> OnlyGamma(prune_thresholds[i] > 0);
+    if (i) gamma_out[i] >> OnlyGamma(prune_vocab || prune_thresholds[i] > 0);
   }
 }
 

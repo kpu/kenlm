@@ -70,6 +70,8 @@ void PWriteAndRecycle::Run(const ChainPosition &position) {
     offset += link->ValidSize();
     link->SetValidSize(block_size);
   }
+  // Trim file to size.
+  util::ResizeOrThrow(file_, offset);
 }
 
 } // namespace stream
