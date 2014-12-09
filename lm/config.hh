@@ -30,9 +30,10 @@ struct Config {
     return show_progress ? messages : 0;
   }
 
-  // This will be called with every string in the vocabulary.  See
-  // enumerate_vocab.hh for more detail.  Config does not take ownership; you
-  // are still responsible for deleting it (or stack allocating).
+  // This will be called with every string in the vocabulary by the
+  // constructor; it need only exist for the lifetime of the constructor.
+  // See enumerate_vocab.hh for more detail.  Config does not take ownership;
+  // just delete/let it go out of scope after the constructor exits.
   EnumerateVocab *enumerate_vocab;
 
 
