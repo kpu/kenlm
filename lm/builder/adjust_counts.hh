@@ -46,9 +46,11 @@ class AdjustCounts {
         const std::vector<uint64_t> &prune_thresholds,
         std::vector<uint64_t> &counts,
         std::vector<uint64_t> &counts_pruned,
+        const std::vector<bool> &prune_words,
         const DiscountConfig &discount_config,
         std::vector<Discount> &discounts)
-      : prune_thresholds_(prune_thresholds), counts_(counts), counts_pruned_(counts_pruned), discount_config_(discount_config), discounts_(discounts) 
+      : prune_thresholds_(prune_thresholds), counts_(counts), counts_pruned_(counts_pruned),
+        prune_words_(prune_words), discount_config_(discount_config), discounts_(discounts) 
     {}
 
     void Run(const util::stream::ChainPositions &positions);
@@ -57,6 +59,7 @@ class AdjustCounts {
     const std::vector<uint64_t> &prune_thresholds_; 
     std::vector<uint64_t> &counts_;
     std::vector<uint64_t> &counts_pruned_;
+    const std::vector<bool> &prune_words_;
 
     DiscountConfig discount_config_;
     std::vector<Discount> &discounts_;

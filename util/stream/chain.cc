@@ -128,7 +128,7 @@ Link::~Link() {
   if (current_) {
     // Probably an exception unwinding.  
     std::cerr << "Last input should have been poison." << std::endl;
-//    abort();
+    // abort();
   } else {
     if (!poisoned_) {
       // Poison is a block whose memory pointer is NULL.

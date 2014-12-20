@@ -174,8 +174,9 @@ std::size_t CorpusCount::VocabUsage(std::size_t vocab_estimate) {
   return ngram::GrowableVocab<ngram::WriteUniqueWords>::MemUsage(vocab_estimate);
 }
 
-CorpusCount::CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count, WordIndex &type_count, std::size_t entries_per_block, WarningAction disallowed_symbol)
+CorpusCount::CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count, WordIndex &type_count, std::vector<bool> &prune_words, const std::string& prune_vocab_filename, std::size_t entries_per_block, WarningAction disallowed_symbol)
   : from_(from), vocab_write_(vocab_write), token_count_(token_count), type_count_(type_count),
+    prune_words_(prune_words), prune_vocab_filename_(prune_vocab_filename),
     dedupe_mem_size_(Dedupe::Size(entries_per_block, kProbingMultiplier)),
     dedupe_mem_(util::MallocOrThrow(dedupe_mem_size_)),
     disallowed_symbol_action_(disallowed_symbol) {
@@ -223,6 +224,31 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
   } catch (const util::EndOfFileException &e) {}
   token_count_ = count;
   type_count_ = vocab.Size();
+  
+  // Create list of unigrams that are supposed to be pruned
+  if (!prune_vocab_filename_.empty()) {
+    try {
+      util::FilePiece prune_vocab_file(prune_vocab_filename_.c_str());
+      
+      prune_words_.resize(vocab.Size(), true);
+      try {
+        while (true) {
+          StringPiece line(prune_vocab_file.ReadLine());
+          for (util::TokenIter<util::BoolCharacter, true> w(line, delimiters); w; ++w)
+            prune_words_[vocab.Index(*w)] = false;
+        }
+      } catch (const util::EndOfFileException &e) {}
+      
+      // Never prune <unk>, <s>, </s>
+      prune_words_[kUNK] = false;
+      prune_words_[kBOS] = false;
+      prune_words_[kEOS] = false;
+      
+    } catch (const util::Exception &e) {
+      std::cerr << e.what() << std::endl;
+      abort();
+    }
+  }
 }
 
 } // namespace builder

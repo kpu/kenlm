@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <fstream>
 #include <vector>
 
 namespace lm { namespace builder {
@@ -207,7 +208,7 @@ class Master {
     util::FixedArray<util::stream::FileBuffer> files_;
 };
 
-void CountText(int text_file /* input */, int vocab_file /* output */, Master &master, uint64_t &token_count, std::string &text_file_name) {
+void CountText(int text_file /* input */, int vocab_file /* output */, Master &master, uint64_t &token_count, std::string &text_file_name, std::vector<bool> &prune_words) {
   const PipelineConfig &config = master.Config();
   std::cerr << "=== 1/5 Counting and sorting n-grams ===" << std::endl;
 
@@ -225,7 +226,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
   WordIndex type_count = config.vocab_estimate;
   util::FilePiece text(text_file, NULL, &std::cerr);
   text_file_name = text.FileName();
-  CorpusCount counter(text, vocab_file, token_count, type_count, chain.BlockSize() / chain.EntrySize(), config.disallowed_symbol_action);
+  CorpusCount counter(text, vocab_file, token_count, type_count, prune_words, config.prune_vocab_file, chain.BlockSize() / chain.EntrySize(), config.disallowed_symbol_action);
   chain >> boost::ref(counter);
 
   util::stream::Sort<SuffixOrder, AddCombiner> sorter(chain, config.sort, SuffixOrder(config.order), AddCombiner());
@@ -236,7 +237,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
 }
 
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<uint64_t> &counts_pruned, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary,
-                          util::FixedArray<util::stream::FileBuffer> &gammas, const std::vector<uint64_t> &prune_thresholds) {
+                          util::FixedArray<util::stream::FileBuffer> &gammas, const std::vector<uint64_t> &prune_thresholds, bool prune_vocab) {
   const PipelineConfig &config = master.Config();
   util::stream::Chains second(config.order);
 
@@ -250,7 +251,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
   }
 
   util::stream::Chains gamma_chains(config.order);
-  InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second, gamma_chains, prune_thresholds);
+  InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second, gamma_chains, prune_thresholds, prune_vocab);
   // Don't care about gamma for 0.  
   gamma_chains[0] >> util::stream::kRecycle;
   gammas.Init(config.order - 1);
@@ -271,8 +272,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
   for (std::size_t i = 0; i < config.order - 1; ++i) {
     util::stream::ChainConfig read_backoffs(config.read_backoffs);
 
-    // Add 1 because here we are skipping unigrams
-    if(config.prune_thresholds[i + 1] > 0)
+    if(config.prune_vocab || config.prune_thresholds[i] > 0)
         read_backoffs.entry_size = sizeof(HashGamma);
     else
         read_backoffs.entry_size = sizeof(float);
@@ -280,7 +280,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
     gamma_chains.push_back(read_backoffs);
     gamma_chains.back() >> gammas[i].Source();
   }
-  master >> Interpolate(std::max(master.Config().vocab_size_for_unk, counts[0] - 1 /* <s> is not included */), util::stream::ChainPositions(gamma_chains), config.prune_thresholds, config.output_q);
+  master >> Interpolate(std::max(master.Config().vocab_size_for_unk, counts[0] - 1 /* <s> is not included */), util::stream::ChainPositions(gamma_chains), config.prune_thresholds, config.prune_vocab, config.output_q);
   gamma_chains >> util::stream::kRecycle;
   master.BufferFinal(counts);
 }
@@ -312,17 +312,19 @@ void Pipeline(PipelineConfig config, int text_file, int out_arpa) {
         util::CreateOrThrow(config.vocab_file.c_str()));
     uint64_t token_count;
     std::string text_file_name;
-    CountText(text_file, vocab_file.get(), master, token_count, text_file_name);
-
+    
+    std::vector<bool> prune_words;
+    CountText(text_file, vocab_file.get(), master, token_count, text_file_name, prune_words);
+    
     std::vector<uint64_t> counts;
     std::vector<uint64_t> counts_pruned;
     std::vector<Discount> discounts;
-    master >> AdjustCounts(config.prune_thresholds, counts, counts_pruned, config.discount, discounts);
+    master >> AdjustCounts(config.prune_thresholds, counts, counts_pruned, prune_words, config.discount, discounts);
 
     {
       util::FixedArray<util::stream::FileBuffer> gammas;
       Sorts<SuffixOrder> primary;
-      InitialProbabilities(counts, counts_pruned, discounts, master, primary, gammas, config.prune_thresholds);
+      InitialProbabilities(counts, counts_pruned, discounts, master, primary, gammas, config.prune_thresholds, config.prune_vocab);
       InterpolateProbabilities(counts_pruned, master, primary, gammas);
     }
 
