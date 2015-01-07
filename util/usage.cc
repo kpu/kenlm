@@ -68,6 +68,18 @@ Wall GetWall() {
 }
 #endif
 
+// gcc possible-unused function flags
+#ifdef __GNUC__
+double Subtract(time_t first, time_t second) __attribute__ ((unused));
+double DoubleSec(time_t tv) __attribute__ ((unused));
+#if !defined(_WIN32) && !defined(_WIN64)
+double Subtract(const struct timeval &first, const struct timeval &second) __attribute__ ((unused));
+double Subtract(const struct timespec &first, const struct timespec &second) __attribute__ ((unused));
+double DoubleSec(const struct timeval &tv) __attribute__ ((unused));
+double DoubleSec(const struct timespec &tv) __attribute__ ((unused));
+#endif
+#endif
+
 // Some of these functions are only used on some platforms.
 #ifdef __clang__
 #pragma clang diagnostic push
