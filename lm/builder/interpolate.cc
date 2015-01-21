@@ -78,7 +78,7 @@ template <class Output> class Callback {
 
     ~Callback() {
       for (std::size_t i = 0; i < backoffs_.size(); ++i) {
-        if(prune_vocab_ || prune_thresholds_[i] > 0)
+        if(prune_vocab_ || prune_thresholds_[i + 1] > 0)
           while(backoffs_[i])
             ++backoffs_[i];
         
@@ -95,8 +95,8 @@ template <class Output> class Callback {
       probs_[order_minus_1 + 1] = pay.complete.prob;
 
       float out_backoff;
-      if (order_minus_1 < backoffs_.size() && *(gram.end() - 1) != kUNK && *(gram.end() - 1) != kEOS) {
-        if(prune_vocab_ || prune_thresholds_[order_minus_1] > 0) {
+      if (order_minus_1 < backoffs_.size() && *(gram.end() - 1) != kUNK && *(gram.end() - 1) != kEOS && backoffs_[order_minus_1]) {
+        if(prune_vocab_ || prune_thresholds_[order_minus_1 + 1] > 0) {
           //Compute hash value for current context
           uint64_t current_hash = util::MurmurHashNative(gram.begin(), gram.Order() * sizeof(WordIndex));
           

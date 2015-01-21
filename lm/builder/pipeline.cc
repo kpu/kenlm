@@ -272,7 +272,7 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
   for (std::size_t i = 0; i < config.order - 1; ++i) {
     util::stream::ChainConfig read_backoffs(config.read_backoffs);
 
-    if(config.prune_vocab || config.prune_thresholds[i] > 0)
+    if(config.prune_vocab || config.prune_thresholds[i + 1] > 0)
         read_backoffs.entry_size = sizeof(HashGamma);
     else
         read_backoffs.entry_size = sizeof(float);
