@@ -51,6 +51,11 @@ void Exception::SetLocation(const char *file, unsigned int line, const char *fun
 }
 
 namespace {
+
+#ifdef __GNUC__
+const char *HandleStrerror(int ret, const char *buf) __attribute__ ((unused));
+const char *HandleStrerror(const char *ret, const char * /*buf*/) __attribute__ ((unused));
+#endif
 // At least one of these functions will not be called.
 #ifdef __clang__
 #pragma clang diagnostic push

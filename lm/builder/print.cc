@@ -24,35 +24,34 @@ VocabReconstitute::VocabReconstitute(int fd) {
   map_.push_back(i);
 }
 
-PrintARPA::PrintARPA(const VocabReconstitute &vocab, const std::vector<uint64_t> &counts, const HeaderInfo* header_info, int out_fd) 
-  : vocab_(vocab), out_fd_(out_fd) {
-  std::stringstream stream;
-
-  if (header_info) {
-    stream << "# Input file: " << header_info->input_file << '\n';
-    stream << "# Token count: " << header_info->token_count << '\n';
-    stream << "# Smoothing: Modified Kneser-Ney" << '\n';
-  }
-  stream << "\\data\\\n";
-  for (size_t i = 0; i < counts.size(); ++i) {
-    stream << "ngram " << (i+1) << '=' << counts[i] << '\n';
-  }
-  stream << '\n';
-  std::string as_string(stream.str());
-  util::WriteOrThrow(out_fd, as_string.data(), as_string.size());
-}
-
 void PrintARPA::Run(const util::stream::ChainPositions &positions) {
-  util::scoped_fd closer(out_fd_);
-  UTIL_TIMER("(%w s) Wrote ARPA file\n");
-  util::FakeOFStream out(out_fd_);
+  VocabReconstitute vocab(GetVocabFD());
+
+  // Write header.  TODO: integers in FakeOFStream.
+  {
+    std::stringstream stream;
+    if (verbose_header_) {
+      stream << "# Input file: " << GetHeader().input_file << '\n';
+      stream << "# Token count: " << GetHeader().token_count << '\n';
+      stream << "# Smoothing: Modified Kneser-Ney" << '\n';
+    }
+    stream << "\\data\\\n";
+    for (size_t i = 0; i < positions.size(); ++i) {
+      stream << "ngram " << (i+1) << '=' << GetHeader().counts_pruned[i] << '\n';
+    }
+    stream << '\n';
+    std::string as_string(stream.str());
+    util::WriteOrThrow(out_fd_.get(), as_string.data(), as_string.size());
+  }
+
+  util::FakeOFStream out(out_fd_.get());
   for (unsigned order = 1; order <= positions.size(); ++order) {
     out << "\\" << order << "-grams:" << '\n';
     for (NGramStream stream(positions[order - 1]); stream; ++stream) {
       // Correcting for numerical precision issues.  Take that IRST.
-      out << stream->Value().complete.prob << '\t' << vocab_.Lookup(*stream->begin());
+      out << stream->Value().complete.prob << '\t' << vocab.Lookup(*stream->begin());
       for (const WordIndex *i = stream->begin() + 1; i != stream->end(); ++i) {
-        out << ' ' << vocab_.Lookup(*i);
+        out << ' ' << vocab.Lookup(*i);
       }
       if (order != positions.size())
         out << '\t' << stream->Value().complete.backoff;

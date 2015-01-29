@@ -213,14 +213,33 @@ class MergeRight {
       PruneNGramStream grams(primary);
 
       // Without interpolation, the interpolation weight goes to <unk>.
-      if (grams->Order() == 1 && !interpolate_unigrams_) {
+      if (grams->Order() == 1) {
         BufferEntry sums(*static_cast<const BufferEntry*>(summed.Get()));
+        // Special case for <unk>
         assert(*grams->begin() == kUNK);
-        grams->Value().uninterp.prob = sums.gamma;
+        float gamma_assign;
+        if (interpolate_unigrams_) {
+          // Default: treat <unk> like a zeroton.
+          gamma_assign = sums.gamma;
+          grams->Value().uninterp.prob = 0.0;
+        } else {
+          // SRI: give all the interpolation mass to <unk>
+          gamma_assign = 0.0;
+          grams->Value().uninterp.prob = sums.gamma;
+        }
+        grams->Value().uninterp.gamma = gamma_assign;
+        ++grams;
+
+        // Special case for <s>: probability 1.0.  This allows <s> to be
+        // explicitly scores as part of the sentence without impacting
+        // probability and computes q correctly as b(<s>).
+        assert(*grams->begin() == kBOS);
+        grams->Value().uninterp.prob = 1.0;
         grams->Value().uninterp.gamma = 0.0;
+
         while (++grams) {
           grams->Value().uninterp.prob = discount_.Apply(grams->Count()) / sums.denominator;
-          grams->Value().uninterp.gamma = 0.0;
+          grams->Value().uninterp.gamma = gamma_assign;
         }
         ++summed;
         return;

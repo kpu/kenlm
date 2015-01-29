@@ -1,4 +1,6 @@
+#include "lm/builder/output.hh"
 #include "lm/builder/pipeline.hh"
+#include "lm/builder/print.hh"
 #include "lm/lm_exception.hh"
 #include "util/file.hh"
 #include "util/file_piece.hh"
@@ -92,6 +94,7 @@ int main(int argc, char *argv[]) {
     discount_fallback_default.push_back("0.5");
     discount_fallback_default.push_back("1");
     discount_fallback_default.push_back("1.5");
+    bool verbose_header;
 
     options.add_options()
       ("help,h", po::bool_switch(), "Show this help message")
@@ -110,7 +113,7 @@ int main(int argc, char *argv[]) {
       ("vocab_estimate", po::value<lm::WordIndex>(&pipeline.vocab_estimate)->default_value(1000000), "Assume this vocabulary size for purposes of calculating memory in step 1 (corpus count) and pre-sizing the hash table")
       ("vocab_file", po::value<std::string>(&pipeline.vocab_file)->default_value(""), "Location to write a file containing the unique vocabulary strings delimited by null bytes")
       ("vocab_pad", po::value<uint64_t>(&pipeline.vocab_size_for_unk)->default_value(0), "If the vocabulary is smaller than this value, pad with <unk> to reach this size. Requires --interpolate_unigrams")
-      ("verbose_header", po::bool_switch(&pipeline.verbose_header), "Add a verbose header to the ARPA file that includes information such as token count, smoothing type, etc.")
+      ("verbose_header", po::bool_switch(&verbose_header), "Add a verbose header to the ARPA file that includes information such as token count, smoothing type, etc.")
       ("text", po::value<std::string>(&text), "Read text from a file instead of stdin")
       ("arpa", po::value<std::string>(&arpa), "Write ARPA to a file instead of stdout")
       ("collapse_values", po::bool_switch(&pipeline.output_q), "Collapse probability and backoff into a single value, q that yields the same sentence-level probabilities.  See http://kheafield.com/professional/edinburgh/rest_paper.pdf for more details, including a proof.")
@@ -209,7 +212,9 @@ int main(int argc, char *argv[]) {
 
     // Read from stdin
     try {
-      lm::builder::Pipeline(pipeline, in.release(), out.release());
+      lm::builder::Output output;
+      output.Add(new lm::builder::PrintARPA(out.release(), verbose_header));
+      lm::builder::Pipeline(pipeline, in.release(), output);
     } catch (const util::MallocException &e) {
       std::cerr << e.what() << std::endl;
       std::cerr << "Try rerunning with a more conservative -S setting than " << vm["memory"].as<std::string>() << std::endl;

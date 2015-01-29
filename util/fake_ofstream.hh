@@ -17,16 +17,15 @@
 namespace util {
 class FakeOFStream {
   public:
-    static const std::size_t kOutBuf = 1048576;
-
     // Does not take ownership of out.
     // Allows default constructor, but must call SetFD.
-    explicit FakeOFStream(int out = -1)
-      : buf_(util::MallocOrThrow(kOutBuf)),
-        builder_(static_cast<char*>(buf_.get()), kOutBuf),
+    explicit FakeOFStream(int out = -1, std::size_t buffer_size = 1048576)
+      : buf_(util::MallocOrThrow(buffer_size)),
+        builder_(static_cast<char*>(buf_.get()), buffer_size),
         // Mostly the default but with inf instead.  And no flags.
         convert_(double_conversion::DoubleToStringConverter::NO_FLAGS, "inf", "NaN", 'e', -6, 21, 6, 0),
-        fd_(out) {}
+        fd_(out),
+        buffer_size_(buffer_size) {}
 
     ~FakeOFStream() {
       if (buf_.get()) Flush();
@@ -51,7 +50,7 @@ class FakeOFStream {
     }
 
     FakeOFStream &operator<<(StringPiece str) {
-      if (str.size() > kOutBuf) {
+      if (str.size() > buffer_size_) {
         Flush();
         util::WriteOrThrow(fd_, str.data(), str.size());
       } else {
@@ -98,6 +97,7 @@ class FakeOFStream {
     double_conversion::StringBuilder builder_;
     double_conversion::DoubleToStringConverter convert_;
     int fd_;
+    const std::size_t buffer_size_;
 };
 
 } // namespace

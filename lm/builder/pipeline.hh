@@ -14,15 +14,14 @@
 
 namespace lm { namespace builder {
 
+class Output;
+
 struct PipelineConfig {
   std::size_t order;
   std::string vocab_file;
   util::stream::SortConfig sort;
   InitialProbabilitiesConfig initial_probs;
   util::stream::ChainConfig read_backoffs;
-
-  // Include a header in the ARPA with some statistics?
-  bool verbose_header;
 
   // Estimated vocabulary size.  Used for sizing CorpusCount memory and
   // initial probing hash table sizing, also in CorpusCount.
@@ -69,7 +68,7 @@ struct PipelineConfig {
 };
 
 // Takes ownership of text_file and out_arpa.
-void Pipeline(PipelineConfig config, int text_file, int out_arpa);
+void Pipeline(PipelineConfig &config, int text_file, Output &output);
 
 }} // namespaces
 #endif // LM_BUILDER_PIPELINE_H
