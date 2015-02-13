@@ -47,7 +47,7 @@ cdef class LanguageModel:
     
     def full_scores(self, sentence, bos = True, eos = True):
         """
-        full_scores(sentence, bos = True, eos = Ture) -> generate full scores (prob, ngram lenght, oov)
+        full_scores(sentence, bos = True, eos = Ture) -> generate full scores (prob, ngram length, oov)
         @param sentence is a string (do not use boundary symbols)
         @param bos should kenlm add a bos state
         @param eos should kenlm add an eos state

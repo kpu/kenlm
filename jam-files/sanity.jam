@@ -73,17 +73,21 @@ rule test_library ( name ) {
   constant CLEANING : $(cleaning) ;
 }
 
-#Determine if a library can be compiled statically.  
+#Determine if a library can be compiled statically.
 rule auto-shared ( name : additional * ) {
   additional ?= "" ;
-  if [ test_flags $(additional)" -static -l"$(name) ] {
-    return ;
+  if $(shared-command-line) = "<link>shared" {
+    return "<link>shared" ;
   } else {
-    if $(FORCE-STATIC) {
-      echo "Could not statically link against lib $(name).  Your build will probably fail." ;
+    if [ test_flags $(additional)" -Wl,-Bstatic -l"$(name)" -Wl,-Bdynamic" ] {
       return ;
     } else {
-      return "<link>shared" ;
+      if $(FORCE-STATIC) {
+        echo "Could not statically link against lib $(name).  Your build will probably fail." ;
+        return ;
+      } else {
+        return "<link>shared" ;
+      }
     }
   }
 }
