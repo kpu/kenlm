@@ -36,6 +36,25 @@ class FakeOFStream {
       fd_ = to;
     }
 
+    FakeOFStream &Write(const void *data, std::size_t length) {
+      // Dominant case
+      if (static_cast<std::size_t>(builder_.size() - builder_.position()) > length) {
+        builder_.AddSubstring((const char*)data, length);
+        return *this;
+      }
+      Flush();
+      if (length > buffer_size_) {
+        util::WriteOrThrow(fd_, data, length);
+      } else {
+        builder_.AddSubstring((const char*)data, length);
+      }
+      return *this;
+    }
+
+    FakeOFStream &operator<<(StringPiece str) {
+      return Write(str.data(), str.size());
+    }
+
     FakeOFStream &operator<<(float value) {
       // Odd, but this is the largest number found in the comments.
       EnsureRemaining(double_conversion::DoubleToStringConverter::kMaxPrecisionDigits + 8);
@@ -46,17 +65,6 @@ class FakeOFStream {
     FakeOFStream &operator<<(double value) {
       EnsureRemaining(double_conversion::DoubleToStringConverter::kMaxPrecisionDigits + 8);
       convert_.ToShortest(value, &builder_);
-      return *this;
-    }
-
-    FakeOFStream &operator<<(StringPiece str) {
-      if (str.size() > buffer_size_) {
-        Flush();
-        util::WriteOrThrow(fd_, str.data(), str.size());
-      } else {
-        EnsureRemaining(str.size());
-        builder_.AddSubstring(str.data(), str.size());
-      }
       return *this;
     }
 
