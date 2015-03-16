@@ -202,6 +202,7 @@ int main(int argc, char *argv[]) {
     initial.adder_out.block_count = 2;
     pipeline.read_backoffs = initial.adder_out;
 
+    // Read from stdin, write to stdout by default
     util::scoped_fd in(0), out(1);
     if (vm.count("text")) {
       in.reset(util::OpenReadOrThrow(text.c_str()));
@@ -210,7 +211,6 @@ int main(int argc, char *argv[]) {
       out.reset(util::CreateOrThrow(arpa.c_str()));
     }
 
-    // Read from stdin
     try {
       lm::builder::Output output;
       output.Add(new lm::builder::PrintARPA(out.release(), verbose_header));
