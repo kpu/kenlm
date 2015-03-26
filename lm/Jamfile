@@ -16,10 +16,10 @@ max-order += <dependency>$(ORDER-LOG) ;
 wrappers = ;
 local with-nplm = [ option.get "with-nplm" ] ;
 if $(with-nplm) {
-  lib neuralLM : : <search>$(with-nplm)/src ;
+  lib nplm : : <search>$(with-nplm)/src ;
   obj nplm.o : wrappers/nplm.cc : <include>.. <include>$(with-nplm)/src <cxxflags>-fopenmp ;
-  alias nplm : nplm.o neuralLM ..//boost_thread : : : <cxxflags>-fopenmp <linkflags>-fopenmp <define>WITH_NPLM <library>..//boost_thread ;
-  wrappers += nplm ;
+  alias nplm-all : nplm.o nplm ..//boost_thread : : : <cxxflags>-fopenmp <linkflags>-fopenmp <define>WITH_NPLM <library>..//boost_thread ;
+  wrappers += nplm-all ;
 }
 
 fakelib kenlm : $(wrappers) [ glob *.cc : *main.cc *test.cc ] ../util//kenutil : <include>.. $(max-order) : : <include>.. $(max-order) ;
