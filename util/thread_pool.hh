@@ -8,8 +8,7 @@
 #include <boost/thread.hpp>
 
 #include <iostream>
-
-#include <stdlib.h>
+#include <cstdlib>
 
 namespace util {
 

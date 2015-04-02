@@ -2,9 +2,8 @@
 #define LM_BLANK_H
 
 #include <limits>
-
 #include <stdint.h>
-#include <math.h>
+#include <cmath>
 
 namespace lm {
 namespace ngram {

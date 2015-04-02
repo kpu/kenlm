@@ -8,7 +8,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/utility.hpp>
 
-#include <errno.h>
+#include <cerrno>
 
 #ifdef __APPLE__
 #include <mach/semaphore.h>

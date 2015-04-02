@@ -14,10 +14,9 @@
 #include <iostream>
 #include <string>
 #include <limits>
-
-#include <assert.h>
+#include <cassert>
 #include <fcntl.h>
-#include <stdlib.h>
+#include <cstdlib>
 #include <sys/types.h>
 #include <sys/stat.h>
 

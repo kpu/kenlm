@@ -6,7 +6,7 @@
 #include "util/string_piece.hh"
 
 #include <string>
-#include <string.h>
+#include <cstring>
 
 namespace lm {
 namespace base {

@@ -5,7 +5,6 @@
 #include <boost/thread/mutex.hpp>
 
 #include <cstddef>
-
 #include <stdint.h>
 
 namespace util { namespace stream {

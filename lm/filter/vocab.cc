@@ -3,7 +3,7 @@
 #include <istream>
 #include <iostream>
 
-#include <ctype.h>
+#include <cctype>
 
 namespace lm {
 namespace vocab {

@@ -1,7 +1,7 @@
 #include "util/bit_packing.hh"
 #include "util/exception.hh"
 
-#include <string.h>
+#include <cstring>
 
 namespace util {
 

@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <string>
-
 #include <stdint.h>
 
 // Ersatz version of boost::progress so core language model doesn't depend on

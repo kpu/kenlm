@@ -3,8 +3,7 @@
 
 #include <algorithm>
 #include <cstddef>
-
-#include <assert.h>
+#include <cassert>
 #include <stdint.h>
 
 namespace util {

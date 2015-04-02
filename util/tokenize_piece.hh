@@ -7,8 +7,7 @@
 #include <boost/iterator/iterator_facade.hpp>
 
 #include <algorithm>
-
-#include <string.h>
+#include <cstring>
 
 namespace util {
 

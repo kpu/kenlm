@@ -5,8 +5,8 @@
 
 #include <cstddef>
 
-#include <assert.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdlib>
 
 namespace util {
 

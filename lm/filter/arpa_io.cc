@@ -6,9 +6,9 @@
 #include <string>
 #include <vector>
 
-#include <ctype.h>
-#include <errno.h>
-#include <string.h>
+#include <cctype>
+#include <cerrno>
+#include <cstring>
 
 namespace lm {
 

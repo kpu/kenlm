@@ -17,8 +17,7 @@
 
 #include <algorithm>
 #include <vector>
-
-#include <string.h>
+#include <cstring>
 
 namespace util { class FilePiece; }
 

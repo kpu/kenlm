@@ -9,8 +9,8 @@
 #include <sstream>
 #include <vector>
 
-#include <ctype.h>
-#include <string.h>
+#include <cctype>
+#include <cstring>
 #include <stdint.h>
 
 #ifdef WIN32

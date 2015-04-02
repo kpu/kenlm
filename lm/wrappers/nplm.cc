@@ -3,8 +3,7 @@
 #include "util/file.hh"
 
 #include <algorithm>
-
-#include <string.h>
+#include <cstring>
 
 #include "neuralLM.h"
 

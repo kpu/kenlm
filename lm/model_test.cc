@@ -1,7 +1,7 @@
 #include "lm/model.hh"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 #define BOOST_TEST_MODULE ModelTest
 #include <boost/test/unit_test.hpp>

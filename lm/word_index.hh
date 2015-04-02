@@ -2,7 +2,7 @@
 #ifndef LM_WORD_INDEX_H
 #define LM_WORD_INDEX_H
 
-#include <limits.h>
+#include <climits>
 
 namespace lm {
 typedef unsigned int WordIndex;

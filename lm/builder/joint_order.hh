@@ -9,7 +9,7 @@
 #include <iostream>
 #endif
 
-#include <string.h>
+#include <cstring>
 
 namespace lm { namespace builder {
 

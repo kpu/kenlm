@@ -5,7 +5,6 @@
 #define UTIL_POOL_H
 
 #include <vector>
-
 #include <stdint.h>
 
 namespace util {

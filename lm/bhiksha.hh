@@ -19,9 +19,8 @@
 #include "util/sorted_uniform.hh"
 
 #include <algorithm>
-
 #include <stdint.h>
-#include <assert.h>
+#include <cassert>
 
 namespace lm {
 namespace ngram {

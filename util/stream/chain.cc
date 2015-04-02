@@ -8,9 +8,7 @@
 #include <cstdlib>
 #include <new>
 #include <iostream>
-
 #include <stdint.h>
-#include <stdlib.h>
 
 namespace util {
 namespace stream {

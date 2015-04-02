@@ -9,9 +9,8 @@
 #include <iostream>
 #include <iomanip>
 #include <limits>
-
-#include <math.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdlib>
 
 #ifdef WIN32
 #include "util/getopt.hh"

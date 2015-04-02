@@ -11,8 +11,7 @@
 #include <cstddef>
 #include <iosfwd>
 #include <string>
-
-#include <assert.h>
+#include <cassert>
 #include <stdint.h>
 
 namespace util {

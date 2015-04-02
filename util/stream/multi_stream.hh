@@ -9,8 +9,8 @@
 #include <cstddef>
 #include <new>
 
-#include <assert.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdlib>
 
 namespace util { namespace stream {
 

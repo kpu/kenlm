@@ -4,8 +4,8 @@
 #include <typeinfo>
 #endif
 
-#include <errno.h>
-#include <string.h>
+#include <cerrno>
+#include <cstring>
 
 namespace util {
 

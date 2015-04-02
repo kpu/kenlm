@@ -85,7 +85,7 @@ inline bool starts_with(const StringPiece& longer, const StringPiece& prefix) {
 #include <algorithm>
 #include <cstddef>
 #include <string>
-#include <string.h>
+#include <cstring>
 
 #ifdef WIN32
 #undef max

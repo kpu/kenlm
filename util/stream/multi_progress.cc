@@ -6,7 +6,7 @@
 #include <iostream>
 #include <limits>
 
-#include <string.h>
+#include <cstring>
 
 #if !defined(_WIN32) && !defined(_WIN64)
 #include <unistd.h>

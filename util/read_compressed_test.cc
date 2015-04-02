@@ -9,11 +9,10 @@
 
 #include <fstream>
 #include <string>
-
-#include <stdlib.h>
+#include <cstdlib>
 
 #if defined __MINGW32__
-#include <time.h>
+#include <ctime>
 #include <fcntl.h>
 
 #if !defined mkstemp

@@ -12,8 +12,7 @@
 
 #include <vector>
 #include <cstdlib>
-
-#include <assert.h>
+#include <cassert>
 
 namespace lm {
 namespace ngram {

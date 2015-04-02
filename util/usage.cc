@@ -7,10 +7,9 @@
 #include <sstream>
 #include <set>
 #include <string>
-
-#include <string.h>
-#include <ctype.h>
-#include <time.h>
+#include <cstring>
+#include <cctype>
+#include <ctime>
 #if defined(_WIN32) || defined(_WIN64)
 // This code lifted from physmem.c in gnulib.  See the copyright statement
 // below.  
