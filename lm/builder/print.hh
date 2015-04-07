@@ -104,6 +104,8 @@ class PrintARPA : public OutputHook {
     explicit PrintARPA(int fd, bool verbose_header)
       : OutputHook(PROB_SEQUENTIAL_HOOK), out_fd_(fd), verbose_header_(verbose_header) {}
 
+    void Sink(util::stream::Chains &chains);
+
     void Run(const util::stream::ChainPositions &positions);
 
   private:

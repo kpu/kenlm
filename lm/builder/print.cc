@@ -24,6 +24,10 @@ VocabReconstitute::VocabReconstitute(int fd) {
   map_.push_back(i);
 }
 
+void PrintARPA::Sink(util::stream::Chains &chains) {
+  chains >> *this;
+}
+
 void PrintARPA::Run(const util::stream::ChainPositions &positions) {
   VocabReconstitute vocab(GetVocabFD());
 
