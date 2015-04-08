@@ -20,6 +20,7 @@ rule shell_or_fail ( cmd ) {
   if $(ret[2]) != 0 {
     exit $(cmd) failed : 1 ;
   }
+  return $(ret[1]) ;
 }
 
 cxxflags = [ os.environ "CXXFLAGS" ] ;

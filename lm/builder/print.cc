@@ -7,8 +7,7 @@
 #include "util/stream/timer.hh"
 
 #include <sstream>
-
-#include <string.h>
+#include <cstring>
 
 namespace lm { namespace builder {
 

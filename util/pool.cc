@@ -2,7 +2,7 @@
 
 #include "util/scoped.hh"
 
-#include <stdlib.h>
+#include <cstdlib>
 
 namespace util {
 

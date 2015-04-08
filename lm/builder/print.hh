@@ -10,8 +10,7 @@
 #include "util/string_piece.hh"
 
 #include <ostream>
-
-#include <assert.h>
+#include <cassert>
 
 // Warning: print routines read all unigrams before all bigrams before all
 // trigrams etc.  So if other parts of the chain move jointly, you'll have to

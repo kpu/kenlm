@@ -8,7 +8,7 @@
 #include <string>
 
 #include <stdint.h>
-#include <string.h>
+#include <cstring>
 
 namespace util {
 

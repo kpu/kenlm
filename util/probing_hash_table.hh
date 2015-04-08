@@ -9,7 +9,7 @@
 #include <functional>
 #include <vector>
 
-#include <assert.h>
+#include <cassert>
 #include <stdint.h>
 
 namespace util {

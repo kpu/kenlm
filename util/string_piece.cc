@@ -5,8 +5,7 @@
 #include "util/string_piece.hh"
 
 #include <algorithm>
-
-#include <limits.h>
+#include <climits>
 
 #ifndef HAVE_ICU
 

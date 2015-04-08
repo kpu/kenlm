@@ -11,8 +11,7 @@
 #include <ostream>
 #include <istream>
 #include <string>
-
-#include <math.h>
+#include <cmath>
 
 namespace lm {
 namespace ngram {

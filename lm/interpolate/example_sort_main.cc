@@ -4,8 +4,18 @@
 #include "lm/builder/sort.hh"
 #include "lm/vocab.hh"
 #include "util/file.hh"
-#include "util/unistd.hh"
 
+#if defined(_WIN32) || defined(_WIN64)
+
+// Windows doesn't define <unistd.h>
+//
+// So we define what we need here instead:
+//
+#define STDIN_FILENO=0
+#define STDOUT_FILENO=1
+#else // Huzzah for POSIX!
+#include <unistd.h>
+#endif
 
 int main() {
   

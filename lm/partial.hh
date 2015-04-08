@@ -5,8 +5,7 @@
 #include "lm/state.hh"
 
 #include <algorithm>
-
-#include <assert.h>
+#include <cassert>
 
 namespace lm {
 namespace ngram {

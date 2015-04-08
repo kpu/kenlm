@@ -2,7 +2,7 @@
 #include "util/file.hh"
 #include "util/read_compressed.hh"
 
-#include <string.h>
+#include <cstring>
 #include <iostream>
 
 namespace {

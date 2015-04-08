@@ -11,7 +11,7 @@
  */
 
 #include "util/murmur_hash.hh"
-#include <string.h>
+#include <cstring>
 
 namespace util {
 

@@ -1,7 +1,7 @@
 #include "lm/lm_exception.hh"
 
-#include<errno.h>
-#include<stdio.h>
+#include <cerrno>
+#include <cstdio>
 
 namespace lm {
 

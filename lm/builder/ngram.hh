@@ -5,10 +5,9 @@
 #include "lm/word_index.hh"
 
 #include <cstddef>
-
-#include <assert.h>
+#include <cassert>
 #include <stdint.h>
-#include <string.h>
+#include <cstring>
 
 namespace lm {
 namespace builder {

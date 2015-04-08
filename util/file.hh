@@ -8,7 +8,6 @@
 #include <cstddef>
 #include <cstdio>
 #include <string>
-
 #include <stdint.h>
 
 namespace util {

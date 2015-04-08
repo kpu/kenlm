@@ -5,7 +5,7 @@
 #include "lm/word_index.hh"
 #include "util/murmur_hash.hh"
 
-#include <string.h>
+#include <cstring>
 
 namespace lm {
 namespace ngram {

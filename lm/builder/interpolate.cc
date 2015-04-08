@@ -8,8 +8,8 @@
 #include "util/fixed_array.hh"
 #include "util/murmur_hash.hh"
 
-#include <assert.h>
-#include <math.h>
+#include <cassert>
+#include <cmath>
 
 namespace lm { namespace builder {
 namespace {

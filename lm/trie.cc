@@ -5,7 +5,7 @@
 #include "util/exception.hh"
 #include "util/sorted_uniform.hh"
 
-#include <assert.h>
+#include <cassert>
 
 namespace lm {
 namespace ngram {

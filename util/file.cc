@@ -13,9 +13,9 @@
 #include <sstream>
 
 
-#include <assert.h>
-#include <errno.h>
-#include <limits.h>
+#include <cassert>
+#include <cerrno>
+#include <climits>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>

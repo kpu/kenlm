@@ -12,8 +12,7 @@
 #include "util/probing_hash_table.hh"
 
 #include <string>
-
-#include <string.h>
+#include <cstring>
 
 namespace lm {
 namespace ngram {

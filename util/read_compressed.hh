@@ -5,7 +5,6 @@
 #include "util/scoped.hh"
 
 #include <cstddef>
-
 #include <stdint.h>
 
 namespace util {

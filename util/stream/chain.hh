@@ -10,8 +10,7 @@
 #include <boost/thread/thread.hpp>
 
 #include <cstddef>
-
-#include <assert.h>
+#include <cassert>
 
 namespace util {
 template <class T> class PCQueue;

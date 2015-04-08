@@ -7,10 +7,10 @@
 #include <algorithm>
 #include <iostream>
 
-#include <assert.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cassert>
+#include <climits>
+#include <cstdlib>
+#include <cstring>
 
 #ifdef HAVE_ZLIB
 #include <zlib.h>

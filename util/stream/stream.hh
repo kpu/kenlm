@@ -5,7 +5,7 @@
 
 #include <boost/noncopyable.hpp>
 
-#include <assert.h>
+#include <cassert>
 #include <stdint.h>
 
 namespace util {
