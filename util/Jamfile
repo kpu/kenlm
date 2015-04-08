@@ -34,3 +34,5 @@ for local t in [ glob *_test.cc : file_piece_test.cc read_compressed_test.cc ] {
     local name = [ MATCH "(.*)\.cc" : $(t) ] ;
     unit-test $(name) : $(t) kenutil /top//boost_unit_test_framework /top//boost_system ;
 }
+
+build-project stream ;
