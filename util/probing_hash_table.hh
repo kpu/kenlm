@@ -277,6 +277,7 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
 
     // Assumes that the key is unique.  Multiple insertions won't cause a failure, just inconsistent lookup.
     template <class T> MutableIterator Insert(const T &t) {
+      ++backend_.entries_;
       DoubleIfNeeded();
       return backend_.UncheckedInsert(t);
     }
