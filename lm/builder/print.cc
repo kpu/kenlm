@@ -24,7 +24,7 @@ VocabReconstitute::VocabReconstitute(int fd) {
 }
 
 void PrintARPA::Sink(util::stream::Chains &chains) {
-  chains >> *this;
+  chains >> boost::ref(*this);
 }
 
 void PrintARPA::Run(const util::stream::ChainPositions &positions) {
