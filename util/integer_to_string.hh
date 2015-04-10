@@ -9,16 +9,28 @@ namespace util {
  */
 char *ToString(uint32_t value, char *to);
 char *ToString(uint64_t value, char *to);
+
+// Implemented as wrappers to above
 char *ToString(int32_t value, char *to);
 char *ToString(int64_t value, char *to);
+
+// Calls the 32-bit versions for now.
 char *ToString(uint16_t value, char *to);
 char *ToString(int16_t value, char *to);
+
+inline char *ToString(bool value, char *to) {
+  *to++ = '0' + value;
+  return to;
+}
 
 // How many bytes to reserve in the buffer for these strings:
 // g++ 4.9.1 doesn't work with this:
 // static const std::size_t kBytes = 5;
 // So use enum.
 template <class T> struct ToStringBuf;
+template <> struct ToStringBuf<bool> {
+  enum { kBytes = 1 };
+};
 template <> struct ToStringBuf<uint16_t> {
   enum { kBytes = 5 };
 };

@@ -68,6 +68,7 @@ class FakeOFStream {
     FakeOFStream &operator<<(int32_t value) { return CallToString(value); }
     FakeOFStream &operator<<(uint16_t value) { return CallToString(value); }
     FakeOFStream &operator<<(int16_t value) { return CallToString(value); }
+    FakeOFStream &operator<<(bool value) { return CallToString(value); }
 
     FakeOFStream &operator<<(char c) {
       EnsureRemaining(1);
