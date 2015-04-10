@@ -9,6 +9,8 @@
 #include "util/mmap.hh"
 #include "util/string_piece.hh"
 
+#include <boost/lexical_cast.hpp>
+
 #include <ostream>
 #include <cassert>
 
@@ -46,7 +48,7 @@ class VocabReconstitute {
 template <class T> void PrintPayload(util::FakeOFStream &to, const Payload &payload);
 template <> inline void PrintPayload<uint64_t>(util::FakeOFStream &to, const Payload &payload) {
   // TODO slow
-  to << boost::lexical_cast<std::string>(payload.count);
+  to << payload.count;
 }
 template <> inline void PrintPayload<Uninterpolated>(util::FakeOFStream &to, const Payload &payload) {
   to << log10(payload.uninterp.prob) << ' ' << log10(payload.uninterp.gamma);

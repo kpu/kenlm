@@ -29,25 +29,20 @@ void PrintARPA::Sink(util::stream::Chains &chains) {
 
 void PrintARPA::Run(const util::stream::ChainPositions &positions) {
   VocabReconstitute vocab(GetVocabFD());
-
-  // Write header.  TODO: integers in FakeOFStream.
-  {
-    std::stringstream stream;
-    if (verbose_header_) {
-      stream << "# Input file: " << GetHeader().input_file << '\n';
-      stream << "# Token count: " << GetHeader().token_count << '\n';
-      stream << "# Smoothing: Modified Kneser-Ney" << '\n';
-    }
-    stream << "\\data\\\n";
-    for (size_t i = 0; i < positions.size(); ++i) {
-      stream << "ngram " << (i+1) << '=' << GetHeader().counts_pruned[i] << '\n';
-    }
-    stream << '\n';
-    std::string as_string(stream.str());
-    util::WriteOrThrow(out_fd_.get(), as_string.data(), as_string.size());
-  }
-
   util::FakeOFStream out(out_fd_.get());
+
+  // Write header.
+  if (verbose_header_) {
+    out << "# Input file: " << GetHeader().input_file << '\n';
+    out << "# Token count: " << GetHeader().token_count << '\n';
+    out << "# Smoothing: Modified Kneser-Ney" << '\n';
+  }
+  out << "\\data\\\n";
+  for (size_t i = 0; i < positions.size(); ++i) {
+    out << "ngram " << (i+1) << '=' << GetHeader().counts_pruned[i] << '\n';
+  }
+  out << '\n';
+
   for (unsigned order = 1; order <= positions.size(); ++order) {
     out << "\\" << order << "-grams:" << '\n';
     for (NGramStream stream(positions[order - 1]); stream; ++stream) {
