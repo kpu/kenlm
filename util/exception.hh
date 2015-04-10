@@ -91,6 +91,12 @@ template <class Except, class Data> typename Except::template ExceptionTag<Excep
 #define UTIL_UNLIKELY(x) (x)
 #endif
 
+#if __GNUC__ >= 3
+#define UTIL_LIKELY(x) __builtin_expect (!!(x), 1)
+#else
+#define UTIL_LIKELY(x) (x)
+#endif
+
 #define UTIL_THROW_IF_ARG(Condition, Exception, Arg, Modify) do { \
   if (UTIL_UNLIKELY(Condition)) { \
     UTIL_THROW_BACKEND(#Condition, Exception, Arg, Modify); \

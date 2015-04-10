@@ -5,48 +5,53 @@
 #ifndef UTIL_FAKE_OFSTREAM_H
 #define UTIL_FAKE_OFSTREAM_H
 
-#include "util/double-conversion/double-conversion.h"
-#include "util/double-conversion/utils.h"
 #include "util/file.hh"
+#include "util/float_to_string.hh"
+#include "util/integer_to_string.hh"
 #include "util/scoped.hh"
 #include "util/string_piece.hh"
 
-#define BOOST_LEXICAL_CAST_ASSUME_C_LOCALE
-#include <boost/lexical_cast.hpp>
+#include <cassert>
+#include <cstring>
+
+#include <stdint.h>
 
 namespace util {
 class FakeOFStream {
+  private:
+    // Maximum over all ToString operations.
+    static const std::size_t kMinBuf = 20;
   public:
     // Does not take ownership of out.
     // Allows default constructor, but must call SetFD.
     explicit FakeOFStream(int out = -1, std::size_t buffer_size = 1048576)
-      : buf_(util::MallocOrThrow(buffer_size)),
-        builder_(static_cast<char*>(buf_.get()), buffer_size),
-        // Mostly the default but with inf instead.  And no flags.
-        convert_(double_conversion::DoubleToStringConverter::NO_FLAGS, "inf", "NaN", 'e', -6, 21, 6, 0),
-        fd_(out),
-        buffer_size_(buffer_size) {}
+      : buf_(util::MallocOrThrow(std::max(buffer_size, kMinBuf))),
+        current_(static_cast<char*>(buf_.get())),
+        end_(current_ + std::max(buffer_size, kMinBuf)),
+        fd_(out) {}
 
     ~FakeOFStream() {
-      if (buf_.get()) Flush();
+      // Could have called Finish already
+      Flush();
     }
 
     void SetFD(int to) {
-      if (builder_.position()) Flush();
+      Flush();
       fd_ = to;
     }
 
     FakeOFStream &Write(const void *data, std::size_t length) {
-      // Dominant case
-      if (static_cast<std::size_t>(builder_.size() - builder_.position()) > length) {
-        builder_.AddSubstring((const char*)data, length);
+      if (UTIL_LIKELY(current_ + length <= end_)) {
+        std::memcpy(current_, data, length);
+        current_ += length;
         return *this;
       }
       Flush();
-      if (length > buffer_size_) {
-        util::WriteOrThrow(fd_, data, length);
+      if (current_ + length <= end_) {
+        std::memcpy(current_, data, length);
+        current_ += length;
       } else {
-        builder_.AddSubstring((const char*)data, length);
+        util::WriteOrThrow(fd_, data, length);
       }
       return *this;
     }
@@ -55,57 +60,62 @@ class FakeOFStream {
       return Write(str.data(), str.size());
     }
 
-    FakeOFStream &operator<<(float value) {
-      // Odd, but this is the largest number found in the comments.
-      EnsureRemaining(double_conversion::DoubleToStringConverter::kMaxPrecisionDigits + 8);
-      convert_.ToShortestSingle(value, &builder_);
-      return *this;
-    }
-
-    FakeOFStream &operator<<(double value) {
-      EnsureRemaining(double_conversion::DoubleToStringConverter::kMaxPrecisionDigits + 8);
-      convert_.ToShortest(value, &builder_);
-      return *this;
-    }
-
-    // Inefficient!  TODO: more efficient implementation
-    FakeOFStream &operator<<(unsigned value) {
-      return *this << boost::lexical_cast<std::string>(value);
-    }
+    FakeOFStream &operator<<(float value) { return CallToString(value); }
+    FakeOFStream &operator<<(double value) { return CallToString(value); }
+    FakeOFStream &operator<<(uint64_t value) { return CallToString(value); }
+    FakeOFStream &operator<<(int64_t value) { return CallToString(value); }
+    FakeOFStream &operator<<(uint32_t value) { return CallToString(value); }
+    FakeOFStream &operator<<(int32_t value) { return CallToString(value); }
+    FakeOFStream &operator<<(uint16_t value) { return CallToString(value); }
+    FakeOFStream &operator<<(int16_t value) { return CallToString(value); }
 
     FakeOFStream &operator<<(char c) {
       EnsureRemaining(1);
-      builder_.AddCharacter(c);
+      *current_++ = c;
+      return *this;
+    }
+
+    FakeOFStream &operator<<(unsigned char c) {
+      EnsureRemaining(1);
+      *current_++ = static_cast<char>(c);
       return *this;
     }
 
     // Note this does not sync.
     void Flush() {
-      util::WriteOrThrow(fd_, buf_.get(), builder_.position());
-      builder_.Reset();
+      if (current_ != buf_.get()) {
+        util::WriteOrThrow(fd_, buf_.get(), current_ - (char*)buf_.get());
+        current_ = static_cast<char*>(buf_.get());
+      }
     }
 
     // Not necessary, but does assure the data is cleared.
     void Finish() {
       Flush();
-      // It will segfault trying to null terminate otherwise.
-      builder_.Finalize();
       buf_.reset();
+      current_ = NULL;
       util::FSyncOrThrow(fd_);
     }
 
   private:
+    template <class T> FakeOFStream &CallToString(const T value) {
+      EnsureRemaining(ToStringBuf<T>::kBytes);
+      current_ = ToString(value, current_);
+      assert(current_ <= end_);
+      return *this;
+    }
+
     void EnsureRemaining(std::size_t amount) {
-      if (static_cast<std::size_t>(builder_.size() - builder_.position()) <= amount) {
+      if (UTIL_UNLIKELY(current_ + amount > end_)) {
         Flush();
+        assert(current_ + amount <= end_);
       }
     }
 
     util::scoped_malloc buf_;
-    double_conversion::StringBuilder builder_;
-    double_conversion::DoubleToStringConverter convert_;
+    char *current_, *end_;
+
     int fd_;
-    const std::size_t buffer_size_;
 };
 
 } // namespace
