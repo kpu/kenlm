@@ -104,6 +104,8 @@ template <class T> class scoped_ptr : public scoped<T, scoped_delete_forward> {
     explicit scoped_ptr(T *p = NULL) : scoped<T, scoped_delete_forward>(p) {}
 };
 
+void AdviseHugePages(const void *addr, std::size_t size);
+
 } // namespace util
 
 #endif // UTIL_SCOPED_H
