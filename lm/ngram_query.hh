@@ -3,45 +3,52 @@
 
 #include "lm/enumerate_vocab.hh"
 #include "lm/model.hh"
+#include "util/fake_ofstream.hh"
 #include "util/file_piece.hh"
 #include "util/usage.hh"
 
 #include <cstdlib>
-#include <iostream>
-#include <ostream>
-#include <istream>
 #include <string>
 #include <cmath>
 
 namespace lm {
 namespace ngram {
 
-struct BasicPrint {
-  void Word(StringPiece, WordIndex, const FullScoreReturn &) const {}
-  void Line(uint64_t oov, float total) const {
-    std::cout << "Total: " << total << " OOV: " << oov << '\n';
-  }
-  void Summary(double, double, uint64_t, uint64_t) {}
-  
+class BasicPrint {
+  public:
+    explicit BasicPrint(int fd, bool flush = true) : out_(fd), flush_(flush) {}
+    void Word(StringPiece, WordIndex, const FullScoreReturn &) {}
+    void Line(uint64_t oov, float total) {
+      out_ << "Total: " << total << " OOV: " << oov << '\n';
+      if (flush_) out_.flush();
+    }
+    void Summary(double, double, uint64_t, uint64_t) {}
+  protected:
+    util::FakeOFStream out_;
+    bool flush_;
 };
 
-struct FullPrint : public BasicPrint {
-  void Word(StringPiece surface, WordIndex vocab, const FullScoreReturn &ret) const {
-    std::cout << surface << '=' << vocab << ' ' << static_cast<unsigned int>(ret.ngram_length)  << ' ' << ret.prob << '\t';
-  }
+class FullPrint : public BasicPrint {
+  public:
+    explicit FullPrint(int fd, bool flush = true) : BasicPrint(fd, flush) {}
 
-  void Summary(double ppl_including_oov, double ppl_excluding_oov, uint64_t corpus_oov, uint64_t corpus_tokens) {
-    std::cout << 
-      "Perplexity including OOVs:\t" << ppl_including_oov << "\n"
-      "Perplexity excluding OOVs:\t" << ppl_excluding_oov << "\n"
-      "OOVs:\t" << corpus_oov << "\n"
-      "Tokens:\t" << corpus_tokens << '\n'
-      ;
-  }
+    void Word(StringPiece surface, WordIndex vocab, const FullScoreReturn &ret) {
+      out_ << surface << '=' << vocab << ' ' << static_cast<unsigned int>(ret.ngram_length)  << ' ' << ret.prob << '\t';
+      if (flush_) out_.flush();
+    }
+
+    void Summary(double ppl_including_oov, double ppl_excluding_oov, uint64_t corpus_oov, uint64_t corpus_tokens) {
+      out_ <<
+        "Perplexity including OOVs:\t" << ppl_including_oov << "\n"
+        "Perplexity excluding OOVs:\t" << ppl_excluding_oov << "\n"
+        "OOVs:\t" << corpus_oov << "\n"
+        "Tokens:\t" << corpus_tokens << '\n';
+      out_.flush();
+    }
 };
 
 template <class Model, class Printer> void Query(const Model &model, bool sentence_context) {
-  Printer printer;
+  Printer printer(1);
   typename Model::State state, out;
   lm::FullScoreReturn ret;
   StringPiece word;

@@ -16,10 +16,10 @@ template <class Model, class Width> void ConvertToBytes(const Model &model, int 
   while (true) {
     while (in.ReadWordSameLine(word)) {
       width = (Width)model.GetVocabulary().Index(word);
-      out.Write(&width, sizeof(Width));
+      out.write(&width, sizeof(Width));
     }
     if (!in.ReadLineOrEOF(word)) break;
-    out.Write(&end_sentence, sizeof(Width));
+    out.write(&end_sentence, sizeof(Width));
   }
 }
 

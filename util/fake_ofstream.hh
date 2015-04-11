@@ -1,6 +1,5 @@
 /* Like std::ofstream but without being incredibly slow.  Backed by a raw fd.
- * Does not support many data types.  Currently, it's targeted at writing ARPA
- * files quickly.
+ * Supports most of the built-in types except for void* and long double.
  */
 #ifndef UTIL_FAKE_OFSTREAM_H
 #define UTIL_FAKE_OFSTREAM_H
@@ -32,21 +31,21 @@ class FakeOFStream {
 
     ~FakeOFStream() {
       // Could have called Finish already
-      Flush();
+      flush();
     }
 
     void SetFD(int to) {
-      Flush();
+      flush();
       fd_ = to;
     }
 
-    FakeOFStream &Write(const void *data, std::size_t length) {
+    FakeOFStream &write(const void *data, std::size_t length) {
       if (UTIL_LIKELY(current_ + length <= end_)) {
         std::memcpy(current_, data, length);
         current_ += length;
         return *this;
       }
-      Flush();
+      flush();
       if (current_ + length <= end_) {
         std::memcpy(current_, data, length);
         current_ += length;
@@ -56,18 +55,25 @@ class FakeOFStream {
       return *this;
     }
 
+    // This also covers std::string and char*
     FakeOFStream &operator<<(StringPiece str) {
-      return Write(str.data(), str.size());
+      return write(str.data(), str.size());
     }
 
-    FakeOFStream &operator<<(float value) { return CallToString(value); }
-    FakeOFStream &operator<<(double value) { return CallToString(value); }
-    FakeOFStream &operator<<(uint64_t value) { return CallToString(value); }
-    FakeOFStream &operator<<(int64_t value) { return CallToString(value); }
-    FakeOFStream &operator<<(uint32_t value) { return CallToString(value); }
-    FakeOFStream &operator<<(int32_t value) { return CallToString(value); }
-    FakeOFStream &operator<<(uint16_t value) { return CallToString(value); }
-    FakeOFStream &operator<<(int16_t value) { return CallToString(value); }
+    // For anything with ToStringBuf<T>::kBytes, define operator<< using ToString.
+    // This includes uint64_t, int64_t, uint32_t, int32_t, uint16_t, int16_t,
+    // float, double
+  private:
+    template <int Arg> struct EnableIfKludge {
+      typedef FakeOFStream type;
+    };
+  public:
+    template <class T> typename EnableIfKludge<ToStringBuf<T>::kBytes>::type &operator<<(const T value) {
+      EnsureRemaining(ToStringBuf<T>::kBytes);
+      current_ = ToString(value, current_);
+      assert(current_ <= end_);
+      return *this;
+    }
 
     FakeOFStream &operator<<(char c) {
       EnsureRemaining(1);
@@ -82,7 +88,7 @@ class FakeOFStream {
     }
 
     // Note this does not sync.
-    void Flush() {
+    void flush() {
       if (current_ != buf_.get()) {
         util::WriteOrThrow(fd_, buf_.get(), current_ - (char*)buf_.get());
         current_ = static_cast<char*>(buf_.get());
@@ -91,23 +97,16 @@ class FakeOFStream {
 
     // Not necessary, but does assure the data is cleared.
     void Finish() {
-      Flush();
+      flush();
       buf_.reset();
       current_ = NULL;
       util::FSyncOrThrow(fd_);
     }
 
   private:
-    template <class T> FakeOFStream &CallToString(const T value) {
-      EnsureRemaining(ToStringBuf<T>::kBytes);
-      current_ = ToString(value, current_);
-      assert(current_ <= end_);
-      return *this;
-    }
-
     void EnsureRemaining(std::size_t amount) {
       if (UTIL_UNLIKELY(current_ + amount > end_)) {
-        Flush();
+        flush();
         assert(current_ + amount <= end_);
       }
     }
