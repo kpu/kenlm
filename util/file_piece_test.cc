@@ -1,6 +1,7 @@
 // Tests might fail if you have creative characters in your path.  Sue me.
 #include "util/file_piece.hh"
 
+#include "util/fake_ofstream.hh"
 #include "util/file.hh"
 #include "util/scoped.hh"
 
@@ -132,6 +133,22 @@ BOOST_AUTO_TEST_CASE(StreamZipReadLine) {
 #endif // __APPLE__
 
 #endif // HAVE_ZLIB
+
+BOOST_AUTO_TEST_CASE(Numbers) {
+  scoped_fd file(MakeTemp(FileLocation()));
+  const float floating = 3.2;
+  {
+    util::FakeOFStream writing(file.get());
+    writing << "94389483984398493890287 " << floating << " 5";
+  }
+  SeekOrThrow(file.get(), 0);
+  util::FilePiece f(file.release());
+  BOOST_CHECK_THROW(f.ReadULong(), ParseNumberException);
+  BOOST_CHECK_EQUAL("94389483984398493890287", f.ReadDelimited());
+  // Yes, exactly equal.  Isn't double-conversion wonderful?
+  BOOST_CHECK_EQUAL(floating, f.ReadFloat());
+  BOOST_CHECK_EQUAL(5, f.ReadULong());
+}
 
 } // namespace
 } // namespace util

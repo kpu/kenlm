@@ -11,19 +11,22 @@
 #include <unistd.h>
 #endif
 
-#include <iostream>
-#include <string>
-#include <limits>
 #include <cassert>
-#include <fcntl.h>
+#include <cerrno>
+#include <cmath>
 #include <cstdlib>
+#include <iostream>
+#include <limits>
+#include <string>
+
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 namespace util {
 
 ParseNumberException::ParseNumberException(StringPiece value) throw() {
-  *this << "Could not parse \"" << value << "\" into a number";
+  *this << "Could not parse \"" << value << "\" into a ";
 }
 
 // Sigh this is the only way I could come up with to do a _const_ bool.  It has ' ', '\f', '\n', '\r', '\t', and '\v' (same as isspace on C locale). 
@@ -145,49 +148,59 @@ static const double_conversion::StringToDoubleConverter kConverter(
     "inf",
     "NaN");
 
-void ParseNumber(const char *begin, const char *&end, float &out) {
+StringPiece FirstToken(StringPiece str) {
+  const char *i;
+  for (i = str.data(); i != str.data() + str.size(); ++i) {
+    if (kSpaces[(unsigned char)*i]) break;
+  }
+  return StringPiece(str.data(), i - str.data());
+}
+
+const char *ParseNumber(StringPiece str, float &out) {
   int count;
-  out = kConverter.StringToFloat(begin, end - begin, &count);
-  end = begin + count;
+  out = kConverter.StringToFloat(str.data(), str.size(), &count);
+  UTIL_THROW_IF_ARG(isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "float");
+  return str.data() + count;
 }
-void ParseNumber(const char *begin, const char *&end, double &out) {
+const char *ParseNumber(StringPiece str, double &out) {
   int count;
-  out = kConverter.StringToDouble(begin, end - begin, &count);
-  end = begin + count;
+  out = kConverter.StringToDouble(str.data(), str.size(), &count);
+  UTIL_THROW_IF_ARG(isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "double");
+  return str.data() + count;
 }
-void ParseNumber(const char *begin, const char *&end, long int &out) {
-  char *silly_end;
-  out = strtol(begin, &silly_end, 10);
-  end = silly_end;
+const char *ParseNumber(StringPiece str, long int &out) {
+  char *end;
+  errno = 0;
+  out = strtol(str.data(), &end, 10);
+  UTIL_THROW_IF_ARG(errno || (end == str.data()), ParseNumberException, (FirstToken(str)), "long int");
+  return end;
 }
-void ParseNumber(const char *begin, const char *&end, unsigned long int &out) {
-  char *silly_end;
-  out = strtoul(begin, &silly_end, 10);
-  end = silly_end;
+const char *ParseNumber(StringPiece str, unsigned long int &out) {
+  char *end;
+  errno = 0;
+  out = strtoul(str.data(), &end, 10);
+  UTIL_THROW_IF_ARG(errno || (end == str.data()), ParseNumberException, (FirstToken(str)), "unsigned long int");
+  return end;
 }
 } // namespace
 
 template <class T> T FilePiece::ReadNumber() {
   SkipSpaces();
   while (last_space_ < position_) {
-    if (at_end_) {
+    if (UTIL_UNLIKELY(at_end_)) {
       // Hallucinate a null off the end of the file.
       std::string buffer(position_, position_end_);
-      const char *buf = buffer.c_str();
-      const char *end = buf + buffer.size();
       T ret;
-      ParseNumber(buf, end, ret);
-      if (buf == end) throw ParseNumberException(buffer);
-      position_ += end - buf;
+      // Has to be null-terminated.
+      const char *begin = buffer.c_str();
+      const char *end = ParseNumber(StringPiece(begin, buffer.size()), ret);
+      position_ += end - begin;
       return ret;
     }
     Shift();
   }
-  const char *end = last_space_;
   T ret;
-  ParseNumber(position_, end, ret);
-  if (end == position_) throw ParseNumberException(ReadDelimited());
-  position_ = end;
+  position_ = ParseNumber(StringPiece(position_, last_space_ - position_), ret);
   return ret;
 }
 
