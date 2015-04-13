@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
     po::options_description options("Language model building options");
     lm::builder::PipelineConfig pipeline;
 
-    std::string text, arpa;
+    std::string text, intermediate, arpa;
     std::vector<std::string> pruning;
     std::vector<std::string> discount_fallback;
     std::vector<std::string> discount_fallback_default;
@@ -116,6 +116,7 @@ int main(int argc, char *argv[]) {
       ("verbose_header", po::bool_switch(&verbose_header), "Add a verbose header to the ARPA file that includes information such as token count, smoothing type, etc.")
       ("text", po::value<std::string>(&text), "Read text from a file instead of stdin")
       ("arpa", po::value<std::string>(&arpa), "Write ARPA to a file instead of stdout")
+      ("intermediate", po::value<std::string>(&intermediate), "Write ngrams to an intermediate file.  Turns off ARPA output (which can be reactivated by --arpa file")
       ("collapse_values", po::bool_switch(&pipeline.output_q), "Collapse probability and backoff into a single value, q that yields the same sentence-level probabilities.  See http://kheafield.com/professional/edinburgh/rest_paper.pdf for more details, including a proof.")
       ("prune", po::value<std::vector<std::string> >(&pruning)->multitoken(), "Prune n-grams with count less than or equal to the given threshold.  Specify one value for each order i.e. 0 0 1 to prune singleton trigrams and above.  The sequence of values must be non-decreasing and the last value applies to any remaining orders. Default is to not prune, which is equivalent to --prune 0.")
       ("limit_vocab_file", po::value<std::string>(&pipeline.prune_vocab_file)->default_value(""), "Read allowed vocabulary separated by whitespace. N-grams that contain vocabulary items not in this list will be pruned. Can be combined with --prune arg")
@@ -212,8 +213,11 @@ int main(int argc, char *argv[]) {
     }
 
     try {
-      lm::builder::Output output;
-      output.Add(new lm::builder::PrintARPA(out.release(), verbose_header));
+      bool writing_intermediate = vm.count("intermediate");
+      lm::builder::Output output(writing_intermediate ? intermediate : pipeline.sort.temp_prefix, writing_intermediate);
+      if (!writing_intermediate || vm.count("arpa")) {
+        output.Add(new lm::builder::PrintARPA(out.release(), verbose_header));
+      }
       lm::builder::Pipeline(pipeline, in.release(), output);
     } catch (const util::MallocException &e) {
       std::cerr << e.what() << std::endl;

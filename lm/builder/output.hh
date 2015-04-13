@@ -7,16 +7,14 @@
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/utility.hpp>
 
-#include <map>
-
 namespace util { namespace stream { class Chains; class ChainPositions; } }
 
-/* Outputs from lmplz: ARPA< sharded files, etc */
+/* Outputs from lmplz: ARPA, sharded files, etc */
 namespace lm { namespace builder {
 
 // These are different types of hooks.  Values should be consecutive to enable a vector lookup.
 enum HookType {
-  COUNT_HOOK, // Raw N-gram counts, highest order only.
+  // TODO: counts.
   PROB_PARALLEL_HOOK, // Probability and backoff (or just q).  Output must process the orders in parallel or there will be a deadlock.
   PROB_SEQUENTIAL_HOOK, // Probability and backoff (or just q).  Output can process orders any way it likes.  This requires writing the data to disk then reading.  Useful for ARPA files, which put unigrams first etc.
   NUMBER_OF_HOOKS // Keep this last so we know how many values there are.
@@ -30,9 +28,7 @@ class OutputHook {
 
     virtual ~OutputHook();
 
-    virtual void Apply(util::stream::Chains &chains);
-
-    virtual void Run(const util::stream::ChainPositions &positions) = 0;
+    virtual void Sink(util::stream::Chains &chains) = 0;
 
   protected:
     const HeaderInfo &GetHeader() const;
@@ -46,7 +42,7 @@ class OutputHook {
 
 class Output : boost::noncopyable {
   public:
-    Output() {}
+    Output(StringPiece file_base, bool keep_buffer);
 
     // Takes ownership.
     void Add(OutputHook *hook) {
@@ -64,16 +60,20 @@ class Output : boost::noncopyable {
     void SetHeader(const HeaderInfo &header) { header_ = header; }
     const HeaderInfo &GetHeader() const { return header_; }
 
-    void Apply(HookType hook_type, util::stream::Chains &chains) {
-      for (boost::ptr_vector<OutputHook>::iterator entry = outputs_[hook_type].begin(); entry != outputs_[hook_type].end(); ++entry) {
-        entry->Apply(chains);
-      }
-    }
+    // This is called by the pipeline.
+    void SinkProbs(util::stream::Chains &chains, bool output_q);
+
+    unsigned int Steps() const { return Have(PROB_SEQUENTIAL_HOOK); }
 
   private:
+    void Apply(HookType hook_type, util::stream::Chains &chains);
+
     boost::ptr_vector<OutputHook> outputs_[NUMBER_OF_HOOKS];
     int vocab_fd_;
     HeaderInfo header_;
+
+    std::string file_base_;
+    bool keep_buffer_;
 };
 
 inline const HeaderInfo &OutputHook::GetHeader() const {

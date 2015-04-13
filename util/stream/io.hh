@@ -70,8 +70,8 @@ class FileBuffer {
       return PWriteAndRecycle(file_.get());
     }
 
-    PRead Source() const {
-      return PRead(file_.get());
+    PRead Source(bool discard = false) {
+      return PRead(discard ? file_.release() : file_.get(), discard);
     }
 
     uint64_t Size() const {
