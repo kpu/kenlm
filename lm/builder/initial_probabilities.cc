@@ -231,7 +231,7 @@ class MergeRight {
         ++grams;
 
         // Special case for <s>: probability 1.0.  This allows <s> to be
-        // explicitly scores as part of the sentence without impacting
+        // explicitly scored as part of the sentence without impacting
         // probability and computes q correctly as b(<s>).
         assert(*grams->begin() == kBOS);
         grams->Value().uninterp.prob = 1.0;
