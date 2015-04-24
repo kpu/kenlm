@@ -10,9 +10,10 @@
 void Usage(const char *name) {
   std::cerr <<
     "KenLM was compiled with maximum order " << KENLM_MAX_ORDER << ".\n"
-    "Usage: " << name << " [-n] [-s] lm_file\n"
+    "Usage: " << name << " [-b] [-n] [-w] [-s] lm_file\n"
+    "-b: Do not buffer output.\n"
     "-n: Do not wrap the input in <s> and </s>.\n"
-    "-s: Sentence totals only.\n"
+    "-v summary|sentence|word: Level of verbosity\n"
     "-l lazy|populate|read|parallel: Load lazily, with populate, or malloc+read\n"
     "The default loading method is populate on Linux and read on others.\n";
   exit(1);
@@ -24,16 +25,28 @@ int main(int argc, char *argv[]) {
 
   lm::ngram::Config config;
   bool sentence_context = true;
-  bool show_words = true;
+  unsigned int verbosity = 2;
+  bool flush = false;
 
   int opt;
-  while ((opt = getopt(argc, argv, "hnsl:")) != -1) {
+  while ((opt = getopt(argc, argv, "bnv:l:")) != -1) {
     switch (opt) {
+      case 'b':
+        flush = true;
+        break;
       case 'n':
         sentence_context = false;
         break;
-      case 's':
-        show_words = false;
+      case 'v':
+        if (!strcmp(optarg, "word") || !strcmp(optarg, "2")) {
+          verbosity = 2;
+        } else if (!strcmp(optarg, "sentence") || !strcmp(optarg, "1")) {
+          verbosity = 1;
+        } else if (!strcmp(optarg, "summary") || !strcmp(optarg, "0")) {
+          verbosity = 0;
+        } else {
+          Usage(argv[0]);
+        }
         break;
       case 'l':
         if (!strcmp(optarg, "lazy")) {
@@ -55,6 +68,7 @@ int main(int argc, char *argv[]) {
   }
   if (optind + 1 != argc)
     Usage(argv[0]);
+  lm::ngram::QueryPrinter printer(1, verbosity >= 2, verbosity >= 1, true, flush);
   const char *file = argv[optind];
   try {
     using namespace lm::ngram;
@@ -62,22 +76,22 @@ int main(int argc, char *argv[]) {
     if (RecognizeBinary(file, model_type)) {
       switch(model_type) {
         case PROBING:
-          Query<lm::ngram::ProbingModel>(file, config, sentence_context, show_words);
+          Query<lm::ngram::ProbingModel>(file, config, sentence_context, printer);
           break;
         case REST_PROBING:
-          Query<lm::ngram::RestProbingModel>(file, config, sentence_context, show_words);
+          Query<lm::ngram::RestProbingModel>(file, config, sentence_context, printer);
           break;
         case TRIE:
-          Query<TrieModel>(file, config, sentence_context, show_words);
+          Query<TrieModel>(file, config, sentence_context, printer);
           break;
         case QUANT_TRIE:
-          Query<QuantTrieModel>(file, config, sentence_context, show_words);
+          Query<QuantTrieModel>(file, config, sentence_context, printer);
           break;
         case ARRAY_TRIE:
-          Query<ArrayTrieModel>(file, config, sentence_context, show_words);
+          Query<ArrayTrieModel>(file, config, sentence_context, printer);
           break;
         case QUANT_ARRAY_TRIE:
-          Query<QuantArrayTrieModel>(file, config, sentence_context, show_words);
+          Query<QuantArrayTrieModel>(file, config, sentence_context, printer);
           break;
         default:
           std::cerr << "Unrecognized kenlm model type " << model_type << std::endl;
@@ -86,14 +100,11 @@ int main(int argc, char *argv[]) {
 #ifdef WITH_NPLM
     } else if (lm::np::Model::Recognize(file)) {
       lm::np::Model model(file);
-      if (show_words) {
-        Query<lm::np::Model, lm::ngram::FullPrint>(model, sentence_context);
-      } else {
-        Query<lm::np::Model, lm::ngram::BasicPrint>(model, sentence_context);
-      }
+      Query<lm::np::Model, lm::ngram::QueryPrinter>(model, sentence_context, printer);
+      Query<lm::np::Model, lm::ngram::QueryPrinter>(model, sentence_context, printer);
 #endif
     } else {
-      Query<ProbingModel>(file, config, sentence_context, show_words);
+      Query<ProbingModel>(file, config, sentence_context, printer);
     }
     util::PrintUsage(std::cerr);
   } catch (const std::exception &e) {

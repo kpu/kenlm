@@ -14,30 +14,25 @@
 namespace lm {
 namespace ngram {
 
-class BasicPrint {
+class QueryPrinter {
   public:
-    explicit BasicPrint(int fd, bool flush = true) : out_(fd), flush_(flush) {}
-    void Word(StringPiece, WordIndex, const FullScoreReturn &) {}
-    void Line(uint64_t oov, float total) {
-      out_ << "Total: " << total << " OOV: " << oov << '\n';
-      if (flush_) out_.flush();
-    }
-    void Summary(double, double, uint64_t, uint64_t) {}
-  protected:
-    util::FakeOFStream out_;
-    bool flush_;
-};
-
-class FullPrint : public BasicPrint {
-  public:
-    explicit FullPrint(int fd, bool flush = true) : BasicPrint(fd, flush) {}
+    QueryPrinter(int fd, bool print_word, bool print_line, bool print_summary, bool flush)
+      : out_(fd), print_word_(print_word), print_line_(print_line), print_summary_(print_summary), flush_(flush) {}
 
     void Word(StringPiece surface, WordIndex vocab, const FullScoreReturn &ret) {
+      if (!print_word_) return;
       out_ << surface << '=' << vocab << ' ' << static_cast<unsigned int>(ret.ngram_length)  << ' ' << ret.prob << '\t';
       if (flush_) out_.flush();
     }
 
+    void Line(uint64_t oov, float total) {
+      if (!print_line_) return;
+      out_ << "Total: " << total << " OOV: " << oov << '\n';
+      if (flush_) out_.flush();
+    }
+ 
     void Summary(double ppl_including_oov, double ppl_excluding_oov, uint64_t corpus_oov, uint64_t corpus_tokens) {
+      if (!print_summary_) return;
       out_ <<
         "Perplexity including OOVs:\t" << ppl_including_oov << "\n"
         "Perplexity excluding OOVs:\t" << ppl_excluding_oov << "\n"
@@ -45,10 +40,16 @@ class FullPrint : public BasicPrint {
         "Tokens:\t" << corpus_tokens << '\n';
       out_.flush();
     }
+
+  private:
+    util::FakeOFStream out_;
+    bool print_word_;
+    bool print_line_;
+    bool print_summary_;
+    bool flush_;
 };
 
-template <class Model, class Printer> void Query(const Model &model, bool sentence_context) {
-  Printer printer(1);
+template <class Model, class Printer> void Query(const Model &model, bool sentence_context, Printer &printer) {
   typename Model::State state, out;
   lm::FullScoreReturn ret;
   StringPiece word;
@@ -99,13 +100,9 @@ template <class Model, class Printer> void Query(const Model &model, bool senten
       corpus_tokens);
 }
 
-template <class Model> void Query(const char *file, const Config &config, bool sentence_context, bool show_words) {
+template <class Model> void Query(const char *file, const Config &config, bool sentence_context, QueryPrinter &printer) {
   Model model(file, config);
-  if (show_words) {
-    Query<Model, FullPrint>(model, sentence_context);
-  } else {
-    Query<Model, BasicPrint>(model, sentence_context);
-  }
+  Query<Model, QueryPrinter>(model, sentence_context, printer);
 }
 
 } // namespace ngram
