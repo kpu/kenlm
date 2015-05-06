@@ -135,6 +135,16 @@ double WallTime() {
   return Subtract(GetWall(), kRecordStart.Started());
 }
 
+double UserTime() {
+#if !defined(_WIN32) && !defined(_WIN64)
+  struct rusage usage;
+  if (getrusage(RUSAGE_SELF, &usage))
+    return 0.0;
+  return DoubleSec(usage.ru_utime);
+#endif
+  return 0.0;
+}
+
 void PrintUsage(std::ostream &out) {
 #if !defined(_WIN32) && !defined(_WIN64)
   // Linux doesn't set memory usage in getrusage :-(
