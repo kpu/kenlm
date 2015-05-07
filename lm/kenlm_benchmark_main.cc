@@ -2,6 +2,7 @@
 #include "util/fake_ofstream.hh"
 #include "util/file.hh"
 #include "util/file_piece.hh"
+#include "util/usage.hh"
 
 #include <stdint.h>
 
@@ -122,5 +123,6 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   Dispatch(argv[2], !strcmp(argv[1], "query"));
+  util::PrintUsage(std::cerr);
   return 0;
 }
