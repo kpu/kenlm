@@ -25,9 +25,9 @@ class FakeOFStream {
     // Does not take ownership of out.
     // Allows default constructor, but must call SetFD.
     explicit FakeOFStream(int out = -1, std::size_t buffer_size = 1048576)
-      : buf_(util::MallocOrThrow(std::max(buffer_size, 20))),
+      : buf_(util::MallocOrThrow(std::max(buffer_size, (size_t)20))),
         current_(static_cast<char*>(buf_.get())),
-        end_(current_ + std::max(buffer_size, 20)),
+        end_(current_ + std::max(buffer_size, (size_t)20)),
         fd_(out) {}
 
     ~FakeOFStream() {
