@@ -93,9 +93,13 @@ class FakeOFStream {
      * uint64_t and std::size_t the same (on 64-bit) so this isn't necessary. 
      * But it does no harm since gcc sees it as a specialization of the
      * EnableIfKludge template.
+     * Also, delegating to *this << static_cast<uint64_t>(value) would loop
+     * indefinitely on gcc.
      */
     FakeOFStream &operator<<(std::size_t value) {
-      return *this << static_cast<uint64_t>(value);
+      EnsureRemaining(ToStringBuf<uint64_t>::kBytes);
+      current_ = ToString(value, current_);
+      return *this;
     }
 
     // Note this does not sync.
