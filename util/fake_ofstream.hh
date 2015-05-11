@@ -17,16 +17,17 @@
 
 namespace util {
 class FakeOFStream {
-  private:
-    // Maximum over all ToString operations.
-    static const std::size_t kMinBuf = 20;
   public:
+    // Maximum over all ToString operations.
+    // static const std::size_t kMinBuf = 20;
+    // This was causing compile failures in debug, so now 20 is written directly.
+    //
     // Does not take ownership of out.
     // Allows default constructor, but must call SetFD.
     explicit FakeOFStream(int out = -1, std::size_t buffer_size = 1048576)
-      : buf_(util::MallocOrThrow(std::max(buffer_size, kMinBuf))),
+      : buf_(util::MallocOrThrow(std::max(buffer_size, 20))),
         current_(static_cast<char*>(buf_.get())),
-        end_(current_ + std::max(buffer_size, kMinBuf)),
+        end_(current_ + std::max(buffer_size, 20)),
         fd_(out) {}
 
     ~FakeOFStream() {
