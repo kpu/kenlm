@@ -98,7 +98,7 @@ class FakeOFStream {
      */
     FakeOFStream &operator<<(std::size_t value) {
       EnsureRemaining(ToStringBuf<uint64_t>::kBytes);
-      current_ = ToString(value, current_);
+      current_ = ToString(value, static_cast<uint64_t>(current_));
       return *this;
     }
 
