@@ -39,6 +39,7 @@ ModelBuffer::ModelBuffer(const std::string &file_base)
     UTIL_THROW(util::Exception, "Unknown payload " << token);
   }
 
+  files_.Init(order);
   for (unsigned long i = 0; i < order; ++i) {
     files_.push_back(util::OpenReadOrThrow((file_base_ + '.' + boost::lexical_cast<std::string>(i + 1)).c_str()));
   }
@@ -69,8 +70,13 @@ void ModelBuffer::Sink(util::stream::Chains &chains) {
 
 void ModelBuffer::Source(util::stream::Chains &chains) {
   assert(chains.size() == files_.size());
-  for (unsigned int i = 0; i < files_.size(); ++i)
+  for (unsigned int i = 0; i < files_.size(); ++i) {
     chains[i] >> util::stream::PRead(files_[i].get());
+  }
+}
+
+std::size_t ModelBuffer::Order() const {
+  return files_.size();
 }
 
 }} // namespaces
