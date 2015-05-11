@@ -88,6 +88,16 @@ class FakeOFStream {
       return *this;
     }
 
+    /* clang on OS X appears to consider std::size_t aka unsigned long distinct
+     * from uint64_t.  So this function makes clang work.  gcc considers
+     * uint64_t and std::size_t the same (on 64-bit) so this isn't necessary. 
+     * But it does no harm since gcc sees it as a specialization of the
+     * EnableIfKludge template.
+     */
+    FakeOFStream &operator<<(std::size_t value) {
+      return *this << static_cast<uint64_t>(value);
+    }
+
     // Note this does not sync.
     void flush() {
       if (current_ != buf_.get()) {
