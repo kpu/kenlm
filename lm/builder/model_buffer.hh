@@ -29,6 +29,8 @@ class ModelBuffer {
 
     void Source(util::stream::Chains &chains);
 
+    std::size_t Order() const;
+
   private:
     const std::string file_base_;
     const bool keep_buffer_;
