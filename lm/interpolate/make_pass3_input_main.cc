@@ -1,6 +1,9 @@
 #include "lm/builder/sort.hh"
 #include "lm/builder/print.hh"
 #include "lm/builder/model_buffer.hh"
+#include "lm/builder/ngram.hh"
+#include "util/stream/chain.hh"
+#include "lm/interpolate/split_worker.hh"
 
 #if defined(_WIN32) || defined(_WIN64)
 
@@ -16,31 +19,77 @@
 
 /*
  * This is a simple example program that takes in intermediate
- * suffix-sorted ngram files and context sorts each using the streaming
- * framework.
+ * suffix-sorted ngram files and outputs two sets of files: one for backoff
+ * probability values (raw numbers, in suffix order) and one for
+ * probability values (ngram id and probability, in *context* order)
  */
 int main() {
+  using namespace lm::interpolate;
+
   // TODO: Make these all command-line parameters
   const std::size_t ONE_GB = 1 << 30;
   const std::size_t SIXTY_FOUR_MB = 1 << 26;
   const std::size_t NUMBER_OF_BLOCKS = 2;
   const std::string FILE_NAME = "ngrams";
   const std::string CONTEXT_SORTED_FILENAME = "csorted-ngrams";
+  const std::string BACKOFF_FILENAME = "backoffs";
+
+  // The basic strategy here is to have three chains:
+  // - The first reads the ngram order inputs using ModelBuffer. Those are
+  //   then stripped of their backoff values and fed into the third chain;
+  //   the backoff values *themselves* are written to the second chain.
+  //
+  // - The second chain takes the backoff values and writes them out to a
+  //   file (one for each order).
+  //
+  // - The third chain takes just the probability values and ngrams and
+  //   writes them out, sorted in context-order, to a file (one for each
+  //   order).
 
   // This will be used to read in the binary intermediate files. There is
   // one file per order (e.g. ngrams.1, ngrams.2, ...)
   lm::builder::ModelBuffer buffer(FILE_NAME);
 
-  // Create a separate chain for each ngram order
-  util::stream::Chains chains(buffer.Order());
+  // Create a separate chains for each ngram order for:
+  // - Input from the intermediate files
+  // - Output to the backoff file
+  // - Output to the (context-sorted) probability file
+  util::stream::Chains ngram_inputs(buffer.Order());
+  util::stream::Chains backoff_chains(buffer.Order());
+  util::stream::Chains prob_chains(buffer.Order());
+  util::FixedArray<util::scoped_fd> backoff_files(buffer.Order());
   for (std::size_t i = 0; i < buffer.Order(); ++i) {
-    chains.push_back(util::stream::ChainConfig(
+    ngram_inputs.push_back(util::stream::ChainConfig(
         lm::builder::NGram::TotalSize(i + 1), NUMBER_OF_BLOCKS, ONE_GB));
+
+    backoff_chains.push_back(
+        util::stream::ChainConfig(sizeof(float), NUMBER_OF_BLOCKS, ONE_GB));
+
+    // open the backoff files
+    std::string filename = BACKOFF_FILENAME + "."
+                           + boost::lexical_cast<std::string>(i + 1);
+    backoff_files.push_back(util::CreateOrThrow(filename.c_str()));
+
+    prob_chains.push_back(util::stream::ChainConfig(
+        sizeof(lm::WordIndex) * (i + 1) + sizeof(float), NUMBER_OF_BLOCKS,
+        ONE_GB));
   }
 
   // This sets the input for each of the ngram order chains to the
   // appropriate file
-  buffer.Source(chains);
+  buffer.Source(ngram_inputs);
+
+  util::FixedArray<util::scoped_ptr<SplitWorker> > workers(buffer.Order());
+  for (std::size_t i = 0; i < buffer.Order(); ++i) {
+    // Attach a SplitWorker to each of the ngram input chains, writing to the
+    // corresponding order's backoff and probability chains
+    workers.push_back(
+        new SplitWorker(i + 1, backoff_chains[i], prob_chains[i]));
+    ngram_inputs[i] >> boost::ref(*workers.back());
+
+    // Also, attach a WriteAndRecycle sink to the backoff chains
+    backoff_chains[i] >> util::stream::WriteAndRecycle(backoff_files[i].get());
+  }
 
   util::stream::SortConfig sort_cfg;
   sort_cfg.temp_prefix = "/tmp/";
@@ -54,13 +103,13 @@ int main() {
   // - The first executes BlockSorter.Run() to sort the n-gram entries
   // - The second executes WriteAndRecycle.Run() to write each sorted
   //   block to disk as a temporary file
-  lm::builder::Sorts<lm::builder::ContextOrder> sorts(chains.size());
-  for (std::size_t i = 0; i < chains.size(); ++i) {
-    sorts.push_back(chains[i], sort_cfg, lm::builder::ContextOrder(i + 1));
+  lm::builder::Sorts<lm::builder::ContextOrder> sorts(buffer.Order());
+  for (std::size_t i = 0; i < prob_chains.size(); ++i) {
+    sorts.push_back(prob_chains[i], sort_cfg, lm::builder::ContextOrder(i + 1));
   }
 
   // Set the sort output to be on the same chain
-  for (std::size_t i = 0; i < chains.size(); ++i) {
+  for (std::size_t i = 0; i < prob_chains.size(); ++i) {
     // The following call to Chain::Wait()
     //     joins the threads owned by chains[i].
     //
@@ -70,7 +119,7 @@ int main() {
     // The following call also resets chain[i]
     //     so that it can be reused
     //     (including free'ing the memory previously used by the chain)
-    chains[i].Wait();
+    prob_chains[i].Wait();
 
     // In an ideal world (without memory restrictions)
     //     we could merge all of the previously sorted blocks
@@ -100,18 +149,20 @@ int main() {
     //
     // Merge sort could have be invoked directly
     //     so that merge sort memory doesn't coexist with Chain memory.
-    sorts[i].Output(chains[i]);
+    sorts[i].Output(prob_chains[i]);
   }
 
   // Create another model buffer for our output on e.g. csorted-ngrams.1,
   // csorted-ngrams.2, ...
   lm::builder::ModelBuffer output_buf(CONTEXT_SORTED_FILENAME, true, false);
-  output_buf.Sink(chains);
+  output_buf.Sink(prob_chains);
 
   // Joins all threads that chains owns,
   //    and does a for loop over each chain object in chains,
   //    calling chain.Wait() on each such chain object
-  chains.Wait(true);
+  ngram_inputs.Wait(true);
+  backoff_chains.Wait(true);
+  prob_chains.Wait(true);
 
   return 0;
 }
