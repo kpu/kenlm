@@ -54,7 +54,8 @@ int main(int argc, char *argv[]) {
 
     // Display help
     if(argc == 1 || vm["help"].as<bool>()) {
-
+      std::cerr << "Usage" << std::endl;
+      return 1;
     }
   }
   catch(const std::exception &e) {
