@@ -3,6 +3,8 @@
 #include "lm/builder/model_buffer.hh"
 #include "util/stream/multi_stream.hh"
 
+#include <iostream>
+
 namespace lm { namespace builder {
 
 OutputHook::~OutputHook() {}
