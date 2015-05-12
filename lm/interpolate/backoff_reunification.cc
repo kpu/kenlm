@@ -19,8 +19,9 @@ public:
   void Run(const util::stream::ChainPosition &position) {
     lm::builder::NGramStream stream(position);
 
-    for (util::stream::Stream prob_input(prob_pos_), boff_input(boff_pos_);
-         prob_input && boff_input; ++prob_input, ++boff_input, ++stream) {
+    util::stream::Stream prob_input(prob_pos_);
+    util::stream::Stream boff_input(boff_pos_);
+    for (; prob_input && boff_input; ++prob_input, ++boff_input, ++stream) {
 
       const WordIndex *start
           = reinterpret_cast<const WordIndex *>(prob_input.Get());
@@ -31,6 +32,8 @@ public:
       stream->Value().complete.backoff
           = *reinterpret_cast<float *>(boff_input.Get());
     }
+    UTIL_THROW_IF2(prob_input || boff_input,
+                   "Streams were not the same size during merging");
     stream.Poison();
   }
 
