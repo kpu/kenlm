@@ -5,6 +5,9 @@
 #include "util/stream/chain.hh"
 #include "lm/interpolate/split_worker.hh"
 
+#include <boost/program_options.hpp>
+#include <boost/version.hpp>
+
 #if defined(_WIN32) || defined(_WIN64)
 
 // Windows doesn't define <unistd.h>
@@ -23,17 +26,44 @@
  * probability values (raw numbers, in suffix order) and one for
  * probability values (ngram id and probability, in *context* order)
  */
-int main() {
+int main(int argc, char *argv[]) {
   using namespace lm::interpolate;
 
   // TODO: Make these all command-line parameters
   const std::size_t ONE_GB = 1 << 30;
   const std::size_t SIXTY_FOUR_MB = 1 << 26;
   const std::size_t NUMBER_OF_BLOCKS = 2;
-  const std::string FILE_NAME = "ngrams";
-  const std::string CONTEXT_SORTED_FILENAME = "csorted-ngrams";
-  const std::string BACKOFF_FILENAME = "backoffs";
+  
+  std::string FILE_NAME = "ngrams";
+  std::string CONTEXT_SORTED_FILENAME = "csorted-ngrams";
+  std::string BACKOFF_FILENAME = "backoffs";
+  std::string TMP_DIR = "/tmp/";
 
+  try {
+    namespace po = boost::program_options;
+    po::options_description options("canhazinterp Pass-3 options");
+
+    options.add_options()
+      ("help,h", po::bool_switch(), "Show this help message")
+      ("ngrams,n", po::value<std::string>(&FILE_NAME), "ngrams file")
+      ("csortngrams,c", po::value<std::string>(&CONTEXT_SORTED_FILENAME), "context sorted ngrams file")
+      ("backoffs,b", po::value<std::string>(&BACKOFF_FILENAME), "backoffs file")
+      ("tmpdir,t", po::value<std::string>(&TMP_DIR), "tmp dir");
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, options), vm);
+
+    // Display help
+    if(argc == 1 || vm["help"].as<bool>()) {
+
+    }
+  }
+  catch(const std::exception &e) {
+
+    std::cerr << e.what() << std::endl;
+    return 1;
+
+  }
+  
   // The basic strategy here is to have three chains:
   // - The first reads the ngram order inputs using ModelBuffer. Those are
   //   then stripped of their backoff values and fed into the third chain;
@@ -57,18 +87,12 @@ int main() {
   util::stream::Chains ngram_inputs(buffer.Order());
   util::stream::Chains backoff_chains(buffer.Order());
   util::stream::Chains prob_chains(buffer.Order());
-  util::FixedArray<util::scoped_fd> backoff_files(buffer.Order());
   for (std::size_t i = 0; i < buffer.Order(); ++i) {
     ngram_inputs.push_back(util::stream::ChainConfig(
         lm::builder::NGram::TotalSize(i + 1), NUMBER_OF_BLOCKS, ONE_GB));
 
     backoff_chains.push_back(
         util::stream::ChainConfig(sizeof(float), NUMBER_OF_BLOCKS, ONE_GB));
-
-    // open the backoff files
-    std::string filename = BACKOFF_FILENAME + "."
-                           + boost::lexical_cast<std::string>(i + 1);
-    backoff_files.push_back(util::CreateOrThrow(filename.c_str()));
 
     prob_chains.push_back(util::stream::ChainConfig(
         sizeof(lm::WordIndex) * (i + 1) + sizeof(float), NUMBER_OF_BLOCKS,
@@ -86,13 +110,10 @@ int main() {
     workers.push_back(
         new SplitWorker(i + 1, backoff_chains[i], prob_chains[i]));
     ngram_inputs[i] >> boost::ref(*workers.back());
-
-    // Also, attach a WriteAndRecycle sink to the backoff chains
-    backoff_chains[i] >> util::stream::WriteAndRecycle(backoff_files[i].get());
   }
 
   util::stream::SortConfig sort_cfg;
-  sort_cfg.temp_prefix = "/tmp/";
+  sort_cfg.temp_prefix = TMP_DIR;
   sort_cfg.buffer_size = SIXTY_FOUR_MB;
   sort_cfg.total_memory = ONE_GB;
 
@@ -156,6 +177,11 @@ int main() {
   // csorted-ngrams.2, ...
   lm::builder::ModelBuffer output_buf(CONTEXT_SORTED_FILENAME, true, false);
   output_buf.Sink(prob_chains);
+
+  // Create a third model buffer for our backoff output on e.g. backoff.1,
+  // backoff.2, ...
+  lm::builder::ModelBuffer boff_buf(BACKOFF_FILENAME, true, false);
+  boff_buf.Sink(backoff_chains);
 
   // Joins all threads that chains owns,
   //    and does a for loop over each chain object in chains,
