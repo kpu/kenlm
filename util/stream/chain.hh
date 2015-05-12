@@ -23,6 +23,7 @@ class ChainConfigException : public Exception {
 };
 
 class Chain;
+class RewindableStream;
   
 /**
  * Encapsulates a @ref PCQueue "producer queue" and a @ref PCQueue "consumer queue" within a @ref Chain "chain".
@@ -35,6 +36,7 @@ class ChainPosition {
   private:
     friend class Chain;
     friend class Link;
+    friend class RewindableStream;
     ChainPosition(PCQueue<Block> &in, PCQueue<Block> &out, Chain *chain, MultiProgress &progress) 
       : in_(&in), out_(&out), chain_(chain), progress_(progress.Add()) {}
 
