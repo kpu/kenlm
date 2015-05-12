@@ -73,11 +73,6 @@ class RewindableStream : boost::noncopyable {
     RewindableStream& operator++();
 
     /**
-     * Rewinds the stream back to a specific position.
-     */
-    void Rewind(void *pos);
-
-    /**
      * Poisons the stream. This sends any buffered blocks down the chain
      * and sends a poison block as well (sending at most 2 non-poison and 1
      * poison block).
