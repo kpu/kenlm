@@ -43,8 +43,11 @@ private:
   util::stream::ChainPosition boff_pos_;
 };
 
-// TODO: Figure out why I *have* to have the output chains here instead of
-// ChainPositions
+// Since we are *adding* something to the output chain here, we pass in the
+// chain itself so that we can safely add a new step to the chain without
+// creating a deadlock situation (since creating a new ChainPosition will
+// make a new input/output pair---we want that position to be created
+// *here*, not before).
 void ReunifyBackoff(util::stream::ChainPositions &prob_pos,
                     util::stream::ChainPositions &boff_pos,
                     util::stream::Chains &output_chains) {
