@@ -10,8 +10,8 @@ namespace interpolate {
 
 class MergeWorker {
 public:
-  MergeWorker(std::size_t order, util::stream::ChainPosition &prob_pos,
-              util::stream::ChainPosition &boff_pos)
+  MergeWorker(std::size_t order, const util::stream::ChainPosition &prob_pos,
+              const util::stream::ChainPosition &boff_pos)
       : order_(order), prob_pos_(prob_pos), boff_pos_(boff_pos) {
     // nothing
   }
@@ -36,8 +36,8 @@ public:
 
 private:
   std::size_t order_;
-  util::stream::ChainPosition &prob_pos_;
-  util::stream::ChainPosition &boff_pos_;
+  util::stream::ChainPosition prob_pos_;
+  util::stream::ChainPosition boff_pos_;
 };
 
 // TODO: Figure out why I *have* to have the output chains here instead of
