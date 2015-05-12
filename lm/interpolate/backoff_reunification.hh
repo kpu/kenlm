@@ -7,24 +7,21 @@
 namespace lm {
 namespace interpolate {
 
-struct ReunifyConfig {
-  util::stream::SortConfig sort_config;
-  std::string file_base;
-  std::size_t num_blocks;
-  std::size_t max_ram;
-};
-
 /**
- * The third pass for the offline log-linear interpolation algorithm.
+ * The third pass for the offline log-linear interpolation algorithm. This
+ * reads **suffix-ordered** probability values (ngram-id, float) and
+ * **suffix-ordered** backoff values (float) and writes the merged contents
+ * to the output.
  *
- * @param prob_stream The stream that is currently reading probability
- *  values (ngram-id and probability) in *context* order
- * @param backoff_stream A stream of backoff values (just floats) in
- *  suffix-order
+ * @param prob_pos The chain position for each order from which to read
+ *  the probability values
+ * @param boff_pos The chain position for each order from which to read
+ *  the backoff values
+ * @param output_chains The output chains for each order
  */
-void ReunifyBackoff(const ReunifyConfig &config,
-                    util::stream::Chains &prob_chains,
-                    util::stream::Chains &backoff_chains);
+void ReunifyBackoff(util::stream::ChainPositions &prob_pos,
+                    util::stream::ChainPositions &boff_pos,
+                    util::stream::Chains &output_chains);
 }
 }
 #endif
