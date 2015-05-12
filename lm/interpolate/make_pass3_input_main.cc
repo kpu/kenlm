@@ -5,6 +5,9 @@
 #include "util/stream/chain.hh"
 #include "lm/interpolate/split_worker.hh"
 
+#include <boost/program_options.hpp>
+#include <boost/version.hpp>
+
 #if defined(_WIN32) || defined(_WIN64)
 
 // Windows doesn't define <unistd.h>
@@ -23,17 +26,44 @@
  * probability values (raw numbers, in suffix order) and one for
  * probability values (ngram id and probability, in *context* order)
  */
-int main() {
+int main(int argc, char *argv[]) {
   using namespace lm::interpolate;
 
   // TODO: Make these all command-line parameters
   const std::size_t ONE_GB = 1 << 30;
   const std::size_t SIXTY_FOUR_MB = 1 << 26;
   const std::size_t NUMBER_OF_BLOCKS = 2;
-  const std::string FILE_NAME = "ngrams";
-  const std::string CONTEXT_SORTED_FILENAME = "csorted-ngrams";
-  const std::string BACKOFF_FILENAME = "backoffs";
+  
+  std::string FILE_NAME = "ngrams";
+  std::string CONTEXT_SORTED_FILENAME = "csorted-ngrams";
+  std::string BACKOFF_FILENAME = "backoffs";
+  std::string TMP_DIR = "/tmp/";
 
+  try {
+    namespace po = boost::program_options;
+    po::options_description options("canhazinterp Pass-3 options");
+
+    options.add_options()
+      ("help,h", po::bool_switch(), "Show this help message")
+      ("ngrams,n", po::value<std::string>(&FILE_NAME), "ngrams file")
+      ("csortngrams,c", po::value<std::string>(&CONTEXT_SORTED_FILENAME), "context sorted ngrams file")
+      ("backoffs,b", po::value<std::string>(&BACKOFF_FILENAME), "backoffs file")
+      ("tmpdir,t", po::value<std::string>(&TMP_DIR), "tmp dir");
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, options), vm);
+
+    // Display help
+    if(argc == 1 || vm["help"].as<bool>()) {
+
+    }
+  }
+  catch(const std::exception &e) {
+
+    std::cerr << e.what() << std::endl;
+    return 1;
+
+  }
+  
   // The basic strategy here is to have three chains:
   // - The first reads the ngram order inputs using ModelBuffer. Those are
   //   then stripped of their backoff values and fed into the third chain;
@@ -92,7 +122,7 @@ int main() {
   }
 
   util::stream::SortConfig sort_cfg;
-  sort_cfg.temp_prefix = "/tmp/";
+  sort_cfg.temp_prefix = TMP_DIR;
   sort_cfg.buffer_size = SIXTY_FOUR_MB;
   sort_cfg.total_memory = ONE_GB;
 
