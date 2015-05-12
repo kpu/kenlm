@@ -87,18 +87,12 @@ int main(int argc, char *argv[]) {
   util::stream::Chains ngram_inputs(buffer.Order());
   util::stream::Chains backoff_chains(buffer.Order());
   util::stream::Chains prob_chains(buffer.Order());
-  util::FixedArray<util::scoped_fd> backoff_files(buffer.Order());
   for (std::size_t i = 0; i < buffer.Order(); ++i) {
     ngram_inputs.push_back(util::stream::ChainConfig(
         lm::builder::NGram::TotalSize(i + 1), NUMBER_OF_BLOCKS, ONE_GB));
 
     backoff_chains.push_back(
         util::stream::ChainConfig(sizeof(float), NUMBER_OF_BLOCKS, ONE_GB));
-
-    // open the backoff files
-    std::string filename = BACKOFF_FILENAME + "."
-                           + boost::lexical_cast<std::string>(i + 1);
-    backoff_files.push_back(util::CreateOrThrow(filename.c_str()));
 
     prob_chains.push_back(util::stream::ChainConfig(
         sizeof(lm::WordIndex) * (i + 1) + sizeof(float), NUMBER_OF_BLOCKS,
@@ -116,9 +110,6 @@ int main(int argc, char *argv[]) {
     workers.push_back(
         new SplitWorker(i + 1, backoff_chains[i], prob_chains[i]));
     ngram_inputs[i] >> boost::ref(*workers.back());
-
-    // Also, attach a WriteAndRecycle sink to the backoff chains
-    backoff_chains[i] >> util::stream::WriteAndRecycle(backoff_files[i].get());
   }
 
   util::stream::SortConfig sort_cfg;
@@ -186,6 +177,11 @@ int main(int argc, char *argv[]) {
   // csorted-ngrams.2, ...
   lm::builder::ModelBuffer output_buf(CONTEXT_SORTED_FILENAME, true, false);
   output_buf.Sink(prob_chains);
+
+  // Create a third model buffer for our backoff output on e.g. backoff.1,
+  // backoff.2, ...
+  lm::builder::ModelBuffer boff_buf(BACKOFF_FILENAME, true, false);
+  boff_buf.Sink(backoff_chains);
 
   // Joins all threads that chains owns,
   //    and does a for loop over each chain object in chains,
