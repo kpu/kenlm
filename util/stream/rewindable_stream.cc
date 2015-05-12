@@ -17,11 +17,10 @@ void RewindableStream::Init(const ChainPosition &position) {
   progress_ = position.progress_;
   entry_size_ = position.GetChain().EntrySize();
   block_size_ = position.GetChain().BlockSize();
-  in_->Consume(first_bl_);
-  current_bl_ = &first_bl_;
+  FetchBlock();
+  current_bl_ = &second_bl_;
   current_ = static_cast<uint8_t*>(current_bl_->Get());
   end_ = current_ + current_bl_->ValidSize();
-  in_->Consume(second_bl_);
 }
 
 const void *RewindableStream::Get() const {
@@ -42,8 +41,10 @@ RewindableStream &RewindableStream::operator++() {
     // pointer: if it's at the second_bl_, we need to flush and fetch a new
     // block. Otherwise, we can just move over to the second block.
     if (current_bl_ == &second_bl_) {
-      out_->Produce(first_bl_);
-      progress_ += first_bl_.ValidSize();
+      if (first_bl_) {
+        out_->Produce(first_bl_);
+        progress_ += first_bl_.ValidSize();
+      }
       first_bl_ = second_bl_;
       FetchBlock();
     }
@@ -54,7 +55,7 @@ RewindableStream &RewindableStream::operator++() {
 
   if (!*current_bl_)
   {
-    if (current_bl_ == &second_bl_)
+    if (current_bl_ == &second_bl_ && first_bl_)
     {
       out_->Produce(first_bl_);
       progress_ += first_bl_.ValidSize();
@@ -67,8 +68,8 @@ RewindableStream &RewindableStream::operator++() {
 }
 
 void RewindableStream::FetchBlock() {
-  // TODO: is this loop needed? Will we ever be given 0 sized but valid
-  // blocks?
+  // The loop is needed since it is *feasible* that we're given 0 sized but
+  // valid blocks
   do {
     in_->Consume(second_bl_);
   } while (second_bl_ && second_bl_.ValidSize() == 0);
@@ -96,7 +97,7 @@ void RewindableStream::Poison() {
   // poison down the chain
 
   // if we still have a buffered first block, produce it first
-  if (current_bl_ == &second_bl_) {
+  if (current_bl_ == &second_bl_ && first_bl_) {
     out_->Produce(first_bl_);
     progress_ += first_bl_.ValidSize();
   }
