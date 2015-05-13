@@ -1,4 +1,4 @@
-#include "lm/builder/model_buffer.hh"
+#include "lm/common/model_buffer.hh"
 #include "util/exception.hh"
 #include "util/fake_ofstream.hh"
 #include "util/file.hh"
@@ -8,7 +8,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace lm { namespace builder {
+namespace lm { namespace common {
 
 namespace {
 const char kMetadataHeader[] = "KenLM intermediate binary file";

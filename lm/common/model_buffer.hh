@@ -12,7 +12,7 @@
 
 namespace util { namespace stream { class Chains; } }
 
-namespace lm { namespace builder {
+namespace lm { namespace common {
 
 class ModelBuffer {
   public:

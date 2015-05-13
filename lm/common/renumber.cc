@@ -1,4 +1,4 @@
-#include "lm/builder/renumber.hh"
+#include "lm/common/renumber.hh"
 
 #include "lm/common/ngram_stream.hh"
 #include "lm/builder/payload.hh"
