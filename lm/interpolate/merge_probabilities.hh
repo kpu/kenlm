@@ -49,20 +49,20 @@ public:
     return sizeof(WordIndex) * Order() + sizeof(float) + backoff_bytes_;
   }
 
-  float& Prob() {
-    return *reinterpret_cast<float*>(end());
+  float &Prob() {
+    return *reinterpret_cast<float *>(end());
   }
 
   float Prob() const {
-    return *reinterpret_cast<const float*>(end());
+    return *reinterpret_cast<const float *>(end());
   }
 
-  const uint8_t* FromBegin() const {
-    return reinterpret_cast<const uint8_t*>(end()) + sizeof(float);
+  const uint8_t *FromBegin() const {
+    return reinterpret_cast<const uint8_t *>(end()) + sizeof(float);
   }
 
-  uint8_t* FromBegin() {
-    return reinterpret_cast<uint8_t*>(end()) + sizeof(float);
+  uint8_t *FromBegin() {
+    return reinterpret_cast<uint8_t *>(end()) + sizeof(float);
   }
 
 private:
