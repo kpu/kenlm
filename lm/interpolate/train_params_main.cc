@@ -1,6 +1,11 @@
+#include "lm/ngram_query.hh"
+#include "lm/model.hh"
+#include "lm/word_index.hh"
+
 #include <string>
 #include <vector>
 #include <iostream>
+#include <fstream>
 
 #include <boost/program_options.hpp>
 #include <boost/version.hpp>
@@ -46,9 +51,10 @@ void train_params(
     const std::vector<std::string>& vocab,
     const std::vector<unsigned>& models) {
   using namespace std;
+
   vector<string> context(5, "<s>");
   const int ITERATIONS = 10;
-  const int nlambdas = models.size() + HAS_BIAS ? 1 : 0; // bias + #models
+  const int nlambdas = models.size() + (HAS_BIAS ? 1 : 0); // bias + #models
   FVector params = FVector::Zero(nlambdas);
   vector<FVector> feats(vocab.size(), params);
   vector<float> us(vocab.size(), 0);
@@ -102,10 +108,14 @@ void train_params(
 }
 
 int main(int argc, char** argv) {
+
+  using namespace lm::ngram;
+  using namespace lm;
+
   std::string tuning_data;
   std::vector<std::string> lms;
 
-  try {
+  try { 
     namespace po = boost::program_options;
     po::options_description options("train-params");
 
@@ -124,8 +134,8 @@ int main(int argc, char** argv) {
     }
     if (vm["no_bias_term"].as<bool>())
       HAS_BIAS = false;
-    LM_FILES = vm["model"].as<std::vector<std::string> >();
-    TUNING_DATA = vm["tuning_data"].as<std::string>();
+    lms = vm["model"].as<std::vector<std::string> >();
+    tuning_data = vm["tuning_data"].as<std::string>();
   }
   catch(const std::exception &e) {
 
@@ -133,18 +143,24 @@ int main(int argc, char** argv) {
     return 1;
 
   }
-  if (LM_FILES.size() < 2) {
+  if (lms.size() < 2) {
     std::cerr << "Please specify at least two language model files with -m LM.KLM\n";
     return 1;
   }
-  if (TUNING_DATA.empty()) {
+  if (tuning_data.empty()) {
     std::cerr << "Please specify tuning set with -t FILE.TXT\n";
     return 1;
   }
 
-  for(int i=0; i < LM_FILES.size(); i++) {
-    std::cerr << "Loading LM file: " << LM_FILES[i] << std::endl;
+  util::FixedArray<Model *> models(lms.size());
+  
+  for(int i=0; i < lms.size(); i++) {
+    std::cerr << "Loading LM file: " << lms[i] << std::endl;
 
+    //Model * this_model = new Model(lms[i].c_str());
+
+    models[i] = new Model(lms[i].c_str());
+    
   }
   
   return 0;
