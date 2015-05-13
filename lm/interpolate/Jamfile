@@ -8,7 +8,7 @@ if $(with-eigen) {
 }
 
 import testing ;
-exe make_pass3_input : interpolate make_pass3_input_main.cc /top//boost_program_options ;
+exe streaming_example : interpolate streaming_example_main.cc /top//boost_program_options ;
 unit-test backoff_reunification_test : interpolate backoff_reunification_test.cc /top//boost_unit_test_framework ;
 #exe backoff_reunification_test : interpolate backoff_reunification_test_main.cc ;
 exe bounded_sequence_encoding_test : interpolate bounded_sequence_encoding_test.cc /top//boost_unit_test_framework ;
