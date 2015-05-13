@@ -2,8 +2,8 @@
 
 #include "lm/builder/discount.hh"
 #include "lm/builder/ngram_stream.hh"
-#include "lm/builder/sort.hh"
 #include "lm/builder/hash_gamma.hh"
+#include "lm/builder/payload.hh"
 #include "util/murmur_hash.hh"
 #include "util/file.hh"
 #include "util/stream/chain.hh"
