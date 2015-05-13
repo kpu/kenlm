@@ -49,7 +49,7 @@ public:
 
     for (std::size_t i = 0; i < sizeof(Grams<N>::grams) / sizeof(Gram<N>);
          ++i, ++output) {
-      std::copy(Grams<N>::grams[i].ids, Grams<N>::grams[i].ids + 1,
+      std::copy(Grams<N>::grams[i].ids, Grams<N>::grams[i].ids + N,
                 output->begin());
       output->Value() = Grams<N>::grams[i].prob;
     }
@@ -156,6 +156,8 @@ BOOST_AUTO_TEST_CASE(BackoffReunificationTest) {
   output_chains[2] >> CheckOutput<3>();
   */
 
+  prob_chains >> util::stream::kRecycle;
+  boff_chains >> util::stream::kRecycle;
   output_chains.Wait();
 }
 }
