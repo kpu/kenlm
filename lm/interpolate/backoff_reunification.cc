@@ -9,6 +9,7 @@
 namespace lm {
 namespace interpolate {
 
+namespace {
 class MergeWorker {
 public:
   MergeWorker(std::size_t order, const util::stream::ChainPosition &prob_pos,
@@ -43,6 +44,7 @@ private:
   util::stream::ChainPosition prob_pos_;
   util::stream::ChainPosition boff_pos_;
 };
+}
 
 // Since we are *adding* something to the output chain here, we pass in the
 // chain itself so that we can safely add a new step to the chain without
