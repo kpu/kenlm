@@ -1,6 +1,6 @@
 #include "lm/builder/output.hh"
 
-#include "lm/builder/model_buffer.hh"
+#include "lm/common/model_buffer.hh"
 #include "util/stream/multi_stream.hh"
 
 #include <iostream>
@@ -19,7 +19,7 @@ void Output::SinkProbs(util::stream::Chains &chains, bool output_q) {
     chains.Wait(true);
     return;
   }
-  ModelBuffer buf(file_base_, keep_buffer_, output_q);
+  lm::common::ModelBuffer buf(file_base_, keep_buffer_, output_q);
   buf.Sink(chains);
   chains >> util::stream::kRecycle;
   chains.Wait(false);

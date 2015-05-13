@@ -1,5 +1,5 @@
 #include "lm/interpolate/backoff_reunification.hh"
-#include "lm/builder/model_buffer.hh"
+#include "lm/common/model_buffer.hh"
 #include "lm/common/ngram_stream.hh"
 #include "lm/common/ngram.hh"
 #include "lm/common/compare.hh"

@@ -1,5 +1,5 @@
-fakelib builder : [ glob *.cc : *test.cc *main.cc ] 
-  ../../util//kenutil ../../util/stream//stream ../../util/double-conversion//double-conversion ..//kenlm
+fakelib builder : [ glob *.cc : *test.cc *main.cc ]
+  ../../util//kenutil ../../util/stream//stream ../../util/double-conversion//double-conversion ..//kenlm ../common//common
   : : : <library>/top//boost_thread $(timer-link) ;
 
 exe lmplz : lmplz_main.cc builder /top//boost_program_options ;
