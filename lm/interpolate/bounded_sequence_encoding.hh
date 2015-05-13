@@ -16,7 +16,7 @@ namespace interpolate {
 
 class BoundedSequenceEncoding {
   public:
-    // Define ranges [0, bound_begin), [0, bound_begin + 1), ... for entries in the sequence
+    // Encode [0, bound_begin[0]) x [0, bound_begin[1]) x [0, bound_begin[2]) x ... x [0, *(bound_end - 1)) for entries in the sequence
     BoundedSequenceEncoding(const unsigned char *bound_begin, const unsigned char *bound_end)
       : length_(bound_end - bound_begin) {}
 

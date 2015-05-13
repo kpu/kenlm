@@ -1,5 +1,5 @@
 #include "lm/interpolate/merge_probabilities.hh"
-#include "lm/builder/ngram_stream.hh"
+#include "lm/common/ngram_stream.hh"
 #include "lm/builder/payload.hh"
 #include "lm/interpolate/bounded_sequence_encoding.hh"
 
