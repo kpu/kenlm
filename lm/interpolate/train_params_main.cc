@@ -23,7 +23,9 @@ using namespace lm::ngram;
 using namespace lm;
 
 inline float logProb(Model * model, const std::vector<std::string>& ctx, const std::string& word) {
-  // TODO
+
+
+  // Horribly inefficient
 
   //tmp model
   //Model thisModel("test");
@@ -160,6 +162,8 @@ int main(int argc, char** argv) {
     //models[i] = new Model(lms[i].c_str());
     Model * this_model = new Model(lms[i].c_str());
     models.push_back( this_model );
+
+    //do I have to assemble a unified vocab here?
     
   }
   
@@ -167,10 +171,13 @@ int main(int argc, char** argv) {
   
   std::vector<std::vector<std::string> > corpus;
   std::vector<std::string> vocab;
+
+  std::cerr << "Loading context-sorted ngrams" << std::endl;
   std::ifstream infile(tuning_data);
 
   for(std::string line; std::getline(std::cin, line); ) {
-    
+
+    std::cerr << "line: " << line << std::endl;
     
   }
   
