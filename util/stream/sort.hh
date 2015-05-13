@@ -25,6 +25,7 @@
 #include "util/stream/timer.hh"
 
 #include "util/file.hh"
+#include "util/fixed_array.hh"
 #include "util/scoped.hh"
 #include "util/sized_iterator.hh"
 
@@ -543,6 +544,54 @@ template <class Compare, class Combine> uint64_t BlockingSort(Chain &chain, cons
   sorter.Output(chain);
   return size;
 }
+
+/**
+ * Represents an @ref util::FixedArray "array" capable of storing @ref util::stream::Sort "Sort" objects.
+ *
+ * In the anticipated use case, an instance of this class will maintain one @ref util::stream::Sort "Sort" object
+ * for each n-gram order (ranging from 1 up to the maximum n-gram order being processed).
+ * Use in this manner would enable the n-grams each n-gram order to be sorted, in parallel.
+ *
+ * @tparam Compare An @ref Comparator "ngram comparator" to use during sorting.
+ */
+template <class Compare, class Combine = NeverCombine> class Sorts : public FixedArray<Sort<Compare, Combine> > {
+  private:
+    typedef Sort<Compare, Combine> S;
+    typedef FixedArray<S> P;
+
+  public:
+    /**
+     * Constructs, but does not initialize.
+     * 
+     * @ref util::FixedArray::Init() "Init" must be called before use.
+     *
+     * @see util::FixedArray::Init()
+     */
+    Sorts() {}
+
+    /**
+     * Constructs an @ref util::FixedArray "array" capable of storing a fixed number of @ref util::stream::Sort "Sort" objects.
+     *
+     * @param number The maximum number of @ref util::stream::Sort "sorters" that can be held by this @ref util::FixedArray "array"
+     * @see util::FixedArray::FixedArray()
+     */
+    explicit Sorts(std::size_t number) : FixedArray<Sort<Compare, Combine> >(number) {}
+
+    /** 
+     * Constructs a new @ref util::stream::Sort "Sort" object which is stored in this @ref util::FixedArray "array".
+     *
+     * The new @ref util::stream::Sort "Sort" object is constructed using the provided @ref util::stream::SortConfig "SortConfig" and @ref Comparator "ngram   comparator";
+     * once constructed, a new worker @ref util::stream::Thread "thread" (owned by the @ref util::stream::Chain "chain") will sort the n-gram data stored
+     * in the @ref util::stream::Block "blocks" of the provided @ref util::stream::Chain "chain".
+     *
+     * @see util::stream::Sort::Sort()
+     * @see util::stream::Chain::operator>>()
+     */
+    void push_back(util::stream::Chain &chain, const util::stream::SortConfig &config, const Compare &compare = Compare(), const Combine &combine = Combine()) {
+      new (P::end()) S(chain, config, compare, combine); // use "placement new" syntax to initalize S in an already-allocated memory location
+      P::Constructed();
+    }
+};
 
 } // namespace stream
 } // namespace util

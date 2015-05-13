@@ -1,12 +1,13 @@
 #include "lm/builder/pipeline.hh"
 
 #include "lm/builder/adjust_counts.hh"
+#include "lm/builder/combine_counts.hh"
 #include "lm/builder/corpus_count.hh"
 #include "lm/builder/hash_gamma.hh"
 #include "lm/builder/initial_probabilities.hh"
 #include "lm/builder/interpolate.hh"
 #include "lm/builder/output.hh"
-#include "lm/builder/sort.hh"
+#include "lm/common/compare.hh"
 
 #include "lm/sizes.hh"
 
@@ -21,7 +22,10 @@
 
 namespace lm { namespace builder {
 
+using util::stream::Sorts;
+
 namespace {
+
 void PrintStatistics(const std::vector<uint64_t> &counts, const std::vector<uint64_t> &counts_pruned, const std::vector<Discount> &discounts) {
   std::cerr << "Statistics:\n";
   for (size_t i = 0; i < counts.size(); ++i) {
@@ -52,7 +56,7 @@ class Master {
     }
 
     // This takes the (partially) sorted ngrams and sets up for adjusted counts.
-    void InitForAdjust(util::stream::Sort<SuffixOrder, AddCombiner> &ngrams, WordIndex types) {
+    void InitForAdjust(util::stream::Sort<SuffixOrder, CombineCounts> &ngrams, WordIndex types) {
       const std::size_t each_order_min = config_.minimum_block * config_.block_count;
       // We know how many unigrams there are.  Don't allocate more than needed to them.
       const std::size_t min_chains = (config_.order - 1) * each_order_min +
@@ -216,7 +220,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
   CorpusCount counter(text, vocab_file, token_count, type_count, prune_words, config.prune_vocab_file, chain.BlockSize() / chain.EntrySize(), config.disallowed_symbol_action);
   chain >> boost::ref(counter);
 
-  util::stream::Sort<SuffixOrder, AddCombiner> sorter(chain, config.sort, SuffixOrder(config.order), AddCombiner());
+  util::stream::Sort<SuffixOrder, CombineCounts> sorter(chain, config.sort, SuffixOrder(config.order), CombineCounts());
   chain.Wait(true);
   std::cerr << "Unigram tokens " << token_count << " types " << type_count << std::endl;
   std::cerr << "=== 2/" << master.Steps() << " Calculating and sorting adjusted counts ===" << std::endl;
