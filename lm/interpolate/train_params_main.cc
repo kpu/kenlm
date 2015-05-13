@@ -19,9 +19,10 @@ typedef Eigen::VectorXf FVector;
 
 bool HAS_BIAS = true;
 
+using namespace lm::ngram;
+using namespace lm;
 
-
-inline float logProb(unsigned model, const std::vector<std::string>& ctx, const std::string& word) {
+inline float logProb(Model * model, const std::vector<std::string>& ctx, const std::string& word) {
   // TODO
 
   //tmp model
@@ -34,7 +35,7 @@ inline float logProb(unsigned model, const std::vector<std::string>& ctx, const 
 
 void set_features(const std::vector<std::string>& ctx,
                   const std::string& word,
-                  const std::vector<unsigned>& models,
+                  const std::vector<Model *>& models,
                   FVector& v) {
   if (HAS_BIAS) {
     v(0) = 1;
@@ -46,10 +47,11 @@ void set_features(const std::vector<std::string>& ctx,
   }
 }
 
+//const util::FixedArray<Model *>& models)
 void train_params(
     const std::vector<std::vector<std::string> >& corpus,
     const std::vector<std::string>& vocab,
-    const std::vector<unsigned>& models) {
+    const std::vector<Model *>& models) {
   using namespace std;
 
   vector<string> context(5, "<s>");
@@ -109,9 +111,6 @@ void train_params(
 
 int main(int argc, char** argv) {
 
-  using namespace lm::ngram;
-  using namespace lm;
-
   std::string tuning_data;
   std::vector<std::string> lms;
 
@@ -153,15 +152,29 @@ int main(int argc, char** argv) {
   }
 
   //load models
-  util::FixedArray<Model *> models(lms.size());
+  //util::FixedArray<Model *> models(lms.size());
+  std::vector<Model *> models;
   for(int i=0; i < lms.size(); i++) {
     std::cerr << "Loading LM file: " << lms[i] << std::endl;
 
-    models[i] = new Model(lms[i].c_str());
+    //models[i] = new Model(lms[i].c_str());
+    Model * this_model = new Model(lms[i].c_str());
+    models.push_back( this_model );
     
   }
   
-  //load context sorted ngrams
+  //load context sorted ngrams into vector of vectors
+  
+  std::vector<std::vector<std::string> > corpus;
+  std::vector<std::string> vocab;
+  std::ifstream infile(tuning_data);
+
+  for(std::string line; std::getline(std::cin, line); ) {
+    
+    
+  }
+  
+  train_params(corpus, vocab, models);
   
   return 0;
 }
