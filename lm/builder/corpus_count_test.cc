@@ -1,7 +1,8 @@
 #include "lm/builder/corpus_count.hh"
 
-#include "lm/builder/ngram.hh"
+#include "lm/builder/payload.hh"
 #include "lm/builder/ngram_stream.hh"
+#include "lm/common/ngram.hh"
 
 #include "util/file.hh"
 #include "util/file_piece.hh"

@@ -2,6 +2,7 @@
 #define LM_BUILDER_JOINT_ORDER_H
 
 #include "lm/builder/ngram_stream.hh"
+#include "lm/builder/payload.hh"
 #include "lm/lm_exception.hh"
 
 #ifdef DEBUG

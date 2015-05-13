@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_NGRAM_H
-#define LM_BUILDER_NGRAM_H
+#ifndef LM_COMMON_NGRAM_H
+#define LM_COMMON_NGRAM_H
 
 #include "lm/weights.hh"
 #include "lm/word_index.hh"
@@ -10,7 +10,6 @@
 #include <cstring>
 
 namespace lm {
-namespace builder {
 
 class NGramHeader {
   public:
@@ -68,44 +67,6 @@ template <class PayloadT> class NGram : public NGramHeader {
     Payload &Value() { return *reinterpret_cast<Payload *>(end()); }
 };
 
-struct Uninterpolated {
-  float prob;  // Uninterpolated probability.
-  float gamma; // Interpolation weight for lower order.
-};
-
-union BuildingPayload {
-  uint64_t count;
-  Uninterpolated uninterp;
-  ProbBackoff complete;
-
-  /*mjd**********************************************************************/
-  bool IsMarked() const {
-    return count >> (sizeof(count) * 8 - 1);
-  }
-
-  void Mark() {
-    count |= (1ul << (sizeof(count) * 8 - 1));
-  }
-
-  void Unmark() {
-    count &= ~(1ul << (sizeof(count) * 8 - 1));
-  }
-
-  uint64_t UnmarkedCount() const {
-    return count & ~(1ul << (sizeof(count) * 8 - 1));
-  }
-
-  uint64_t CutoffCount() const {
-    return IsMarked() ? 0 : UnmarkedCount();
-  }
-  /*mjd**********************************************************************/
-};
-
-const WordIndex kUNK = 0;
-const WordIndex kBOS = 1;
-const WordIndex kEOS = 2;
-
-} // namespace builder
 } // namespace lm
 
-#endif // LM_BUILDER_NGRAM_H
+#endif // LM_COMMON_NGRAM_H

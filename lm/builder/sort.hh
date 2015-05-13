@@ -2,7 +2,8 @@
 #define LM_BUILDER_SORT_H
 
 #include "lm/builder/ngram_stream.hh"
-#include "lm/builder/ngram.hh"
+#include "lm/builder/payload.hh"
+#include "lm/common/ngram.hh"
 #include "lm/word_index.hh"
 #include "util/stream/sort.hh"
 
