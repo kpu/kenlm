@@ -100,14 +100,6 @@ namespace lm {
 					    top_vocab_file.CurrentIndex(),
 					    global_index);
 
-	std::cout
-	  << top_vocab_file.Value() << ' '
-	  << top_vocab_file.ModelNum() << ','
-	  << top_vocab_file.GetString() << ','
-	  << top_vocab_file.CurrentIndex() << ','
-	  << global_index << ' '
-	  << std::endl;
-	
 	prev_hash_value = top_vocab_file.Value();
 	
 	file_heap_.pop();
