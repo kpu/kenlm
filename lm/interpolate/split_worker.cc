@@ -1,5 +1,5 @@
 #include "lm/interpolate/split_worker.hh"
-#include "lm/builder/ngram.hh"
+#include "lm/common/ngram.hh"
 
 namespace lm {
 namespace interpolate {
@@ -16,7 +16,7 @@ void SplitWorker::Run(const util::stream::ChainPosition &position) {
   // output: a float to the backoff_input stream
   //         an ngram id and a float to the sort_input stream
   for (util::stream::Stream stream(position); stream; ++stream) {
-    builder::NGram<ProbBackoff> ngram(stream.Get(), order_);
+    NGram<ProbBackoff> ngram(stream.Get(), order_);
 
     // write id and prob to the sort stream
     float prob = ngram.Value().prob;
