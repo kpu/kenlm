@@ -24,7 +24,6 @@ using namespace lm;
 
 inline float logProb(Model * model, const std::vector<std::string>& ctx, const std::string& word) {
 
-
   // Horribly inefficient
   const Vocabulary &vocab = model->GetVocabulary();
   
@@ -34,12 +33,13 @@ inline float logProb(Model * model, const std::vector<std::string>& ctx, const s
   WordIndex context_idx[ctx.size()];
   
   //reverse context
+  for(unsigned int i = 0; i < ctx.size(); i++) {
+    context_idx[ctx.size() - 1 - i] = vocab.Index(ctx[i]);
+  }
   
   FullScoreReturn score = model->FullScoreForgotState(context_idx, &(context_idx[ctx.size() -1]), word_idx, nextState);
-
   
-  float ret =  score.prob; //thisModel.FullScoreForgotState(ctx, ctx.size(), word, nextState);  
-  
+  float ret = score.prob;
   return ret;
 }
 
