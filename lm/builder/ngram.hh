@@ -12,19 +12,10 @@
 namespace lm {
 namespace builder {
 
-struct Uninterpolated {
-  float prob;  // Uninterpolated probability.
-  float gamma; // Interpolation weight for lower order.
-};
-
-union Payload {
-  uint64_t count;
-  Uninterpolated uninterp;
-  ProbBackoff complete;
-};
-
-class NGram {
+template <class PayloadT> class NGram {
   public:
+    typedef PayloadT Payload;
+
     NGram(void *begin, std::size_t order)
       : begin_(static_cast<WordIndex*>(begin)), end_(begin_ + order) {}
 
@@ -42,17 +33,12 @@ class NGram {
       ReBase(&Value() + 1);
     }
 
+    // These are for the vocab index.
     // Lower-case in deference to STL.
     const WordIndex *begin() const { return begin_; }
     WordIndex *begin() { return begin_; }
     const WordIndex *end() const { return end_; }
     WordIndex *end() { return end_; }
-
-    const Payload &Value() const { return *reinterpret_cast<const Payload *>(end_); }
-    Payload &Value() { return *reinterpret_cast<Payload *>(end_); }
-
-    uint64_t &Count() { return Value().count; }
-    uint64_t Count() const { return Value().count; }
 
     std::size_t Order() const { return end_ - begin_; }
 
@@ -63,39 +49,51 @@ class NGram {
       // Compiler should optimize this.
       return TotalSize(Order());
     }
+
     static std::size_t OrderFromSize(std::size_t size) {
       std::size_t ret = (size - sizeof(Payload)) / sizeof(WordIndex);
       assert(size == TotalSize(ret));
       return ret;
     }
-    
-    // manipulate msb to signal that ngram can be pruned
-    /*mjd**********************************************************************/
 
-    bool IsMarked() const {
-      return Value().count >> (sizeof(Value().count) * 8 - 1);
-    }
-    
-    void Mark() {
-      Value().count |= (1ul << (sizeof(Value().count) * 8 - 1));
-    }
-    
-    void Unmark() {
-      Value().count &= ~(1ul << (sizeof(Value().count) * 8 - 1));
-    }
-    
-    uint64_t UnmarkedCount() const {
-      return Value().count & ~(1ul << (sizeof(Value().count) * 8 - 1));
-    }
-    
-    uint64_t CutoffCount() const {
-      return IsMarked() ? 0 : UnmarkedCount();
-    }
-
-    /*mjd**********************************************************************/
-
+    const Payload &Value() const { return *reinterpret_cast<const Payload *>(end_); }
+    Payload &Value() { return *reinterpret_cast<Payload *>(end_); }
+ 
   private:
     WordIndex *begin_, *end_;
+};
+
+struct Uninterpolated {
+  float prob;  // Uninterpolated probability.
+  float gamma; // Interpolation weight for lower order.
+};
+
+union BuildingPayload {
+  uint64_t count;
+  Uninterpolated uninterp;
+  ProbBackoff complete;
+
+  /*mjd**********************************************************************/
+  bool IsMarked() const {
+    return count >> (sizeof(count) * 8 - 1);
+  }
+
+  void Mark() {
+    count |= (1ul << (sizeof(count) * 8 - 1));
+  }
+
+  void Unmark() {
+    count &= ~(1ul << (sizeof(count) * 8 - 1));
+  }
+
+  uint64_t UnmarkedCount() const {
+    return count & ~(1ul << (sizeof(count) * 8 - 1));
+  }
+
+  uint64_t CutoffCount() const {
+    return IsMarked() ? 0 : UnmarkedCount();
+  }
+  /*mjd**********************************************************************/
 };
 
 const WordIndex kUNK = 0;

@@ -39,7 +39,7 @@ class Master {
   public:
     explicit Master(PipelineConfig &config, unsigned output_steps) 
       : config_(config), chains_(config.order), unigrams_(util::MakeTemp(config_.TempPrefix())), steps_(output_steps + 4) {
-      config_.minimum_block = std::max(NGram::TotalSize(config_.order), config_.minimum_block);
+      config_.minimum_block = std::max(NGram<BuildingPayload>::TotalSize(config_.order), config_.minimum_block);
     }
 
     const PipelineConfig &Config() const { return config_; }
@@ -56,7 +56,7 @@ class Master {
       const std::size_t each_order_min = config_.minimum_block * config_.block_count;
       // We know how many unigrams there are.  Don't allocate more than needed to them.
       const std::size_t min_chains = (config_.order - 1) * each_order_min +
-        std::min(types * NGram::TotalSize(1), each_order_min);
+        std::min(types * NGram<BuildingPayload>::TotalSize(1), each_order_min);
       // Do merge sort with calculated laziness.
       const std::size_t merge_using = ngrams.Merge(std::min(config_.TotalMemory() - min_chains, ngrams.DefaultLazy()));
 
@@ -75,14 +75,14 @@ class Master {
       CreateChains(config_.TotalMemory(), counts);
       chains_.back().ActivateProgress();
       chains_[0] >> unigrams_.Source();
-      second_config.entry_size = NGram::TotalSize(1);
+      second_config.entry_size = NGram<BuildingPayload>::TotalSize(1);
       second.push_back(second_config);
       second.back() >> unigrams_.Source();
       for (std::size_t i = 1; i < config_.order; ++i) {
         util::scoped_fd fd(sorts[i - 1].StealCompleted());
         chains_[i].SetProgressTarget(util::SizeOrThrow(fd.get()));
         chains_[i] >> util::stream::PRead(util::DupOrThrow(fd.get()), true);
-        second_config.entry_size = NGram::TotalSize(i + 1);
+        second_config.entry_size = NGram<BuildingPayload>::TotalSize(i + 1);
         second.push_back(second_config);
         second.back() >> util::stream::PRead(fd.release(), true);
       }
@@ -93,7 +93,7 @@ class Master {
       // Determine the minimum we can use for all the chains.
       std::size_t min_chains = 0;
       for (std::size_t i = 0; i < config_.order; ++i) {
-        min_chains += std::min(counts[i] * NGram::TotalSize(i + 1), static_cast<uint64_t>(config_.minimum_block));
+        min_chains += std::min(counts[i] * NGram<BuildingPayload>::TotalSize(i + 1), static_cast<uint64_t>(config_.minimum_block));
       }
       std::size_t for_merge = min_chains > config_.TotalMemory() ? 0 : (config_.TotalMemory() - min_chains);
       std::vector<std::size_t> laziness;
@@ -135,7 +135,7 @@ class Master {
       for (std::size_t i = 0; i < count_bounds.size(); ++i) {
         assignments.push_back(static_cast<std::size_t>(std::min(
             static_cast<uint64_t>(remaining_mem),
-            count_bounds[i] * static_cast<uint64_t>(NGram::TotalSize(i + 1)))));
+            count_bounds[i] * static_cast<uint64_t>(NGram<BuildingPayload>::TotalSize(i + 1)))));
       }
       assignments.resize(config_.order, remaining_mem);
 
@@ -145,7 +145,7 @@ class Master {
       // Indices of orders that have yet to be assigned.
       std::vector<std::size_t> unassigned;
       for (std::size_t i = 0; i < config_.order; ++i) {
-        portions.push_back(static_cast<float>((i+1) * NGram::TotalSize(i+1)));
+        portions.push_back(static_cast<float>((i+1) * NGram<BuildingPayload>::TotalSize(i+1)));
         unassigned.push_back(i);
       }
       /*If somebody doesn't eat their full dinner, give it to the rest of the
@@ -181,7 +181,7 @@ class Master {
       std::cerr << "Chain sizes:";
       for (std::size_t i = 0; i < config_.order; ++i) {
         std::cerr << ' ' << (i+1) << ":" << assignments[i];
-        chains_.push_back(util::stream::ChainConfig(NGram::TotalSize(i + 1), block_count[i], assignments[i]));
+        chains_.push_back(util::stream::ChainConfig(NGram<BuildingPayload>::TotalSize(i + 1), block_count[i], assignments[i]));
       }
       std::cerr << std::endl;
     }
@@ -208,7 +208,7 @@ void CountText(int text_file /* input */, int vocab_file /* output */, Master &m
     (static_cast<float>(config.block_count) + CorpusCount::DedupeMultiplier(config.order)) *
     // Chain likes memory expressed in terms of total memory.
     static_cast<float>(config.block_count);
-  util::stream::Chain chain(util::stream::ChainConfig(NGram::TotalSize(config.order), config.block_count, memory_for_chain));
+  util::stream::Chain chain(util::stream::ChainConfig(NGram<BuildingPayload>::TotalSize(config.order), config.block_count, memory_for_chain));
 
   WordIndex type_count = config.vocab_estimate;
   util::FilePiece text(text_file, NULL, &std::cerr);
@@ -279,8 +279,8 @@ void Pipeline(PipelineConfig &config, int text_file, Output &output) {
     config.sort.buffer_size = config.TotalMemory() / 4;
     std::cerr << "Warning: changing sort block size to " << config.sort.buffer_size << " bytes due to low total memory." << std::endl;
   }
-  if (config.minimum_block < NGram::TotalSize(config.order)) {
-    config.minimum_block = NGram::TotalSize(config.order);
+  if (config.minimum_block < NGram<BuildingPayload>::TotalSize(config.order)) {
+    config.minimum_block = NGram<BuildingPayload>::TotalSize(config.order);
     std::cerr << "Warning: raising minimum block to " << config.minimum_block << " to fit an ngram in every block." << std::endl;
   }
   UTIL_THROW_IF(config.sort.buffer_size < config.minimum_block, util::Exception, "Sort block size " << config.sort.buffer_size << " is below the minimum block size " << config.minimum_block << ".");

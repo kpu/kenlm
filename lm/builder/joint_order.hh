@@ -15,9 +15,9 @@ namespace lm { namespace builder {
 
 template <class Callback, class Compare> void JointOrder(const util::stream::ChainPositions &positions, Callback &callback) {
   // Allow matching to reference streams[-1].
-  NGramStreams streams_with_dummy;
+  NGramStreams<BuildingPayload> streams_with_dummy;
   streams_with_dummy.InitWithDummy(positions);
-  NGramStream *streams = streams_with_dummy.begin() + 1;
+  NGramStream<BuildingPayload> *streams = streams_with_dummy.begin() + 1;
 
   unsigned int order;
   for (order = 0; order < positions.size() && streams[order]; ++order) {}

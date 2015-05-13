@@ -89,8 +89,8 @@ template <class Output> class Callback {
       }
     }
 
-    void Enter(unsigned order_minus_1, NGram &gram) {
-      Payload &pay = gram.Value();
+    void Enter(unsigned order_minus_1, NGram<BuildingPayload> &gram) {
+      BuildingPayload &pay = gram.Value();
       pay.complete.prob = pay.uninterp.prob + pay.uninterp.gamma * probs_[order_minus_1];
       probs_[order_minus_1 + 1] = pay.complete.prob;
 
@@ -123,7 +123,7 @@ template <class Output> class Callback {
       output_.Gram(order_minus_1, out_backoff, pay.complete);
     }
 
-    void Exit(unsigned, const NGram &) const {}
+    void Exit(unsigned, const NGram<BuildingPayload> &) const {}
 
   private:
     util::FixedArray<util::stream::Stream> backoffs_;
