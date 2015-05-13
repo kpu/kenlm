@@ -21,18 +21,12 @@ public:
   void Run(const util::stream::ChainPosition &position) {
     lm::builder::NGramStream<ProbBackoff> stream(position);
 
-    util::stream::Stream prob_input(prob_pos_);
+    lm::builder::NGramStream<float> prob_input(prob_pos_);
     util::stream::Stream boff_input(boff_pos_);
     for (; prob_input && boff_input; ++prob_input, ++boff_input, ++stream) {
-
-      const WordIndex *start
-          = reinterpret_cast<const WordIndex *>(prob_input.Get());
-      const WordIndex *end = start + order_;
-      std::copy(start, end, stream->begin());
-
-      stream->Value().prob = *reinterpret_cast<const float *>(end);
-      stream->Value().backoff
-          = *reinterpret_cast<float *>(boff_input.Get());
+      std::copy(prob_input->begin(), prob_input->end(), stream->begin());
+      stream->Value().prob = prob_input->Value();
+      stream->Value().backoff = *reinterpret_cast<float *>(boff_input.Get());
     }
     UTIL_THROW_IF2(prob_input || boff_input,
                    "Streams were not the same size during merging");
