@@ -1,6 +1,6 @@
 #include "lm/builder/renumber.hh"
 
-#include "lm/builder/ngram_stream.hh"
+#include "lm/common/ngram_stream.hh"
 #include "lm/builder/payload.hh"
 #include "util/stream/chain.hh"
 
