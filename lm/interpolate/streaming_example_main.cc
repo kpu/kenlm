@@ -30,11 +30,10 @@
 int main(int argc, char *argv[]) {
   using namespace lm::interpolate;
 
-  // TODO: Make these all command-line parameters
   const std::size_t ONE_GB = 1 << 30;
   const std::size_t SIXTY_FOUR_MB = 1 << 26;
   const std::size_t NUMBER_OF_BLOCKS = 2;
-  
+
   std::string FILE_NAME = "ngrams";
   std::string CONTEXT_SORTED_FILENAME = "csorted-ngrams";
   std::string BACKOFF_FILENAME = "backoffs";
@@ -54,8 +53,8 @@ int main(int argc, char *argv[]) {
     po::store(po::parse_command_line(argc, argv, options), vm);
 
     // Display help
-    if(argc == 1 || vm["help"].as<bool>()) {
-      std::cerr << "Usage" << std::endl;
+    if(vm["help"].as<bool>()) {
+      std::cerr << "Usage: " << options << std::endl;
       return 1;
     }
   }
@@ -65,7 +64,7 @@ int main(int argc, char *argv[]) {
     return 1;
 
   }
-  
+
   // The basic strategy here is to have three chains:
   // - The first reads the ngram order inputs using ModelBuffer. Those are
   //   then stripped of their backoff values and fed into the third chain;
