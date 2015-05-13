@@ -22,39 +22,29 @@ namespace lm {
       :
       hash_value_(0),
       current_index_(0),
-      fd_(fd),
       file_piece_ptr_(new util::FilePiece(fd)),
       model_num_(model_num)
     {
       StringPiece vocab_elem = file_piece_ptr_->ReadLine('\0');
-      UTIL_THROW_IF(
-		    memcmp(vocab_elem.data(), "<unk>", 6),
+      UTIL_THROW_IF(vocab_elem != "<unk>", 
 		    FormatLoadException,
 		    "Vocabulary words are in the wrong place.");
-
-      // NOTE: for debugging remove
-      word_str_ = std::string(vocab_elem.data());
       // setup to initial value
       read();
     }
 
-    bool VocabFileReader::read(void)
-    {
+    bool VocabFileReader::read(void) {
       StringPiece vocab_elem;
       try {
-	vocab_elem = file_piece_ptr_->ReadLine('\0');
+        vocab_elem = file_piece_ptr_->ReadLine('\0');
+      } catch(util::EndOfFileException &e) {
+      	return false;
       }
-      // NOTE: should only catch correct throw.
-      catch(util::Exception &e) {
-	return false;
-      }
-      // NOTE: this is just for debugging
-      word_str_ = vocab_elem.data();
       uint64_t prev_hash_value = hash_value_;
       hash_value_ = detail::HashForVocab(vocab_elem.data(), vocab_elem.size());
       
       // hash values should be monotonically increasing
-      UTIL_THROW_IF(hash_value_ <= prev_hash_value, util::ErrnoException,
+      UTIL_THROW_IF(hash_value_ < prev_hash_value, util::ErrnoException,
 		    ": word index not monotonically increasing."
 		    << " model_num: " << model_num_
 		    << " string: " << GetString()
@@ -63,21 +53,18 @@ namespace lm {
       
       ++current_index_;
       return true;
-
     }
 
     // constructor which takes a vector of pairs of file discriptors and model info
     // This will add models to heap for heap sort and also setup the vectors
     MergeVocabIndex::MergeVocabIndex(std::vector<ModelInfo>& vocab_file_info, UniversalVocab& universal_vocab)
-      : universal_vocab_(universal_vocab)
-    {
+      : universal_vocab_(universal_vocab) {
       for (size_t i=0; i < vocab_file_info.size(); ++i) {
-	file_heap_.push(VocabFileReader(vocab_file_info[i].fd, i));
+        file_heap_.push(VocabFileReader(vocab_file_info[i].fd, i));
 
-	// initialize first index to 0 for <unk>
+        // initialize first index to 0 for <unk>
 	universal_vocab_.InsertUniversalIdx(i, 0, 0);
       }
-
       MergeModels();
     }
 

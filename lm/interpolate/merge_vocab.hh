@@ -26,8 +26,13 @@ namespace interpolate {
   public:
     explicit VocabFileReader(const int fd, size_t model_num, uint64_t offset =0);
 
+    VocabFileReader &operator++();
+
+    operator bool() const;
+
+    uint64_t operator*() const;
+
     bool read(void);
-    bool read_deprecated(void);
 
     uint64_t operator()(void) const { return Value(); }
     uint64_t Value(void) const { return hash_value_; }
@@ -35,16 +40,13 @@ namespace interpolate {
     // Functions below are for debugging
     uint32_t ModelNum(void) const { return model_num_; }
     WordIndex CurrentIndex(void) const { return current_index_; }
-    std::string GetString(void) const { return word_str_; }
 
   private:
     uint64_t hash_value_;
     WordIndex current_index_;
       
-    int fd_;
     util::FilePiece* file_piece_ptr_;
     size_t model_num_;
-    std::string word_str_;
   };
 
 
