@@ -12,11 +12,9 @@
 namespace lm {
 namespace builder {
 
-template <class PayloadT> class NGram {
+class NGramHeader {
   public:
-    typedef PayloadT Payload;
-
-    NGram(void *begin, std::size_t order)
+    NGramHeader(void *begin, std::size_t order)
       : begin_(static_cast<WordIndex*>(begin)), end_(begin_ + order) {}
 
     const uint8_t *Base() const { return reinterpret_cast<const uint8_t*>(begin_); }
@@ -28,11 +26,6 @@ template <class PayloadT> class NGram {
       end_ = begin_ + difference;
     }
 
-    // Would do operator++ but that can get confusing for a stream.
-    void NextInMemory() {
-      ReBase(&Value() + 1);
-    }
-
     // These are for the vocab index.
     // Lower-case in deference to STL.
     const WordIndex *begin() const { return begin_; }
@@ -41,6 +34,21 @@ template <class PayloadT> class NGram {
     WordIndex *end() { return end_; }
 
     std::size_t Order() const { return end_ - begin_; }
+
+  private:
+    WordIndex *begin_, *end_;
+};
+
+template <class PayloadT> class NGram : public NGramHeader {
+  public:
+    typedef PayloadT Payload;
+
+    NGram(void *begin, std::size_t order) : NGramHeader(begin, order) {}
+
+    // Would do operator++ but that can get confusing for a stream.
+    void NextInMemory() {
+      ReBase(&Value() + 1);
+    }
 
     static std::size_t TotalSize(std::size_t order) {
       return order * sizeof(WordIndex) + sizeof(Payload);
@@ -56,11 +64,8 @@ template <class PayloadT> class NGram {
       return ret;
     }
 
-    const Payload &Value() const { return *reinterpret_cast<const Payload *>(end_); }
-    Payload &Value() { return *reinterpret_cast<Payload *>(end_); }
- 
-  private:
-    WordIndex *begin_, *end_;
+    const Payload &Value() const { return *reinterpret_cast<const Payload *>(end()); }
+    Payload &Value() { return *reinterpret_cast<Payload *>(end()); }
 };
 
 struct Uninterpolated {
