@@ -72,6 +72,7 @@ class Block {
  
   private:
     friend class Link;
+    friend class RewindableStream;
   
     /**
      * Points this block's memory at NULL.

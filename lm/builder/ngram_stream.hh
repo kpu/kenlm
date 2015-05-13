@@ -1,7 +1,7 @@
 #ifndef LM_BUILDER_NGRAM_STREAM_H
 #define LM_BUILDER_NGRAM_STREAM_H
 
-#include "lm/builder/ngram.hh"
+#include "lm/common/ngram.hh"
 #include "util/stream/chain.hh"
 #include "util/stream/multi_stream.hh"
 #include "util/stream/stream.hh"
@@ -10,7 +10,7 @@
 
 namespace lm { namespace builder {
 
-class NGramStream {
+template <class Payload> class NGramStream {
   public:
     NGramStream() : gram_(NULL, 0) {}
 
@@ -20,14 +20,14 @@ class NGramStream {
 
     void Init(const util::stream::ChainPosition &position) {
       stream_.Init(position);
-      gram_ = NGram(stream_.Get(), NGram::OrderFromSize(position.GetChain().EntrySize()));
+      gram_ = NGram<Payload>(stream_.Get(), NGram<Payload>::OrderFromSize(position.GetChain().EntrySize()));
     }
 
-    NGram &operator*() { return gram_; }
-    const NGram &operator*() const { return gram_; }
+    NGram<Payload> &operator*() { return gram_; }
+    const NGram<Payload> &operator*() const { return gram_; }
 
-    NGram *operator->() { return &gram_; }
-    const NGram *operator->() const { return &gram_; }
+    NGram<Payload> *operator->() { return &gram_; }
+    const NGram<Payload> *operator->() const { return &gram_; }
 
     void *Get() { return stream_.Get(); }
     const void *Get() const { return stream_.Get(); }
@@ -43,16 +43,16 @@ class NGramStream {
     }
 
   private:
-    NGram gram_;
+    NGram<Payload> gram_;
     util::stream::Stream stream_;
 };
 
-inline util::stream::Chain &operator>>(util::stream::Chain &chain, NGramStream &str) {
+template <class Payload> inline util::stream::Chain &operator>>(util::stream::Chain &chain, NGramStream<Payload> &str) {
   str.Init(chain.Add());
   return chain;
 }
 
-typedef util::stream::GenericStreams<NGramStream> NGramStreams;
+template <class Payload> class NGramStreams : public util::stream::GenericStreams<NGramStream<Payload> > {};
 
 }} // namespaces
 #endif // LM_BUILDER_NGRAM_STREAM_H

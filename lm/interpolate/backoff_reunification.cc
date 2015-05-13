@@ -1,7 +1,8 @@
 #include "lm/interpolate/backoff_reunification.hh"
 #include "lm/builder/model_buffer.hh"
-#include "lm/builder/ngram.hh"
-#include "lm/builder/sort.hh"
+#include "lm/builder/ngram_stream.hh"
+#include "lm/common/ngram.hh"
+#include "lm/common/compare.hh"
 
 #include <cassert>
 
@@ -17,7 +18,7 @@ public:
   }
 
   void Run(const util::stream::ChainPosition &position) {
-    lm::builder::NGramStream stream(position);
+    lm::builder::NGramStream<ProbBackoff> stream(position);
 
     util::stream::Stream prob_input(prob_pos_);
     util::stream::Stream boff_input(boff_pos_);
@@ -28,8 +29,8 @@ public:
       const WordIndex *end = start + order_;
       std::copy(start, end, stream->begin());
 
-      stream->Value().complete.prob = *reinterpret_cast<const float *>(end);
-      stream->Value().complete.backoff
+      stream->Value().prob = *reinterpret_cast<const float *>(end);
+      stream->Value().backoff
           = *reinterpret_cast<float *>(boff_input.Get());
     }
     UTIL_THROW_IF2(prob_input || boff_input,

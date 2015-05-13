@@ -1,7 +1,7 @@
 #include "lm/builder/sort.hh"
 #include "lm/builder/print.hh"
 #include "lm/builder/model_buffer.hh"
-#include "lm/builder/ngram.hh"
+#include "lm/common/ngram.hh"
 #include "util/stream/chain.hh"
 #include "lm/interpolate/split_worker.hh"
 
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
   util::stream::Chains prob_chains(buffer.Order());
   for (std::size_t i = 0; i < buffer.Order(); ++i) {
     ngram_inputs.push_back(util::stream::ChainConfig(
-        lm::builder::NGram::TotalSize(i + 1), NUMBER_OF_BLOCKS, ONE_GB));
+        lm::NGram<lm::ProbBackoff>::TotalSize(i + 1), NUMBER_OF_BLOCKS, ONE_GB));
 
     backoff_chains.push_back(
         util::stream::ChainConfig(sizeof(float), NUMBER_OF_BLOCKS, ONE_GB));

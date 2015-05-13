@@ -1,7 +1,8 @@
 #include "lm/builder/corpus_count.hh"
 
-#include "lm/builder/ngram.hh"
+#include "lm/builder/payload.hh"
 #include "lm/builder/ngram_stream.hh"
+#include "lm/common/ngram.hh"
 
 #include "util/file.hh"
 #include "util/file_piece.hh"
@@ -14,13 +15,13 @@
 
 namespace lm { namespace builder { namespace {
 
-#define Check(str, count) { \
+#define Check(str, cnt) { \
   BOOST_REQUIRE(stream); \
   w = stream->begin(); \
   for (util::TokenIter<util::AnyCharacter, true> t(str, " "); t; ++t, ++w) { \
     BOOST_CHECK_EQUAL(*t, v[*w]); \
   } \
-  BOOST_CHECK_EQUAL((uint64_t)count, stream->Count()); \
+  BOOST_CHECK_EQUAL((uint64_t)cnt, stream->Value().count); \
   ++stream; \
 }
 
@@ -35,14 +36,14 @@ BOOST_AUTO_TEST_CASE(Short) {
   util::FilePiece input_piece(input_file.release(), "temp file");
 
   util::stream::ChainConfig config;
-  config.entry_size = NGram::TotalSize(3);
+  config.entry_size = NGram<BuildingPayload>::TotalSize(3);
   config.total_memory = config.entry_size * 20;
   config.block_count = 2;
 
   util::scoped_fd vocab(util::MakeTemp("corpus_count_test_vocab"));
 
   util::stream::Chain chain(config);
-  NGramStream stream;
+  NGramStream<BuildingPayload> stream;
   uint64_t token_count;
   WordIndex type_count = 10;
   std::vector<bool> prune_words;

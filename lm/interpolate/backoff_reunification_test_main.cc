@@ -38,7 +38,7 @@ int main() {
   lm::builder::Sorts<lm::builder::SuffixOrder> sorts(prob_chains.size());
   for (size_t i = 0; i < prob_chains.size(); ++i) {
     output_chains.push_back(util::stream::ChainConfig(
-        lm::builder::NGram::TotalSize(i + 1), NUM_BLOCKS, MAX_RAM));
+        lm::NGram<lm::ProbBackoff>::TotalSize(i + 1), NUM_BLOCKS, MAX_RAM));
 
     sorts.push_back(prob_chains[i], sort_config,
                     lm::builder::SuffixOrder(i + 1));

@@ -45,7 +45,7 @@ void PrintARPA::Run(const util::stream::ChainPositions &positions) {
 
   for (unsigned order = 1; order <= positions.size(); ++order) {
     out << "\\" << order << "-grams:" << '\n';
-    for (NGramStream stream(positions[order - 1]); stream; ++stream) {
+    for (NGramStream<BuildingPayload> stream(positions[order - 1]); stream; ++stream) {
       // Correcting for numerical precision issues.  Take that IRST.
       out << stream->Value().complete.prob << '\t' << vocab.Lookup(*stream->begin());
       for (const WordIndex *i = stream->begin() + 1; i != stream->end(); ++i) {

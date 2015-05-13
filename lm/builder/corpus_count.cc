@@ -1,6 +1,7 @@
 #include "lm/builder/corpus_count.hh"
 
-#include "lm/builder/ngram.hh"
+#include "lm/builder/payload.hh"
+#include "lm/common/ngram.hh"
 #include "lm/lm_exception.hh"
 #include "lm/vocab.hh"
 #include "lm/word_index.hh"
@@ -115,17 +116,17 @@ class Writer {
       bool found = dedupe_.FindOrInsert(DedupeEntry::Construct(gram_.begin()), at);
       if (found) {
         // Already present.
-        NGram already(at->key, gram_.Order());
-        ++(already.Count());
+        NGram<BuildingPayload> already(at->key, gram_.Order());
+        ++(already.Value().count);
         // Shift left by one.
         memmove(gram_.begin(), gram_.begin() + 1, sizeof(WordIndex) * (gram_.Order() - 1));
         return;
       }
       // Complete the write.  
-      gram_.Count() = 1;
+      gram_.Value().count = 1;
       // Prepare the next n-gram.  
       if (reinterpret_cast<uint8_t*>(gram_.begin()) + gram_.TotalSize() != static_cast<uint8_t*>(block_->Get()) + block_size_) {
-        NGram last(gram_);
+        NGram<BuildingPayload> last(gram_);
         gram_.NextInMemory();
         std::copy(last.begin() + 1, last.end(), gram_.begin());
         return;
@@ -141,7 +142,7 @@ class Writer {
   private:
     void AddUnigramWord(WordIndex index) {
       *gram_.begin() = index;
-      gram_.Count() = 0;
+      gram_.Value().count = 0;
       gram_.NextInMemory();
       if (gram_.Base() == static_cast<uint8_t*>(block_->Get()) + block_size_) {
         block_->SetValidSize(block_size_);
@@ -151,7 +152,7 @@ class Writer {
 
     util::stream::Link block_;
 
-    NGram gram_;
+    NGram<BuildingPayload> gram_;
 
     // This is the memory behind the invalid value in dedupe_.
     std::vector<WordIndex> dedupe_invalid_;
@@ -167,7 +168,7 @@ class Writer {
 } // namespace
 
 float CorpusCount::DedupeMultiplier(std::size_t order) {
-  return kProbingMultiplier * static_cast<float>(sizeof(DedupeEntry)) / static_cast<float>(NGram::TotalSize(order));
+  return kProbingMultiplier * static_cast<float>(sizeof(DedupeEntry)) / static_cast<float>(NGram<BuildingPayload>::TotalSize(order));
 }
 
 std::size_t CorpusCount::VocabUsage(std::size_t vocab_estimate) {
@@ -202,7 +203,7 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
   token_count_ = 0;
   type_count_ = 0;
   const WordIndex end_sentence = vocab.FindOrInsert("</s>");
-  Writer writer(NGram::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_);
+  Writer writer(NGram<BuildingPayload>::OrderFromSize(position.GetChain().EntrySize()), position, dedupe_mem_.get(), dedupe_mem_size_);
   uint64_t count = 0;
   bool delimiters[256];
   util::BoolCharacter::Build("\0\t\n\r ", delimiters);
