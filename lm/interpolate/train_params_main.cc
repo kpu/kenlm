@@ -26,11 +26,19 @@ inline float logProb(Model * model, const std::vector<std::string>& ctx, const s
 
 
   // Horribly inefficient
+  const Vocabulary &vocab = model->GetVocabulary();
+  
+  State nextState; //throwaway
 
-  //tmp model
-  //Model thisModel("test");
-  //State nextState;
-  float ret =  0; //thisModel.FullScoreForgotState(ctx, ctx.size(), word, nextState);  
+  WordIndex word_idx = vocab.Index(word);
+  WordIndex context_idx[ctx.size()];
+  
+  //reverse context
+  
+  FullScoreReturn score = model->FullScoreForgotState(context_idx, &(context_idx[ctx.size() -1]), word_idx, nextState);
+
+  
+  float ret =  score.prob; //thisModel.FullScoreForgotState(ctx, ctx.size(), word, nextState);  
   
   return ret;
 }
@@ -172,13 +180,20 @@ int main(int argc, char** argv) {
   std::vector<std::vector<std::string> > corpus;
   std::vector<std::string> vocab;
 
-  std::cerr << "Loading context-sorted ngrams" << std::endl;
+  std::cerr << "Loading context-sorted ngrams: " << tuning_data << std::endl;
   std::ifstream infile(tuning_data);
 
-  for(std::string line; std::getline(std::cin, line); ) {
+  for(std::string line; std::getline(infile, line); ) {
 
-    std::cerr << "line: " << line << std::endl;
-    
+    std::vector<std::string> words; {
+
+      std::stringstream stream(line);
+      std::string word;
+
+      while(stream >> word) {
+	words.push_back(word);
+      }
+    }
   }
   
   train_params(corpus, vocab, models);
