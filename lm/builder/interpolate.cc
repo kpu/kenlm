@@ -3,7 +3,7 @@
 #include "lm/builder/hash_gamma.hh"
 #include "lm/builder/joint_order.hh"
 #include "lm/builder/ngram_stream.hh"
-#include "lm/builder/sort.hh"
+#include "lm/common/compare.hh"
 #include "lm/lm_exception.hh"
 #include "util/fixed_array.hh"
 #include "util/murmur_hash.hh"
