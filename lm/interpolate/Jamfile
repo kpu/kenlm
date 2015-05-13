@@ -1,5 +1,6 @@
 #TODO split off streaming ngram stuff into a separate directory?
-fakelib interpolate : ../builder//builder [ glob *.cc : *_main.cc ] : <cxxflags>-fopenmp ;
+fakelib interpolate : ../builder//builder [ glob *.cc : *_main.cc *_test.cc ] : <cxxflags>-fopenmp ;
+
 
 local with-eigen = [ option.get "with-eigen" ] ;
 if $(with-eigen) {
@@ -8,3 +9,6 @@ if $(with-eigen) {
 
 exe make_pass3_input : interpolate make_pass3_input_main.cc /top//boost_program_options ;
 exe backoff_reunification_test : interpolate backoff_reunification_test_main.cc ;
+exe bounded_sequence_encoding_test : interpolate bounded_sequence_encoding_test.cc /top//boost_unit_test_framework ;
+
+#/top//boost_unit_test_framework /top//boost_system ;
