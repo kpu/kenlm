@@ -72,8 +72,7 @@ namespace lm {
       : universal_vocab_(universal_vocab)
     {
       for (size_t i=0; i < vocab_file_info.size(); ++i) {
-	VocabFileReader vocab_file(vocab_file_info[i].fd, i);
-	file_heap_.push(vocab_file);
+	file_heap_.push(VocabFileReader(vocab_file_info[i].fd, i));
 
 	// initialize first index to 0 for <unk>
 	universal_vocab_.InsertUniversalIdx(i, 0, 0);

@@ -10,10 +10,7 @@
 namespace lm {
 namespace interpolate {
 
-  class UniversalRenumber;
-
   class UniversalVocab {
-    friend class UniversalRenumber;
   public:
     typedef boost::unordered_map<size_t, std::vector<WordIndex> > HashMapType;
       
