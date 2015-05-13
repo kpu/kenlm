@@ -52,7 +52,13 @@ template <class Payload> inline util::stream::Chain &operator>>(util::stream::Ch
   return chain;
 }
 
-template <class Payload> class NGramStreams : public util::stream::GenericStreams<NGramStream<Payload> > {};
+template <class Payload> class NGramStreams : public util::stream::GenericStreams<NGramStream<Payload> > {
+  private:
+    typedef util::stream::GenericStreams<NGramStream<Payload> > P;
+  public:
+    NGramStreams() : P() {}
+    NGramStreams(const util::stream::ChainPositions &positions) : P(positions) {}
+};
 
 }} // namespaces
 #endif // LM_BUILDER_NGRAM_STREAM_H
