@@ -153,8 +153,6 @@ BOOST_AUTO_TEST_CASE(BackoffReunificationTest) {
   prob_chains >> util::stream::kRecycle;
   boff_chains >> util::stream::kRecycle;
 
-  prob_chains >> util::stream::kRecycle;
-  boff_chains >> util::stream::kRecycle;
   output_chains.Wait();
 }
 }
