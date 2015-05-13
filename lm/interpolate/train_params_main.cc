@@ -152,16 +152,16 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  //load models
   util::FixedArray<Model *> models(lms.size());
-  
   for(int i=0; i < lms.size(); i++) {
     std::cerr << "Loading LM file: " << lms[i] << std::endl;
-
-    //Model * this_model = new Model(lms[i].c_str());
 
     models[i] = new Model(lms[i].c_str());
     
   }
+  
+  //load context sorted ngrams
   
   return 0;
 }
