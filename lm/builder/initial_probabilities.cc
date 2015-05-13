@@ -1,7 +1,7 @@
 #include "lm/builder/initial_probabilities.hh"
 
 #include "lm/builder/discount.hh"
-#include "lm/builder/ngram_stream.hh"
+#include "lm/common/ngram_stream.hh"
 #include "lm/builder/hash_gamma.hh"
 #include "lm/builder/payload.hh"
 #include "util/murmur_hash.hh"
