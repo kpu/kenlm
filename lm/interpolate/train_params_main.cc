@@ -12,9 +12,17 @@ typedef Eigen::VectorXf FVector;
 
 bool HAS_BIAS = true;
 
+
+
 inline float logProb(unsigned model, const std::vector<std::string>& ctx, const std::string& word) {
   // TODO
-  return 0;
+
+  //tmp model
+  //Model thisModel("test");
+  //State nextState;
+  float ret =  0; //thisModel.FullScoreForgotState(ctx, ctx.size(), word, nextState);  
+  
+  return ret;
 }
 
 void set_features(const std::vector<std::string>& ctx,
@@ -131,6 +139,12 @@ int main(int argc, char** argv) {
     std::cerr << "Please specify tuning set with -t FILE.TXT\n";
     return 1;
   }
+
+  for(int i=0; i < LM_FILES.size(); i++) {
+    std::cerr << "Loading LM file: " << LM_FILES[i] << std::endl;
+
+  }
+  
   return 0;
 }
 
