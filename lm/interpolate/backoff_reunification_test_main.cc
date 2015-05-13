@@ -1,6 +1,6 @@
 #include "lm/interpolate/backoff_reunification.hh"
 
-#include "lm/builder/model_buffer.hh"
+#include "lm/common/model_buffer.hh"
 #include "lm/common/compare.hh"
 #include "lm/common/ngram.hh"
 #include "lm/word_index.hh"
@@ -21,8 +21,8 @@ int main() {
   sort_config.buffer_size = 1 << 26;  // 64MB
   sort_config.total_memory = 1 << 30; // 1GB
 
-  lm::builder::ModelBuffer in_prob_buf(prob_file);
-  lm::builder::ModelBuffer in_boff_buf(boff_file);
+  lm::common::ModelBuffer in_prob_buf(prob_file);
+  lm::common::ModelBuffer in_boff_buf(boff_file);
   util::stream::Chains prob_chains(in_prob_buf.Order());
   util::stream::Chains backoff_chains(in_prob_buf.Order());
 
@@ -56,7 +56,7 @@ int main() {
   util::stream::ChainPositions boff_pos(backoff_chains);
   ReunifyBackoff(prob_pos, boff_pos, output_chains);
 
-  lm::builder::ModelBuffer output_buf(out_file, true, false);
+  lm::common::ModelBuffer output_buf(out_file, true, false);
   output_buf.Sink(output_chains);
 
   return 0;
