@@ -24,8 +24,8 @@ namespace interpolate {
   class VocabFileReader
   {
   public:
-    VocabFileReader(const int fd, size_t model_num, uint64_t offset =0);
-      
+    explicit VocabFileReader(const int fd, size_t model_num, uint64_t offset =0);
+
     bool read(void);
     bool read_deprecated(void);
 
@@ -64,8 +64,8 @@ namespace interpolate {
       
     typedef boost::unordered_map<size_t, std::vector<WordIndex> > HashMapType;
   public:
-    MergeVocabIndex(std::vector<ModelInfo>& vocab_file_info,
-		    UniversalVocab& universam_vocab);
+    explicit MergeVocabIndex(std::vector<ModelInfo>& vocab_file_info,
+			     UniversalVocab& universam_vocab);
 
     void MergeModels(void);
 
