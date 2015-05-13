@@ -1,8 +1,9 @@
-#include "lm/builder/sort.hh"
 #include "lm/builder/print.hh"
 #include "lm/builder/model_buffer.hh"
+#include "lm/common/compare.hh"
 #include "lm/common/ngram.hh"
 #include "util/stream/chain.hh"
+#include "util/stream/sort.hh"
 #include "lm/interpolate/split_worker.hh"
 
 #include <boost/program_options.hpp>
@@ -125,9 +126,9 @@ int main(int argc, char *argv[]) {
   // - The first executes BlockSorter.Run() to sort the n-gram entries
   // - The second executes WriteAndRecycle.Run() to write each sorted
   //   block to disk as a temporary file
-  lm::builder::Sorts<lm::builder::ContextOrder> sorts(buffer.Order());
+  util::stream::Sorts<lm::ContextOrder> sorts(buffer.Order());
   for (std::size_t i = 0; i < prob_chains.size(); ++i) {
-    sorts.push_back(prob_chains[i], sort_cfg, lm::builder::ContextOrder(i + 1));
+    sorts.push_back(prob_chains[i], sort_cfg, lm::ContextOrder(i + 1));
   }
 
   // Set the sort output to be on the same chain

@@ -5,6 +5,8 @@
 #include <boost/program_options.hpp>
 #include <boost/version.hpp>
 
+#include "util/fixed_array.hh"
+
 #include <Eigen/Eigen>
 
 typedef Eigen::MatrixXf FMatrix;
@@ -92,8 +94,8 @@ void train_params(
 }
 
 int main(int argc, char** argv) {
-  std::string TUNING_DATA;
-  std::vector<std::string> LM_FILES;
+  std::string tuning_data;
+  std::vector<std::string> lms;
 
   try {
     namespace po = boost::program_options;
@@ -102,8 +104,8 @@ int main(int argc, char** argv) {
     options.add_options()
       ("help,h", po::bool_switch(), "Show this help message")
       ("no_bias_term,B", po::bool_switch(), "Do not include a 'bias' feature")
-      ("tuning_data,t", po::value<std::string>(&TUNING_DATA), "context sorted ngrams file")
-      ("model,m", po::value<std::vector<std::string> >(&LM_FILES), "Language model in KenLM format to interpolate");
+      ("tuning_data,t", po::value<std::string>(&tuning_data), "File to tune perplexity on")
+      ("model,m", po::value<std::vector<std::string> >(&lms), "Language models in KenLM format to interpolate");
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, options), vm);
 
