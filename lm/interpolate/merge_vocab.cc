@@ -86,7 +86,7 @@ namespace lm {
     void MergeVocabIndex::MergeModels(void)
     {
       uint64_t prev_hash_value = 0;
-      // global_index starts at 1 because of <unk> which is 0
+      // global_index starts with <unk> which is 0
       WordIndex global_index = 0;
 
       while (!file_heap_.empty()) {
@@ -103,7 +103,7 @@ namespace lm {
 	prev_hash_value = top_vocab_file.Value();
 	
 	file_heap_.pop();
-	// if (top_vocab_file.read_deprecated()) {
+
 	if (top_vocab_file.read()) {
 	  file_heap_.push(top_vocab_file);
 	}
