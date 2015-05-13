@@ -1,6 +1,7 @@
 #include "lm/builder/corpus_count.hh"
 
-#include "lm/builder/ngram.hh"
+#include "lm/builder/payload.hh"
+#include "lm/common/ngram.hh"
 #include "lm/lm_exception.hh"
 #include "lm/vocab.hh"
 #include "lm/word_index.hh"

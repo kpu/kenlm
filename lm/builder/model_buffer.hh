@@ -29,6 +29,7 @@ class ModelBuffer {
 
     void Source(util::stream::Chains &chains);
 
+    // The order of the n-gram model that is associated with the model buffer.
     std::size_t Order() const;
 
   private:

@@ -1,6 +1,7 @@
 #ifndef LM_VALUE_H
 #define LM_VALUE_H
 
+#include "lm/config.hh"
 #include "lm/model_type.hh"
 #include "lm/value_build.hh"
 #include "lm/weights.hh"
