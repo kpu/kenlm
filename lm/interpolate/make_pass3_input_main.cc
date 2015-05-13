@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
   util::stream::Chains prob_chains(buffer.Order());
   for (std::size_t i = 0; i < buffer.Order(); ++i) {
     ngram_inputs.push_back(util::stream::ChainConfig(
-        lm::builder::NGram::TotalSize(i + 1), NUMBER_OF_BLOCKS, ONE_GB));
+        lm::builder::NGram<lm::ProbBackoff>::TotalSize(i + 1), NUMBER_OF_BLOCKS, ONE_GB));
 
     backoff_chains.push_back(
         util::stream::ChainConfig(sizeof(float), NUMBER_OF_BLOCKS, ONE_GB));

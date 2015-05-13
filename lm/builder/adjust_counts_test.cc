@@ -37,7 +37,7 @@ struct Gram4 {
 class WriteInput {
   public:
     void Run(const util::stream::ChainPosition &position) {
-      NGramStream input(position);
+      NGramStream<BuildingPayload> input(position);
       Gram4 grams[] = {
         {{0,0,0,0},10},
         {{0,0,3,0},3},
@@ -47,7 +47,7 @@ class WriteInput {
       };
       for (size_t i = 0; i < sizeof(grams) / sizeof(Gram4); ++i, ++input) {
         memcpy(input->begin(), grams[i].ids, sizeof(WordIndex) * 4);
-        input->Count() = grams[i].count;
+        input->Value().count = grams[i].count;
       }
       input.Poison();
     }
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(Simple) {
     config.block_count = 1;
     util::stream::Chains chains(4);
     for (unsigned i = 0; i < 4; ++i) {
-      config.entry_size = NGram::TotalSize(i + 1);
+      config.entry_size = NGram<BuildingPayload>::TotalSize(i + 1);
       chains.push_back(config);
     }
 
@@ -86,25 +86,25 @@ BOOST_AUTO_TEST_CASE(Simple) {
 /*  BOOST_CHECK_EQUAL(4UL, counts[1]);
   BOOST_CHECK_EQUAL(3UL, counts[2]);
   BOOST_CHECK_EQUAL(3UL, counts[3]);*/
-  BOOST_REQUIRE_EQUAL(NGram::TotalSize(1) * 4, outputs[0].Size());
-  NGram uni(outputs[0].Get(), 1);
+  BOOST_REQUIRE_EQUAL(NGram<BuildingPayload>::TotalSize(1) * 4, outputs[0].Size());
+  NGram<BuildingPayload> uni(outputs[0].Get(), 1);
   BOOST_CHECK_EQUAL(kUNK, *uni.begin());
-  BOOST_CHECK_EQUAL(0ULL, uni.Count());
+  BOOST_CHECK_EQUAL(0ULL, uni.Value().count);
   uni.NextInMemory();
   BOOST_CHECK_EQUAL(kBOS, *uni.begin());
-  BOOST_CHECK_EQUAL(0ULL, uni.Count());
+  BOOST_CHECK_EQUAL(0ULL, uni.Value().count);
   uni.NextInMemory();
   BOOST_CHECK_EQUAL(0UL, *uni.begin());
-  BOOST_CHECK_EQUAL(2ULL, uni.Count());
+  BOOST_CHECK_EQUAL(2ULL, uni.Value().count);
   uni.NextInMemory();
-  BOOST_CHECK_EQUAL(2ULL, uni.Count());
+  BOOST_CHECK_EQUAL(2ULL, uni.Value().count);
   BOOST_CHECK_EQUAL(2UL, *uni.begin());
 
-  BOOST_REQUIRE_EQUAL(NGram::TotalSize(2) * 4, outputs[1].Size());
-  NGram bi(outputs[1].Get(), 2);
+  BOOST_REQUIRE_EQUAL(NGram<BuildingPayload>::TotalSize(2) * 4, outputs[1].Size());
+  NGram<BuildingPayload> bi(outputs[1].Get(), 2);
   BOOST_CHECK_EQUAL(0UL, *bi.begin());
   BOOST_CHECK_EQUAL(0UL, *(bi.begin() + 1));
-  BOOST_CHECK_EQUAL(1ULL, bi.Count());
+  BOOST_CHECK_EQUAL(1ULL, bi.Value().count);
   bi.NextInMemory();
 }
 

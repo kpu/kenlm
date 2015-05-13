@@ -16,10 +16,10 @@ void SplitWorker::Run(const util::stream::ChainPosition &position) {
   // output: a float to the backoff_input stream
   //         an ngram id and a float to the sort_input stream
   for (util::stream::Stream stream(position); stream; ++stream) {
-    lm::builder::NGram ngram(stream.Get(), order_);
+    builder::NGram<ProbBackoff> ngram(stream.Get(), order_);
 
     // write id and prob to the sort stream
-    float prob = ngram.Value().complete.prob;
+    float prob = ngram.Value().prob;
     lm::WordIndex *out = reinterpret_cast<lm::WordIndex *>(sort_input_.Get());
     for (const lm::WordIndex *it = ngram.begin(); it != ngram.end(); ++it) {
       *out++ = *it;
@@ -28,7 +28,7 @@ void SplitWorker::Run(const util::stream::ChainPosition &position) {
     ++sort_input_;
 
     // write backoff to the backoff output stream
-    float boff = ngram.Value().complete.backoff;
+    float boff = ngram.Value().backoff;
     *reinterpret_cast<float *>(backoff_input_.Get()) = boff;
     ++backoff_input_;
   }
