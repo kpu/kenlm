@@ -1,8 +1,11 @@
 #include "lm/interpolate/backoff_reunification.hh"
+
+#include "lm/builder/model_buffer.hh"
+#include "lm/common/compare.hh"
+#include "lm/common/ngram.hh"
 #include "lm/word_index.hh"
 #include "util/stream/io.hh"
-#include "lm/builder/model_buffer.hh"
-#include "lm/builder/sort.hh"
+#include "util/stream/sort.hh"
 
 int main() {
   using namespace lm::interpolate;
@@ -35,13 +38,13 @@ int main() {
   in_boff_buf.Source(backoff_chains);
 
   util::stream::Chains output_chains(prob_chains.size());
-  lm::builder::Sorts<lm::builder::SuffixOrder> sorts(prob_chains.size());
+  util::stream::Sorts<lm::SuffixOrder> sorts(prob_chains.size());
   for (size_t i = 0; i < prob_chains.size(); ++i) {
     output_chains.push_back(util::stream::ChainConfig(
         lm::NGram<lm::ProbBackoff>::TotalSize(i + 1), NUM_BLOCKS, MAX_RAM));
 
     sorts.push_back(prob_chains[i], sort_config,
-                    lm::builder::SuffixOrder(i + 1));
+                    lm::SuffixOrder(i + 1));
   }
 
   for (size_t i = 0; i < prob_chains.size(); ++i) {
