@@ -1,6 +1,6 @@
 #include "lm/builder/adjust_counts.hh"
 
-#include "lm/builder/ngram_stream.hh"
+#include "lm/common/ngram_stream.hh"
 #include "lm/builder/payload.hh"
 #include "util/scoped.hh"
 

@@ -1,7 +1,7 @@
 #ifndef LM_BUILDER_PRINT_H
 #define LM_BUILDER_PRINT_H
 
-#include "lm/builder/ngram_stream.hh"
+#include "lm/common/ngram_stream.hh"
 #include "lm/builder/output.hh"
 #include "lm/builder/payload.hh"
 #include "lm/common/ngram.hh"
