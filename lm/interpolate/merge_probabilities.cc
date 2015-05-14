@@ -26,7 +26,7 @@ public:
                util::FixedArray<util::stream::ChainPositions> &models_by_order)
       : info(ifo),
         encoder(MakeEncoder(info, order)),
-        out_record(order, encoder.Length()) {
+        out_record(order, encoder.EncodedLength()) {
 
     // have to init outside since NGramStreams doesn't forward to
     // GenericStreams ctor given a ChainPositions
