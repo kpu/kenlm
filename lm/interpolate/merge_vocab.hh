@@ -3,14 +3,11 @@
 
 #include "lm/word_index.hh"
 #include "lm/interpolate/universal_vocab.hh"
+#include "util/file_piece.hh"
 
 #include <queue>
 #include <stdint.h>
 #include <vector>
-
-#include <boost/unordered_map.hpp>
-
-namespace util { class FilePiece;  }
 
 namespace lm {
 namespace interpolate {
@@ -26,26 +23,25 @@ namespace interpolate {
   public:
     explicit VocabFileReader(const int fd, size_t model_num, uint64_t offset =0);
 
-    VocabFileReader &operator++();
+      VocabFileReader &operator++() { return *this; }
 
-    operator bool() const;
+      operator bool() const;
 
-    uint64_t operator*() const;
+      uint64_t operator*() const { return hash_value_; }
 
-    bool read(void);
+      bool read(void);
 
-    uint64_t operator()(void) const { return Value(); }
-    uint64_t Value(void) const { return hash_value_; }
+      uint64_t Value(void) const { return hash_value_; }
 
-    // Functions below are for debugging
-    uint32_t ModelNum(void) const { return model_num_; }
-    WordIndex CurrentIndex(void) const { return current_index_; }
+      // Functions below are for debugging
+      uint32_t ModelNum(void) const { return model_num_; }
+      WordIndex CurrentIndex(void) const { return current_index_; }
 
   private:
     uint64_t hash_value_;
     WordIndex current_index_;
       
-    util::FilePiece* file_piece_ptr_;
+    util::FilePiece file_piece_;
     size_t model_num_;
   };
 
@@ -53,26 +49,25 @@ namespace interpolate {
   class CompareFiles
   {
   public:
-    bool operator()(const VocabFileReader& x,
-		    const VocabFileReader& y)
-    { return x()>y(); }
+    bool operator()(const VocabFileReader* x,
+		    const VocabFileReader* y)
+      { return x->Value()> y->Value(); }
   };
 
   class MergeVocabIndex
   {
   private:
-    typedef std::priority_queue<VocabFileReader, std::vector<VocabFileReader>,
+    typedef std::priority_queue<VocabFileReader*, std::vector<VocabFileReader*>,
 				CompareFiles> HeapType;
       
-    typedef boost::unordered_map<size_t, std::vector<WordIndex> > HashMapType;
   public:
     explicit MergeVocabIndex(std::vector<ModelInfo>& vocab_file_info,
-			     UniversalVocab& universam_vocab);
+                             UniversalVocab& universam_vocab);
 
     void MergeModels(void);
 
     WordIndex GetUniversalIndex(size_t model_num, 
-				WordIndex original_index);
+                                WordIndex original_index);
 
   private:
     UniversalVocab& universal_vocab_;
