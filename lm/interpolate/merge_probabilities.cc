@@ -121,13 +121,13 @@ void HandleSuffix(NGramHandlers &handlers, WordIndex *suffix_begin,
       // if we either haven't set a minimum yet or this one is smaller than
       // the minimum we found before, replace it
       WordIndex *last = handler[i]->begin();
-      if (!minimum || *last < *minimum) {
-        minimum = handler[i]->begin();
-      }
+      if (!minimum || *last < *minimum) { minimum = handler[i]->begin(); }
     }
 
     // no more ngrams of this order match our suffix, so we're done
-    if (!minimum) return;
+    // the check against the max int here is how we know that the streams
+    // are done being read
+    if (!minimum || *minimum == std::numeric_limits<WordIndex>::max()) return;
 
     handler.out_record.ReBase(output.Get());
     std::copy(minimum, minimum + order, handler.out_record.begin());
@@ -214,6 +214,16 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
   // the two nulls are to encode that our "fallback" word is the "0-gram"
   // case, e.g. we "backed off" to UNK
   HandleSuffix(handlers, NULL, NULL, unk_probs, unk_from, outputs);
+
+  // Read the dummy "end-of-stream" symbol for each of the inputs
+  for (std::size_t i = 0; i < handlers.size(); ++i) {
+    for (std::size_t j = 0; j < handlers[i].inputs.size(); ++j) {
+      UTIL_THROW_IF2(*handlers[i][j]->begin()
+                         != std::numeric_limits<WordIndex>::max(),
+                     "MergeProbabilities did not exhaust all ngram streams");
+      ++handlers[i][j];
+    }
+  }
 }
 }
 
