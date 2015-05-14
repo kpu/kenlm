@@ -8,8 +8,11 @@
  */
 
 #include <cstring>
+
+#if 0
 #include "util/bit_packing.hh"
 #include "lm/interpolate/bounded_sequence_iterator.hh"
+#endif
 
 namespace lm {
 namespace interpolate {
@@ -22,6 +25,15 @@ class BoundedSequenceEncoding {
 
     std::size_t Length() const { return length_; }
 
+    void Encode(const unsigned char *from, void *to) {
+      std::memcpy(to, from, length_);
+    }
+
+    void Decode(const void *from, unsigned char *to) {
+      std::memcpy(to, from, length_);
+    }
+
+#if 0
     void Encode(const unsigned char *from, void *to) {
 
       //TODO: THIS SHOULD BE KNOWN ... SHOULD BE ABLE TO DELETE THIS
@@ -127,6 +139,7 @@ class BoundedSequenceEncoding {
       //  from += it_size;
       //}
     }*/
+#endif
 
   private:
     const std::size_t length_;
