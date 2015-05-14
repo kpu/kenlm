@@ -4,12 +4,12 @@ fakelib interpolate : ../builder//builder [ glob *.cc : *_main.cc *_test.cc ] : 
 
 local with-eigen = [ option.get "with-eigen" ] ;
 if $(with-eigen) {
-  exe train_params : interpolate train_params_main.cc /top//boost_program_options : <include>$(with-eigen) ;
+  exe train_params : train_params_main.cc /top//boost_program_options ..//kenlm : <include>$(with-eigen) ;
 }
 
 import testing ;
 exe streaming_example : interpolate streaming_example_main.cc /top//boost_program_options ;
 unit-test backoff_reunification_test : interpolate backoff_reunification_test.cc /top//boost_unit_test_framework ;
-#exe bounded_sequence_encoding_test : interpolate bounded_sequence_encoding_test.cc /top//boost_unit_test_framework ;
+exe bounded_sequence_encoding_test : interpolate bounded_sequence_encoding_test.cc /top//boost_unit_test_framework ;
 
 #/top//boost_unit_test_framework /top//boost_system ;

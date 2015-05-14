@@ -10,7 +10,7 @@ namespace interpolate {
 
 void ExhaustiveTest(unsigned char *bound_begin, unsigned char *bound_end) {
   BoundedSequenceEncoding enc(bound_begin, bound_end);
-  util::scoped_memory backing(util::MallocOrThrow(enc.EncodedLength() + 7 / 8) * 8);
+  util::scoped_malloc backing(util::MallocOrThrow(((enc.EncodedLength() + 7) / 8)*8));
   std::vector<unsigned char> values(bound_end - bound_begin), out(bound_end - bound_begin);
   while (true) {
     enc.Encode(&values[0], backing.get());
@@ -28,8 +28,12 @@ void ExhaustiveTest(unsigned char *bound_begin, unsigned char *bound_end) {
 }
 
 BOOST_AUTO_TEST_CASE(Exhaustive) {
-  unsigned char bounds[] = {5,2,3,9,7,20};
-  ExhaustiveTest(bounds, bounds + 6);
+  unsigned char bounds[] = {5,2,3,9,7,20,8};
+  ExhaustiveTest(bounds, bounds + sizeof(bounds) / sizeof(unsigned char));
+}
+
+BOOST_AUTO_TEST_CASE(MoreThan64) {
+
 }
 
 }} // namespaces
