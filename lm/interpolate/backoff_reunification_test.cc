@@ -45,7 +45,7 @@ template <uint8_t N>
 class WriteInput {
 public:
   void Run(const util::stream::ChainPosition &position) {
-    lm::builder::NGramStream<float> output(position);
+    lm::NGramStream<float> output(position);
 
     for (std::size_t i = 0; i < sizeof(Grams<N>::grams) / sizeof(Gram<N>);
          ++i, ++output) {
@@ -75,7 +75,7 @@ template <uint8_t N>
 class CheckOutput {
 public:
   void Run(const util::stream::ChainPosition &position) {
-    lm::builder::NGramStream<ProbBackoff> stream(position);
+    lm::NGramStream<ProbBackoff> stream(position);
 
     std::size_t i = 0;
     for (; stream; ++stream, ++i) {

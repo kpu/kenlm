@@ -19,9 +19,9 @@ public:
   }
 
   void Run(const util::stream::ChainPosition &position) {
-    lm::builder::NGramStream<ProbBackoff> stream(position);
+    lm::NGramStream<ProbBackoff> stream(position);
 
-    lm::builder::NGramStream<float> prob_input(prob_pos_);
+    lm::NGramStream<float> prob_input(prob_pos_);
     util::stream::Stream boff_input(boff_pos_);
     for (; prob_input && boff_input; ++prob_input, ++boff_input, ++stream) {
       std::copy(prob_input->begin(), prob_input->end(), stream->begin());

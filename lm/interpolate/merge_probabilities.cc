@@ -53,12 +53,12 @@ public:
    * @return the input stream for a particular model that corresponds to
    * this ngram order
    */
-  lm::builder::NGramStream<ProbBackoff> &operator[](std::size_t idx) {
+  lm::NGramStream<ProbBackoff> &operator[](std::size_t idx) {
     return inputs[idx];
   }
 
   const InterpolateInfo &info;
-  lm::builder::NGramStreams<ProbBackoff> inputs;
+  lm::NGramStreams<ProbBackoff> inputs;
   BoundedSequenceEncoding encoder;
   PartialProbGamma out_record;
   util::FixedArray<float> probs;
