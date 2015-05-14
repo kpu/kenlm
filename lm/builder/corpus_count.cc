@@ -221,9 +221,8 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
       prune_words_.resize(vocab.Size(), true);
       try {
         while (true) {
-          StringPiece line(prune_vocab_file.ReadLine());
-          for (util::TokenIter<util::BoolCharacter, true> w(line, delimiters); w; ++w)
-            prune_words_[vocab.Index(*w)] = false;
+          StringPiece word(prune_vocab_file.ReadDelimited(delimiters));
+          prune_words_[vocab.Index(word)] = false;
         }
       } catch (const util::EndOfFileException &e) {}
       
