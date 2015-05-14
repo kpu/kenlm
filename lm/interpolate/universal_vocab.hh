@@ -4,6 +4,8 @@
 #include "lm/word_index.hh"
 
 #include <vector>
+#include <stdint.h>
+#include <cstddef>
 
 namespace lm {
 namespace interpolate {
