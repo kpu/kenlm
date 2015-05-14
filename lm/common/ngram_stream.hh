@@ -8,7 +8,7 @@
 
 #include <cstddef>
 
-namespace lm { namespace builder {
+namespace lm {
 
 template <class Payload> class NGramStream {
   public:
@@ -60,5 +60,5 @@ template <class Payload> class NGramStreams : public util::stream::GenericStream
     NGramStreams(const util::stream::ChainPositions &positions) : P(positions) {}
 };
 
-}} // namespaces
+} // namespace
 #endif // LM_BUILDER_NGRAM_STREAM_H
