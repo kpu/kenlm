@@ -4,7 +4,6 @@
 #include "lm/word_index.hh"
 
 #include <vector>
-#include <stdint.h>
 #include <cstddef>
 
 namespace lm {
@@ -12,16 +11,12 @@ namespace interpolate {
 
 class UniversalVocab {
 public:
-  typedef std::vector<std::vector<WordIndex> > HashMapType;
-      
-public:
-  UniversalVocab(const std::vector<WordIndex>& model_max_idx);
+  explicit UniversalVocab(const std::vector<WordIndex>& model_max_idx);
 
   // GetUniversalIndex takes the model numberand index for the specific
   // model and returns the universal model number
   // If you are outside of vocabulary size this will return 0
-  WordIndex GetUniversalIdx(size_t model_num, WordIndex model_word_index) const
-  {
+  WordIndex GetUniversalIdx(size_t model_num, WordIndex model_word_index) const {
     if (model_num < model_index_map_.size()) {
       return model_index_map_[model_num][model_word_index];
     }
@@ -29,10 +24,12 @@ public:
   }
 
   void InsertUniversalIdx(size_t model_num, WordIndex word_index,
-                          WordIndex universal_word_index);
-      
+      WordIndex universal_word_index) {
+    model_index_map_[model_num][word_index] = universal_word_index;
+  }
+
 private:
-  HashMapType model_index_map_;
+  std::vector<std::vector<WordIndex> > model_index_map_;
 };
     
 } // namespace interpolate
