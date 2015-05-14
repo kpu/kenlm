@@ -8,9 +8,11 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <map>
 
 #include <boost/program_options.hpp>
 #include <boost/version.hpp>
+#include <boost/foreach.hpp>
 
 #include "util/fixed_array.hh"
 
@@ -66,6 +68,9 @@ void train_params(
     const std::vector<Model *>& models) {
   using namespace std;
 
+  std::cerr << "In train params - it's someone else's problem" << std::endl;
+
+  
   vector<string> context(5, "<s>");
   const int ITERATIONS = 10;
   const int nlambdas = models.size() + (HAS_BIAS ? 1 : 0); // bias + #models
@@ -165,31 +170,57 @@ int main(int argc, char** argv) {
 
   //Growable vocab here
   //GrowableVocab gvoc(100000); //dummy default
+
+  //no comment
+  std::map<StringPiece, int*> vmap;
   
   //stuff it into the 
-  EnumerateGlobalVocab * globalVocabBuilder = new EnumerateGlobalVocab(1);
+  EnumerateGlobalVocab * globalVocabBuilder = new EnumerateGlobalVocab(&vmap, lms.size());
     
   Config cfg;
   cfg.enumerate_vocab = (EnumerateVocab *) globalVocabBuilder;
- 
+
   //load models
   //util::FixedArray<Model *> models(lms.size());
   std::vector<Model *> models;
   for(int i=0; i < lms.size(); i++) {
     std::cerr << "Loading LM file: " << lms[i] << std::endl;
 
+    //haaaack
+    globalVocabBuilder->SetCurModel(i); //yes this is dumb
+    
     //models[i] = new Model(lms[i].c_str());
     Model * this_model = new Model(lms[i].c_str(), cfg);
     models.push_back( this_model );
 
-    //do I have to assemble a unified vocab here?
+  }
+
+  //assemble vocabulary vector
+  std::vector<std::string> vocab;
+  std::cerr << "Global Vocab Map has size: " << vmap.size() << std::endl;
+
+  std::pair<StringPiece,int *> me; 
+
+  for(std::map<StringPiece, int*>::iterator iter = vmap.begin(); iter != vmap.end(); ++iter) {
+    
+    StringPiece k =  iter->first;
+    std::cerr << "k: " << k << std::endl;
+    //vocab.push_back(k.as_string());
     
   }
+  std::cerr << "Vocab vector has size: " << vocab.size() << std::endl;  
+
+  //BOOST_FOREACH(me, vmap) {
+  //  //StringPiece lame = *(me.first);
+  //
+  //  std::cerr << "copy:" << lame << std::cerr;
+  //  
+  //  //vocab.push_back(lame.as_string());
+  // }
+
   
   //load context sorted ngrams into vector of vectors
-  
   std::vector<std::vector<std::string> > corpus;
-  std::vector<std::string> vocab;
 
   std::cerr << "Loading context-sorted ngrams: " << tuning_data << std::endl;
   std::ifstream infile(tuning_data);
