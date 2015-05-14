@@ -5,6 +5,7 @@
 #define BOOST_TEST_MODULE BoundedSequenceEncodingTest
 #include <boost/test/unit_test.hpp>
 
+
 namespace lm {
 namespace interpolate {
 
@@ -81,5 +82,5 @@ BOOST_AUTO_TEST_CASE(MoreThan64) {
 
   CheckEncodeDecode(bounds, input, output, len);
 }
-}
-} // namespaces
+
+}} // namespaces
