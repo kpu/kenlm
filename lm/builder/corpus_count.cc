@@ -26,19 +26,6 @@ namespace lm {
 namespace builder {
 namespace {
 
-#pragma pack(push)
-#pragma pack(4)
-struct VocabEntry {
-  typedef uint64_t Key;
-
-  uint64_t GetKey() const { return key; }
-  void SetKey(uint64_t to) { key = to; }
-
-  uint64_t key;
-  lm::WordIndex value;
-};
-#pragma pack(pop)
-
 class DedupeHash : public std::unary_function<const WordIndex *, bool> {
   public:
     explicit DedupeHash(std::size_t order) : size_(order * sizeof(WordIndex)) {}
