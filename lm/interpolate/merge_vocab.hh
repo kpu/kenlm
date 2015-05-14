@@ -12,69 +12,61 @@
 namespace lm {
 namespace interpolate {
 
-  struct ModelInfo
-  {
-    int fd;
-    size_t vocab_size;
-  };
+struct ModelInfo
+{
+  int fd;
+  size_t vocab_size;
+};
 
-  class VocabFileReader
-  {
-  public:
-    explicit VocabFileReader(const int fd, size_t model_num, uint64_t offset =0);
+class VocabFileReader
+{
+public:
+  explicit VocabFileReader(const int fd, size_t model_num, uint64_t offset =0);
 
-      VocabFileReader &operator++() { return *this; }
+  VocabFileReader &operator++() { read(); return *this; }
+  operator bool() const { return !eof_; }
+  uint64_t operator*() const { return Value(); }
 
-      operator bool() const;
+  // reads a new entry from the file
+  bool read(void);
 
-      uint64_t operator*() const { return hash_value_; }
+  uint64_t Value(void) const { return hash_value_; }
+  size_t ModelNum(void) const { return model_num_; }
+  WordIndex CurrentIndex(void) const { return current_index_; }
 
-      bool read(void);
+private:
+  uint64_t hash_value_;
+  WordIndex current_index_;
+  bool eof_;
+  size_t model_num_;
+  util::FilePiece file_piece_;
+};
 
-      uint64_t Value(void) const { return hash_value_; }
 
-      // Functions below are for debugging
-      uint32_t ModelNum(void) const { return model_num_; }
-      WordIndex CurrentIndex(void) const { return current_index_; }
+class CompareFiles
+{
+public:
+  bool operator()(const VocabFileReader* x,
+                  const VocabFileReader* y)
+  { return x->Value()> y->Value(); }
+};
 
-  private:
-    uint64_t hash_value_;
-    WordIndex current_index_;
+class MergeVocabIndex
+{
+private:
+  typedef std::priority_queue<VocabFileReader*, std::vector<VocabFileReader*>,
+                              CompareFiles> HeapType;
       
-    util::FilePiece file_piece_;
-    size_t model_num_;
-  };
+public:
+  explicit MergeVocabIndex(std::vector<ModelInfo>& vocab_file_info,
+                           UniversalVocab& universam_vocab);
+  void MergeModels(void);
 
+private:
+  UniversalVocab& universal_vocab_;
+  HeapType    file_heap_;
+};
 
-  class CompareFiles
-  {
-  public:
-    bool operator()(const VocabFileReader* x,
-		    const VocabFileReader* y)
-      { return x->Value()> y->Value(); }
-  };
-
-  class MergeVocabIndex
-  {
-  private:
-    typedef std::priority_queue<VocabFileReader*, std::vector<VocabFileReader*>,
-				CompareFiles> HeapType;
-      
-  public:
-    explicit MergeVocabIndex(std::vector<ModelInfo>& vocab_file_info,
-                             UniversalVocab& universam_vocab);
-
-    void MergeModels(void);
-
-    WordIndex GetUniversalIndex(size_t model_num, 
-                                WordIndex original_index);
-
-  private:
-    UniversalVocab& universal_vocab_;
-      
-    HeapType    file_heap_;
-
-  };
 }} // namespaces
       
 #endif // LM_INTERPOLATE_MERGE_VOCAB_H
