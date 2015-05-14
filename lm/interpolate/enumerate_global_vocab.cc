@@ -7,20 +7,22 @@
 namespace lm {
 //constructor
   
-  EnumerateGlobalVocab::EnumerateGlobalVocab(std::map<StringPiece, int*> * vm, int nm) {
+  EnumerateGlobalVocab::EnumerateGlobalVocab(std::map<std::string, int*> * vm, int nm) {
 
     vmap = vm;
     num_models = nm;
     cur_model = 0; //blah
-    
+    cnt = 0;
     std::cerr << "Vocab Builder with models: " <<  nm << std::endl;
   }
 
   void EnumerateGlobalVocab::Add(WordIndex index, const StringPiece &str) {
 
-    //check for existence of key
-    std::map<StringPiece, int*>::iterator itr = vmap->find(str);
+    std::string st = str.as_string();
 
+    //check for existence of key
+    std::map<std::string, int*>::iterator itr = vmap->find(st);
+    
     //put stuff
     if(itr != vmap->end()) {
       std::cerr << "Vocab exist: " << str << " M: " << cur_model << " I:" << index << std::endl;
@@ -28,7 +30,6 @@ namespace lm {
     }
     //new key
     else {
-      std::cerr << "Vocab add: " << str << " M: " << cur_model << " I:" << index << std::endl;
       
       //create model index map for this vocab word
       //init to 0, 0 is UNK
@@ -36,7 +37,9 @@ namespace lm {
       memset(indices, 0, (sizeof(int)*num_models)); //this still legit?
 
       indices[cur_model] = index;
-      (*vmap)[str] = indices;
+      (*vmap)[st] = indices;
+      std::cerr << cnt << ":Vocab add: " << str << " M: " << cur_model << " I:" << index << std::endl;
+      cnt++;
     }
 
     

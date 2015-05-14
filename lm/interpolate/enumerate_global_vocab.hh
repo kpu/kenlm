@@ -14,15 +14,16 @@ namespace lm {
   public:
 
     //yes, ugly...
-    std::map<StringPiece, int*> * vmap;
+    std::map<std::string, int*> * vmap;
     int num_models;
     int cur_model;
+    int cnt; //stupid
    
     ~EnumerateGlobalVocab() {}
 
     void Add(WordIndex index, const StringPiece & str);
 
-    EnumerateGlobalVocab(std::map<StringPiece, int*> *, int);
+    EnumerateGlobalVocab(std::map<std::string, int*> *, int);
 
     void SetCurModel(int i) { cur_model = i; }
     

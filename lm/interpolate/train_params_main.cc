@@ -44,6 +44,7 @@ inline float logProb(Model * model, const std::vector<std::string>& ctx, const s
   FullScoreReturn score = model->FullScoreForgotState(context_idx, &(context_idx[ctx.size() -1]), word_idx, nextState);
   
   float ret = score.prob;
+  std::cerr << "w: " << word << " p: " << ret << std::endl;
   return ret;
 }
 
@@ -68,9 +69,6 @@ void train_params(
     const std::vector<Model *>& models) {
   using namespace std;
 
-  std::cerr << "In train params - it's someone else's problem" << std::endl;
-
-  
   vector<string> context(5, "<s>");
   const int ITERATIONS = 10;
   const int nlambdas = models.size() + (HAS_BIAS ? 1 : 0); // bias + #models
@@ -172,7 +170,7 @@ int main(int argc, char** argv) {
   //GrowableVocab gvoc(100000); //dummy default
 
   //no comment
-  std::map<StringPiece, int*> vmap;
+  std::map<std::string, int*> vmap;
   
   //stuff it into the 
   EnumerateGlobalVocab * globalVocabBuilder = new EnumerateGlobalVocab(&vmap, lms.size());
@@ -201,24 +199,11 @@ int main(int argc, char** argv) {
 
   std::pair<StringPiece,int *> me; 
 
-  for(std::map<StringPiece, int*>::iterator iter = vmap.begin(); iter != vmap.end(); ++iter) {
-    
-    StringPiece k =  iter->first;
-    std::cerr << "k: " << k << std::endl;
-    //vocab.push_back(k.as_string());
-    
+  for(std::map<std::string, int*>::iterator iter = vmap.begin(); iter != vmap.end(); ++iter) {
+    vocab.push_back(iter->first);
   }
   std::cerr << "Vocab vector has size: " << vocab.size() << std::endl;  
 
-  //BOOST_FOREACH(me, vmap) {
-  //  //StringPiece lame = *(me.first);
-  //
-  //  std::cerr << "copy:" << lame << std::cerr;
-  //  
-  //  //vocab.push_back(lame.as_string());
-  // }
-
-  
   //load context sorted ngrams into vector of vectors
   std::vector<std::vector<std::string> > corpus;
 
