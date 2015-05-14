@@ -1,16 +1,20 @@
 
 #include "lm/interpolate/enumerate_global_vocab.hh"
 
+#include <iostream>
 
 namespace lm {
 //constructor
 
-//destructor
+  EnumerateGlobalVocab::EnumerateGlobalVocab() {
+    
+    std::cerr << "Vocab Builder" << std::endl;
+  }
 
+  void EnumerateGlobalVocab::Add(WordIndex index, const StringPiece &str) {
 
-void EnumerateGlobalVocab::Add(WordIndex index, const StringPiece &str) {
-
-  //do stuff
-}
+    
+    
+  }
 
 }
