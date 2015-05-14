@@ -44,7 +44,7 @@ inline float logProb(Model * model, const std::vector<std::string>& ctx, const s
   FullScoreReturn score = model->FullScoreForgotState(context_idx, &(context_idx[ctx.size() -1]), word_idx, nextState);
   
   float ret = score.prob;
-  std::cerr << "w: " << word << " p: " << ret << std::endl;
+  //std::cerr << "w: " << word << " p: " << ret << std::endl;
   return ret;
 }
 
@@ -52,6 +52,9 @@ void set_features(const std::vector<std::string>& ctx,
                   const std::string& word,
                   const std::vector<Model *>& models,
                   FVector& v) {
+
+  //std::cerr << "setting feats for " << word << std::endl;
+  
   if (HAS_BIAS) {
     v(0) = 1;
     for (unsigned i=0; i < models.size(); ++i)
@@ -92,11 +95,13 @@ void train_params(
         const string& ref_word_string = sentence[t];
         int ref_word = 0; // TODO
         double z = 0;
+	//std::cerr << "here..." << std::endl;
         for (unsigned i = 0; i < vocab.size(); ++i) { // vocab
           set_features(context, vocab[i], models, feats[i]);
           us[i] = params.dot(feats[i]);
           z += exp(double(us[i]));
         }
+	//std::cerr << "there..." << std::endl;
         context.push_back(ref_word_string);
         const float logz = log(z);
 
@@ -117,6 +122,7 @@ void train_params(
 
         // this should just be the state for each model
       }
+      cerr << ".";
     }
     cerr << "ITERATION " << (iter + 1) << ": PPL=" << exp(loss / numchars) << endl;
     params = H.colPivHouseholderQr().solve(grad);
@@ -221,6 +227,7 @@ int main(int argc, char** argv) {
 	words.push_back(word);
       }
     }
+    corpus.push_back(words);
   }
   
   train_params(corpus, vocab, models);
