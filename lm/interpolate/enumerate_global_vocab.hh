@@ -16,8 +16,10 @@ namespace lm {
 
     void Add(WordIndex index, const StringPiece & str);
 
-    //protected:
-    EnumerateGlobalVocab();
+    EnumerateGlobalVocab(int foo);
+    
+  protected:
+    EnumerateGlobalVocab() {}
 
   };
 

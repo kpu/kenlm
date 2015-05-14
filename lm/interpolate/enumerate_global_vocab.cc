@@ -6,14 +6,15 @@
 namespace lm {
 //constructor
 
-  EnumerateGlobalVocab::EnumerateGlobalVocab() {
+  EnumerateGlobalVocab::EnumerateGlobalVocab(int foo) {
     
-    std::cerr << "Vocab Builder" << std::endl;
+    std::cerr << "Vocab Builder: " <<  foo << std::endl;
   }
 
   void EnumerateGlobalVocab::Add(WordIndex index, const StringPiece &str) {
 
-    
+    //test
+    std::cerr << "Vocab add: " << str << " from " << index << std::endl;
     
   }
 
