@@ -11,5 +11,7 @@ import testing ;
 exe streaming_example : interpolate streaming_example_main.cc /top//boost_program_options ;
 unit-test backoff_reunification_test : interpolate backoff_reunification_test.cc /top//boost_unit_test_framework ;
 unit-test bounded_sequence_encoding_test : interpolate bounded_sequence_encoding_test.cc /top//boost_unit_test_framework ;
+unit-test merge_vocab_test : interpolate merge_vocab_test.cc /top//boost_unit_test_framework ;
+exe merge_vocab_example_main : interpolate merge_vocab_example_main.cc ;
 
 #/top//boost_unit_test_framework /top//boost_system ;
