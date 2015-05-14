@@ -100,7 +100,7 @@ class PruneNGramStream {
 // Extract an array of HashedGamma from an array of BufferEntry.
 class OnlyGamma {
   public:
-    OnlyGamma(bool pruning) : pruning_(pruning) {}
+    explicit OnlyGamma(bool pruning) : pruning_(pruning) {}
 
     void Run(const util::stream::ChainPosition &position) {
       for (util::stream::Link block_it(position); block_it; ++block_it) {
