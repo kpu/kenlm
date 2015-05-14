@@ -3,7 +3,6 @@
 
 #include "lm/enumerate_vocab.hh"
 
-
 /* Use this to create a global vocab across models for use when
  * calculating lambdas for interpolation. Or other stuff.
  */
@@ -13,17 +12,18 @@ namespace lm {
     
   public:
 
-    ~EnumerateGlobalVocab();
+    ~EnumerateGlobalVocab() {}
 
     void Add(WordIndex index, const StringPiece & str);
 
+    EnumerateGlobalVocab(int foo);
+    
   protected:
-    EnumerateGlobalVocab();
-   
+    EnumerateGlobalVocab() {}
 
   };
 
 } //namespace lm
 
-#endif // LM_ENUMERATE_VOCAB_H
+#endif // LM_ENUMERATE_GLOBAL_VOCAB_H
 

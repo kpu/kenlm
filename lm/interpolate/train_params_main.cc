@@ -1,6 +1,8 @@
 #include "lm/ngram_query.hh"
 #include "lm/model.hh"
 #include "lm/word_index.hh"
+#include "lm/interpolate/enumerate_global_vocab.hh"
+
 
 #include <string>
 #include <vector>
@@ -161,6 +163,15 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  //Growable vocab here
+  //GrowableVocab gvoc(100000); //dummy default
+  
+  //stuff it into the 
+  EnumerateGlobalVocab * globalVocabBuilder = new EnumerateGlobalVocab(1);
+    
+  Config cfg;
+  cfg.enumerate_vocab = (EnumerateVocab *) globalVocabBuilder;
+ 
   //load models
   //util::FixedArray<Model *> models(lms.size());
   std::vector<Model *> models;
@@ -168,7 +179,7 @@ int main(int argc, char** argv) {
     std::cerr << "Loading LM file: " << lms[i] << std::endl;
 
     //models[i] = new Model(lms[i].c_str());
-    Model * this_model = new Model(lms[i].c_str());
+    Model * this_model = new Model(lms[i].c_str(), cfg);
     models.push_back( this_model );
 
     //do I have to assemble a unified vocab here?
