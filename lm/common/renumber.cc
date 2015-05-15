@@ -1,17 +1,17 @@
 #include "lm/common/renumber.hh"
+#include "lm/common/ngram.hh"
 
-#include "lm/common/ngram_stream.hh"
-#include "lm/builder/payload.hh"
-#include "util/stream/chain.hh"
+#include "util/stream/stream.hh"
 
-namespace lm { namespace builder {
+namespace lm {
 
 void Renumber::Run(const util::stream::ChainPosition &position) {
-  for (NGramStream<BuildingPayload> stream(position); stream; ++stream) {
-    for (WordIndex *w = stream->begin(); w != stream->end(); ++w) {
+  for (util::stream::Stream stream(position); stream; ++stream) {
+    NGramHeader gram(stream.Get(), order_);
+    for (WordIndex *w = gram.begin(); w != gram.end(); ++w) {
       *w = new_numbers_[*w];
     }
   }
 }
 
-}} // namespaces
+} // namespace lm
