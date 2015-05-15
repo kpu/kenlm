@@ -5,9 +5,9 @@
 #define BOOST_TEST_MODULE BoundedSequenceEncodingTest
 #include <boost/test/unit_test.hpp>
 
-
 namespace lm {
 namespace interpolate {
+namespace {
 
 void ExhaustiveTest(unsigned char *bound_begin, unsigned char *bound_end) {
   BoundedSequenceEncoding enc(bound_begin, bound_end);
@@ -83,4 +83,4 @@ BOOST_AUTO_TEST_CASE(MoreThan64) {
   CheckEncodeDecode(bounds, input, output, len);
 }
 
-}} // namespaces
+}}} // namespaces
