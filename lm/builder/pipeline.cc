@@ -241,7 +241,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
   }
 
   util::stream::Chains gamma_chains(config.order);
-  InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second, gamma_chains, prune_thresholds, prune_vocab);
+  InitialProbabilities(config.initial_probs, discounts, master.MutableChains(), second, gamma_chains, prune_thresholds, prune_vocab, kBOS);
   // Don't care about gamma for 0.  
   gamma_chains[0] >> util::stream::kRecycle;
   gammas.Init(config.order - 1);

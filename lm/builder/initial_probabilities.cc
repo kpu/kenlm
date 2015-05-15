@@ -202,8 +202,8 @@ class AddRight {
 
 class MergeRight {
   public:
-    MergeRight(bool interpolate_unigrams, const util::stream::ChainPosition &from_adder, const Discount &discount)
-      : interpolate_unigrams_(interpolate_unigrams), from_adder_(from_adder), discount_(discount) {}
+    MergeRight(bool interpolate_unigrams, const util::stream::ChainPosition &from_adder, const Discount &discount, WordIndex bos)
+      : interpolate_unigrams_(interpolate_unigrams), from_adder_(from_adder), discount_(discount), bos_(bos) {}
 
     // calculate the initial probability of each n-gram (before order-interpolation)
     // Run() gets invoked once for each order
@@ -228,12 +228,16 @@ class MergeRight {
           grams->Value().uninterp.prob = sums.gamma;
         }
         grams->Value().uninterp.gamma = gamma_assign;
-        ++grams;
+
+        for (++grams; *grams->begin() != bos_; ++grams) {
+          grams->Value().uninterp.prob = discount_.Apply(grams->Value().count) / sums.denominator;
+          grams->Value().uninterp.gamma = gamma_assign;
+        }
 
         // Special case for <s>: probability 1.0.  This allows <s> to be
         // explicitly scored as part of the sentence without impacting
         // probability and computes q correctly as b(<s>).
-        assert(*grams->begin() == kBOS);
+        assert(*grams->begin() == bos_);
         grams->Value().uninterp.prob = 1.0;
         grams->Value().uninterp.gamma = 0.0;
 
@@ -263,6 +267,7 @@ class MergeRight {
     bool interpolate_unigrams_;
     util::stream::ChainPosition from_adder_;
     Discount discount_;
+    const WordIndex bos_;
 };
 
 } // namespace
@@ -274,7 +279,8 @@ void InitialProbabilities(
     util::stream::Chains &second_in,
     util::stream::Chains &gamma_out,
     const std::vector<uint64_t> &prune_thresholds,
-    bool prune_vocab) {
+    bool prune_vocab,
+    WordIndex bos) {
   for (size_t i = 0; i < primary.size(); ++i) {
     util::stream::ChainConfig gamma_config = config.adder_out;
     if(prune_vocab || prune_thresholds[i] > 0)
@@ -287,7 +293,7 @@ void InitialProbabilities(
     gamma_out.push_back(gamma_config);
     gamma_out[i] >> AddRight(discounts[i], second, prune_vocab || prune_thresholds[i] > 0);
 
-    primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i]);
+    primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i], bos);
     
     // Don't bother with the OnlyGamma thread for something to discard.
     if (i) gamma_out[i] >> OnlyGamma(prune_vocab || prune_thresholds[i] > 0);

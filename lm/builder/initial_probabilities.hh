@@ -2,6 +2,7 @@
 #define LM_BUILDER_INITIAL_PROBABILITIES_H
 
 #include "lm/builder/discount.hh"
+#include "lm/word_index.hh"
 #include "util/stream/config.hh"
 
 #include <vector>
@@ -34,7 +35,8 @@ void InitialProbabilities(
     util::stream::Chains &second_in,
     util::stream::Chains &gamma_out,
     const std::vector<uint64_t> &prune_thresholds,
-    bool prune_vocab);
+    bool prune_vocab,
+    WordIndex bos);
 
 } // namespace builder
 } // namespace lm
