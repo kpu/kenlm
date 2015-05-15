@@ -1,10 +1,8 @@
 #include "lm/interpolate/merge_probabilities.hh"
 #include "lm/common/ngram_stream.hh"
-#include "lm/builder/payload.hh"
 #include "lm/interpolate/bounded_sequence_encoding.hh"
 
 #include <algorithm>
-#include <boost/optional.hpp>
 
 namespace lm {
 namespace interpolate {
@@ -195,7 +193,7 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
     ngram = *handlers[0][i];
     unk_probs[i] = ngram.Value().prob;
     unk_record.Prob() += handlers[0].info.lambdas[i] * unk_probs[i];
-    assert(*ngram.begin() == lm::builder::kUNK);
+    assert(*ngram.begin() == kUNK);
     ++handlers[0][i];
   }
   // flush the unk output record

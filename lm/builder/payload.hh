@@ -40,7 +40,6 @@ union BuildingPayload {
   /*mjd**********************************************************************/
 };
 
-const WordIndex kUNK = 0;
 const WordIndex kBOS = 1;
 const WordIndex kEOS = 2;
 

@@ -7,6 +7,7 @@
 namespace lm {
 typedef unsigned int WordIndex;
 const WordIndex kMaxWordIndex = UINT_MAX;
+const WordIndex kUNK = 0;
 } // namespace lm
 
 typedef lm::WordIndex LMWordIndex;
