@@ -25,6 +25,9 @@ fakelib kenutil : bit_packing.cc ersatz_progress.cc exception.cc file.cc file_pi
 
 exe cat_compressed : cat_compressed_main.cc kenutil ;
 
+#Does not install this
+exe probing_hash_table_benchmark : probing_hash_table_benchmark_main.cc kenutil ;
+
 alias programs : cat_compressed ;
 
 import testing ;
