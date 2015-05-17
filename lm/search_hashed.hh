@@ -105,6 +105,13 @@ template <class Value> class HashedSearch {
       return MiddlePointer(middle_[extend_length - 2].MustFind(extend_pointer)->value);
     }
 
+    void Prefetch(unsigned char order_minus_2, const WordIndex *hist_iter, const WordIndex *context_rend, Node node) const {
+      for (; order_minus_2 < middle_.size() && hist_iter < context_rend; ++order_minus_2, ++hist_iter) {
+        node = CombineWordHash(node, *hist_iter);
+        __builtin_prefetch(middle_[order_minus_2].Ideal(node));
+      }
+    }
+
     MiddlePointer LookupMiddle(unsigned char order_minus_2, WordIndex word, Node &node, bool &independent_left, uint64_t &extend_pointer) const {
       node = CombineWordHash(node, word);
       typename Middle::ConstIterator found;

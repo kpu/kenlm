@@ -99,6 +99,8 @@ template <class Quant, class Bhiksha> class TrieSearch {
       return true;
     }
 
+    void Prefetch(unsigned char, const WordIndex *, const WordIndex *, const Node &) const {}
+
   private:
     friend void BuildTrie<Quant, Bhiksha>(SortedFiles &files, std::vector<uint64_t> &counts, const Config &config, TrieSearch<Quant, Bhiksha> &out, Quant &quant, SortedVocabulary &vocab, BinaryFormat &backing);
 

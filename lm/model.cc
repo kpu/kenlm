@@ -270,6 +270,7 @@ template <class Search, class VocabularyT> FullScoreReturn GenericModel<Search, 
 }
 
 template <class Search, class VocabularyT> void GenericModel<Search, VocabularyT>::ResumeScore(const WordIndex *hist_iter, const WordIndex *const context_rend, unsigned char order_minus_2, typename Search::Node &node, float *backoff_out, unsigned char &next_use, FullScoreReturn &ret) const {
+  search_.Prefetch(order_minus_2, hist_iter, context_rend, node);
   for (; ; ++order_minus_2, ++hist_iter, ++backoff_out) {
     if (hist_iter == context_rend) return;
     if (ret.independent_left) return;

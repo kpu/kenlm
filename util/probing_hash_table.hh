@@ -1,6 +1,7 @@
 #ifndef UTIL_PROBING_HASH_TABLE_H
 #define UTIL_PROBING_HASH_TABLE_H
 
+#include "libdivide.h"
 #include "util/exception.hh"
 #include "util/scoped.hh"
 
@@ -27,6 +28,12 @@ struct IdentityHash {
 };
 
 template <class EntryT, class HashT, class EqualT> class AutoProbing;
+
+class DivLookup {
+  public:
+  private:
+
+};
 
 /* Non-standard hash table
  * Buckets must be set at the beginning and must be greater than maximum number
@@ -64,7 +71,8 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
         invalid_(invalid),
         hash_(hash_func),
         equal_(equal_func),
-        entries_(0)
+        entries_(0),
+        by_buckets_(buckets_)
 #ifdef DEBUG
         , initialized_(true)
 #endif
@@ -126,17 +134,21 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
       }
     }
 
-
-    template <class Key> bool Find(const Key key, ConstIterator &out) const {
+    template <class Key> bool FindFromIdeal(const Key key, ConstIterator &i) const {
 #ifdef DEBUG
       assert(initialized_);
 #endif
-      for (ConstIterator i(Ideal(key));;) {
+      for (;;) {
         Key got(i->GetKey());
-        if (equal_(got, key)) { out = i; return true; }
+        if (equal_(got, key)) return true;
         if (equal_(got, invalid_)) return false;
-        if (++i == end_) i = begin_;
-      }    
+        if (UTIL_UNLIKELY(++i == end_)) i = begin_;
+      }
+    }
+
+    template <class Key> bool Find(const Key key, ConstIterator &out) const {
+      out = Ideal(key);
+      return FindFromIdeal(key, out);
     }
 
     // Like Find but we're sure it must be there.
@@ -173,6 +185,7 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
       begin_ = static_cast<MutableIterator>(new_base);
       MutableIterator old_end = begin_ + buckets_;
       buckets_ *= 2;
+      by_buckets_ = libdivide::divider<std::size_t>(buckets_);
       end_ = begin_ + buckets_;
       if (clear_new) {
         Entry invalid;
@@ -227,14 +240,18 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
       }
     }
 
+    MutableIterator Ideal(const Key key) {
+      return begin_ + Modulus(hash_(key));
+    }
+    ConstIterator Ideal(const Key key) const {
+      return begin_ + Modulus(hash_(key));
+    }
+
   private:
     friend class AutoProbing<Entry, Hash, Equal>;
 
-    MutableIterator Ideal(const Key key) {
-      return begin_ + (hash_(key) % buckets_);
-    }
-    ConstIterator Ideal(const Key key) const {
-      return begin_ + (hash_(key) % buckets_);
+    inline std::size_t Modulus(std::size_t in) const {
+      return in - by_buckets_.perform_divide(in) * buckets_;
     }
 
     template <class T> MutableIterator UncheckedInsert(const T &t) {
@@ -251,6 +268,7 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
     Hash hash_;
     Equal equal_;
     std::size_t entries_;
+    libdivide::divider<std::size_t> by_buckets_;
 #ifdef DEBUG
     bool initialized_;
 #endif
