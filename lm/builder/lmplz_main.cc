@@ -116,7 +116,7 @@ int main(int argc, char *argv[]) {
       ("verbose_header", po::bool_switch(&verbose_header), "Add a verbose header to the ARPA file that includes information such as token count, smoothing type, etc.")
       ("text", po::value<std::string>(&text), "Read text from a file instead of stdin")
       ("arpa", po::value<std::string>(&arpa), "Write ARPA to a file instead of stdout")
-      ("intermediate", po::value<std::string>(&intermediate), "Write ngrams to an intermediate file.  Turns off ARPA output (which can be reactivated by --arpa file")
+      ("intermediate", po::value<std::string>(&intermediate), "Write ngrams to an intermediate file.  Turns off ARPA output (which can be reactivated by --arpa file).  Forces --renumber on.  Implicitly makes --vocab_file be the provided name + .vocab.")
       ("renumber", po::bool_switch(&pipeline.renumber_vocabulary), "Rrenumber the vocabulary identifiers so that they are monotone with the hash of each string.  This is consistent with the ordering used by the trie data structure.")
       ("collapse_values", po::bool_switch(&pipeline.output_q), "Collapse probability and backoff into a single value, q that yields the same sentence-level probabilities.  See http://kheafield.com/professional/edinburgh/rest_paper.pdf for more details, including a proof.")
       ("prune", po::value<std::vector<std::string> >(&pruning)->multitoken(), "Prune n-grams with count less than or equal to the given threshold.  Specify one value for each order i.e. 0 0 1 to prune singleton trigrams and above.  The sequence of values must be non-decreasing and the last value applies to any remaining orders. Default is to not prune, which is equivalent to --prune 0.")
@@ -215,6 +215,14 @@ int main(int argc, char *argv[]) {
 
     try {
       bool writing_intermediate = vm.count("intermediate");
+      if (writing_intermediate) {
+        pipeline.renumber_vocabulary = true;
+        if (!pipeline.vocab_file.empty()) {
+          std::cerr << "--intermediate and --vocab_file are incompatible because --intermediate already makes a vocab file." << std::endl;
+          return 1;
+        }
+        pipeline.vocab_file = intermediate + ".vocab";
+      }
       lm::builder::Output output(writing_intermediate ? intermediate : pipeline.sort.temp_prefix, writing_intermediate);
       if (!writing_intermediate || vm.count("arpa")) {
         output.Add(new lm::builder::PrintARPA(out.release(), verbose_header));
