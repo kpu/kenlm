@@ -3,7 +3,7 @@
 
 #include "util/fixed_array.hh"
 #include "util/stream/multi_stream.hh"
-#include "lm/interpolate/interpolate_info.h"
+#include "lm/interpolate/interpolate_info.hh"
 #include "lm/common/ngram.hh"
 
 namespace lm {

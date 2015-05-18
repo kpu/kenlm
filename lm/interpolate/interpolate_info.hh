@@ -3,6 +3,9 @@
 
 #include "util/fixed_array.hh"
 
+#include <cstddef>
+#include <stdint.h>
+
 namespace lm {
 namespace interpolate {
 
@@ -16,7 +19,7 @@ struct InterpolateInfo {
    * The actual data should be populated later, but the arrays will already
    * be allocated for you.
    */
-  InterpolateInfo(std::size_t num_models) {
+  explicit InterpolateInfo(std::size_t num_models) {
     lambdas.Init(num_models);
     orders.Init(num_models);
   }
