@@ -39,6 +39,9 @@ struct PipelineConfig {
   bool prune_vocab;
   std::string prune_vocab_file;
 
+  /* Renumber the vocabulary the way the trie likes it? */
+  bool renumber_vocabulary;
+
   // What to do with discount failures.
   DiscountConfig discount;
 

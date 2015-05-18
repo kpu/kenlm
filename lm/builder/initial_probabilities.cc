@@ -1,9 +1,10 @@
 #include "lm/builder/initial_probabilities.hh"
 
 #include "lm/builder/discount.hh"
-#include "lm/common/ngram_stream.hh"
+#include "lm/builder/special.hh"
 #include "lm/builder/hash_gamma.hh"
 #include "lm/builder/payload.hh"
+#include "lm/common/ngram_stream.hh"
 #include "util/murmur_hash.hh"
 #include "util/file.hh"
 #include "util/stream/chain.hh"
@@ -32,11 +33,12 @@ struct HashBufferEntry : public BufferEntry {
 // threshold.   
 class PruneNGramStream {
   public:
-    PruneNGramStream(const util::stream::ChainPosition &position) :
+    PruneNGramStream(const util::stream::ChainPosition &position, const SpecialVocab &specials) :
       current_(NULL, NGram<BuildingPayload>::OrderFromSize(position.GetChain().EntrySize())),
       dest_(NULL, NGram<BuildingPayload>::OrderFromSize(position.GetChain().EntrySize())),
       currentCount_(0),
-      block_(position)
+      block_(position),
+      specials_(specials)
     { 
       StartBlock();
     }
@@ -50,8 +52,7 @@ class PruneNGramStream {
 
     PruneNGramStream &operator++() {
       assert(block_);
-      
-      if(current_.Order() == 1 && *current_.begin() <= 2)
+      if(UTIL_UNLIKELY(current_.Order() == 1 && specials_.IsSpecial(*current_.begin())))
         dest_.NextInMemory();
       else if(currentCount_ > 0) {
         if(dest_.Base() < current_.Base()) {
@@ -91,10 +92,12 @@ class PruneNGramStream {
 
     NGram<BuildingPayload> current_; // input iterator
     NGram<BuildingPayload> dest_;    // output iterator
-    
+ 
     uint64_t currentCount_;
 
     util::stream::Link block_;
+    
+    const SpecialVocab specials_;
 };
 
 // Extract an array of HashedGamma from an array of BufferEntry.
@@ -202,15 +205,15 @@ class AddRight {
 
 class MergeRight {
   public:
-    MergeRight(bool interpolate_unigrams, const util::stream::ChainPosition &from_adder, const Discount &discount, WordIndex bos)
-      : interpolate_unigrams_(interpolate_unigrams), from_adder_(from_adder), discount_(discount), bos_(bos) {}
+    MergeRight(bool interpolate_unigrams, const util::stream::ChainPosition &from_adder, const Discount &discount, const SpecialVocab &specials)
+      : interpolate_unigrams_(interpolate_unigrams), from_adder_(from_adder), discount_(discount), specials_(specials) {}
 
     // calculate the initial probability of each n-gram (before order-interpolation)
     // Run() gets invoked once for each order
     void Run(const util::stream::ChainPosition &primary) {
       util::stream::Stream summed(from_adder_);
 
-      PruneNGramStream grams(primary);
+      PruneNGramStream grams(primary, specials_);
 
       // Without interpolation, the interpolation weight goes to <unk>.
       if (grams->Order() == 1) {
@@ -229,7 +232,7 @@ class MergeRight {
         }
         grams->Value().uninterp.gamma = gamma_assign;
 
-        for (++grams; *grams->begin() != bos_; ++grams) {
+        for (++grams; *grams->begin() != specials_.BOS(); ++grams) {
           grams->Value().uninterp.prob = discount_.Apply(grams->Value().count) / sums.denominator;
           grams->Value().uninterp.gamma = gamma_assign;
         }
@@ -237,7 +240,7 @@ class MergeRight {
         // Special case for <s>: probability 1.0.  This allows <s> to be
         // explicitly scored as part of the sentence without impacting
         // probability and computes q correctly as b(<s>).
-        assert(*grams->begin() == bos_);
+        assert(*grams->begin() == specials_.BOS());
         grams->Value().uninterp.prob = 1.0;
         grams->Value().uninterp.gamma = 0.0;
 
@@ -267,7 +270,7 @@ class MergeRight {
     bool interpolate_unigrams_;
     util::stream::ChainPosition from_adder_;
     Discount discount_;
-    const WordIndex bos_;
+    const SpecialVocab specials_;
 };
 
 } // namespace
@@ -280,7 +283,7 @@ void InitialProbabilities(
     util::stream::Chains &gamma_out,
     const std::vector<uint64_t> &prune_thresholds,
     bool prune_vocab,
-    WordIndex bos) {
+    const SpecialVocab &specials) {
   for (size_t i = 0; i < primary.size(); ++i) {
     util::stream::ChainConfig gamma_config = config.adder_out;
     if(prune_vocab || prune_thresholds[i] > 0)
@@ -293,7 +296,7 @@ void InitialProbabilities(
     gamma_out.push_back(gamma_config);
     gamma_out[i] >> AddRight(discounts[i], second, prune_vocab || prune_thresholds[i] > 0);
 
-    primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i], bos);
+    primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i], specials);
     
     // Don't bother with the OnlyGamma thread for something to discard.
     if (i) gamma_out[i] >> OnlyGamma(prune_vocab || prune_thresholds[i] > 0);

@@ -65,12 +65,12 @@ class OutputProbBackoff {
 
 template <class Output> class Callback {
   public:
-    Callback(float uniform_prob, const util::stream::ChainPositions &backoffs, const std::vector<uint64_t> &prune_thresholds, bool prune_vocab, WordIndex eos)
+    Callback(float uniform_prob, const util::stream::ChainPositions &backoffs, const std::vector<uint64_t> &prune_thresholds, bool prune_vocab, const SpecialVocab &specials)
       : backoffs_(backoffs.size()), probs_(backoffs.size() + 2),
         prune_thresholds_(prune_thresholds),
         prune_vocab_(prune_vocab),
         output_(backoffs.size() + 1 /* order */),
-        eos_(eos) {
+        specials_(specials) {
       probs_[0] = uniform_prob;
       for (std::size_t i = 0; i < backoffs.size(); ++i) {
         backoffs_.push_back(backoffs[i]);
@@ -96,7 +96,7 @@ template <class Output> class Callback {
       probs_[order_minus_1 + 1] = pay.complete.prob;
 
       float out_backoff;
-      if (order_minus_1 < backoffs_.size() && *(gram.end() - 1) != kUNK && *(gram.end() - 1) != eos_ && backoffs_[order_minus_1]) {
+      if (order_minus_1 < backoffs_.size() && *(gram.end() - 1) != specials_.UNK() && *(gram.end() - 1) != specials_.EOS() && backoffs_[order_minus_1]) {
         if(prune_vocab_ || prune_thresholds_[order_minus_1 + 1] > 0) {
           //Compute hash value for current context
           uint64_t current_hash = util::MurmurHashNative(gram.begin(), gram.Order() * sizeof(WordIndex));
@@ -134,28 +134,28 @@ template <class Output> class Callback {
     bool prune_vocab_;
 
     Output output_;
-    const WordIndex eos_;
+    const SpecialVocab specials_;
 };
 } // namespace
 
-Interpolate::Interpolate(uint64_t vocab_size, const util::stream::ChainPositions &backoffs, const std::vector<uint64_t>& prune_thresholds, bool prune_vocab, bool output_q, WordIndex eos)
+Interpolate::Interpolate(uint64_t vocab_size, const util::stream::ChainPositions &backoffs, const std::vector<uint64_t>& prune_thresholds, bool prune_vocab, bool output_q, const SpecialVocab &specials)
   : uniform_prob_(1.0 / static_cast<float>(vocab_size)), // Includes <unk> but excludes <s>.
     backoffs_(backoffs),
     prune_thresholds_(prune_thresholds),
     prune_vocab_(prune_vocab),
     output_q_(output_q),
-    eos_(eos) {}
+    specials_(specials) {}
 
 // perform order-wise interpolation
 void Interpolate::Run(const util::stream::ChainPositions &positions) {
   assert(positions.size() == backoffs_.size() + 1);
   if (output_q_) {
     typedef Callback<OutputQ> C;
-    C callback(uniform_prob_, backoffs_, prune_thresholds_, prune_vocab_, eos_);
+    C callback(uniform_prob_, backoffs_, prune_thresholds_, prune_vocab_, specials_);
     JointOrder<C, SuffixOrder>(positions, callback);
   } else {
     typedef Callback<OutputProbBackoff> C;
-    C callback(uniform_prob_, backoffs_, prune_thresholds_, prune_vocab_, eos_);
+    C callback(uniform_prob_, backoffs_, prune_thresholds_, prune_vocab_, specials_);
     JointOrder<C, SuffixOrder>(positions, callback);
   }
 }

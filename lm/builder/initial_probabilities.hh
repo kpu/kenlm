@@ -12,6 +12,8 @@ namespace util { namespace stream { class Chains; } }
 namespace lm {
 namespace builder {
 
+class SpecialVocab;
+
 struct InitialProbabilitiesConfig {
   // These should be small buffers to keep the adder from getting too far ahead
   util::stream::ChainConfig adder_in;
@@ -36,7 +38,7 @@ void InitialProbabilities(
     util::stream::Chains &gamma_out,
     const std::vector<uint64_t> &prune_thresholds,
     bool prune_vocab,
-    WordIndex bos);
+    const SpecialVocab &vocab);
 
 } // namespace builder
 } // namespace lm
