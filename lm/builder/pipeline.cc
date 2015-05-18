@@ -305,7 +305,6 @@ class VocabNumbering {
         chains[i] >> Renumber(&*vocab_mapping_.begin(), i + 1);
       }
       specials_ = SpecialVocab(vocab_mapping_[specials_.BOS()], vocab_mapping_[specials_.EOS()]);
-      std::cerr << "Attached vocab id mapping with " << specials_.BOS() << " and " << specials_.EOS() << std::endl;
     }
 
     const SpecialVocab &Specials() const { return specials_; }
