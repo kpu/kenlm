@@ -10,4 +10,3 @@ exe streaming_example : ../builder//builder interpolate streaming_example_main.c
 unit-test backoff_reunification_test : interpolate backoff_reunification_test.cc /top//boost_unit_test_framework ;
 unit-test bounded_sequence_encoding_test : interpolate bounded_sequence_encoding_test.cc /top//boost_unit_test_framework ;
 run merge_vocab_test.cc interpolate /top//boost_unit_test_framework : : merge_test/test1 merge_test/test2 merge_test/test3 merge_test/test_bad_order merge_test/test_no_unk ;
-exe merge_vocab_example_main : interpolate merge_vocab_example_main.cc ;

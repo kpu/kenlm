@@ -78,13 +78,24 @@ public:
   { return x->Value()> y->Value(); }
 };
 
+class Readers : public util::FixedArray<VocabFileReader> {
+  public:
+    Readers(std::size_t number) : util::FixedArray<VocabFileReader>(number) {}
+    void push_back(int fd, std::size_t i) {
+      new(end()) VocabFileReader(fd, i);
+      Constructed();
+    }
+};
+
 } // namespace
 
 void MergeVocabIndex(util::FixedArray<util::scoped_fd> &files, UniversalVocab &vocab) {
   typedef std::priority_queue<VocabFileReader*, std::vector<VocabFileReader*>, CompareFiles> HeapType;
   HeapType heap;
+  Readers readers(files.size());
   for (size_t i = 0; i < files.size(); ++i) {
-    heap.push(new VocabFileReader(files[i].release(), i));
+    readers.push_back(files[i].release(), i);
+    heap.push(&readers.back());
     // initialize first index to 0 for <unk>
     vocab.InsertUniversalIdx(i, 0, 0);
   }
@@ -107,8 +118,6 @@ void MergeVocabIndex(util::FixedArray<util::scoped_fd> &files, UniversalVocab &v
     heap.pop();
     if (++(*top_vocab_file)) {
       heap.push(top_vocab_file);
-    } else {
-      delete top_vocab_file;
     }
   }
 }
