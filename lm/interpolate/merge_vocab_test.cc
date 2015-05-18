@@ -3,62 +3,52 @@
 
 #include "lm/interpolate/merge_vocab.hh"
 #include "lm/lm_exception.hh"
+#include "util/file.hh"
 
+#include <cstring>
 
 namespace lm {
 namespace interpolate {
-
 namespace {
 
-  class my_excaption{};
+// Stupid bjam permutes the command line arguments randomly.
+class TestFiles {
+  public:
+    TestFiles() {
+      char **argv = boost::unit_test::framework::master_test_suite().argv;
+      int argc = boost::unit_test::framework::master_test_suite().argc;
+      BOOST_REQUIRE_EQUAL(6, argc);
+      for (int i = 1; i < argc; ++i) {
+        EndsWithAssign(argv[i], "test1", test[0]);
+        EndsWithAssign(argv[i], "test2", test[1]);
+        EndsWithAssign(argv[i], "test3", test[2]);
+        EndsWithAssign(argv[i], "no_unk", no_unk);
+        EndsWithAssign(argv[i], "bad_order", bad_order);
+      }
+    }
 
-// Stupid bjam reverses the command line arguments randomly.
-// const char *TestLocation() {
-//   if (boost::unit_test::framework::master_test_suite().argc < 3) {
-//     return "test.arpa";
-//   }
-//   char **argv = boost::unit_test::framework::master_test_suite().argv;
-//   return argv[strstr(argv[1], "nounk") ? 2 : 1];
-// }
-// const char *TestNoUnkLocation() {
-//   if (boost::unit_test::framework::master_test_suite().argc < 3) {
-//     return "test_nounk.arpa";
-//   }
-//   char **argv = boost::unit_test::framework::master_test_suite().argv;
-//   return argv[strstr(argv[1], "nounk") ? 1 : 2];
-// }
+    void EndsWithAssign(char *arg, StringPiece value, util::scoped_fd &to) {
+      StringPiece str(arg);
+      if (str.size() < value.size()) return;
+      if (std::memcmp(str.data() + str.size() - value.size(), value.data(), value.size())) return;
+      to.reset(util::OpenReadOrThrow(arg));
+    }
+
+    util::scoped_fd test[3], no_unk, bad_order;
+};
 
 BOOST_AUTO_TEST_CASE(MergeVocabTest) {
+  TestFiles files;
   
-  // const char * file_name_1 = TestLocation();
-  // const char * file_name_2 = TestNoUnkLocation();
-
-  // if ((fp1 = fopen(file_name_1, "r")) == NULL)
-  //   return -1;
-  // if ((fp2 = fopen(file_name_2, "r")) == NULL)
-  //   return -1;
-  // if ((fp3 = fopen("test3", "r")) == NULL)
-  //   return -1;
-
-
   std::vector<lm::interpolate::ModelInfo> vocab_info;
-  FILE *fp1, *fp2, *fp3;
-
-  if ((fp1 = fopen("test1", "r")) == NULL)
-    throw;
-  if ((fp2 = fopen("test2", "r")) == NULL)
-    throw;
-  if ((fp3 = fopen("test3", "r")) == NULL)
-    throw;
   
   lm::interpolate::ModelInfo m1, m2, m3;
-  m1.fd = fileno(fp1);
+  m1.fd = files.test[0].release();
   m1.vocab_size = 10;
-  m2.fd = fileno(fp2);
+  m2.fd = files.test[1].release();
   m2.vocab_size = 10;
-  m3.fd = fileno(fp3);
+  m3.fd = files.test[2].release();
   m3.vocab_size = 10;
-
   
   vocab_info.push_back(m1);
   vocab_info.push_back(m2);
@@ -81,19 +71,15 @@ BOOST_AUTO_TEST_CASE(MergeVocabTest) {
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(0, 5), 11);
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(1, 3), 4);
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(2, 3), 10);
-
 }
 
 BOOST_AUTO_TEST_CASE(MergeVocabNoUnkTest) {
+  TestFiles files;
   
   std::vector<lm::interpolate::ModelInfo> vocab_info;
-  FILE *fp1;
-
-  if ((fp1 = fopen("test_no_unk", "r")) == NULL)
-    throw;
   
   lm::interpolate::ModelInfo m1;
-  m1.fd = fileno(fp1);
+  m1.fd = files.no_unk.release();
   m1.vocab_size = 10;
   
   vocab_info.push_back(m1);
@@ -109,18 +95,13 @@ BOOST_AUTO_TEST_CASE(MergeVocabNoUnkTest) {
 }
 
 BOOST_AUTO_TEST_CASE(MergeVocabWrongOrderTest) {
+  TestFiles files;
   std::vector<lm::interpolate::ModelInfo> vocab_info;
-  FILE *fp1, *fp2;
-
-  if ((fp1 = fopen("test1", "r")) == NULL)
-    throw;
-  if ((fp2 = fopen("test_bad_order", "r")) == NULL)
-    throw;
 
   lm::interpolate::ModelInfo m1, m2;
-  m1.fd = fileno(fp1);
+  m1.fd = files.test[0].release();
   m1.vocab_size = 10;
-  m2.fd = fileno(fp2);
+  m2.fd = files.bad_order.release();
   m2.vocab_size = 10;
   
   vocab_info.push_back(m1);
@@ -134,7 +115,6 @@ BOOST_AUTO_TEST_CASE(MergeVocabWrongOrderTest) {
   BOOST_CHECK_THROW(
     lm::interpolate::MergeVocabIndex merger(vocab_info, universal_vocab),
     util::ErrnoException);
-
 }
 
-}}} // namespace
+}}} // namespaces
