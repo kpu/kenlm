@@ -13,17 +13,13 @@ class UniversalVocab {
 public:
   explicit UniversalVocab(const std::vector<WordIndex>& model_max_idx);
 
-  // GetUniversalIndex takes the model numberand index for the specific
+  // GetUniversalIndex takes the model number and index for the specific
   // model and returns the universal model number
-  // If you are outside of vocabulary size this will return 0
-  WordIndex GetUniversalIdx(size_t model_num, WordIndex model_word_index) const {
-    if (model_num < model_index_map_.size()) {
-      return model_index_map_[model_num][model_word_index];
-    }
-    return 0;
+  WordIndex GetUniversalIdx(std::size_t model_num, WordIndex model_word_index) const {
+    return model_index_map_[model_num][model_word_index];
   }
 
-  void InsertUniversalIdx(size_t model_num, WordIndex word_index,
+  void InsertUniversalIdx(std::size_t model_num, WordIndex word_index,
       WordIndex universal_word_index) {
     model_index_map_[model_num][word_index] = universal_word_index;
   }
