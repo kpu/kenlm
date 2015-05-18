@@ -84,6 +84,12 @@ class SortedVocabulary : public base::Vocabulary {
     // Size for purposes of file writing
     static uint64_t Size(uint64_t entries, const Config &config);
 
+    /* Read null-delimited words from file from_words, renumber according to
+     * hash order, write null-delimited words to to_words, and create a mapping
+     * from old id to new id.  The 0th vocab word must be <unk>.
+     */
+    static void ComputeRenumbering(WordIndex types, int from_words, int to_words, std::vector<WordIndex> &mapping);
+
     // Vocab words are [0, Bound())  Only valid after FinishedLoading/LoadedBinary.  
     WordIndex Bound() const { return bound_; }
 
@@ -98,12 +104,6 @@ class SortedVocabulary : public base::Vocabulary {
     WordIndex Insert(const StringPiece &str);
     // Reorders reorder_vocab so that the IDs are sorted.  
     void FinishedLoading(ProbBackoff *reorder_vocab);
-
-    /* Read null-delimited words from a file, initialize the vocabulary, and
-     * generate a mapping from old order to new order.  The 0th vocab word must
-     * be <unk>.
-     */
-    void BuildFromFile(int fd, std::vector<WordIndex> &mapping);
 
     // Trie stores the correct counts including <unk> in the header.  If this was previously sized based on a count exluding <unk>, padding with 8 bytes will make it the correct size based on a count including <unk>.
     std::size_t UnkCountChangePadding() const { return SawUnk() ? 0 : sizeof(uint64_t); }

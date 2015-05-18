@@ -6,6 +6,7 @@
 #include "lm/config.hh"
 #include "lm/weights.hh"
 #include "util/exception.hh"
+#include "util/fake_ofstream.hh"
 #include "util/file.hh"
 #include "util/joint_sort.hh"
 #include "util/murmur_hash.hh"
@@ -31,6 +32,7 @@ const uint64_t kUnknownHash = detail::HashForVocab("<unk>", 5);
 // Sadly some LMs have <UNK>.
 const uint64_t kUnknownCapHash = detail::HashForVocab("<UNK>", 5);
 
+// TODO: replace with FilePiece.
 void ReadWords(int fd, EnumerateVocab *enumerate, WordIndex expected_count, uint64_t offset) {
   util::SeekOrThrow(fd, offset);
   // Check that we're at the right place by reading <unk> which is always first.
@@ -145,35 +147,53 @@ void SortedVocabulary::FinishedLoading(ProbBackoff *reorder) {
   GenericFinished(reorder);
 }
 
-void SortedVocabulary::BuildFromFile(int fd, std::vector<WordIndex> &mapping) {
-  mapping.clear();
+namespace {
+#pragma pack(push)
+#pragma pack(4)
+struct RenumberEntry {
+  uint64_t hash;
+  const char *str;
+  WordIndex old;
+  bool operator<(const RenumberEntry &other) const {
+    return hash < other.hash;
+  }
+};
+#pragma pack(pop)
+} // namespace
 
-  uint64_t file_size = util::SizeOrThrow(fd);
+void SortedVocabulary::ComputeRenumbering(WordIndex types, int from_words, int to_words, std::vector<WordIndex> &mapping) {
+  mapping.clear();
+  uint64_t file_size = util::SizeOrThrow(from_words);
   util::scoped_memory strings;
-  util::MapRead(util::POPULATE_OR_READ, fd, 0, file_size, strings);
+  util::MapRead(util::POPULATE_OR_READ, from_words, 0, file_size, strings);
   const char *const start = static_cast<const char*>(strings.get());
   UTIL_THROW_IF(memcmp(start, "<unk>", 6), FormatLoadException, "Vocab file does not begin with <unk> followed by null");
-
-  strings_to_enumerate_.clear();
-  for (const char *i = start + 6 /* skip <unk>\0 */; i < start + file_size;) {
-    StringPiece str(i, strlen(i));
-    strings_to_enumerate_.push_back(str);
-    *(end_++) = detail::HashForVocab(str.data(), str.size());
-    i += str.size() + 1;
+  std::vector<RenumberEntry> entries;
+  entries.reserve(types - 1);
+  RenumberEntry entry;
+  entry.old = 1;
+  for (entry.str = start + 6 /* skip <unk>\0 */; entry.str < start + file_size; ++entry.old) {
+    StringPiece str(entry.str, strlen(entry.str));
+    entry.hash = detail::HashForVocab(str);
+    entries.push_back(entry);
+    entry.str += str.size() + 1;
   }
-  saw_unk_ = true;
-
-  std::vector<WordIndex> permuted;
-  const WordIndex size = end_ - begin_ + 1;
-  permuted.reserve(size);
-  for (WordIndex i = 0; i < size; ++i) {
-    permuted.push_back(i);
+  UTIL_THROW_IF2(entries.size() != types - 1, "Wrong number of vocab ids.  Got " << (entries.size() + 1) << " expected " << types);
+  std::sort(entries.begin(), entries.end());
+  // Write out new vocab file.
+  {
+    util::FakeOFStream out(to_words);
+    out << "<unk>" << '\0';
+    for (std::vector<RenumberEntry>::const_iterator i = entries.begin(); i != entries.end(); ++i) {
+      out << i->str << '\0';
+    }
   }
-  GenericFinished(&*permuted.begin());
-  // permuted maps from new to old.  We need old to new.
-  mapping.resize(permuted.size());
-  for (WordIndex i = 0; i < size; ++i) {
-    mapping[permuted[i]] = i;
+  strings.reset();
+
+  mapping.resize(types);
+  mapping[0] = 0; // <unk>
+  for (std::vector<RenumberEntry>::const_iterator i = entries.begin(); i != entries.end(); ++i) {
+    mapping[i->old] = i + 1 - entries.begin();
   }
 }
 
