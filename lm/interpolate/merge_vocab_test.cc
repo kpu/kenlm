@@ -2,7 +2,9 @@
 #include <boost/test/unit_test.hpp>
 
 #include "lm/interpolate/merge_vocab.hh"
+#include "lm/interpolate/universal_vocab.hh"
 #include "lm/lm_exception.hh"
+#include "lm/word_index.hh"
 #include "util/file.hh"
 
 #include <cstring>
@@ -40,27 +42,18 @@ class TestFiles {
 BOOST_AUTO_TEST_CASE(MergeVocabTest) {
   TestFiles files;
   
-  std::vector<lm::interpolate::ModelInfo> vocab_info;
-  
-  lm::interpolate::ModelInfo m1, m2, m3;
-  m1.fd = files.test[0].release();
-  m1.vocab_size = 10;
-  m2.fd = files.test[1].release();
-  m2.vocab_size = 10;
-  m3.fd = files.test[2].release();
-  m3.vocab_size = 10;
-  
-  vocab_info.push_back(m1);
-  vocab_info.push_back(m2);
-  vocab_info.push_back(m3);
+  util::FixedArray<util::scoped_fd> used_files(3);
+  used_files.push_back(files.test[0].release());
+  used_files.push_back(files.test[1].release());
+  used_files.push_back(files.test[2].release());
   
   std::vector<lm::WordIndex> model_max_idx;
-  model_max_idx.push_back(m1.vocab_size);
-  model_max_idx.push_back(m2.vocab_size);
-  model_max_idx.push_back(m3.vocab_size);
+  model_max_idx.push_back(10);
+  model_max_idx.push_back(10);
+  model_max_idx.push_back(10);
   
-  lm::interpolate::UniversalVocab universal_vocab(model_max_idx);
-  lm::interpolate::MergeVocabIndex merger(vocab_info, universal_vocab);
+  UniversalVocab universal_vocab(model_max_idx);
+  MergeVocabIndex(used_files, universal_vocab);
 
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(0, 0), 0);
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(1, 0), 0);
@@ -75,46 +68,29 @@ BOOST_AUTO_TEST_CASE(MergeVocabTest) {
 
 BOOST_AUTO_TEST_CASE(MergeVocabNoUnkTest) {
   TestFiles files;
-  
-  std::vector<lm::interpolate::ModelInfo> vocab_info;
-  
-  lm::interpolate::ModelInfo m1;
-  m1.fd = files.no_unk.release();
-  m1.vocab_size = 10;
-  
-  vocab_info.push_back(m1);
+  util::FixedArray<util::scoped_fd> used_files(1);
+  used_files.push_back(files.no_unk.release());
   
   std::vector<lm::WordIndex> model_max_idx;
-  model_max_idx.push_back(m1.vocab_size);
+  model_max_idx.push_back(10);
   
-  lm::interpolate::UniversalVocab universal_vocab(model_max_idx);
-  BOOST_CHECK_THROW(
-    lm::interpolate::MergeVocabIndex merger(vocab_info, universal_vocab),
-      lm::FormatLoadException);
-    
+  UniversalVocab universal_vocab(model_max_idx);
+  BOOST_CHECK_THROW(MergeVocabIndex(used_files, universal_vocab), FormatLoadException);
 }
 
 BOOST_AUTO_TEST_CASE(MergeVocabWrongOrderTest) {
   TestFiles files;
-  std::vector<lm::interpolate::ModelInfo> vocab_info;
 
-  lm::interpolate::ModelInfo m1, m2;
-  m1.fd = files.test[0].release();
-  m1.vocab_size = 10;
-  m2.fd = files.bad_order.release();
-  m2.vocab_size = 10;
-  
-  vocab_info.push_back(m1);
-  vocab_info.push_back(m2);
+  util::FixedArray<util::scoped_fd> used_files(2);
+  used_files.push_back(files.test[0].release());
+  used_files.push_back(files.bad_order.release());
   
   std::vector<lm::WordIndex> model_max_idx;
-  model_max_idx.push_back(m1.vocab_size);
-  model_max_idx.push_back(m2.vocab_size);
+  model_max_idx.push_back(10);
+  model_max_idx.push_back(10);
   
   lm::interpolate::UniversalVocab universal_vocab(model_max_idx);
-  BOOST_CHECK_THROW(
-    lm::interpolate::MergeVocabIndex merger(vocab_info, universal_vocab),
-    util::ErrnoException);
+  BOOST_CHECK_THROW(MergeVocabIndex(used_files, universal_vocab), FormatLoadException);
 }
 
 }}} // namespaces
