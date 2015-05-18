@@ -63,11 +63,13 @@ class Master {
       // We know how many unigrams there are.  Don't allocate more than needed to them.
       const std::size_t min_chains = (config_.order - 1) * each_order_min +
         std::min(types * NGram<BuildingPayload>::TotalSize(1), each_order_min);
+      // Prevent overflow in subtracting.
+      const std::size_t total = std::max<std::size_t>(config_.TotalMemory(), min_chains + subtract_for_numbering + config_.minimum_block);
       // Do merge sort with calculated laziness.
-      const std::size_t merge_using = ngrams.Merge(std::min(config_.TotalMemory() - min_chains - subtract_for_numbering, ngrams.DefaultLazy()));
+      const std::size_t merge_using = ngrams.Merge(std::min(total - min_chains - subtract_for_numbering, ngrams.DefaultLazy()));
 
       std::vector<uint64_t> count_bounds(1, types);
-      CreateChains(config_.TotalMemory() - merge_using - subtract_for_numbering, count_bounds);
+      CreateChains(total - merge_using - subtract_for_numbering, count_bounds);
       ngrams.Output(chains_.back(), merge_using);
     }
 
