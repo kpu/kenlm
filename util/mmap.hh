@@ -100,8 +100,11 @@ typedef enum {
 
 extern const int kFileFlags;
 
-// Wrapper around mmap to check it worked and hide some platform macros.
+// Cross-platform, error-checking wrapper for mmap().
 void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int fd, uint64_t offset = 0);
+
+// Cross-platform, error-checking wrapper for munmap().
+void UnmapOrThrow(void *start, size_t length);
 
 void MapRead(LoadMethod method, int fd, uint64_t offset, std::size_t size, scoped_memory &out);
 
