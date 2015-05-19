@@ -10,7 +10,7 @@
 namespace lm {
 
   class EnumerateGlobalVocab : EnumerateVocab {
-    
+
   public:
 
     //yes, ugly...
@@ -18,7 +18,7 @@ namespace lm {
     int num_models;
     int cur_model;
     int cnt; //stupid
-   
+
     ~EnumerateGlobalVocab() {}
 
     void Add(WordIndex index, const StringPiece & str);
@@ -26,7 +26,7 @@ namespace lm {
     EnumerateGlobalVocab(std::map<std::string, int*> *, int);
 
     void SetCurModel(int i) { cur_model = i; }
-    
+
   protected:
     EnumerateGlobalVocab() {}
 

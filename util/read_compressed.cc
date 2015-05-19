@@ -60,7 +60,7 @@ namespace {
 
 ReadBase *ReadFactory(int fd, uint64_t &raw_amount, const void *already_data, std::size_t already_size, bool require_compressed);
 
-// Completed file that other classes can thunk to.  
+// Completed file that other classes can thunk to.
 class Complete : public ReadBase {
   public:
     std::size_t Read(void *, std::size_t, ReadCompressed &) {
@@ -121,7 +121,7 @@ template <class Compression> class StreamCompressed : public ReadBase {
       : file_(fd),
         in_buffer_(MallocOrThrow(kInputBuffer)),
         back_(memcpy(in_buffer_.get(), already_data, already_size), already_size) {}
-    
+
     std::size_t Read(void *to, std::size_t amount, ReadCompressed &thunk) {
       if (amount == 0) return 0;
       back_.SetOutput(to, amount);
@@ -162,8 +162,8 @@ class GZip {
       stream_.zfree = Z_NULL;
       stream_.opaque = Z_NULL;
       stream_.msg = NULL;
-      // 32 for zlib and gzip decoding with automatic header detection.  
-      // 15 for maximum window size.  
+      // 32 for zlib and gzip decoding with automatic header detection.
+      // 15 for maximum window size.
       UTIL_THROW_IF(Z_OK != inflateInit2(&stream_, 32 + 15), GZException, "Failed to initialize zlib.");
     }
 

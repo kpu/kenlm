@@ -8,7 +8,7 @@ namespace {
 
 BOOST_AUTO_TEST_CASE(Empty) {
   std::vector<boost::iterator_range<const unsigned int*> > sets;
-  
+
   sets.push_back(boost::iterator_range<const unsigned int*>(static_cast<const unsigned int*>(NULL), static_cast<const unsigned int*>(NULL)));
   BOOST_CHECK(!FirstIntersection(sets));
 }

@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE(Simple) {
   }
   BOOST_REQUIRE_EQUAL(4UL, counts.size());
   BOOST_CHECK_EQUAL(4UL, counts[0]);
-  // These are no longer set because the discounts are bad.  
+  // These are no longer set because the discounts are bad.
 /*  BOOST_CHECK_EQUAL(4UL, counts[1]);
   BOOST_CHECK_EQUAL(3UL, counts[2]);
   BOOST_CHECK_EQUAL(3UL, counts[3]);*/

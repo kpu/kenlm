@@ -85,7 +85,7 @@ class DontQuantize {
     void SetupMemory(void * /*start*/, unsigned char /*order*/, const Config & /*config*/) {}
 
     static const bool kTrain = false;
-    // These should never be called because kTrain is false.  
+    // These should never be called because kTrain is false.
     void Train(uint8_t /*order*/, std::vector<float> &/*prob*/, std::vector<float> &/*backoff*/) {}
     void TrainProb(uint8_t, std::vector<float> &/*prob*/) {}
 
@@ -142,7 +142,7 @@ class SeparatelyQuantize {
     static uint64_t Size(uint8_t order, const Config &config) {
       uint64_t longest_table = (static_cast<uint64_t>(1) << static_cast<uint64_t>(config.prob_bits)) * sizeof(float);
       uint64_t middle_table = (static_cast<uint64_t>(1) << static_cast<uint64_t>(config.backoff_bits)) * sizeof(float) + longest_table;
-      // unigrams are currently not quantized so no need for a table.  
+      // unigrams are currently not quantized so no need for a table.
       return (order - 2) * middle_table + longest_table + /* for the bit counts and alignment padding) */ 8;
     }
 
@@ -168,7 +168,7 @@ class SeparatelyQuantize {
         float Rest() const { return Prob(); }
 
         void Write(float prob, float backoff) const {
-          util::WriteInt57(address_.base, address_.offset, ProbBins().Bits() + BackoffBins().Bits(), 
+          util::WriteInt57(address_.base, address_.offset, ProbBins().Bits() + BackoffBins().Bits(),
               (ProbBins().EncodeProb(prob) << BackoffBins().Bits()) | BackoffBins().EncodeBackoff(backoff));
         }
 
@@ -183,7 +183,7 @@ class SeparatelyQuantize {
     class LongestPointer {
       public:
         LongestPointer(const SeparatelyQuantize &quant, const util::BitAddress &address) : table_(&quant.LongestTable()), address_(address) {}
-        
+
         LongestPointer() : address_(NULL, 0) {}
 
         bool Found() const { return address_.base != NULL; }
@@ -206,7 +206,7 @@ class SeparatelyQuantize {
     void SetupMemory(void *start, unsigned char order, const Config &config);
 
     static const bool kTrain = true;
-    // Assumes 0.0 is removed from backoff.  
+    // Assumes 0.0 is removed from backoff.
     void Train(uint8_t order, std::vector<float> &prob, std::vector<float> &backoff);
     // Train just probabilities (for longest order).
     void TrainProb(uint8_t order, std::vector<float> &prob);

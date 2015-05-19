@@ -1,4 +1,4 @@
-// Step of trie builder: create sorted files.  
+// Step of trie builder: create sorted files.
 
 #ifndef LM_TRIE_SORT_H
 #define LM_TRIE_SORT_H
@@ -101,7 +101,7 @@ class SortedFiles {
 
   private:
     void ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vocab, const std::vector<uint64_t> &counts, const std::string &prefix, unsigned char order, PositiveProbWarn &warn, void *mem, std::size_t mem_size);
-    
+
     util::scoped_fd unigram_;
 
     util::scoped_FILE full_[KENLM_MAX_ORDER - 1], context_[KENLM_MAX_ORDER - 1];

@@ -1,5 +1,5 @@
 // Very simple pool.  It can only allocate memory.  And all of the memory it
-// allocates must be freed at the same time.  
+// allocates must be freed at the same time.
 
 #ifndef UTIL_POOL_H
 #define UTIL_POOL_H
@@ -37,7 +37,7 @@ class Pool {
     // no copying
     Pool(const Pool &);
     Pool &operator=(const Pool &);
-}; 
+};
 
 } // namespace util
 

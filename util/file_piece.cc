@@ -29,10 +29,10 @@ ParseNumberException::ParseNumberException(StringPiece value) throw() {
   *this << "Could not parse \"" << value << "\" into a ";
 }
 
-// Sigh this is the only way I could come up with to do a _const_ bool.  It has ' ', '\f', '\n', '\r', '\t', and '\v' (same as isspace on C locale). 
+// Sigh this is the only way I could come up with to do a _const_ bool.  It has ' ', '\f', '\n', '\r', '\t', and '\v' (same as isspace on C locale).
 const bool kSpaces[256] = {0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-FilePiece::FilePiece(const char *name, std::ostream *show_progress, std::size_t min_buffer) : 
+FilePiece::FilePiece(const char *name, std::ostream *show_progress, std::size_t min_buffer) :
   file_(OpenReadOrThrow(name)), total_size_(SizeFile(file_.get())), page_(SizePage()),
   progress_(total_size_, total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + name) {
   Initialize(name, show_progress, min_buffer);
@@ -45,7 +45,7 @@ std::string NamePossiblyFind(int fd, const char *name) {
 }
 } // namespace
 
-FilePiece::FilePiece(int fd, const char *name, std::ostream *show_progress, std::size_t min_buffer) : 
+FilePiece::FilePiece(int fd, const char *name, std::ostream *show_progress, std::size_t min_buffer) :
   file_(fd), total_size_(SizeFile(file_.get())), page_(SizePage()),
   progress_(total_size_, total_size_ == kBadSize ? NULL : show_progress, std::string("Reading ") + NamePossiblyFind(fd, name)) {
   Initialize(NamePossiblyFind(fd, name).c_str(), show_progress, min_buffer);
@@ -59,7 +59,7 @@ FilePiece::FilePiece(std::istream &stream, const char *name, std::size_t min_buf
   data_.reset(MallocOrThrow(default_map_size_), default_map_size_, scoped_memory::MALLOC_ALLOCATED);
   position_ = data_.begin();
   position_end_ = position_;
-  
+
   fell_back_.Reset(stream);
 }
 
@@ -126,9 +126,9 @@ void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::s
   InitializeNoRead(name, min_buffer);
 
   if (total_size_ == kBadSize) {
-    // So the assertion passes.  
+    // So the assertion passes.
     fallback_to_read_ = false;
-    if (show_progress) 
+    if (show_progress)
       *show_progress << "File " << name << " isn't normal.  Using slower read() instead of mmap().  No progress bar." << std::endl;
     TransitionToRead();
   } else {
@@ -232,7 +232,7 @@ void FilePiece::Shift() {
   uint64_t desired_begin = position_ - data_.begin() + mapped_offset_;
 
   if (!fallback_to_read_) MMapShift(desired_begin);
-  // Notice an mmap failure might set the fallback.  
+  // Notice an mmap failure might set the fallback.
   if (fallback_to_read_) ReadShift();
 
   for (last_space_ = position_end_ - 1; last_space_ >= position_; --last_space_) {
@@ -241,13 +241,13 @@ void FilePiece::Shift() {
 }
 
 void FilePiece::MMapShift(uint64_t desired_begin) {
-  // Use mmap.  
+  // Use mmap.
   uint64_t ignore = desired_begin % page_;
-  // Duplicate request for Shift means give more data.  
+  // Duplicate request for Shift means give more data.
   if (position_ == data_.begin() + ignore && position_) {
     default_map_size_ *= 2;
   }
-  // Local version so that in case of failure it doesn't overwrite the class variable.  
+  // Local version so that in case of failure it doesn't overwrite the class variable.
   uint64_t mapped_offset = desired_begin - ignore;
 
   uint64_t mapped_size;
@@ -258,7 +258,7 @@ void FilePiece::MMapShift(uint64_t desired_begin) {
     mapped_size = default_map_size_;
   }
 
-  // Forcibly clear the existing mmap first.  
+  // Forcibly clear the existing mmap first.
   data_.reset();
   try {
     MapRead(POPULATE_OR_LAZY, *file_, mapped_offset, mapped_size, data_);
@@ -266,7 +266,7 @@ void FilePiece::MMapShift(uint64_t desired_begin) {
     if (desired_begin) {
       SeekOrThrow(*file_, desired_begin);
     }
-    // The mmap was scheduled to end the file, but now we're going to read it.  
+    // The mmap was scheduled to end the file, but now we're going to read it.
     at_end_ = false;
     TransitionToRead();
     return;
@@ -296,10 +296,10 @@ void FilePiece::TransitionToRead() {
 
 void FilePiece::ReadShift() {
   assert(fallback_to_read_);
-  // Bytes [data_.begin(), position_) have been consumed.  
-  // Bytes [position_, position_end_) have been read into the buffer.  
+  // Bytes [data_.begin(), position_) have been consumed.
+  // Bytes [position_, position_end_) have been read into the buffer.
 
-  // Start at the beginning of the buffer if there's nothing useful in it.  
+  // Start at the beginning of the buffer if there's nothing useful in it.
   if (position_ == position_end_) {
     mapped_offset_ += (position_end_ - data_.begin());
     position_ = data_.begin();
@@ -310,7 +310,7 @@ void FilePiece::ReadShift() {
 
   if (already_read == default_map_size_) {
     if (position_ == data_.begin()) {
-      // Buffer too small.  
+      // Buffer too small.
       std::size_t valid_length = position_end_ - position_;
       default_map_size_ *= 2;
       data_.call_realloc(default_map_size_);

@@ -15,16 +15,16 @@ template <class T, class U, class V> class ModelFacade;
 
 /* Vocabulary interface.  Call Index(string) and get a word index for use in
  * calling Model.  It provides faster convenience functions for <s>, </s>, and
- * <unk> although you can also find these using Index.  
+ * <unk> although you can also find these using Index.
  *
  * Some models do not load the mapping from index to string.  If you need this,
  * check if the model Vocabulary class implements such a function and access it
- * directly.  
+ * directly.
  *
  * The Vocabulary object is always owned by the Model and can be retrieved from
  * the Model using BaseVocabulary() for this abstract interface or
  * GetVocabulary() for the actual implementation (in which case you'll need the
- * actual implementation of the Model too).  
+ * actual implementation of the Model too).
  */
 class Vocabulary {
   public:
@@ -36,7 +36,7 @@ class Vocabulary {
 
     /* Most implementations allow StringPiece lookups and need only override
      * Index(StringPiece).  SRI requires null termination and overrides all
-     * three methods.  
+     * three methods.
      */
     virtual WordIndex Index(const StringPiece &str) const = 0;
     virtual WordIndex Index(const std::string &str) const {
@@ -47,7 +47,7 @@ class Vocabulary {
     }
 
   protected:
-    // Call SetSpecial afterward.  
+    // Call SetSpecial afterward.
     Vocabulary() {}
 
     Vocabulary(WordIndex begin_sentence, WordIndex end_sentence, WordIndex not_found) {
@@ -59,13 +59,13 @@ class Vocabulary {
     WordIndex begin_sentence_, end_sentence_, not_found_;
 
   private:
-    // Disable copy constructors.  They're private and undefined. 
+    // Disable copy constructors.  They're private and undefined.
     // Ersatz boost::noncopyable.
     Vocabulary(const Vocabulary &);
     Vocabulary &operator=(const Vocabulary &);
 };
 
-/* There are two ways to access a Model.  
+/* There are two ways to access a Model.
  *
  *
  * OPTION 1: Access the Model directly (e.g. lm::ngram::Model in model.hh).
@@ -90,29 +90,29 @@ class Vocabulary {
  * unsigned int Order() const;
  *
  * NB: In case you're wondering why the model implementation looks like it's
- * missing these methods, see facade.hh.  
+ * missing these methods, see facade.hh.
  *
  * This is the fastest way to use a model and presents a normal State class to
- * be included in a hypothesis state structure.  
+ * be included in a hypothesis state structure.
  *
  *
- * OPTION 2: Use the virtual interface below.  
+ * OPTION 2: Use the virtual interface below.
  *
- * The virtual interface allow you to decide which Model to use at runtime 
+ * The virtual interface allow you to decide which Model to use at runtime
  * without templatizing everything on the Model type.  However, each Model has
  * its own State class, so a single State cannot be efficiently provided (it
  * would require using the maximum memory of any Model's State or memory
  * allocation with each lookup).  This means you become responsible for
- * allocating memory with size StateSize() and passing it to the Score or 
- * FullScore functions provided here.  
+ * allocating memory with size StateSize() and passing it to the Score or
+ * FullScore functions provided here.
  *
  * For example, cdec has a std::string containing the entire state of a
  * hypothesis.  It can reserve StateSize bytes in this string for the model
- * state.  
+ * state.
  *
  * All the State objects are POD, so it's ok to use raw memory for storing
  * State.
- * in_state and out_state must not have the same address. 
+ * in_state and out_state must not have the same address.
  */
 class Model {
   public:
@@ -148,7 +148,7 @@ class Model {
 
     unsigned char order_;
 
-    // Disable copy constructors.  They're private and undefined. 
+    // Disable copy constructors.  They're private and undefined.
     // Ersatz boost::noncopyable.
     Model(const Model &);
     Model &operator=(const Model &);

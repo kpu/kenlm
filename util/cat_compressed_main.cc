@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     char *arg = argv[i];
     if (!strcmp(arg, "--")) break;
     if (!strcmp(arg, "-h") || !strcmp(arg, "--help")) {
-      std::cerr << 
+      std::cerr <<
         "A cat implementation that interprets compressed files.\n"
         "Usage: " << argv[0] << " [file1] [file2] ...\n"
         "If no file is provided, then stdin is read.\n";

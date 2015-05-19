@@ -30,7 +30,7 @@ void Exception::SetLocation(const char *file, unsigned int line, const char *fun
   /* The child class might have set some text, but we want this to come first.
    * Another option would be passing this information to the constructor, but
    * then child classes would have to accept constructor arguments and pass
-   * them down.  
+   * them down.
    */
   text_ = stream_.str();
   stream_.str("");

@@ -58,7 +58,7 @@ typedef enum {MODE_COPY, MODE_SINGLE, MODE_MULTIPLE, MODE_UNION, MODE_UNSET} Fil
 typedef enum {FORMAT_ARPA, FORMAT_COUNT} Format;
 
 struct Config {
-  Config() : 
+  Config() :
 #ifndef NTHREAD
   batch_size(25000),
   threads(boost::thread::hardware_concurrency()),

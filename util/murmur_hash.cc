@@ -2,8 +2,8 @@
  * code is released to the public domain. For business purposes, Murmurhash is
  * under the MIT license."
  * This is modified from the original:
- * ULL tag on 0xc6a4a7935bd1e995 so this will compile on 32-bit.  
- * length changed to unsigned int.  
+ * ULL tag on 0xc6a4a7935bd1e995 so this will compile on 32-bit.
+ * length changed to unsigned int.
  * placed in namespace util
  * add MurmurHashNative
  * default option = 0 for seed
@@ -18,7 +18,7 @@ namespace util {
 //-----------------------------------------------------------------------------
 // MurmurHash2, 64-bit versions, by Austin Appleby
 
-// The same caveats as 32-bit MurmurHash2 apply here - beware of alignment 
+// The same caveats as 32-bit MurmurHash2 apply here - beware of alignment
 // and endian-ness issues if used across multiple platforms.
 
 // 64-bit hash for 64-bit platforms
@@ -49,12 +49,12 @@ uint64_t MurmurHash64A ( const void * key, std::size_t len, uint64_t seed )
     uint64_t k = *data++;
 #endif
 
-    k *= m; 
-    k ^= k >> r; 
-    k *= m; 
-    
+    k *= m;
+    k ^= k >> r;
+    k *= m;
+
     h ^= k;
-    h *= m; 
+    h *= m;
   }
 
   const unsigned char * data2 = (const unsigned char*)data;
@@ -70,13 +70,13 @@ uint64_t MurmurHash64A ( const void * key, std::size_t len, uint64_t seed )
   case 1: h ^= uint64_t(data2[0]);
           h *= m;
   };
- 
+
   h ^= h >> r;
   h *= m;
   h ^= h >> r;
 
   return h;
-} 
+}
 
 
 // 64-bit hash for 32-bit platforms
@@ -151,7 +151,7 @@ uint64_t MurmurHash64B ( const void * key, std::size_t len, uint64_t seed )
   return h;
 }
 
-// Trick to test for 64-bit architecture at compile time.  
+// Trick to test for 64-bit architecture at compile time.
 namespace {
 #ifdef __clang__
 #pragma clang diagnostic push

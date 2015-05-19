@@ -42,7 +42,7 @@ VocabFileReader::VocabFileReader(const int fd, const size_t model_num, uint64_t 
   file_piece_(fd)
 {
   StringPiece vocab_elem = file_piece_.ReadLine('\0');
-  UTIL_THROW_IF(vocab_elem != "<unk>", 
+  UTIL_THROW_IF(vocab_elem != "<unk>",
                 FormatLoadException,
                 "Vocabulary words are in the wrong place.");
   // setup to initial value
@@ -59,14 +59,14 @@ VocabFileReader &VocabFileReader::operator++() {
   }
   uint64_t prev_hash_value = hash_value_;
   hash_value_ = ngram::detail::HashForVocab(vocab_elem.data(), vocab_elem.size());
-      
+
   // hash values should be monotonically increasing
   UTIL_THROW_IF(hash_value_ < prev_hash_value, FormatLoadException,
                 ": word index not monotonically increasing."
                 << " model_num: " << model_num_
                 << " prev hash: " << prev_hash_value
                 << " new hash: " << hash_value_);
-      
+
   ++current_index_;
   return *this;
 }
@@ -121,7 +121,7 @@ void MergeVocabIndex(util::FixedArray<util::scoped_fd> &files, UniversalVocab &v
     }
   }
 }
-    
+
 } // namespace interpolate
 } // namespace lm
-  
+

@@ -33,7 +33,7 @@ class DedupeHash : public std::unary_function<const WordIndex *, bool> {
     std::size_t operator()(const WordIndex *start) const {
       return util::MurmurHashNative(start, size_);
     }
-    
+
   private:
     const std::size_t size_;
 };
@@ -41,11 +41,11 @@ class DedupeHash : public std::unary_function<const WordIndex *, bool> {
 class DedupeEquals : public std::binary_function<const WordIndex *, const WordIndex *, bool> {
   public:
     explicit DedupeEquals(std::size_t order) : size_(order * sizeof(WordIndex)) {}
-    
+
     bool operator()(const WordIndex *first, const WordIndex *second) const {
       return !memcmp(first, second, size_);
-    } 
-    
+    }
+
   private:
     const std::size_t size_;
 };
@@ -70,7 +70,7 @@ typedef util::ProbingHashTable<DedupeEntry, DedupeHash, DedupeEquals> Dedupe;
 
 class Writer {
   public:
-    Writer(std::size_t order, const util::stream::ChainPosition &position, void *dedupe_mem, std::size_t dedupe_mem_size) 
+    Writer(std::size_t order, const util::stream::ChainPosition &position, void *dedupe_mem, std::size_t dedupe_mem_size)
       : block_(position), gram_(block_->Get(), order),
         dedupe_invalid_(order, std::numeric_limits<WordIndex>::max()),
         dedupe_(dedupe_mem, dedupe_mem_size, &dedupe_invalid_[0], DedupeHash(order), DedupeEquals(order)),
@@ -79,7 +79,7 @@ class Writer {
       dedupe_.Clear();
       assert(Dedupe::Size(position.GetChain().BlockSize() / position.GetChain().EntrySize(), kProbingMultiplier) == dedupe_mem_size);
       if (order == 1) {
-        // Add special words.  AdjustCounts is responsible if order != 1.    
+        // Add special words.  AdjustCounts is responsible if order != 1.
         AddUnigramWord(kUNK);
         AddUnigramWord(kBOS);
       }
@@ -109,16 +109,16 @@ class Writer {
         memmove(gram_.begin(), gram_.begin() + 1, sizeof(WordIndex) * (gram_.Order() - 1));
         return;
       }
-      // Complete the write.  
+      // Complete the write.
       gram_.Value().count = 1;
-      // Prepare the next n-gram.  
+      // Prepare the next n-gram.
       if (reinterpret_cast<uint8_t*>(gram_.begin()) + gram_.TotalSize() != static_cast<uint8_t*>(block_->Get()) + block_size_) {
         NGram<BuildingPayload> last(gram_);
         gram_.NextInMemory();
         std::copy(last.begin() + 1, last.end(), gram_.begin());
         return;
       }
-      // Block end.  Need to store the context in a temporary buffer.  
+      // Block end.  Need to store the context in a temporary buffer.
       std::copy(gram_.begin() + 1, gram_.end(), buffer_.get());
       dedupe_.Clear();
       block_->SetValidSize(block_size_);
@@ -146,7 +146,7 @@ class Writer {
     // Hash table combiner implementation.
     Dedupe dedupe_;
 
-    // Small buffer to hold existing ngrams when shifting across a block boundary.  
+    // Small buffer to hold existing ngrams when shifting across a block boundary.
     boost::scoped_array<WordIndex> buffer_;
 
     const std::size_t block_size_;
@@ -212,12 +212,12 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
   } catch (const util::EndOfFileException &e) {}
   token_count_ = count;
   type_count_ = vocab.Size();
-  
+
   // Create list of unigrams that are supposed to be pruned
   if (!prune_vocab_filename_.empty()) {
     try {
       util::FilePiece prune_vocab_file(prune_vocab_filename_.c_str());
-      
+
       prune_words_.resize(vocab.Size(), true);
       try {
         while (true) {
@@ -225,12 +225,12 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
           prune_words_[vocab.Index(word)] = false;
         }
       } catch (const util::EndOfFileException &e) {}
-      
+
       // Never prune <unk>, <s>, </s>
       prune_words_[kUNK] = false;
       prune_words_[kBOS] = false;
       prune_words_[kEOS] = false;
-      
+
     } catch (const util::Exception &e) {
       std::cerr << e.what() << std::endl;
       abort();

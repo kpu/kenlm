@@ -1,7 +1,7 @@
 #ifndef LM_MAX_ORDER_H
 #define LM_MAX_ORDER_H
 /* IF YOUR BUILD SYSTEM PASSES -DKENLM_MAX_ORDER, THEN CHANGE THE BUILD SYSTEM.
- * If not, this is the default maximum order.  
+ * If not, this is the default maximum order.
  * Having this limit means that State can be
  * (kMaxOrder - 1) * sizeof(float) bytes instead of
  * sizeof(float*) + (kMaxOrder - 1) * sizeof(float) + malloc overhead

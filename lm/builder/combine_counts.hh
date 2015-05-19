@@ -17,7 +17,7 @@ namespace builder {
 struct CombineCounts {
   bool operator()(void *first_void, const void *second_void, const SuffixOrder &compare) const {
     NGram<BuildingPayload> first(first_void, compare.Order());
-    // There isn't a const version of NGram.  
+    // There isn't a const version of NGram.
     NGram<BuildingPayload> second(const_cast<void*>(second_void), compare.Order());
     if (memcmp(first.begin(), second.begin(), sizeof(WordIndex) * compare.Order())) return false;
     first.Value().count += second.Value().count;

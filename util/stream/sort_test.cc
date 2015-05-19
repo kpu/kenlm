@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(FromShuffled) {
     shuffled.push_back(i);
   }
   std::random_shuffle(shuffled.begin(), shuffled.end());
-  
+
   ChainConfig config;
   config.entry_size = 8;
   config.total_memory = 800;

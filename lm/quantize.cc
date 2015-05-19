@@ -50,12 +50,12 @@ void SeparatelyQuantize::UpdateConfigFromBinary(const BinaryFormat &file, uint64
 void SeparatelyQuantize::SetupMemory(void *base, unsigned char order, const Config &config) {
   prob_bits_ = config.prob_bits;
   backoff_bits_ = config.backoff_bits;
-  // We need the reserved values.  
+  // We need the reserved values.
   if (config.prob_bits == 0) UTIL_THROW(ConfigException, "You can't quantize probability to zero");
   if (config.backoff_bits == 0) UTIL_THROW(ConfigException, "You can't quantize backoff to zero");
   if (config.prob_bits > 25) UTIL_THROW(ConfigException, "For efficiency reasons, quantizing probability supports at most 25 bits.  Currently you have requested " << static_cast<unsigned>(config.prob_bits) << " bits.");
   if (config.backoff_bits > 25) UTIL_THROW(ConfigException, "For efficiency reasons, quantizing backoff supports at most 25 bits.  Currently you have requested " << static_cast<unsigned>(config.backoff_bits) << " bits.");
-  // Reserve 8 byte header for bit counts.  
+  // Reserve 8 byte header for bit counts.
   actual_base_ = static_cast<uint8_t*>(base);
   float *start = reinterpret_cast<float*>(actual_base_ + 8);
   for (unsigned char i = 0; i < order - 2; ++i) {

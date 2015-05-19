@@ -22,7 +22,7 @@ struct Pivot64 {
   }
 };
 
-// Use when off * width is <2^64.  This is guaranteed when each of them is actually a 32-bit value.   
+// Use when off * width is <2^64.  This is guaranteed when each of them is actually a 32-bit value.
 struct Pivot32 {
   static inline std::size_t Calc(uint64_t off, uint64_t range, uint64_t width) {
     return static_cast<std::size_t>((off * width) / (range + 1));
@@ -56,7 +56,7 @@ template <class Iterator, class Accessor> bool BinaryFind(
   return false;
 }
 
-// Search the range [before_it + 1, after_it - 1] for key.  
+// Search the range [before_it + 1, after_it - 1] for key.
 // Preconditions:
 // before_v <= key <= after_v
 // before_v <= all values in the range [before_it + 1, after_it - 1] <= after_v
@@ -90,7 +90,7 @@ template <class Iterator, class Accessor, class Pivot> bool SortedUniformFind(co
     if (key == below) { out = begin; return true; }
     return false;
   }
-  // Make the range [begin, end].  
+  // Make the range [begin, end].
   --end;
   typename Accessor::Key above(accessor(end));
   if (key >= above) {

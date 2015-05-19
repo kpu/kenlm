@@ -40,7 +40,7 @@ template <class Weights> class GenericProbingProxy {
     const Weights *to_;
 };
 
-// Basic proxy for trie unigrams.  
+// Basic proxy for trie unigrams.
 template <class Weights> class GenericTrieUnigramProxy {
   public:
     explicit GenericTrieUnigramProxy(const Weights &to) : to_(&to) {}
@@ -114,7 +114,7 @@ struct RestValue {
       float Rest() const { return to_->rest; }
   };
 
-// gcc 4.1 doesn't properly back dependent types :-(.  
+// gcc 4.1 doesn't properly back dependent types :-(.
 #pragma pack(push)
 #pragma pack(4)
   struct ProbingEntry {

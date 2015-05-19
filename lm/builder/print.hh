@@ -17,7 +17,7 @@
 
 // Warning: print routines read all unigrams before all bigrams before all
 // trigrams etc.  So if other parts of the chain move jointly, you'll have to
-// buffer.  
+// buffer.
 
 namespace lm { namespace builder {
 
@@ -45,7 +45,7 @@ class VocabReconstitute {
     std::vector<const char*> map_;
 };
 
-// Not defined, only specialized.  
+// Not defined, only specialized.
 template <class T> void PrintPayload(util::FakeOFStream &to, const BuildingPayload &payload);
 template <> inline void PrintPayload<uint64_t>(util::FakeOFStream &to, const BuildingPayload &payload) {
   // TODO slow
@@ -58,7 +58,7 @@ template <> inline void PrintPayload<ProbBackoff>(util::FakeOFStream &to, const 
   to << payload.complete.prob << ' ' << payload.complete.backoff;
 }
 
-// template parameter is the type stored.  
+// template parameter is the type stored.
 template <class V> class Print {
   public:
     static void DumpSeparateFiles(const VocabReconstitute &vocab, const std::string &file_base, util::stream::Chains &chains) {

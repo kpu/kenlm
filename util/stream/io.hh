@@ -18,12 +18,12 @@ class ReadSizeException : public util::Exception {
 class Read {
   public:
     explicit Read(int fd) : file_(fd) {}
-    void Run(const ChainPosition &position); 
+    void Run(const ChainPosition &position);
   private:
     int file_;
 };
 
-// Like read but uses pread so that the file can be accessed from multiple threads.  
+// Like read but uses pread so that the file can be accessed from multiple threads.
 class PRead {
   public:
     explicit PRead(int fd, bool take_own = false) : file_(fd), own_(take_own) {}
@@ -60,7 +60,7 @@ class PWriteAndRecycle {
 };
 
 
-// Reuse the same file over and over again to buffer output.  
+// Reuse the same file over and over again to buffer output.
 class FileBuffer {
   public:
     explicit FileBuffer(int fd) : file_(fd) {}

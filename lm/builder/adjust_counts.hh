@@ -30,9 +30,9 @@ struct DiscountConfig {
   WarningAction bad_action;
 };
 
-/* Compute adjusted counts.  
+/* Compute adjusted counts.
  * Input: unique suffix sorted N-grams (and just the N-grams) with raw counts.
- * Output: [1,N]-grams with adjusted counts.  
+ * Output: [1,N]-grams with adjusted counts.
  * [1,N)-grams are in suffix order
  * N-grams are in undefined order (they're going to be sorted anyway).
  */
@@ -50,13 +50,13 @@ class AdjustCounts {
         const DiscountConfig &discount_config,
         std::vector<Discount> &discounts)
       : prune_thresholds_(prune_thresholds), counts_(counts), counts_pruned_(counts_pruned),
-        prune_words_(prune_words), discount_config_(discount_config), discounts_(discounts) 
+        prune_words_(prune_words), discount_config_(discount_config), discounts_(discounts)
     {}
 
     void Run(const util::stream::ChainPositions &positions);
 
   private:
-    const std::vector<uint64_t> &prune_thresholds_; 
+    const std::vector<uint64_t> &prune_thresholds_;
     std::vector<uint64_t> &counts_;
     std::vector<uint64_t> &counts_pruned_;
     const std::vector<bool> &prune_words_;

@@ -87,7 +87,7 @@ template <class Key> void RandomTest(Key upper, size_t entries, size_t queries) 
   }
   std::sort(backing.begin(), backing.end());
 
-  // Random queries.  
+  // Random queries.
   for (size_t i = 0; i < queries; ++i) {
     const Key key = gen_key();
     Check<Key, unsigned char>(&*backing.begin(), &*backing.end(), reference, key);

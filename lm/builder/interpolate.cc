@@ -47,7 +47,7 @@ class OutputQ {
 
   private:
     // Product of backoffs in the numerator divided by backoffs in the
-    // denominator.  Does not include 
+    // denominator.  Does not include
     std::vector<float> q_delta_;
 };
 
@@ -82,7 +82,7 @@ template <class Output> class Callback {
         if(prune_vocab_ || prune_thresholds_[i + 1] > 0)
           while(backoffs_[i])
             ++backoffs_[i];
-        
+
         if (backoffs_[i]) {
           std::cerr << "Backoffs do not match for order " << (i + 1) << std::endl;
           abort();
@@ -100,7 +100,7 @@ template <class Output> class Callback {
         if(prune_vocab_ || prune_thresholds_[order_minus_1 + 1] > 0) {
           //Compute hash value for current context
           uint64_t current_hash = util::MurmurHashNative(gram.begin(), gram.Order() * sizeof(WordIndex));
-          
+
           const HashGamma *hashed_backoff = static_cast<const HashGamma*>(backoffs_[order_minus_1].Get());
           while(current_hash != hashed_backoff->hash_value && ++backoffs_[order_minus_1])
             hashed_backoff = static_cast<const HashGamma*>(backoffs_[order_minus_1].Get());

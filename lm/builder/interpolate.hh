@@ -10,8 +10,8 @@
 #include <stdint.h>
 
 namespace lm { namespace builder {
- 
-/* Interpolate step.  
+
+/* Interpolate step.
  * Input: suffix sorted n-grams with (p_uninterpolated, gamma) from
  * InitialProbabilities.
  * Output: suffix sorted n-grams with complete probability

@@ -1,7 +1,7 @@
 #ifndef LM_LM_EXCEPTION_H
 #define LM_LM_EXCEPTION_H
 
-// Named to avoid conflict with util/exception.hh.  
+// Named to avoid conflict with util/exception.hh.
 
 #include "util/exception.hh"
 #include "util/string_piece.hh"

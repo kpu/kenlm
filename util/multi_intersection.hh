@@ -22,7 +22,7 @@ template <class Range> struct RangeLessBySize : public std::binary_function<cons
  * order.  sets is changed to truncate the beginning of each sequence to the
  * location of the match or an empty set.  Precondition: sets is not empty
  * since the intersection over null is the universe and this function does not
- * know the universe.   
+ * know the universe.
  */
 template <class Iterator, class Less> boost::optional<typename std::iterator_traits<Iterator>::value_type> FirstIntersectionSorted(std::vector<boost::iterator_range<Iterator> > &sets, const Less &less = std::less<typename std::iterator_traits<Iterator>::value_type>()) {
   typedef std::vector<boost::iterator_range<Iterator> > Sets;
@@ -31,7 +31,7 @@ template <class Iterator, class Less> boost::optional<typename std::iterator_tra
   assert(!sets.empty());
 
   if (sets.front().empty()) return boost::optional<Value>();
-  // Possibly suboptimal to copy for general Value; makes unsigned int go slightly faster.  
+  // Possibly suboptimal to copy for general Value; makes unsigned int go slightly faster.
   Value highest(sets.front().front());
   for (typename Sets::iterator i(sets.begin()); i != sets.end(); ) {
     i->advance_begin(std::lower_bound(i->begin(), i->end(), highest, less) - i->begin());

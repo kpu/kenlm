@@ -37,7 +37,7 @@ void scoped_malloc::call_realloc(std::size_t requested) {
 void AdviseHugePages(const void *addr, std::size_t size) {
 #if MADV_HUGEPAGE
   madvise((void*)addr, size, MADV_HUGEPAGE);
-#endif  
+#endif
 }
 
 } // namespace util

@@ -19,10 +19,10 @@ class Exception : public std::exception {
     Exception(const Exception &from);
     Exception &operator=(const Exception &from);
 
-    // Not threadsafe, but probably doesn't matter.  FWIW, Boost's exception guidance implies that what() isn't threadsafe.  
+    // Not threadsafe, but probably doesn't matter.  FWIW, Boost's exception guidance implies that what() isn't threadsafe.
     const char *what() const throw();
 
-    // For use by the UTIL_THROW macros.  
+    // For use by the UTIL_THROW macros.
     void SetLocation(
         const char *file,
         unsigned int line,
@@ -33,7 +33,7 @@ class Exception : public std::exception {
   private:
     template <class Except, class Data> friend typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const Data &data);
 
-    // This helps restrict operator<< defined below.  
+    // This helps restrict operator<< defined below.
     template <class T> struct ExceptionTag {
       typedef T Identity;
     };
@@ -42,9 +42,9 @@ class Exception : public std::exception {
     mutable std::string text_;
 };
 
-/* This implements the normal operator<< for Exception and all its children. 
+/* This implements the normal operator<< for Exception and all its children.
  * SFINAE means it only applies to Exception.  Think of this as an ersatz
- * boost::enable_if.  
+ * boost::enable_if.
  */
 template <class Except, class Data> typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const Data &data) {
   e.stream_ << data;
@@ -63,10 +63,10 @@ template <class Except, class Data> typename Except::template ExceptionTag<Excep
 
 /* Create an instance of Exception, add the message Modify, and throw it.
  * Modify is appended to the what() message and can contain << for ostream
- * operations.  
+ * operations.
  *
  * do .. while kludge to swallow trailing ; character
- * http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html .  
+ * http://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html .
  * Arg can be a constructor argument to the exception.
  */
 #define UTIL_THROW_BACKEND(Condition, Exception, Arg, Modify) do { \
@@ -129,7 +129,7 @@ class FileOpenException : public Exception {
     ~FileOpenException() throw() {}
 };
 
-// Utilities for overflow checking.  
+// Utilities for overflow checking.
 class OverflowException : public Exception {
   public:
     OverflowException() throw();

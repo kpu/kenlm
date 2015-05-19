@@ -36,7 +36,7 @@ template <class Callback, class Compare> void JointOrder(const util::stream::Cha
     // Does the context match the lower one?
     if (!memcmp(streams[static_cast<int>(current) - 1]->begin(), streams[current]->begin() + Compare::kMatchOffset, sizeof(WordIndex) * current)) {
       callback.Enter(current, *streams[current]);
-      // Transition to looking for extensions.  
+      // Transition to looking for extensions.
       if (++current < order) continue;
     }
 #ifdef DEBUG
@@ -47,16 +47,16 @@ template <class Callback, class Compare> void JointOrder(const util::stream::Cha
       abort();
     }
 #endif // DEBUG
-    // No extension left.  
+    // No extension left.
     while(true) {
       assert(current > 0);
       --current;
       callback.Exit(current, *streams[current]);
-      
+
       if (++streams[current]) break;
-      
+
       UTIL_THROW_IF(order != current + 1, FormatLoadException, "Detected n-gram without matching suffix");
-      
+
       order = current;
       if (!order) return;
     }

@@ -9,7 +9,7 @@ namespace {
 template <bool> struct StaticCheck {};
 template <> struct StaticCheck<true> { typedef bool StaticAssertionPassed; };
 
-// If your float isn't 4 bytes, we're hosed.  
+// If your float isn't 4 bytes, we're hosed.
 typedef StaticCheck<sizeof(float) == 4>::StaticAssertionPassed FloatSize;
 
 } // namespace
@@ -34,7 +34,7 @@ void BitPackingSanity() {
     if (test57 != ReadInt57(mem, b, 57, (1ULL << 57) - 1))
       UTIL_THROW(Exception, "The bit packing routines are failing for your architecture.  Please send a bug report with your architecture, operating system, and compiler.");
   }
-  // TODO: more checks.  
+  // TODO: more checks.
 }
 
 } // namespace util

@@ -17,7 +17,7 @@ ErsatzProgress::~ErsatzProgress() {
   if (out_) Finished();
 }
 
-ErsatzProgress::ErsatzProgress(uint64_t complete, std::ostream *to, const std::string &message) 
+ErsatzProgress::ErsatzProgress(uint64_t complete, std::ostream *to, const std::string &message)
   : current_(0), next_(complete / kWidth), complete_(complete), stones_written_(0), out_(to) {
   if (!out_) {
     next_ = std::numeric_limits<uint64_t>::max();

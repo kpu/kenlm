@@ -517,7 +517,7 @@ template <class Quant, class Bhiksha> void BuildTrie(SortedFiles &files, std::ve
   {
     WriteEntries<Quant, Bhiksha> writer(contexts, quant, unigrams, out.middle_begin_, out.longest_, counts.size(), sri);
     RecursiveInsert(counts.size(), counts[0], inputs, config.ProgressMessages(), "Writing trie", writer);
-    // Write the last unigram entry, which is the end pointer for the bigrams.  
+    // Write the last unigram entry, which is the end pointer for the bigrams.
     writer.Unigram(counts[0]);
   }
 

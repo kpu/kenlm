@@ -13,7 +13,7 @@ namespace lm {
  */
 template <class Child> class Comparator : public std::binary_function<const void *, const void *, bool> {
   public:
-  
+
     /**
      * Constructs a comparator capable of comparing two n-grams.
      *
@@ -45,8 +45,8 @@ template <class Child> class Comparator : public std::binary_function<const void
 /**
  * N-gram comparator that compares n-grams according to their reverse (suffix) order.
  *
- * This comparator compares n-grams lexicographically, one word at a time, 
- * beginning with the last word of each n-gram and ending with the first word of each n-gram. 
+ * This comparator compares n-grams lexicographically, one word at a time,
+ * beginning with the last word of each n-gram and ending with the first word of each n-gram.
  *
  * Some examples of n-gram comparisons as defined by this comparator:
  * - a b c == a b c
@@ -58,8 +58,8 @@ template <class Child> class Comparator : public std::binary_function<const void
  */
 class SuffixOrder : public Comparator<SuffixOrder> {
   public:
-  
-    /** 
+
+    /**
      * Constructs a comparator capable of comparing two n-grams.
      *
      * @param order Number of words in each n-gram
@@ -67,7 +67,7 @@ class SuffixOrder : public Comparator<SuffixOrder> {
     explicit SuffixOrder(std::size_t order) : Comparator<SuffixOrder>(order) {}
 
     /**
-     * Compares two n-grams lexicographically, one word at a time, 
+     * Compares two n-grams lexicographically, one word at a time,
      * beginning with the last word of each n-gram and ending with the first word of each n-gram.
      *
      * @param lhs A pointer to the n-gram on the left-hand side of the comparison
@@ -84,11 +84,11 @@ class SuffixOrder : public Comparator<SuffixOrder> {
     static const unsigned kMatchOffset = 1;
 };
 
-  
+
 /**
   * N-gram comparator that compares n-grams according to the reverse (suffix) order of the n-gram context.
   *
-  * This comparator compares n-grams lexicographically, one word at a time, 
+  * This comparator compares n-grams lexicographically, one word at a time,
   * beginning with the penultimate word of each n-gram and ending with the first word of each n-gram;
   * finally, this comparator compares the last word of each n-gram.
   *
@@ -102,8 +102,8 @@ class SuffixOrder : public Comparator<SuffixOrder> {
   */
 class ContextOrder : public Comparator<ContextOrder> {
   public:
-  
-    /** 
+
+    /**
      * Constructs a comparator capable of comparing two n-grams.
      *
      * @param order Number of words in each n-gram
@@ -111,7 +111,7 @@ class ContextOrder : public Comparator<ContextOrder> {
     explicit ContextOrder(std::size_t order) : Comparator<ContextOrder>(order) {}
 
     /**
-     * Compares two n-grams lexicographically, one word at a time, 
+     * Compares two n-grams lexicographically, one word at a time,
      * beginning with the penultimate word of each n-gram and ending with the first word of each n-gram;
      * finally, this comparator compares the last word of each n-gram.
      *
@@ -130,7 +130,7 @@ class ContextOrder : public Comparator<ContextOrder> {
 /**
  * N-gram comparator that compares n-grams according to their natural (prefix) order.
  *
- * This comparator compares n-grams lexicographically, one word at a time, 
+ * This comparator compares n-grams lexicographically, one word at a time,
  * beginning with the first word of each n-gram and ending with the last word of each n-gram.
  *
  * Some examples of n-gram comparisons as defined by this comparator:
@@ -143,8 +143,8 @@ class ContextOrder : public Comparator<ContextOrder> {
  */
 class PrefixOrder : public Comparator<PrefixOrder> {
   public:
-  
-    /** 
+
+    /**
      * Constructs a comparator capable of comparing two n-grams.
      *
      * @param order Number of words in each n-gram
@@ -152,7 +152,7 @@ class PrefixOrder : public Comparator<PrefixOrder> {
     explicit PrefixOrder(std::size_t order) : Comparator<PrefixOrder>(order) {}
 
     /**
-     * Compares two n-grams lexicographically, one word at a time, 
+     * Compares two n-grams lexicographically, one word at a time,
      * beginning with the first word of each n-gram and ending with the last word of each n-gram.
      *
      * @param lhs A pointer to the n-gram on the left-hand side of the comparison
@@ -165,7 +165,7 @@ class PrefixOrder : public Comparator<PrefixOrder> {
       }
       return false;
     }
-    
+
     static const unsigned kMatchOffset = 0;
 };
 

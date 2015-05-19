@@ -3,7 +3,7 @@
 #include "lm/model.hh"
 #include "lm/read_arpa.hh"
 
-namespace lm { 
+namespace lm {
 namespace ngram {
 
 template <class Model> LowerRestBuild<Model>::LowerRestBuild(const Config &config, unsigned int order, const typename Model::Vocabulary &vocab) {
@@ -12,8 +12,8 @@ template <class Model> LowerRestBuild<Model>::LowerRestBuild(const Config &confi
   for_lower.write_mmap = NULL;
   for_lower.rest_lower_files.clear();
 
-  // Unigram models aren't supported, so this is a custom loader.  
-  // TODO: optimize the unigram loading?  
+  // Unigram models aren't supported, so this is a custom loader.
+  // TODO: optimize the unigram loading?
   {
     util::FilePiece uni(config.rest_lower_files[0].c_str());
     std::vector<uint64_t> number;
@@ -44,7 +44,7 @@ template <class Model> LowerRestBuild<Model>::LowerRestBuild(const Config &confi
     throw;
   }
 
-  // TODO: force/check same vocab.  
+  // TODO: force/check same vocab.
 }
 
 template <class Model> LowerRestBuild<Model>::~LowerRestBuild() {

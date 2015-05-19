@@ -41,17 +41,17 @@ class TestFiles {
 
 BOOST_AUTO_TEST_CASE(MergeVocabTest) {
   TestFiles files;
-  
+
   util::FixedArray<util::scoped_fd> used_files(3);
   used_files.push_back(files.test[0].release());
   used_files.push_back(files.test[1].release());
   used_files.push_back(files.test[2].release());
-  
+
   std::vector<lm::WordIndex> model_max_idx;
   model_max_idx.push_back(10);
   model_max_idx.push_back(10);
   model_max_idx.push_back(10);
-  
+
   UniversalVocab universal_vocab(model_max_idx);
   MergeVocabIndex(used_files, universal_vocab);
 
@@ -70,10 +70,10 @@ BOOST_AUTO_TEST_CASE(MergeVocabNoUnkTest) {
   TestFiles files;
   util::FixedArray<util::scoped_fd> used_files(1);
   used_files.push_back(files.no_unk.release());
-  
+
   std::vector<lm::WordIndex> model_max_idx;
   model_max_idx.push_back(10);
-  
+
   UniversalVocab universal_vocab(model_max_idx);
   BOOST_CHECK_THROW(MergeVocabIndex(used_files, universal_vocab), FormatLoadException);
 }
@@ -84,11 +84,11 @@ BOOST_AUTO_TEST_CASE(MergeVocabWrongOrderTest) {
   util::FixedArray<util::scoped_fd> used_files(2);
   used_files.push_back(files.test[0].release());
   used_files.push_back(files.bad_order.release());
-  
+
   std::vector<lm::WordIndex> model_max_idx;
   model_max_idx.push_back(10);
   model_max_idx.push_back(10);
-  
+
   lm::interpolate::UniversalVocab universal_vocab(model_max_idx);
   BOOST_CHECK_THROW(MergeVocabIndex(used_files, universal_vocab), FormatLoadException);
 }

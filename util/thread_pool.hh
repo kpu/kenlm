@@ -48,7 +48,7 @@ template <class HandlerT> class Worker : boost::noncopyable {
     PCQueue<Request> &in_;
 
     boost::optional<Handler> handler_;
-    
+
     const Request poison_;
 
     boost::thread thread_;

@@ -86,7 +86,7 @@ class scoped_malloc : public scoped_c<void, std::free> {
 struct scoped_delete_array_forward {
   template <class T> static void Close(T *p) { delete [] p; }
 };
-// Hat tip to boost.  
+// Hat tip to boost.
 template <class T> class scoped_array : public scoped<T, scoped_delete_array_forward> {
   public:
     explicit scoped_array(T *p = NULL) : scoped<T, scoped_delete_array_forward>(p) {}

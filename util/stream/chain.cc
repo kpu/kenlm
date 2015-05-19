@@ -37,7 +37,7 @@ Chain::Chain(const ChainConfig &config) : config_(config), complete_called_(fals
   UTIL_THROW_IF(!config.entry_size, ChainConfigException, "zero-size entries.");
   UTIL_THROW_IF(!config.block_count, ChainConfigException, "block count zero");
   UTIL_THROW_IF(config.total_memory < config.entry_size * config.block_count, ChainConfigException, config.total_memory << " total memory, too small for " << config.block_count << " blocks of containing entries of size " << config.entry_size);
-  // Round down block size to a multiple of entry size.   
+  // Round down block size to a multiple of entry size.
   block_size_ = config.total_memory / (config.block_count * config.entry_size) * config.entry_size;
 }
 
@@ -65,7 +65,7 @@ Chain &Chain::operator>>(const PWriteAndRecycle &writer) {
 void Chain::Wait(bool release_memory) {
   if (queues_.empty()) {
     assert(threads_.empty());
-    return; // Nothing to wait for.  
+    return; // Nothing to wait for.
   }
   if (!complete_called_) CompleteLoop();
   threads_.clear();
@@ -84,15 +84,15 @@ void Chain::Wait(bool release_memory) {
 void Chain::Start() {
   Wait(false);
   if (!memory_.get()) {
-    // Allocate memory.  
+    // Allocate memory.
     assert(threads_.empty());
     assert(queues_.empty());
     std::size_t malloc_size = block_size_ * config_.block_count;
     memory_.reset(MallocOrThrow(malloc_size));
   }
-  // This queue can accomodate all blocks.    
+  // This queue can accomodate all blocks.
   queues_.push_back(new PCQueue<Block>(config_.block_count));
-  // Populate the lead queue with blocks.  
+  // Populate the lead queue with blocks.
   uint8_t *base = static_cast<uint8_t*>(memory_.get());
   for (std::size_t i = 0; i < config_.block_count; ++i) {
     queues_.front().Produce(Block(base, block_size_));
@@ -124,7 +124,7 @@ Link::Link(const ChainPosition &position) : in_(NULL) {
 
 Link::~Link() {
   if (current_) {
-    // Probably an exception unwinding.  
+    // Probably an exception unwinding.
     std::cerr << "Last input should have been poison." << std::endl;
     // abort();
   } else {

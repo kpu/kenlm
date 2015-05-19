@@ -35,9 +35,9 @@ template <class Model> ExtendReturn ExtendLoop(
 
   unsigned char i = 0;
   unsigned char length = pointers_end - pointers;
-  // pointers_write is NULL means that the existing left state is full, so we should use completed probabilities.  
+  // pointers_write is NULL means that the existing left state is full, so we should use completed probabilities.
   if (pointers_write) {
-    // Using full context, writing to new left state.   
+    // Using full context, writing to new left state.
     for (; i < length; ++i) {
       FullScoreReturn ret(model.ExtendLeft(
           add_rbegin, add_rbegin + value.next_use,
@@ -61,7 +61,7 @@ template <class Model> ExtendReturn ExtendLoop(
       }
     }
   }
-  // Using some of the new context.  
+  // Using some of the new context.
   for (; i < length && value.next_use; ++i) {
     FullScoreReturn ret(model.ExtendLeft(
         add_rbegin, add_rbegin + value.next_use,
@@ -73,7 +73,7 @@ template <class Model> ExtendReturn ExtendLoop(
     value.adjust += ret.prob;
   }
   float unrest = model.UnRest(pointers + i, pointers_end, i + seen + 1);
-  // Using none of the new context.  
+  // Using none of the new context.
   value.adjust += unrest;
 
   std::copy(backoff_in, backoff_in + value.next_use, backoff_write);
@@ -100,7 +100,7 @@ template <class Model> float RevealBefore(const Model &model, const Right &revea
   if (left.full) {
     for (unsigned char i = 0; i < value.next_use; ++i) value.adjust += backoff_buffer[i];
   } else {
-    // If left wasn't full when it came in, put words into right state.  
+    // If left wasn't full when it came in, put words into right state.
     std::copy(reveal.words + seen, reveal.words + seen + value.next_use, right.words + right.length);
     right.length += value.next_use;
     left.full = value.make_full || (right.length == model.Order() - 1);

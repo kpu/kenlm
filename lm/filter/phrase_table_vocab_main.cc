@@ -88,7 +88,7 @@ class TargetWords {
 
 class Input {
   public:
-    explicit Input(std::size_t max_length) 
+    explicit Input(std::size_t max_length)
       : max_length_(max_length), sentence_id_(0), empty_() {}
 
     void AddSentence(StringPiece sentence, TargetWords &targets) {
@@ -125,7 +125,7 @@ class Input {
     Map map_;
 
     std::size_t sentence_id_;
-    
+
     // Temporaries in AddSentence.
     std::string canonical_;
     std::vector<std::size_t> starts_;

@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(EndSentence) {
   before.words[1] = loin;
   before.backoff[0] = -0.845098;
   before.backoff[1] = 0.0;
-  
+
   before.length = 1;
   BOOST_CHECK_CLOSE(-0.0410707, RevealBefore(m, before, 0, true, between.left, between.right), 0.001);
   BOOST_CHECK_EQUAL(0, between.left.length);
@@ -159,7 +159,7 @@ void CheckAdjustment(const RestProbingModel &model, float expect, const Right &b
   if (before_full) {
     got += RevealBefore(model, before, before.length, true, between.left, between.right);
   }
-  // Sometimes they're zero and BOOST_CHECK_CLOSE fails for this. 
+  // Sometimes they're zero and BOOST_CHECK_CLOSE fails for this.
   BOOST_CHECK(fabs(expect - got) < 0.001);
 }
 

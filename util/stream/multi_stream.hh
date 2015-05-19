@@ -50,7 +50,7 @@ class Chains : public util::FixedArray<util::stream::Chain> {
     }
 
     Chains &operator>>(const util::stream::Recycler &recycler) {
-      for (util::stream::Chain *i = begin(); i != end(); ++i) 
+      for (util::stream::Chain *i = begin(); i != end(); ++i)
         *i >> recycler;
       return *this;
     }

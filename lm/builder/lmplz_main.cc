@@ -53,7 +53,7 @@ std::vector<uint64_t> ParsePruning(const std::vector<std::string> &param, std::s
   // throw if each n-gram order has not  threshold specified
   UTIL_THROW_IF(prune_thresholds.size() > order, util::Exception, "You specified pruning thresholds for orders 1 through " << prune_thresholds.size() << " but the model only has order " << order);
   // threshold for unigram can only be 0 (no pruning)
-  
+
   // check if threshold are not in decreasing order
   uint64_t lower_threshold = 0;
   for (std::vector<uint64_t>::iterator it = prune_thresholds.begin(); it != prune_thresholds.end(); ++it) {
@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
     po::store(po::parse_command_line(argc, argv, options), vm);
 
     if (argc == 1 || vm["help"].as<bool>()) {
-      std::cerr << 
+      std::cerr <<
         "Builds unpruned language models with modified Kneser-Ney smoothing.\n\n"
         "Please cite:\n"
         "@inproceedings{Heafield-estimate,\n"
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
         std::cerr << "This machine has " << mem << " bytes of memory.\n\n";
       } else {
         std::cerr << "Unable to determine the amount of memory on this machine.\n\n";
-      } 
+      }
       std::cerr << options << std::endl;
       return 1;
     }
@@ -193,11 +193,11 @@ int main(int argc, char *argv[]) {
     else {
       pipeline.prune_vocab = false;
     }
-    
+
     util::NormalizeTempPrefix(pipeline.sort.temp_prefix);
 
     lm::builder::InitialProbabilitiesConfig &initial = pipeline.initial_probs;
-    // TODO: evaluate options for these.  
+    // TODO: evaluate options for these.
     initial.adder_in.total_memory = 32768;
     initial.adder_in.block_count = 2;
     initial.adder_out.total_memory = 32768;

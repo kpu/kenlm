@@ -135,7 +135,7 @@ void MatchCheck(ModelType model_type, unsigned int search_version, const Paramet
 
 const std::size_t kInvalidSize = static_cast<std::size_t>(-1);
 
-BinaryFormat::BinaryFormat(const Config &config) 
+BinaryFormat::BinaryFormat(const Config &config)
   : write_method_(config.write_method), write_mmap_(config.write_mmap), load_method_(config.load_method),
     header_size_(kInvalidSize), vocab_size_(kInvalidSize), vocab_string_offset_(kInvalidOffset) {}
 

@@ -104,7 +104,7 @@ ALIGN_PRE static const char kAsciiZero[16] ALIGN_SUF = { '0', '0', '0', '0', '0'
 inline __m128i Convert8DigitsSSE2(uint32_t value) {
     assert(value <= 99999999);
 
-    // abcd, efgh = abcdefgh divmod 10000 
+    // abcd, efgh = abcdefgh divmod 10000
     const __m128i abcdefgh = _mm_cvtsi32_si128(value);
     const __m128i abcd = _mm_srli_epi64(_mm_mul_epu32(abcdefgh, reinterpret_cast<const __m128i*>(kDiv10000Vector)[0]), 45);
     const __m128i efgh = _mm_sub_epi32(abcdefgh, _mm_mul_epu32(abcd, reinterpret_cast<const __m128i*>(k10000Vector)[0]));
@@ -158,7 +158,7 @@ char *ToString(uint32_t value, char* buffer) {
     if (value < 10000) {
         const uint32_t d1 = (value / 100) << 1;
         const uint32_t d2 = (value % 100) << 1;
-        
+
         if (value >= 1000)
             *buffer++ = gDigitsLut[d1];
         if (value >= 100)
@@ -173,7 +173,7 @@ char *ToString(uint32_t value, char* buffer) {
         // Experiment shows that this case SSE2 is slower
 #if 0
         const __m128i a = Convert8DigitsSSE2(value);
-        
+
         // Convert to bytes, add '0'
         const __m128i va = _mm_add_epi8(_mm_packus_epi16(a, _mm_setzero_si128()), reinterpret_cast<const __m128i*>(kAsciiZero)[0]);
 
@@ -220,10 +220,10 @@ char *ToString(uint32_t value, char* buffer) {
     }
     else {
         // value = aabbbbbbbb in decimal
-        
+
         const uint32_t a = value / 100000000; // 1 to 42
         value %= 100000000;
-        
+
         if (a >= 10) {
             const unsigned i = a << 1;
             *buffer++ = gDigitsLut[i];
@@ -248,7 +248,7 @@ char *ToString(uint64_t value, char* buffer) {
         if (v < 10000) {
             const uint32_t d1 = (v / 100) << 1;
             const uint32_t d2 = (v % 100) << 1;
-            
+
             if (v >= 1000)
                 *buffer++ = gDigitsLut[d1];
             if (v >= 100)
@@ -263,7 +263,7 @@ char *ToString(uint64_t value, char* buffer) {
             // Experiment shows that this case SSE2 is slower
 #if 0
             const __m128i a = Convert8DigitsSSE2(v);
-        
+
             // Convert to bytes, add '0'
             const __m128i va = _mm_add_epi8(_mm_packus_epi16(a, _mm_setzero_si128()), reinterpret_cast<const __m128i*>(kAsciiZero)[0]);
 
@@ -336,7 +336,7 @@ char *ToString(uint64_t value, char* buffer) {
     else {
         const uint32_t a = static_cast<uint32_t>(value / 10000000000000000); // 1 to 1844
         value %= 10000000000000000;
-        
+
         if (a < 10)
             *buffer++ = '0' + static_cast<char>(a);
         else if (a < 100) {
@@ -346,7 +346,7 @@ char *ToString(uint64_t value, char* buffer) {
         }
         else if (a < 1000) {
             *buffer++ = '0' + static_cast<char>(a / 100);
-            
+
             const uint32_t i = (a % 100) << 1;
             *buffer++ = gDigitsLut[i];
             *buffer++ = gDigitsLut[i + 1];
@@ -359,10 +359,10 @@ char *ToString(uint64_t value, char* buffer) {
             *buffer++ = gDigitsLut[j];
             *buffer++ = gDigitsLut[j + 1];
         }
-        
+
         const uint32_t v0 = static_cast<uint32_t>(value / 100000000);
         const uint32_t v1 = static_cast<uint32_t>(value % 100000000);
-        
+
         const __m128i a0 = Convert8DigitsSSE2(v0);
         const __m128i a1 = Convert8DigitsSSE2(v1);
 
@@ -381,7 +381,7 @@ char *ToString(uint32_t value, char* buffer) {
     if (value < 10000) {
         const uint32_t d1 = (value / 100) << 1;
         const uint32_t d2 = (value % 100) << 1;
-        
+
         if (value >= 1000)
             *buffer++ = gDigitsLut[d1];
         if (value >= 100)
@@ -394,13 +394,13 @@ char *ToString(uint32_t value, char* buffer) {
         // value = bbbbcccc
         const uint32_t b = value / 10000;
         const uint32_t c = value % 10000;
-        
+
         const uint32_t d1 = (b / 100) << 1;
         const uint32_t d2 = (b % 100) << 1;
-        
+
         const uint32_t d3 = (c / 100) << 1;
         const uint32_t d4 = (c % 100) << 1;
-        
+
         if (value >= 10000000)
             *buffer++ = gDigitsLut[d1];
         if (value >= 1000000)
@@ -408,7 +408,7 @@ char *ToString(uint32_t value, char* buffer) {
         if (value >= 100000)
             *buffer++ = gDigitsLut[d2];
         *buffer++ = gDigitsLut[d2 + 1];
-        
+
         *buffer++ = gDigitsLut[d3];
         *buffer++ = gDigitsLut[d3 + 1];
         *buffer++ = gDigitsLut[d4];
@@ -416,10 +416,10 @@ char *ToString(uint32_t value, char* buffer) {
     }
     else {
         // value = aabbbbcccc in decimal
-        
+
         const uint32_t a = value / 100000000; // 1 to 42
         value %= 100000000;
-        
+
         if (a >= 10) {
             const unsigned i = a << 1;
             *buffer++ = gDigitsLut[i];
@@ -430,13 +430,13 @@ char *ToString(uint32_t value, char* buffer) {
 
         const uint32_t b = value / 10000; // 0 to 9999
         const uint32_t c = value % 10000; // 0 to 9999
-        
+
         const uint32_t d1 = (b / 100) << 1;
         const uint32_t d2 = (b % 100) << 1;
-        
+
         const uint32_t d3 = (c / 100) << 1;
         const uint32_t d4 = (c % 100) << 1;
-        
+
         *buffer++ = gDigitsLut[d1];
         *buffer++ = gDigitsLut[d1 + 1];
         *buffer++ = gDigitsLut[d2];
@@ -456,7 +456,7 @@ char *ToString(uint64_t value, char* buffer) {
         if (v < 10000) {
             const uint32_t d1 = (v / 100) << 1;
             const uint32_t d2 = (v % 100) << 1;
-            
+
             if (v >= 1000)
                 *buffer++ = gDigitsLut[d1];
             if (v >= 100)
@@ -469,13 +469,13 @@ char *ToString(uint64_t value, char* buffer) {
             // value = bbbbcccc
             const uint32_t b = v / 10000;
             const uint32_t c = v % 10000;
-            
+
             const uint32_t d1 = (b / 100) << 1;
             const uint32_t d2 = (b % 100) << 1;
-            
+
             const uint32_t d3 = (c / 100) << 1;
             const uint32_t d4 = (c % 100) << 1;
-            
+
             if (value >= 10000000)
                 *buffer++ = gDigitsLut[d1];
             if (value >= 1000000)
@@ -483,7 +483,7 @@ char *ToString(uint64_t value, char* buffer) {
             if (value >= 100000)
                 *buffer++ = gDigitsLut[d2];
             *buffer++ = gDigitsLut[d2 + 1];
-            
+
             *buffer++ = gDigitsLut[d3];
             *buffer++ = gDigitsLut[d3 + 1];
             *buffer++ = gDigitsLut[d4];
@@ -493,22 +493,22 @@ char *ToString(uint64_t value, char* buffer) {
     else if (value < 10000000000000000) {
         const uint32_t v0 = static_cast<uint32_t>(value / 100000000);
         const uint32_t v1 = static_cast<uint32_t>(value % 100000000);
-        
+
         const uint32_t b0 = v0 / 10000;
         const uint32_t c0 = v0 % 10000;
-        
+
         const uint32_t d1 = (b0 / 100) << 1;
         const uint32_t d2 = (b0 % 100) << 1;
-        
+
         const uint32_t d3 = (c0 / 100) << 1;
         const uint32_t d4 = (c0 % 100) << 1;
 
         const uint32_t b1 = v1 / 10000;
         const uint32_t c1 = v1 % 10000;
-        
+
         const uint32_t d5 = (b1 / 100) << 1;
         const uint32_t d6 = (b1 % 100) << 1;
-        
+
         const uint32_t d7 = (c1 / 100) << 1;
         const uint32_t d8 = (c1 % 100) << 1;
 
@@ -528,7 +528,7 @@ char *ToString(uint64_t value, char* buffer) {
             *buffer++ = gDigitsLut[d4];
         if (value >= 100000000)
             *buffer++ = gDigitsLut[d4 + 1];
-        
+
         *buffer++ = gDigitsLut[d5];
         *buffer++ = gDigitsLut[d5 + 1];
         *buffer++ = gDigitsLut[d6];
@@ -541,7 +541,7 @@ char *ToString(uint64_t value, char* buffer) {
     else {
         const uint32_t a = static_cast<uint32_t>(value / 10000000000000000); // 1 to 1844
         value %= 10000000000000000;
-        
+
         if (a < 10)
             *buffer++ = '0' + static_cast<char>(a);
         else if (a < 100) {
@@ -551,7 +551,7 @@ char *ToString(uint64_t value, char* buffer) {
         }
         else if (a < 1000) {
             *buffer++ = '0' + static_cast<char>(a / 100);
-            
+
             const uint32_t i = (a % 100) << 1;
             *buffer++ = gDigitsLut[i];
             *buffer++ = gDigitsLut[i + 1];
@@ -564,28 +564,28 @@ char *ToString(uint64_t value, char* buffer) {
             *buffer++ = gDigitsLut[j];
             *buffer++ = gDigitsLut[j + 1];
         }
-        
+
         const uint32_t v0 = static_cast<uint32_t>(value / 100000000);
         const uint32_t v1 = static_cast<uint32_t>(value % 100000000);
-        
+
         const uint32_t b0 = v0 / 10000;
         const uint32_t c0 = v0 % 10000;
-        
+
         const uint32_t d1 = (b0 / 100) << 1;
         const uint32_t d2 = (b0 % 100) << 1;
-        
+
         const uint32_t d3 = (c0 / 100) << 1;
         const uint32_t d4 = (c0 % 100) << 1;
-        
+
         const uint32_t b1 = v1 / 10000;
         const uint32_t c1 = v1 % 10000;
-        
+
         const uint32_t d5 = (b1 / 100) << 1;
         const uint32_t d6 = (b1 % 100) << 1;
-        
+
         const uint32_t d7 = (c1 / 100) << 1;
         const uint32_t d8 = (c1 % 100) << 1;
-        
+
         *buffer++ = gDigitsLut[d1];
         *buffer++ = gDigitsLut[d1 + 1];
         *buffer++ = gDigitsLut[d2];

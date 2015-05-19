@@ -34,7 +34,7 @@ template <class EntryT, class HashT, class EqualT> class AutoProbing;
  * Memory management and initialization is externalized to make it easier to
  * serialize these to disk and load them quickly.
  * Uses linear probing to find value.
- * Only insert and lookup operations.  
+ * Only insert and lookup operations.
  */
 template <class EntryT, class HashT, class EqualT = std::equal_to<typename EntryT::Key> > class ProbingHashTable {
   public:
@@ -50,7 +50,7 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
       return buckets * sizeof(Entry);
     }
 
-    // Must be assigned to later.  
+    // Must be assigned to later.
     ProbingHashTable() : entries_(0)
 #ifdef DEBUG
       , initialized_(false)
@@ -98,12 +98,12 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
           return false;
         }
         if (++i == end_) i = begin_;
-      }   
+      }
     }
 
     void FinishedInserting() {}
 
-    // Don't change anything related to GetKey,  
+    // Don't change anything related to GetKey,
     template <class Key> bool UnsafeMutableFind(const Key key, MutableIterator &out) {
 #ifdef DEBUG
       assert(initialized_);
@@ -136,7 +136,7 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
         if (equal_(got, key)) { out = i; return true; }
         if (equal_(got, invalid_)) return false;
         if (++i == end_) i = begin_;
-      }    
+      }
     }
 
     // Like Find but we're sure it must be there.
@@ -256,7 +256,7 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
 #endif
 };
 
-// Resizable linear probing hash table.  This owns the memory.  
+// Resizable linear probing hash table.  This owns the memory.
 template <class EntryT, class HashT, class EqualT = std::equal_to<typename EntryT::Key> > class AutoProbing {
   private:
     typedef ProbingHashTable<EntryT, HashT, EqualT> Backend;

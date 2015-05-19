@@ -13,5 +13,5 @@ class UniversalVocab;
 void MergeVocabIndex(util::FixedArray<util::scoped_fd> &vocab_files, UniversalVocab &vocab);
 
 }} // namespaces
-      
+
 #endif // LM_INTERPOLATE_MERGE_VOCAB_H

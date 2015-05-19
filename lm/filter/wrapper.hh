@@ -13,7 +13,7 @@ namespace lm {
 // multiple-output filter so clients code against one interface.
 template <class Binary> class BinaryFilter {
   public:
-    // Binary modes are just references (and a set) and it makes the API cleaner to copy them.  
+    // Binary modes are just references (and a set) and it makes the API cleaner to copy them.
     explicit BinaryFilter(Binary binary) : binary_(binary) {}
 
     template <class Iterator, class Output> void AddNGram(const Iterator &begin, const Iterator &end, const StringPiece &line, Output &output) {

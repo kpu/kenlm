@@ -16,7 +16,7 @@ namespace {
 #define Term(word) score.Terminal(m.GetVocabulary().Index(word));
 #define VCheck(word, value) BOOST_CHECK_EQUAL(m.GetVocabulary().Index(word), value);
 
-// Apparently some Boost versions use templates and are pretty strict about types matching.  
+// Apparently some Boost versions use templates and are pretty strict about types matching.
 #define SLOPPY_CHECK_CLOSE(ref, value, tol) BOOST_CHECK_CLOSE(static_cast<double>(ref), static_cast<double>(value), static_cast<double>(tol));
 
 template <class M> void Short(const M &m) {
@@ -175,7 +175,7 @@ template <class M> void LookupVocab(const M &m, const StringPiece &str, std::vec
   SLOPPY_CHECK_CLOSE(expect, RightToLeft(m, words, rest), 0.001); \
   SLOPPY_CHECK_CLOSE(expect, TreeMiddle(m, words, rest), 0.001); \
 
-// Build sentences, or parts thereof, from right to left.  
+// Build sentences, or parts thereof, from right to left.
 template <class M> void GrowBig(const M &m, bool rest = false) {
   std::vector<WordIndex> words;
   float expect;

@@ -23,22 +23,22 @@ template <class T> class FixedArray {
       Init(limit);
     }
 
-    /** 
+    /**
      * Constructs an instance, but does not initialize it.
      *
      * Any objects constructed in this manner must be subsequently @ref FixedArray::Init() "initialized" prior to use.
      *
      * @see FixedArray::Init()
      */
-    FixedArray() 
-      : newed_end_(NULL) 
+    FixedArray()
+      : newed_end_(NULL)
 #ifndef NDEBUG
-      , allocated_end_(NULL) 
+      , allocated_end_(NULL)
 #endif
     {}
 
-    /** 
-     * Initialize with a given size bound but do not construct the objects. 
+    /**
+     * Initialize with a given size bound but do not construct the objects.
      *
      * This method is responsible for allocating memory.
      * Objects stored in this array will be constructed in a location within this allocated memory.
@@ -73,37 +73,37 @@ template <class T> class FixedArray {
 
     /** Gets a pointer to the first object currently stored in this data structure. */
     T *begin() { return static_cast<T*>(block_.get()); }
-  
+
     /** Gets a const pointer to the last object currently stored in this data structure. */
     const T *begin() const { return static_cast<const T*>(block_.get()); }
-    
+
     /** Gets a pointer to the last object currently stored in this data structure. */
     T *end() { return newed_end_; }
-  
+
     /** Gets a const pointer to the last object currently stored in this data structure. */
     const T *end() const { return newed_end_; }
 
     /** Gets a reference to the last object currently stored in this data structure. */
     T &back() { return *(end() - 1); }
-  
+
     /** Gets a const reference to the last object currently stored in this data structure. */
     const T &back() const { return *(end() - 1); }
 
     /** Gets the number of objects currently stored in this data structure. */
     std::size_t size() const { return end() - begin(); }
-  
+
     /** Returns true if there are no objects currently stored in this data structure. */
     bool empty() const { return begin() == end(); }
 
-    /** 
-     * Gets a reference to the object with index i currently stored in this data structure. 
+    /**
+     * Gets a reference to the object with index i currently stored in this data structure.
      *
      * @param i Index of the object to reference
      */
     T &operator[](std::size_t i) { return begin()[i]; }
-  
-    /** 
-     * Gets a const reference to the object with index i currently stored in this data structure. 
+
+    /**
+     * Gets a const reference to the object with index i currently stored in this data structure.
      *
      * @param i Index of the object to reference
      */

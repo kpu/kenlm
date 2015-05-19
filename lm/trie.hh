@@ -18,7 +18,7 @@ struct NodeRange {
   uint64_t begin, end;
 };
 
-// TODO: if the number of unigrams is a concern, also bit pack these records.  
+// TODO: if the number of unigrams is a concern, also bit pack these records.
 struct UnigramValue {
   ProbBackoff weights;
   uint64_t next;
@@ -44,24 +44,24 @@ class UnigramPointer {
 class Unigram {
   public:
     Unigram() {}
-    
+
     void Init(void *start) {
       unigram_ = static_cast<UnigramValue*>(start);
     }
-    
+
     static uint64_t Size(uint64_t count) {
-      // +1 in case unknown doesn't appear.  +1 for the final next.  
+      // +1 in case unknown doesn't appear.  +1 for the final next.
       return (count + 2) * sizeof(UnigramValue);
     }
-    
+
     const ProbBackoff &Lookup(WordIndex index) const { return unigram_[index].weights; }
-    
+
     ProbBackoff &Unknown() { return unigram_[0].weights; }
 
     UnigramValue *Raw() {
       return unigram_;
     }
-    
+
     UnigramPointer Find(WordIndex word, NodeRange &next) const {
       UnigramValue *val = unigram_ + word;
       next.begin = val->next;
@@ -71,7 +71,7 @@ class Unigram {
 
   private:
     UnigramValue *unigram_;
-};  
+};
 
 class BitPacked {
   public:
@@ -99,7 +99,7 @@ template <class Bhiksha> class BitPackedMiddle : public BitPacked {
   public:
     static uint64_t Size(uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const Config &config);
 
-    // next_source need not be initialized.  
+    // next_source need not be initialized.
     BitPackedMiddle(void *base, uint8_t quant_bits, uint64_t entries, uint64_t max_vocab, uint64_t max_next, const BitPacked &next_source, const Config &config);
 
     util::BitAddress Insert(WordIndex word);

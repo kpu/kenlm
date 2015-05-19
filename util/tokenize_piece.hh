@@ -127,7 +127,7 @@ template <class Find, bool SkipEmpty = false> class TokenIter : public boost::it
         } else {
           after_ = StringPiece(found.data() + found.size(), after_.data() - found.data() + after_.size() - found.size());
         }
-      } while (SkipEmpty && current_.data() && current_.empty()); // Compiler should optimize this away if SkipEmpty is false.  
+      } while (SkipEmpty && current_.data() && current_.empty()); // Compiler should optimize this away if SkipEmpty is false.
     }
 
     bool equal(const TokenIter<Find, SkipEmpty> &other) const {

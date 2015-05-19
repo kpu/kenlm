@@ -28,9 +28,9 @@ struct HashBufferEntry : public BufferEntry {
   uint64_t hash_value;
 };
 
-// Reads all entries in order like NGramStream does.  
+// Reads all entries in order like NGramStream does.
 // But deletes any entries that have CutoffCount below or equal to pruning
-// threshold.   
+// threshold.
 class PruneNGramStream {
   public:
     PruneNGramStream(const util::stream::ChainPosition &position, const SpecialVocab &specials) :
@@ -39,7 +39,7 @@ class PruneNGramStream {
       currentCount_(0),
       block_(position),
       specials_(specials)
-    { 
+    {
       StartBlock();
     }
 
@@ -60,9 +60,9 @@ class PruneNGramStream {
         }
         dest_.NextInMemory();
       }
-      
+
       current_.NextInMemory();
-      
+
       uint8_t *block_base = static_cast<uint8_t*>(block_->Get());
       if (current_.Base() == block_base + block_->ValidSize()) {
         block_->SetValidSize(dest_.Base() - block_base);
@@ -71,13 +71,13 @@ class PruneNGramStream {
         if (block_) {
           currentCount_ = current_.Value().CutoffCount();
         }
-      } else {                
+      } else {
         currentCount_ = current_.Value().CutoffCount();
       }
-      
+
       return *this;
     }
-    
+
   private:
     void StartBlock() {
       for (; ; ++block_) {
@@ -86,17 +86,17 @@ class PruneNGramStream {
       }
       current_.ReBase(block_->Get());
       currentCount_ = current_.Value().CutoffCount();
-      
+
       dest_.ReBase(block_->Get());
     }
 
     NGram<BuildingPayload> current_; // input iterator
     NGram<BuildingPayload> dest_;    // output iterator
- 
+
     uint64_t currentCount_;
 
     util::stream::Link block_;
-    
+
     const SpecialVocab specials_;
 };
 
@@ -158,24 +158,24 @@ class AddRight {
         memcpy(previous_raw, in->begin(), size);
         uint64_t denominator = 0;
         uint64_t normalizer = 0;
-        
+
         uint64_t counts[4];
         memset(counts, 0, sizeof(counts));
         do {
           denominator += in->Value().UnmarkedCount();
-          
+
           // Collect unused probability mass from pruning.
           // Becomes 0 for unpruned ngrams.
           normalizer += in->Value().UnmarkedCount() - in->Value().CutoffCount();
-          
+
           // Chen&Goodman do not mention counting based on cutoffs, but
           // backoff becomes larger than 1 otherwise, so probably needs
           // to count cutoffs. Counts normally without pruning.
           if(in->Value().CutoffCount() > 0)
             ++counts[std::min(in->Value().CutoffCount(), static_cast<uint64_t>(3))];
-        
+
         } while (++in && !memcmp(previous_raw, in->begin(), size));
-        
+
         BufferEntry &entry = *reinterpret_cast<BufferEntry*>(out.Get());
         entry.denominator = static_cast<float>(denominator);
         entry.gamma = 0.0;
@@ -185,9 +185,9 @@ class AddRight {
 
         // Makes model sum to 1 with pruning (I hope).
         entry.gamma += normalizer;
-        
+
         entry.gamma /= entry.denominator;
-        
+
         if(pruning_) {
           // If pruning is enabled the stream actually contains HashBufferEntry, see InitialProbabilities(...),
           // so add a hash value that identifies the current ngram.
@@ -251,13 +251,13 @@ class MergeRight {
         ++summed;
         return;
       }
-      
+
       std::vector<WordIndex> previous(grams->Order() - 1);
       const std::size_t size = sizeof(WordIndex) * previous.size();
       for (; grams; ++summed) {
         memcpy(&previous[0], grams->begin(), size);
         const BufferEntry &sums = *static_cast<const BufferEntry*>(summed.Get());
-        
+
         do {
           BuildingPayload &pay = grams->Value();
           pay.uninterp.prob = discount_.Apply(grams->Value().UnmarkedCount()) / sums.denominator;
@@ -297,7 +297,7 @@ void InitialProbabilities(
     gamma_out[i] >> AddRight(discounts[i], second, prune_vocab || prune_thresholds[i] > 0);
 
     primary[i] >> MergeRight(config.interpolate_unigrams, gamma_out[i].Add(), discounts[i], specials);
-    
+
     // Don't bother with the OnlyGamma thread for something to discard.
     if (i) gamma_out[i] >> OnlyGamma(prune_vocab || prune_thresholds[i] > 0);
   }

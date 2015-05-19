@@ -1,22 +1,22 @@
 /* Efficient left and right language model state for sentence fragments.
  * Intended usage:
- * Store ChartState with every chart entry.  
+ * Store ChartState with every chart entry.
  * To do a rule application:
- * 1. Make a ChartState object for your new entry.  
- * 2. Construct RuleScore.  
- * 3. Going from left to right, call Terminal or NonTerminal. 
- *   For terminals, just pass the vocab id.  
+ * 1. Make a ChartState object for your new entry.
+ * 2. Construct RuleScore.
+ * 3. Going from left to right, call Terminal or NonTerminal.
+ *   For terminals, just pass the vocab id.
  *   For non-terminals, pass that non-terminal's ChartState.
  *     If your decoder expects scores inclusive of subtree scores (i.e. you
  *     label entries with the highest-scoring path), pass the non-terminal's
- *     score as prob.  
+ *     score as prob.
  *     If your decoder expects relative scores and will walk the chart later,
- *     pass prob = 0.0.  
+ *     pass prob = 0.0.
  *     In other words, the only effect of prob is that it gets added to the
- *     returned log probability.  
- * 4. Call Finish.  It returns the log probability.   
+ *     returned log probability.
+ * 4. Call Finish.  It returns the log probability.
  *
- * There's a couple more details: 
+ * There's a couple more details:
  * Do not pass <s> to Terminal as it is formally not a word in the sentence,
  * only context.  Instead, call BeginSentence.  If called, it should be the
  * first call after RuleScore is constructed (since <s> is always the
@@ -27,12 +27,12 @@
  * Hashing and sorting comparison operators are provided.   All state objects
  * are POD.  If you intend to use memcmp on raw state objects, you must call
  * ZeroRemaining first, as the value of array entries beyond length is
- * otherwise undefined.  
+ * otherwise undefined.
  *
  * Usage is of course not limited to chart decoding.  Anything that generates
  * sentence fragments missing left context could benefit.  For example, a
  * phrase-based decoder could pre-score phrases, storing ChartState with each
- * phrase, even if hypotheses are generated left-to-right.  
+ * phrase, even if hypotheses are generated left-to-right.
  */
 
 #ifndef LM_LEFT_H
@@ -77,7 +77,7 @@ template <class M> class RuleScore {
         left_done_ = true;
     }
 
-    // Faster version of NonTerminal for the case where the rule begins with a non-terminal.  
+    // Faster version of NonTerminal for the case where the rule begins with a non-terminal.
     void BeginNonTerminal(const ChartState &in, float prob = 0.0) {
       prob_ = prob;
       *out_ = in;
@@ -86,7 +86,7 @@ template <class M> class RuleScore {
 
     void NonTerminal(const ChartState &in, float prob = 0.0) {
       prob_ += prob;
-      
+
       if (!in.left.length) {
         if (in.left.full) {
           for (const float *i = out_->right.backoff; i < out_->right.backoff + out_->right.length; ++i) prob_ += *i;
@@ -131,26 +131,26 @@ template <class M> class RuleScore {
         return;
       }
 
-      // Right state was minimized, so it's already independent of the new words to the left.  
+      // Right state was minimized, so it's already independent of the new words to the left.
       if (in.right.length < in.left.length) {
         out_->right = in.right;
         return;
       }
 
-      // Shift exisiting words down.  
+      // Shift exisiting words down.
       for (WordIndex *i = out_->right.words + next_use - 1; i >= out_->right.words; --i) {
         *(i + in.right.length) = *i;
       }
-      // Add words from in.right.  
+      // Add words from in.right.
       std::copy(in.right.words, in.right.words + in.right.length, out_->right.words);
-      // Assemble backoff composed on the existing state's backoff followed by the new state's backoff.  
+      // Assemble backoff composed on the existing state's backoff followed by the new state's backoff.
       std::copy(in.right.backoff, in.right.backoff + in.right.length, out_->right.backoff);
       std::copy(back, back + next_use, out_->right.backoff + in.right.length);
       out_->right.length = in.right.length + next_use;
     }
 
     float Finish() {
-      // A N-1-gram might extend left and right but we should still set full to true because it's an N-1-gram.  
+      // A N-1-gram might extend left and right but we should still set full to true because it's an N-1-gram.
       out_->left.full = left_done_ || (out_->left.length == model_.Order() - 1);
       return prob_;
     }
@@ -173,17 +173,17 @@ template <class M> class RuleScore {
             back_in, // Backoffs to use
             in.left.pointers[extend_length - 1], extend_length, // Words to be extended
             back_out, // Backoffs for the next score
-            next_use)); // Length of n-gram to use in next scoring.  
+            next_use)); // Length of n-gram to use in next scoring.
       if (next_use != out_->right.length) {
         left_done_ = true;
         if (!next_use) {
-          // Early exit.  
+          // Early exit.
           out_->right = in.right;
           prob_ += model_.UnRest(in.left.pointers + extend_length, in.left.pointers + in.left.length, extend_length + 1);
           return true;
         }
       }
-      // Continue scoring.  
+      // Continue scoring.
       return false;
     }
 

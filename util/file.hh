@@ -73,12 +73,12 @@ class EndOfFileException : public Exception {
     ~EndOfFileException() throw();
 };
 
-// Open for read only.  
+// Open for read only.
 int OpenReadOrThrow(const char *name);
-// Create file if it doesn't exist, truncate if it does.  Opened for write.   
+// Create file if it doesn't exist, truncate if it does.  Opened for write.
 int CreateOrThrow(const char *name);
 
-// Return value for SizeFile when it can't size properly.  
+// Return value for SizeFile when it can't size properly.
 const uint64_t kBadSize = (uint64_t)-1;
 uint64_t SizeFile(int fd);
 uint64_t SizeOrThrow(int fd);

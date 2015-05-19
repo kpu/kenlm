@@ -24,10 +24,10 @@ class ChainConfigException : public Exception {
 
 class Chain;
 class RewindableStream;
-  
+
 /**
  * Encapsulates a @ref PCQueue "producer queue" and a @ref PCQueue "consumer queue" within a @ref Chain "chain".
- * 
+ *
  * Specifies position in chain for Link constructor.
  */
 class ChainPosition {
@@ -37,7 +37,7 @@ class ChainPosition {
     friend class Chain;
     friend class Link;
     friend class RewindableStream;
-    ChainPosition(PCQueue<Block> &in, PCQueue<Block> &out, Chain *chain, MultiProgress &progress) 
+    ChainPosition(PCQueue<Block> &in, PCQueue<Block> &out, Chain *chain, MultiProgress &progress)
       : in_(&in), out_(&out), chain_(chain), progress_(progress.Add()) {}
 
     PCQueue<Block> *in_, *out_;
@@ -47,7 +47,7 @@ class ChainPosition {
     WorkerProgress progress_;
 };
 
- 
+
 /**
  * Encapsulates a worker thread processing data at a given position in the chain.
  *
@@ -55,7 +55,7 @@ class ChainPosition {
  */
 class Thread {
   public:
-    
+
     /**
      * Constructs a new Thread in which the provided Worker is Run().
      *
@@ -104,7 +104,7 @@ class Recycler {
 extern const Recycler kRecycle;
 class WriteAndRecycle;
 class PWriteAndRecycle;
-  
+
 /**
  * Represents a sequence of workers, through which @ref Block "blocks" can pass.
  */
@@ -115,10 +115,10 @@ class Chain {
     };
 
   public:
-  
-    /** 
+
+    /**
      * Constructs a configured Chain.
-     * 
+     *
      * @param config Specifies how to configure the Chain.
      */
     explicit Chain(const ChainConfig &config);
@@ -148,7 +148,7 @@ class Chain {
     std::size_t EntrySize() const {
       return config_.entry_size;
     }
-  
+
     /**
      * Gets the inital @ref Block::ValidSize "valid size" for @ref Block "blocks" in this chain.
      *
@@ -161,10 +161,10 @@ class Chain {
     /** Two ways to add to the chain: Add() or operator>>. */
     ChainPosition Add();
 
-    /** 
+    /**
      * Adds a new worker to this chain,
      * and runs that worker in a new Thread owned by this chain.
-     * 
+     *
      * The worker must have a Run method that accepts a position argument.
      *
      * @see Thread::operator()()
@@ -175,10 +175,10 @@ class Chain {
       return *this;
     }
 
-  /** 
+  /**
    * Adds a new worker to this chain (but avoids copying that worker),
    * and runs that worker in a new Thread owned by this chain.
-   * 
+   *
    * The worker must have a Run method that accepts a position argument.
    *
    * @see Thread::operator()()
@@ -189,14 +189,14 @@ class Chain {
       return *this;
     }
 
-    // Note that Link and Stream also define operator>> outside this class.  
+    // Note that Link and Stream also define operator>> outside this class.
 
-    // To complete the loop, call CompleteLoop(), >> kRecycle, or the destructor.  
+    // To complete the loop, call CompleteLoop(), >> kRecycle, or the destructor.
     void CompleteLoop() {
       threads_.push_back(new Thread(Complete(), kRecycle));
     }
 
-    /** 
+    /**
      * Adds a Recycler worker to this chain,
      * and runs that worker in a new Thread owned by this chain.
      */
@@ -205,17 +205,17 @@ class Chain {
       return *this;
     }
 
-    /** 
+    /**
      * Adds a WriteAndRecycle worker to this chain,
      * and runs that worker in a new Thread owned by this chain.
      */
     Chain &operator>>(const WriteAndRecycle &writer);
     Chain &operator>>(const PWriteAndRecycle &writer);
 
-    // Chains are reusable.  Call Wait to wait for everything to finish and free memory.  
+    // Chains are reusable.  Call Wait to wait for everything to finish and free memory.
     void Wait(bool release_memory = true);
 
-    // Waits for the current chain to complete (if any) then starts again.  
+    // Waits for the current chain to complete (if any) then starts again.
     void Start();
 
     bool Running() const { return !queues_.empty(); }
@@ -239,29 +239,29 @@ class Chain {
 };
 
 // Create the link in the worker thread using the position token.
-/** 
+/**
  * Represents a C++ style iterator over @ref Block "blocks".
  */
 class Link {
   public:
-  
+
     // Either default construct and Init or just construct all at once.
-  
+
     /**
      * Constructs an @ref Init "initialized" link.
      *
      * @see Init
      */
     explicit Link(const ChainPosition &position);
-  
-    /** 
-     * Constructs a link that must subsequently be @ref Init "initialized". 
+
+    /**
+     * Constructs a link that must subsequently be @ref Init "initialized".
      *
      * @see Init
      */
     Link();
-  
-    /** 
+
+    /**
      * Initializes the link with the input @ref PCQueue "consumer queue" and output @ref PCQueue "producer queue" at a given @ref ChainPosition "position" in the @ref Chain "chain".
      *
      * @see Link()
@@ -271,7 +271,7 @@ class Link {
     /**
      * Destructs the link object.
      *
-     * If necessary, this method will pass a poison block 
+     * If necessary, this method will pass a poison block
      * to this link's output @ref PCQueue "producer queue".
      *
      * @see Block::SetToPoison()
@@ -292,7 +292,7 @@ class Link {
      * Gets a pointer to the @ref Block "block" at this link.
      */
     Block *operator->() { return &current_; }
-  
+
     /**
      * Gets a const pointer to the @ref Block "block" at this link.
      */
@@ -305,25 +305,25 @@ class Link {
 
     /**
      * Returns true if the @ref Block "block" at this link encapsulates a valid (non-NULL) block of memory.
-     * 
+     *
      * This method is a user-defined implicit conversion function to boolean;
-     * among other things, this method enables bare instances of this class 
+     * among other things, this method enables bare instances of this class
      * to be used as the condition of an if statement.
      */
     operator bool() const { return current_; }
 
-    /** 
+    /**
      * @ref Block::SetToPoison() "Poisons" the @ref Block "block" at this link,
      * and passes this now-poisoned block to this link's output @ref PCQueue "producer queue".
      *
      * @see Block::SetToPoison()
      */
     void Poison();
-  
+
   private:
     Block current_;
     PCQueue<Block> *in_, *out_;
- 
+
     bool poisoned_;
 
     WorkerProgress progress_;

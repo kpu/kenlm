@@ -27,7 +27,7 @@ public:
 private:
   std::vector<std::vector<WordIndex> > model_index_map_;
 };
-    
+
 } // namespace interpolate
 } // namespace lm
 

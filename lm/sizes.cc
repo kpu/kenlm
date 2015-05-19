@@ -36,7 +36,7 @@ void ShowSizes(const std::vector<uint64_t> &counts, const lm::ngram::Config &con
   long int length = std::max<long int>(2, static_cast<long int>(ceil(log10((double) max_length / divide))));
   std::cerr << "Memory estimate for binary LM:\ntype    ";
 
-  // right align bytes.  
+  // right align bytes.
   for (long int i = 0; i < length - 2; ++i) std::cerr << ' ';
 
   std::cerr << prefix << "B\n"

@@ -30,19 +30,19 @@ inline float logProb(Model * model, const std::vector<std::string>& ctx, const s
 
   // Horribly inefficient
   const Vocabulary &vocab = model->GetVocabulary();
-  
+
   State nextState; //throwaway
 
   WordIndex word_idx = vocab.Index(word);
   WordIndex context_idx[ctx.size()];
-  
+
   //reverse context
   for(unsigned int i = 0; i < ctx.size(); i++) {
     context_idx[ctx.size() - 1 - i] = vocab.Index(ctx[i]);
   }
-  
+
   FullScoreReturn score = model->FullScoreForgotState(context_idx, &(context_idx[ctx.size() -1]), word_idx, nextState);
-  
+
   float ret = score.prob;
   //std::cerr << "w: " << word << " p: " << ret << std::endl;
   return ret;
@@ -54,7 +54,7 @@ void set_features(const std::vector<std::string>& ctx,
                   FVector& v) {
 
   //std::cerr << "setting feats for " << word << std::endl;
-  
+
   if (HAS_BIAS) {
     v(0) = 1;
     for (unsigned i=0; i < models.size(); ++i)
@@ -135,7 +135,7 @@ int main(int argc, char** argv) {
   std::string tuning_data;
   std::vector<std::string> lms;
 
-  try { 
+  try {
     namespace po = boost::program_options;
     po::options_description options("train-params");
 
@@ -177,10 +177,10 @@ int main(int argc, char** argv) {
 
   //no comment
   std::map<std::string, int*> vmap;
-  
-  //stuff it into the 
+
+  //stuff it into the
   EnumerateGlobalVocab * globalVocabBuilder = new EnumerateGlobalVocab(&vmap, lms.size());
-    
+
   Config cfg;
   cfg.enumerate_vocab = (EnumerateVocab *) globalVocabBuilder;
 
@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
 
     //haaaack
     globalVocabBuilder->SetCurModel(i); //yes this is dumb
-    
+
     //models[i] = new Model(lms[i].c_str());
     Model * this_model = new Model(lms[i].c_str(), cfg);
     models.push_back( this_model );
@@ -203,12 +203,12 @@ int main(int argc, char** argv) {
   std::vector<std::string> vocab;
   std::cerr << "Global Vocab Map has size: " << vmap.size() << std::endl;
 
-  std::pair<StringPiece,int *> me; 
+  std::pair<StringPiece,int *> me;
 
   for(std::map<std::string, int*>::iterator iter = vmap.begin(); iter != vmap.end(); ++iter) {
     vocab.push_back(iter->first);
   }
-  std::cerr << "Vocab vector has size: " << vocab.size() << std::endl;  
+  std::cerr << "Vocab vector has size: " << vocab.size() << std::endl;
 
   //load context sorted ngrams into vector of vectors
   std::vector<std::vector<std::string> > corpus;
@@ -229,9 +229,9 @@ int main(int argc, char** argv) {
     }
     corpus.push_back(words);
   }
-  
+
   train_params(corpus, vocab, models);
-  
+
   return 0;
 }
 

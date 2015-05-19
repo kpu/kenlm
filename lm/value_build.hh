@@ -57,7 +57,7 @@ class MaxRestBuild {
       return true;
     }
 
-    // Probing does need to go back to unigram.  
+    // Probing does need to go back to unigram.
     const static bool kMarkEvenLower = true;
 };
 

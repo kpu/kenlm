@@ -30,7 +30,7 @@ class QueryPrinter {
       out_ << "Total: " << total << " OOV: " << oov << '\n';
       if (flush_) out_.flush();
     }
- 
+
     void Summary(double ppl_including_oov, double ppl_excluding_oov, uint64_t corpus_oov, uint64_t corpus_tokens) {
       if (!print_summary_) return;
       out_ <<

@@ -74,10 +74,10 @@ inline void WaitSemaphore (Semaphore &on) {
 
 /**
  * Producer consumer queue safe for multiple producers and multiple consumers.
- * T must be default constructable and have operator=.  
+ * T must be default constructable and have operator=.
  * The value is copied twice for Consume(T &out) or three times for Consume(),
  * so larger objects should be passed via pointer.
- * Strong exception guarantee if operator= throws.  Undefined if semaphores throw.  
+ * Strong exception guarantee if operator= throws.  Undefined if semaphores throw.
  */
 template <class T> class PCQueue : boost::noncopyable {
  public:
@@ -130,7 +130,7 @@ template <class T> class PCQueue : boost::noncopyable {
     Consume(ret);
     return ret;
   }
-   
+
  private:
   // Number of empty spaces in storage_.
   Semaphore empty_;

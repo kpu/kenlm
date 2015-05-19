@@ -14,7 +14,7 @@ namespace {
 
 class KeyAccessor {
   public:
-    KeyAccessor(const void *base, uint64_t key_mask, uint8_t key_bits, uint8_t total_bits) 
+    KeyAccessor(const void *base, uint64_t key_mask, uint8_t key_bits, uint8_t total_bits)
       : base_(reinterpret_cast<const uint8_t*>(base)), key_mask_(key_mask), key_bits_(key_bits), total_bits_(total_bits) {}
 
     typedef uint64_t Key;
@@ -38,9 +38,9 @@ bool FindBitPacked(const void *base, uint64_t key_mask, uint8_t key_bits, uint8_
 
 uint64_t BitPacked::BaseSize(uint64_t entries, uint64_t max_vocab, uint8_t remaining_bits) {
   uint8_t total_bits = util::RequiredBits(max_vocab) + remaining_bits;
-  // Extra entry for next pointer at the end.  
+  // Extra entry for next pointer at the end.
   // +7 then / 8 to round up bits and convert to bytes
-  // +sizeof(uint64_t) so that ReadInt57 etc don't go segfault.  
+  // +sizeof(uint64_t) so that ReadInt57 etc don't go segfault.
   // Note that this waste is O(order), not O(number of ngrams).
   return ((1 + entries) * total_bits + 7) / 8 + sizeof(uint64_t);
 }
@@ -100,7 +100,7 @@ template <class Bhiksha> util::BitAddress BitPackedMiddle<Bhiksha>::Find(WordInd
 
 template <class Bhiksha> void BitPackedMiddle<Bhiksha>::FinishedLoading(uint64_t next_end, const Config &config) {
   // Write at insert_index. . .
-  uint64_t last_next_write = insert_index_ * total_bits_ + 
+  uint64_t last_next_write = insert_index_ * total_bits_ +
     // at the offset where the next pointers are stored.
     (total_bits_ - bhiksha_.InlineBits());
   bhiksha_.WriteNext(base_, last_next_write, insert_index_, next_end);

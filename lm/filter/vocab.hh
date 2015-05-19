@@ -26,7 +26,7 @@ unsigned int ReadMultiple(std::istream &in, boost::unordered_map<std::string, st
 
 /* Is this a special tag like <s> or <UNK>?  This actually includes anything
  * surrounded with < and >, which most tokenizers separate for real words, so
- * this should not catch real words as it looks at a single token.   
+ * this should not catch real words as it looks at a single token.
  */
 inline bool IsTag(const StringPiece &value) {
   // The parser should never give an empty string.

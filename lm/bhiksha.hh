@@ -7,7 +7,7 @@
  *  pages={388--391},
  *  }
  *
- *  Currently only used for next pointers.  
+ *  Currently only used for next pointers.
  */
 
 #ifndef LM_BHIKSHA_H
@@ -86,9 +86,9 @@ class ArrayBhiksha {
       // assert(end_it == std::upper_bound(offset_begin_, offset_end_, index + 1));
       --end_it;
       // assert(end_it >= begin_it);
-      out.begin = ((begin_it - offset_begin_) << next_inline_.bits) | 
+      out.begin = ((begin_it - offset_begin_) << next_inline_.bits) |
         util::ReadInt57(base, bit_offset, next_inline_.bits, next_inline_.mask);
-      out.end = ((end_it - offset_begin_) << next_inline_.bits) | 
+      out.end = ((end_it - offset_begin_) << next_inline_.bits) |
         util::ReadInt57(base, bit_offset + total_bits, next_inline_.bits, next_inline_.mask);
       // If this fails, consider rebuilding your model using KenLM after 1e333d786b748555e8f368d2bbba29a016c98052
       assert(out.end >= out.begin);

@@ -9,8 +9,8 @@
 namespace lm {
 namespace base {
 
-// Common model interface that depends on knowing the specific classes. 
-// Curiously recurring template pattern.  
+// Common model interface that depends on knowing the specific classes.
+// Curiously recurring template pattern.
 template <class Child, class StateT, class VocabularyT> class ModelFacade : public Model {
   public:
     typedef StateT State;
@@ -32,7 +32,7 @@ template <class Child, class StateT, class VocabularyT> class ModelFacade : publ
           *reinterpret_cast<State*>(out_state));
     }
 
-    // Default Score function calls FullScore.  Model can override this.  
+    // Default Score function calls FullScore.  Model can override this.
     float Score(const State &in_state, const WordIndex new_word, State &out_state) const {
       return static_cast<const Child*>(this)->FullScore(in_state, new_word, out_state).prob;
     }
@@ -53,7 +53,7 @@ template <class Child, class StateT, class VocabularyT> class ModelFacade : publ
 
     virtual ~ModelFacade() {}
 
-    // begin_sentence and null_context can disappear after.  vocab should stay.  
+    // begin_sentence and null_context can disappear after.  vocab should stay.
     void Init(const State &begin_sentence, const State &null_context, const Vocabulary &vocab, unsigned char order) {
       begin_sentence_ = begin_sentence;
       null_context_ = null_context;

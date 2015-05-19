@@ -27,7 +27,7 @@ class Substrings {
   private:
     /* This is the value in a hash table where the key is a string.  It indicates
      * four sets of sentences:
-     * substring is sentences with a phrase containing the key as a substring.  
+     * substring is sentences with a phrase containing the key as a substring.
      * left is sentencess with a phrase that begins with the key (left aligned).
      * right is sentences with a phrase that ends with the key (right aligned).
      * phrase is sentences where the key is a phrase.
@@ -39,8 +39,8 @@ class Substrings {
     /* Most of the CPU is hash table lookups, so let's not complicate it with
      * vector equality comparisons.  If a collision happens, the SentenceRelation
      * structure will contain the union of sentence ids over the colliding strings.
-     * In that case, the filter will be slightly more permissive.  
-     * The key here is the same as boost's hash of std::vector<std::string>.  
+     * In that case, the filter will be slightly more permissive.
+     * The key here is the same as boost's hash of std::vector<std::string>.
      */
     typedef boost::unordered_map<Hash, SentenceRelation> Table;
 
@@ -58,9 +58,9 @@ class Substrings {
     LM_FILTER_PHRASE_METHOD(Phrase, phrase)
 
 #pragma GCC diagnostic ignored "-Wuninitialized" // end != finish so there's always an initialization
-    // sentence_id must be non-decreasing.  Iterators are over words in the phrase.  
+    // sentence_id must be non-decreasing.  Iterators are over words in the phrase.
     template <class Iterator> void AddPhrase(unsigned int sentence_id, const Iterator &begin, const Iterator &end) {
-      // Iterate over all substrings.  
+      // Iterate over all substrings.
       for (Iterator start = begin; start != end; ++start) {
         Hash hash = 0;
         SentenceRelation *relation;
@@ -85,7 +85,7 @@ class Substrings {
 };
 
 // Read a file with one sentence per line containing tab-delimited phrases of
-// space-separated words.  
+// space-separated words.
 unsigned int ReadMultiple(std::istream &in, Substrings &out);
 
 namespace detail {
@@ -94,7 +94,7 @@ extern const StringPiece kEndSentence;
 template <class Iterator> void MakeHashes(Iterator i, const Iterator &end, std::vector<Hash> &hashes) {
   hashes.clear();
   if (i == end) return;
-  // TODO: check strict phrase boundaries after <s> and before </s>.  For now, just skip tags.  
+  // TODO: check strict phrase boundaries after <s> and before </s>.  For now, just skip tags.
   if ((i->data()[0] == '<') && (i->data()[i->size() - 1] == '>')) {
     ++i;
   }

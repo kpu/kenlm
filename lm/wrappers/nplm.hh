@@ -9,7 +9,7 @@
 #include <boost/scoped_ptr.hpp>
 
 /* Wrapper to NPLM "by Ashish Vaswani, with contributions from David Chiang
- * and Victoria Fossum."  
+ * and Victoria Fossum."
  * http://nlg.isi.edu/software/nplm/
  */
 

@@ -38,7 +38,7 @@ class MultiProgress {
 
     boost::mutex mutex_;
 
-    // \0 at the end.  
+    // \0 at the end.
     char display_[kWidth + 1];
 
     std::size_t character_handout_;
@@ -49,10 +49,10 @@ class MultiProgress {
 
 class WorkerProgress {
   public:
-    // Default contrutor must be initialized with operator= later.  
+    // Default contrutor must be initialized with operator= later.
     WorkerProgress() : parent_(NULL) {}
 
-    // Not threadsafe for the same worker by default.  
+    // Not threadsafe for the same worker by default.
     WorkerProgress &operator++() {
       if (++current_ >= next_) {
         parent_->Milestone(*this);
@@ -70,17 +70,17 @@ class WorkerProgress {
 
   private:
     friend class MultiProgress;
-    WorkerProgress(uint64_t next, MultiProgress &parent, char character) 
+    WorkerProgress(uint64_t next, MultiProgress &parent, char character)
       : current_(0), next_(next), parent_(&parent), stone_(0), character_(character) {}
 
     uint64_t current_, next_;
 
     MultiProgress *parent_;
 
-    // Previous milestone reached.  
+    // Previous milestone reached.
     unsigned char stone_;
 
-    // Character to display in bar.  
+    // Character to display in bar.
     char character_;
 };
 

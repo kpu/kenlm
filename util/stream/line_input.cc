@@ -14,7 +14,7 @@ void LineInput::Run(const ChainPosition &position) {
   ReadCompressed reader(fd_);
   // Holding area for beginning of line to be placed in next block.
   std::vector<char> carry;
-  
+
   for (Link block(position); ; ++block) {
     char *to = static_cast<char*>(block->Get());
     char *begin = to;
@@ -39,7 +39,7 @@ void LineInput::Run(const ChainPosition &position) {
       UTIL_THROW_IF(newline < begin, Exception, "Did not find a newline in " << position.GetChain().BlockSize() << " bytes of input of " << NameFromFD(fd_) << ".  Is this a text file?");
       if (*newline == '\n') break;
     }
-    
+
     // Copy everything after the last newline to the carry.
     carry.clear();
     carry.resize(to - (newline + 1));

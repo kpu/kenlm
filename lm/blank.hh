@@ -15,9 +15,9 @@ namespace ngram {
  * kNoExtensionBackoff.  If the n-gram might be extended, then out_state must
  * contain the full n-gram, in which case kExtensionBackoff is set.  In any
  * case, if an n-gram has non-zero backoff, the full state is returned so
- * backoff can be properly charged.  
+ * backoff can be properly charged.
  * These differ only in sign bit because the backoff is in fact zero in either
- * case.   
+ * case.
  */
 const float kNoExtensionBackoff = -0.0;
 const float kExtensionBackoff = 0.0;
@@ -28,7 +28,7 @@ inline void SetExtension(float &backoff) {
   if (backoff == kNoExtensionBackoff) backoff = kExtensionBackoff;
 }
 
-// This compiles down nicely.  
+// This compiles down nicely.
 inline bool HasExtension(const float &backoff) {
   typedef union { float f; uint32_t i; } UnionValue;
   UnionValue compare, interpret;

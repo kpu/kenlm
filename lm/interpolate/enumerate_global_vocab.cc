@@ -6,7 +6,7 @@
 
 namespace lm {
 //constructor
-  
+
   EnumerateGlobalVocab::EnumerateGlobalVocab(std::map<std::string, int*> * vm, int nm) {
 
     vmap = vm;
@@ -22,7 +22,7 @@ namespace lm {
 
     //check for existence of key
     std::map<std::string, int*>::iterator itr = vmap->find(st);
-    
+
     //put stuff
     if(itr != vmap->end()) {
       std::cerr << "Vocab exist: " << str << " M: " << cur_model << " I:" << index << std::endl;
@@ -30,7 +30,7 @@ namespace lm {
     }
     //new key
     else {
-      
+
       //create model index map for this vocab word
       //init to 0, 0 is UNK
       int * indices = new int[num_models];
@@ -42,7 +42,7 @@ namespace lm {
       cnt++;
     }
 
-    
+
   }
 
 }

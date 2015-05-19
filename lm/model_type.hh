@@ -8,7 +8,7 @@ namespace ngram {
  * and I want to preserve existing binary files. */
 typedef enum {PROBING=0, REST_PROBING=1, TRIE=2, QUANT_TRIE=3, ARRAY_TRIE=4, QUANT_ARRAY_TRIE=5} ModelType;
 
-// Historical names.  
+// Historical names.
 const ModelType HASH_PROBING = PROBING;
 const ModelType TRIE_SORTED = TRIE;
 const ModelType QUANT_TRIE_SORTED = QUANT_TRIE;

@@ -13,29 +13,29 @@ namespace lm {
 template <class OutputBuffer> class ThreadBatch {
   public:
     ThreadBatch() {}
-    
+
     void Reserve(size_t size) {
       input_.Reserve(size);
       output_.Reserve(size);
      }
 
-    // File reading thread.  
+    // File reading thread.
     InputBuffer &Fill(uint64_t sequence) {
       sequence_ = sequence;
       // Why wait until now to clear instead of after output?  free in the same
-      // thread as allocated.  
+      // thread as allocated.
       input_.Clear();
       return input_;
     }
 
-    // Filter worker thread.  
+    // Filter worker thread.
     template <class Filter> void CallFilter(Filter &filter) {
       input_.CallFilter(filter, output_);
     }
 
     uint64_t Sequence() const { return sequence_; }
 
-    // File writing thread.  
+    // File writing thread.
     template <class RealOutput> void Flush(RealOutput &output) {
       output_.Flush(output);
     }
@@ -73,7 +73,7 @@ template <class Batch, class Output> class OutputWorker {
 
     void operator()(Request request) {
       assert(request->Sequence() >= base_sequence_);
-      // Assemble the output in order.  
+      // Assemble the output in order.
       uint64_t pos = request->Sequence() - base_sequence_;
       if (pos >= ordering_.size()) {
         ordering_.resize(pos + 1, NULL);
@@ -102,7 +102,7 @@ template <class Filter, class OutputBuffer, class RealOutput> class Controller :
     typedef ThreadBatch<OutputBuffer> Batch;
 
   public:
-    Controller(size_t batch_size, size_t queue, size_t workers, const Filter &filter, RealOutput &output) 
+    Controller(size_t batch_size, size_t queue, size_t workers, const Filter &filter, RealOutput &output)
       : batch_size_(batch_size), queue_size_(queue),
         batches_(queue),
         to_read_(queue),
