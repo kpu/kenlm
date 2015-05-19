@@ -65,12 +65,17 @@ FilePiece::FilePiece(std::istream &stream, const char *name, std::size_t min_buf
 
 FilePiece::~FilePiece() {}
 
-StringPiece FilePiece::ReadLine(char delim) {
+StringPiece FilePiece::ReadLine(char delim, bool strip_cr) {
   std::size_t skip = 0;
   while (true) {
     for (const char *i = position_ + skip; i < position_end_; ++i) {
       if (*i == delim) {
-        StringPiece ret(position_, i - position_);
+        // End of line.
+        // Take 1 byte off the end if it's an unwanted carriage return.
+        const std::size_t subtract_cr = (
+            (strip_cr && i > position_ && *(i - 1) == '\r') ?
+            1 : 0);
+        StringPiece ret(position_, i - position_ - subtract_cr);
         position_ = i + 1;
         return ret;
       }
@@ -86,9 +91,9 @@ StringPiece FilePiece::ReadLine(char delim) {
   }
 }
 
-bool FilePiece::ReadLineOrEOF(StringPiece &to, char delim) {
+bool FilePiece::ReadLineOrEOF(StringPiece &to, char delim, bool strip_cr) {
   try {
-    to = ReadLine(delim);
+    to = ReadLine(delim, strip_cr);
   } catch (const util::EndOfFileException &e) { return false; }
   return true;
 }
