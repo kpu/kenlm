@@ -98,7 +98,7 @@ class FilePiece {
      * If strip_cr is true, any trailing carriate return (as would be found on
      * a file written on Windows) will be left out of the returned line.
      */
-    bool ReadLineOrEOF(StringPiece &to, char delim = '\n', bool strip_cr = false);
+    bool ReadLineOrEOF(StringPiece &to, char delim = '\n', bool strip_cr = true);
 
     float ReadFloat();
     double ReadDouble();
