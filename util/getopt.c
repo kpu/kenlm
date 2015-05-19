@@ -3,7 +3,7 @@ POSIX getopt for Windows
 
 AT&T Public License
 
-Code given out at the 1985 UNIFORUM conference in Dallas.  
+Code given out at the 1985 UNIFORUM conference in Dallas.
 */
 
 #ifndef __GNUC__
