@@ -20,6 +20,8 @@
 
 typedef Eigen::MatrixXf FMatrix;
 typedef Eigen::VectorXf FVector;
+typedef Eigen::MatrixXd DMatrix;
+typedef Eigen::VectorXd DVector;
 
 bool HAS_BIAS = true;
 
@@ -30,31 +32,31 @@ inline float logProb(Model * model, const std::vector<std::string>& ctx, const s
 
   // Horribly inefficient
   const Vocabulary &vocab = model->GetVocabulary();
-  
+
   State nextState; //throwaway
 
   WordIndex word_idx = vocab.Index(word);
   WordIndex context_idx[ctx.size()];
-  
+
   //reverse context
   for(unsigned int i = 0; i < ctx.size(); i++) {
     context_idx[ctx.size() - 1 - i] = vocab.Index(ctx[i]);
   }
-  
+
   FullScoreReturn score = model->FullScoreForgotState(context_idx, &(context_idx[ctx.size() -1]), word_idx, nextState);
-  
+
   float ret = score.prob;
   //std::cerr << "w: " << word << " p: " << ret << std::endl;
   return ret;
 }
 
 void set_features(const std::vector<std::string>& ctx,
-                  const std::string& word,
-                  const std::vector<Model *>& models,
-                  FVector& v) {
+    const std::string& word,
+    const std::vector<Model *>& models,
+    FVector& v) {
 
   //std::cerr << "setting feats for " << word << std::endl;
-  
+
   if (HAS_BIAS) {
     v(0) = 1;
     for (unsigned i=0; i < models.size(); ++i)
@@ -75,57 +77,66 @@ void train_params(
   vector<string> context(5, "<s>");
   const int ITERATIONS = 10;
   const int nlambdas = models.size() + (HAS_BIAS ? 1 : 0); // bias + #models
-  FVector params = FVector::Zero(nlambdas);
-  vector<FVector> feats(vocab.size(), params);
-  vector<float> us(vocab.size(), 0);
-  vector<float> ps(vocab.size(), 0);
-  FVector grad = FVector::Zero(nlambdas);
-  FMatrix H = FMatrix::Zero(nlambdas, nlambdas);
-  FVector ef = FVector::Zero(nlambdas);
+  FVector params = FVector::Constant(nlambdas,1.0/nlambdas); // initialize to sum to 1
+  FMatrix N = FMatrix::Constant(nlambdas,nlambdas-1, -1.0/sqrt((nlambdas-1)*(nlambdas-1)+nlambdas-1.0));
+  for (unsigned i=0; i<nlambdas-1; ++i)
+    N(i,i)= N(i,i)*(1.0-nlambdas);
+  // N is nullspace matrix, each column sums to zero
+
   for (int iter = 0; iter < ITERATIONS; ++iter) { // iterations
-    grad.setZero();
-    H.setZero();
+    FVector sumfeats = FVector::Zero(nlambdas);
+    FVector expectfeats = FVector::Zero(nlambdas);
+    FMatrix expectfeatmatrix = FMatrix::Zero(nlambdas, nlambdas);
+    FVector grad = FVector::Zero(nlambdas);
+    FMatrix H = FMatrix::Zero(nlambdas, nlambdas);
     double loss = 0;
-    unsigned numchars = 0;
     for (unsigned ci = 0; ci < corpus.size(); ++ci) { // sentences in tuning corpus
       const vector<string>& sentence = corpus[ci];
       context.resize(5);
       for (unsigned t = 0; t < sentence.size(); ++t) { // words in sentence
-        ++numchars;
-        const string& ref_word_string = sentence[t];
-        int ref_word = 0; // TODO
         double z = 0;
-	//std::cerr << "here..." << std::endl;
-        for (unsigned i = 0; i < vocab.size(); ++i) { // vocab
-          set_features(context, vocab[i], models, feats[i]);
-          us[i] = params.dot(feats[i]);
-          z += exp(double(us[i]));
-        }
-	//std::cerr << "there..." << std::endl;
-        context.push_back(ref_word_string);
-        const float logz = log(z);
+        //std::cerr << "here..." << std::endl;
+        FVector feats = FVector::Zero(nlambdas);
 
-        // expected feature values
-        ef.setZero();
-        for (unsigned i = 0; i < vocab.size(); ++i) {
-          ps[i] = expf(us[i] - logz);
-          ef += ps[i] * feats[i];
+        set_features(context, sentence[t], models, feats); // 
+       
+        // Logically, these next two should be in the loop's scope,
+        // but let's just declare them once. 
+        FVector iterfeats = FVector::Zero(nlambdas);
+        double us;
+        for (unsigned i = 0; i < vocab.size(); ++i) { // vocab loop
+          set_features(context, vocab[i], models, iterfeats);
+          us = exp(double(params.dot(iterfeats))); // measure
+          z += us;
+          expectfeats   += iterfeats * us;
+          expectfeatmatrix += (iterfeats*iterfeats.transpose()) * us;
         }
-        loss -= log(ps[ref_word]);
-        const FVector& reffeats = feats[ref_word];
-        grad += ef - reffeats;
+        expectfeats      /= z; // Expectation
+        expectfeatmatrix /= z; // Expectation
+        //std::cerr << "there..." << std::endl;
+       
+        // This should add sentence[t] to the end of the context, removing the oldest word from the front
+        // if needed to keep maximum of (n-1) words (when n-grams are considered in perplexity).
+        context.push_back(sentence[t]);
 
+        // Perplexity
+        loss += -log(z) + double(params.dot(sumfeats));
+        // Gradient
+        grad += feats - expectfeats;
         // Hessian
-        for (unsigned i = 0; i < vocab.size(); ++i)
-          H.noalias() += ps[i] * feats[i] * feats[i].transpose() -
-                         ps[i] * feats[i] * ef.transpose();
-
-        // this should just be the state for each model
+        H    += -expectfeatmatrix + expectfeats*expectfeats.transpose();
       }
       cerr << ".";
     }
-    cerr << "ITERATION " << (iter + 1) << ": PPL=" << exp(loss / numchars) << endl;
-    params = H.colPivHouseholderQr().solve(grad);
+    loss *= -1.0/corpus.size();
+    grad *= -1.0/corpus.size();
+    H    *= -1.0/corpus.size();
+    cerr << "ITERATION " << (iter + 1) << ": PPL=" << exp(loss) << endl;
+    // Looks like we don't need the three lines below -- we can do it in-line
+    //FMatrix Hnull = FMatrix::Zero(nlambdas-1, nlambdas-1);
+    //Hnull=N.transpose()*H*N;
+    //params += -N*Hnull.colPivHouseholderQr().solve(N.transpose()*grad);
+    params += -N*(N.transpose()*H*N).colPivHouseholderQr().solve(N.transpose()*grad);
     cerr << params << endl;
   }
 }
@@ -177,10 +188,10 @@ int main(int argc, char** argv) {
 
   //no comment
   std::map<std::string, int*> vmap;
-  
+
   //stuff it into the 
   EnumerateGlobalVocab * globalVocabBuilder = new EnumerateGlobalVocab(&vmap, lms.size());
-    
+
   Config cfg;
   cfg.enumerate_vocab = (EnumerateVocab *) globalVocabBuilder;
 
@@ -192,7 +203,7 @@ int main(int argc, char** argv) {
 
     //haaaack
     globalVocabBuilder->SetCurModel(i); //yes this is dumb
-    
+
     //models[i] = new Model(lms[i].c_str());
     Model * this_model = new Model(lms[i].c_str(), cfg);
     models.push_back( this_model );
@@ -224,14 +235,14 @@ int main(int argc, char** argv) {
       std::string word;
 
       while(stream >> word) {
-	words.push_back(word);
+        words.push_back(word);
       }
     }
     corpus.push_back(words);
   }
-  
+
   train_params(corpus, vocab, models);
-  
+
   return 0;
 }
 
