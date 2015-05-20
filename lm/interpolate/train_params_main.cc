@@ -214,7 +214,7 @@ int main(int argc, char** argv) {
   std::vector<std::vector<std::string> > corpus;
 
   std::cerr << "Loading context-sorted ngrams: " << tuning_data << std::endl;
-  std::ifstream infile(tuning_data);
+  std::ifstream infile(tuning_data.c_str());
 
   for(std::string line; std::getline(infile, line); ) {
 
