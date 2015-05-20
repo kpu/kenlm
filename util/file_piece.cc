@@ -164,13 +164,13 @@ StringPiece FirstToken(StringPiece str) {
 const char *ParseNumber(StringPiece str, float &out) {
   int count;
   out = kConverter.StringToFloat(str.data(), str.size(), &count);
-  UTIL_THROW_IF_ARG(isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "float");
+  UTIL_THROW_IF_ARG(std::isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "float");
   return str.data() + count;
 }
 const char *ParseNumber(StringPiece str, double &out) {
   int count;
   out = kConverter.StringToDouble(str.data(), str.size(), &count);
-  UTIL_THROW_IF_ARG(isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "double");
+  UTIL_THROW_IF_ARG(std::isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "double");
   return str.data() + count;
 }
 const char *ParseNumber(StringPiece str, long int &out) {
