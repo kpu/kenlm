@@ -74,7 +74,6 @@ void train_params(
     const std::vector<Model *>& models) {
   using namespace std;
 
-  vector<string> context(5, "<s>");
   const int ITERATIONS = 10;
   const int nlambdas = models.size() + (HAS_BIAS ? 1 : 0); // bias + #models
   FVector params = FVector::Constant(nlambdas,1.0/nlambdas); // initialize to sum to 1
@@ -90,16 +89,17 @@ void train_params(
     FVector grad = FVector::Zero(nlambdas);
     FMatrix H = FMatrix::Zero(nlambdas, nlambdas);
     double loss = 0;
+    vector<string> context(5, "<s>"); // Hard-coded to be 6-gram perplexity
     for (unsigned ci = 0; ci < corpus.size(); ++ci) { // sentences in tuning corpus
       const vector<string>& sentence = corpus[ci];
-      context.resize(5);
+      //context.resize(5);
       for (unsigned t = 0; t < sentence.size(); ++t) { // words in sentence
         double z = 0;
         //std::cerr << "here..." << std::endl;
         FVector feats = FVector::Zero(nlambdas);
 
         set_features(context, sentence[t], models, feats); // 
-       
+
         // Logically, these next two should be in the loop's scope,
         // but let's just declare them once. 
         FVector iterfeats = FVector::Zero(nlambdas);
@@ -114,10 +114,13 @@ void train_params(
         expectfeats      /= z; // Expectation
         expectfeatmatrix /= z; // Expectation
         //std::cerr << "there..." << std::endl;
-       
+
         // This should add sentence[t] to the end of the context, removing the oldest word from the front
         // if needed to keep maximum of (n-1) words (when n-grams are considered in perplexity).
-        context.push_back(sentence[t]);
+        for (unsigned i = 0; i<context.size()-1; ++i)
+          context[i]=context[i+1];
+        context[context.size()-1]=sentence[t];
+        //context.push_back(sentence[t]);
 
         // Perplexity
         loss += -log(z) + double(params.dot(sumfeats));
@@ -129,8 +132,8 @@ void train_params(
       cerr << ".";
     }
     loss *= -1.0/corpus.size();
-    grad *= -1.0/corpus.size();
-    H    *= -1.0/corpus.size();
+    //grad *= -1.0/corpus.size();
+    //H    *= -1.0/corpus.size();
     cerr << "ITERATION " << (iter + 1) << ": PPL=" << exp(loss) << endl;
     // Looks like we don't need the three lines below -- we can do it in-line
     //FMatrix Hnull = FMatrix::Zero(nlambdas-1, nlambdas-1);
