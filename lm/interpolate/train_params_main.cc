@@ -81,7 +81,18 @@ void train_params(
   for (unsigned i=0; i<nlambdas-1; ++i)
     N(i,i)= N(i,i)*(1.0-nlambdas);
   // N is nullspace matrix, each column sums to zero
+  //cerr << N << endl;
 
+  cerr << "ITERATION 0/" << ITERATIONS << endl;
+  cerr << params << endl;
+//  {
+//    DMatrix H = DMatrix::Zero(nlambdas, nlambdas);
+//    for (unsigned i=0; i<nlambdas-1; ++i)
+//      H(i,i)= 1.0;
+//    DVector grad = DVector::Zero(nlambdas);
+//    params = H.colPivHouseholderQr().solve(grad);
+//    cerr << params << endl;
+//  }
   for (int iter = 0; iter < ITERATIONS; ++iter) { // iterations
     FVector sumfeats = FVector::Zero(nlambdas);
     FVector expectfeats = FVector::Zero(nlambdas);
@@ -132,14 +143,26 @@ void train_params(
       cerr << ".";
     }
     loss *= -1.0/corpus.size();
+    // The gradient and Hessian coefficients cancel out, so don't multiply
     //grad *= -1.0/corpus.size();
     //H    *= -1.0/corpus.size();
-    cerr << "ITERATION " << (iter + 1) << ": PPL=" << exp(loss) << endl;
+    cerr << "ITERATION " << (iter + 1) << "/" << ITERATIONS << ": log(PPL)=" << loss << " PPL=" << exp(loss) << endl;
     // Looks like we don't need the three lines below -- we can do it in-line
     //FMatrix Hnull = FMatrix::Zero(nlambdas-1, nlambdas-1);
     //Hnull=N.transpose()*H*N;
     //params += -N*Hnull.colPivHouseholderQr().solve(N.transpose()*grad);
     params += -N*(N.transpose()*H*N).colPivHouseholderQr().solve(N.transpose()*grad);
+    // We should be done (negative weights don't screw up the math), but they do screw
+    // up the numerics. We now explicitly disallow them:
+    double sumparams=0;
+    for (unsigned i = 0; i<nlambdas; i++)
+      if (params(i)<0)
+        params(i)=0;
+      else
+        sumparams+=params(i);
+
+    params/=sumparams;
+
     cerr << params << endl;
   }
 }
