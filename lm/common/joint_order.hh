@@ -23,7 +23,7 @@ template <class Callback, class Compare> void JointOrder(const util::stream::Cha
   }
   ProxyStream<NGramHeader> *streams = streams_with_dummy.begin() + 1;
 
-  unsigned int order;
+  std::size_t order;
   for (order = 0; order < positions.size() && streams[order]; ++order) {}
   assert(order); // should always have <unk>.
 
@@ -34,7 +34,7 @@ template <class Callback, class Compare> void JointOrder(const util::stream::Cha
     less_compare.push_back(i + 1);
 #endif // DEBUG
 
-  unsigned int current = 0;
+  std::size_t current = 0;
   while (true) {
     // Does the context match the lower one?
     if (!memcmp(streams[static_cast<int>(current) - 1]->begin(), streams[current]->begin() + Compare::kMatchOffset, sizeof(WordIndex) * current)) {
