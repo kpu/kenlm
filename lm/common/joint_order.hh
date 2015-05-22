@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_JOINT_ORDER_H
-#define LM_BUILDER_JOINT_ORDER_H
+#ifndef LM_COMMON_JOINT_ORDER_H
+#define LM_COMMON_JOINT_ORDER_H
 
 #include "lm/common/ngram_stream.hh"
 #include "lm/lm_exception.hh"
@@ -11,7 +11,7 @@
 
 #include <cstring>
 
-namespace lm { namespace builder {
+namespace lm {
 
 template <class Callback, class Compare> void JointOrder(const util::stream::ChainPositions &positions, Callback &callback) {
   // Allow matching to reference streams[-1].
@@ -66,6 +66,6 @@ template <class Callback, class Compare> void JointOrder(const util::stream::Cha
   }
 }
 
-}} // namespaces
+} // namespaces
 
-#endif // LM_BUILDER_JOINT_ORDER_H
+#endif // LM_COMMON_JOINT_ORDER_H
