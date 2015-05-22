@@ -32,6 +32,7 @@ class NGramHeader {
     const WordIndex *end() const { return end_; }
     WordIndex *end() { return end_; }
 
+    std::size_t size() const { return end_ - begin_; }
     std::size_t Order() const { return end_ - begin_; }
 
   private:
