@@ -10,24 +10,21 @@
 
 namespace lm {
 
-template <class Payload> class NGramStream {
+template <class Proxy> class ProxyStream {
   public:
-    NGramStream() : gram_(NULL, 0) {}
+    // Make an invalid stream.
+    ProxyStream() {}
 
-    NGramStream(const util::stream::ChainPosition &position) : gram_(NULL, 0) {
-      Init(position);
+    explicit ProxyStream(const util::stream::ChainPosition &position, const Proxy &proxy = Proxy())
+      : proxy_(proxy), stream_(position) {
+      proxy_.ReBase(stream_.Get());
     }
 
-    void Init(const util::stream::ChainPosition &position) {
-      stream_.Init(position);
-      gram_ = NGram<Payload>(stream_.Get(), NGram<Payload>::OrderFromSize(position.GetChain().EntrySize()));
-    }
+    Proxy &operator*() { return proxy_; }
+    const Proxy &operator*() const { return proxy_; }
 
-    NGram<Payload> &operator*() { return gram_; }
-    const NGram<Payload> &operator*() const { return gram_; }
-
-    NGram<Payload> *operator->() { return &gram_; }
-    const NGram<Payload> *operator->() const { return &gram_; }
+    Proxy *operator->() { return &proxy_; }
+    const Proxy *operator->() const { return &proxy_; }
 
     void *Get() { return stream_.Get(); }
     const void *Get() const { return stream_.Get(); }
@@ -36,21 +33,25 @@ template <class Payload> class NGramStream {
     bool operator!() const { return !stream_; }
     void Poison() { stream_.Poison(); }
 
-    NGramStream &operator++() {
+    ProxyStream<Proxy> &operator++() {
       ++stream_;
-      gram_.ReBase(stream_.Get());
+      proxy_.ReBase(stream_.Get());
       return *this;
     }
 
   private:
-    NGram<Payload> gram_;
+    Proxy proxy_;
     util::stream::Stream stream_;
 };
 
-template <class Payload> inline util::stream::Chain &operator>>(util::stream::Chain &chain, NGramStream<Payload> &str) {
-  str.Init(chain.Add());
-  return chain;
-}
+template <class Payload> class NGramStream : public ProxyStream<NGram<Payload> > {
+  public:
+    // Make an invalid stream.
+    NGramStream() {}
+
+    explicit NGramStream(const util::stream::ChainPosition &position) :
+      ProxyStream<NGram<Payload> >(position, NGram<Payload>(NULL, NGram<Payload>::OrderFromSize(position.GetChain().EntrySize()))) {}
+};
 
 template <class Payload> class NGramStreams : public util::stream::GenericStreams<NGramStream<Payload> > {
   private:

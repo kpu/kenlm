@@ -43,12 +43,13 @@ BOOST_AUTO_TEST_CASE(Short) {
   util::scoped_fd vocab(util::MakeTemp("corpus_count_test_vocab"));
 
   util::stream::Chain chain(config);
-  NGramStream<BuildingPayload> stream;
   uint64_t token_count;
   WordIndex type_count = 10;
   std::vector<bool> prune_words;
   CorpusCount counter(input_piece, vocab.get(), token_count, type_count, prune_words, "", chain.BlockSize() / chain.EntrySize(), SILENT);
-  chain >> boost::ref(counter) >> stream >> util::stream::kRecycle;
+  chain >> boost::ref(counter);
+  NGramStream<BuildingPayload> stream(chain.Add());
+  chain >> util::stream::kRecycle;
 
   const char *v[] = {"<unk>", "<s>", "</s>", "looking", "on", "a", "little", "more", "loin", "foo", "bar"};
 

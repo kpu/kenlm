@@ -43,6 +43,8 @@ template <class PayloadT> class NGram : public NGramHeader {
   public:
     typedef PayloadT Payload;
 
+    NGram() : NGramHeader(NULL, 0) {}
+
     NGram(void *begin, std::size_t order) : NGramHeader(begin, order) {}
 
     // Would do operator++ but that can get confusing for a stream.
