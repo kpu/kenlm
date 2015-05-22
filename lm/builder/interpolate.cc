@@ -1,9 +1,10 @@
 #include "lm/builder/interpolate.hh"
 
 #include "lm/builder/hash_gamma.hh"
-#include "lm/builder/joint_order.hh"
-#include "lm/common/ngram_stream.hh"
+#include "lm/builder/payload.hh"
 #include "lm/common/compare.hh"
+#include "lm/common/joint_order.hh"
+#include "lm/common/ngram_stream.hh"
 #include "lm/lm_exception.hh"
 #include "util/fixed_array.hh"
 #include "util/murmur_hash.hh"
@@ -90,7 +91,8 @@ template <class Output> class Callback {
       }
     }
 
-    void Enter(unsigned order_minus_1, NGram<BuildingPayload> &gram) {
+    void Enter(unsigned order_minus_1, void *data) {
+      NGram<BuildingPayload> gram(data, order_minus_1 + 1);
       BuildingPayload &pay = gram.Value();
       pay.complete.prob = pay.uninterp.prob + pay.uninterp.gamma * probs_[order_minus_1];
       probs_[order_minus_1 + 1] = pay.complete.prob;
@@ -124,7 +126,7 @@ template <class Output> class Callback {
       output_.Gram(order_minus_1, out_backoff, pay.complete);
     }
 
-    void Exit(unsigned, const NGram<BuildingPayload> &) const {}
+    void Exit(unsigned, void *) const {}
 
   private:
     util::FixedArray<util::stream::Stream> backoffs_;

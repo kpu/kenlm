@@ -115,8 +115,16 @@ template <class T> class FixedArray {
      *
      * The memory backing the constructed object is managed by this data structure.
      */
+    void push_back() {
+      new (end()) T();
+      Constructed();
+    }
     template <class C> void push_back(const C &c) {
-      new (end()) T(c); // use "placement new" syntax to initalize T in an already-allocated memory location
+      new (end()) T(c);
+      Constructed();
+    }
+    template <class C, class D> void push_back(const C &c, const D &d) {
+      new (end()) T(c, d);
       Constructed();
     }
 

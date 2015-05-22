@@ -16,6 +16,8 @@ class NGramHeader {
     NGramHeader(void *begin, std::size_t order)
       : begin_(static_cast<WordIndex*>(begin)), end_(begin_ + order) {}
 
+    NGramHeader() : begin_(NULL), end_(NULL) {}
+
     const uint8_t *Base() const { return reinterpret_cast<const uint8_t*>(begin_); }
     uint8_t *Base() { return reinterpret_cast<uint8_t*>(begin_); }
 

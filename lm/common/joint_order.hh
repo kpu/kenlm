@@ -2,7 +2,6 @@
 #define LM_BUILDER_JOINT_ORDER_H
 
 #include "lm/common/ngram_stream.hh"
-#include "lm/builder/payload.hh"
 #include "lm/lm_exception.hh"
 
 #ifdef DEBUG
@@ -16,9 +15,13 @@ namespace lm { namespace builder {
 
 template <class Callback, class Compare> void JointOrder(const util::stream::ChainPositions &positions, Callback &callback) {
   // Allow matching to reference streams[-1].
-  NGramStreams<BuildingPayload> streams_with_dummy;
-  streams_with_dummy.InitWithDummy(positions);
-  NGramStream<BuildingPayload> *streams = streams_with_dummy.begin() + 1;
+  util::FixedArray<ProxyStream<NGramHeader> > streams_with_dummy(positions.size() + 1);
+  // A bogus stream for [-1].
+  streams_with_dummy.push_back();
+  for (std::size_t i = 0; i < positions.size(); ++i) {
+    streams_with_dummy.push_back(positions[i], NGramHeader(NULL, i + 1));
+  }
+  ProxyStream<NGramHeader> *streams = streams_with_dummy.begin() + 1;
 
   unsigned int order;
   for (order = 0; order < positions.size() && streams[order]; ++order) {}
@@ -35,7 +38,7 @@ template <class Callback, class Compare> void JointOrder(const util::stream::Cha
   while (true) {
     // Does the context match the lower one?
     if (!memcmp(streams[static_cast<int>(current) - 1]->begin(), streams[current]->begin() + Compare::kMatchOffset, sizeof(WordIndex) * current)) {
-      callback.Enter(current, *streams[current]);
+      callback.Enter(current, streams[current].Get());
       // Transition to looking for extensions.
       if (++current < order) continue;
     }
@@ -51,7 +54,7 @@ template <class Callback, class Compare> void JointOrder(const util::stream::Cha
     while(true) {
       assert(current > 0);
       --current;
-      callback.Exit(current, *streams[current]);
+      callback.Exit(current, streams[current].Get());
 
       if (++streams[current]) break;
 
