@@ -17,16 +17,19 @@
 #include "util/fixed_array.hh"
 
 #include <Eigen/Eigen>
+#include <Eigen/Dense>
 
-typedef Eigen::MatrixXf FMatrix;
-typedef Eigen::VectorXf FVector;
+//typedef Eigen::MatrixXf FMatrix;
+//typedef Eigen::VectorXf FVector;
+typedef Eigen::MatrixXd DMatrix;
+typedef Eigen::VectorXd DVector;
 
 bool HAS_BIAS = true;
 
 using namespace lm::ngram;
 using namespace lm;
 
-inline float logProb(Model * model, const std::vector<std::string>& ctx, const std::string& word) {
+inline double logProb(Model * model, const std::vector<std::string>& ctx, const std::string& word) {
 
   // Horribly inefficient
   const Vocabulary &vocab = model->GetVocabulary();
@@ -43,15 +46,19 @@ inline float logProb(Model * model, const std::vector<std::string>& ctx, const s
 
   FullScoreReturn score = model->FullScoreForgotState(context_idx, &(context_idx[ctx.size() -1]), word_idx, nextState);
 
+<<<<<<< HEAD
   float ret = score.prob;
+=======
+  double ret = score.prob;
+>>>>>>> 6af9298741fee9eca01c1634f79a89d7722c510e
   //std::cerr << "w: " << word << " p: " << ret << std::endl;
   return ret;
 }
 
 void set_features(const std::vector<std::string>& ctx,
-                  const std::string& word,
-                  const std::vector<Model *>& models,
-                  FVector& v) {
+    const std::string& word,
+    const std::vector<Model *>& models,
+    DVector& v) {
 
   //std::cerr << "setting feats for " << word << std::endl;
 
@@ -72,62 +79,173 @@ void train_params(
     const std::vector<Model *>& models) {
   using namespace std;
 
-  vector<string> context(5, "<s>");
   const int ITERATIONS = 10;
   const int nlambdas = models.size() + (HAS_BIAS ? 1 : 0); // bias + #models
-  FVector params = FVector::Zero(nlambdas);
-  vector<FVector> feats(vocab.size(), params);
-  vector<float> us(vocab.size(), 0);
-  vector<float> ps(vocab.size(), 0);
-  FVector grad = FVector::Zero(nlambdas);
-  FMatrix H = FMatrix::Zero(nlambdas, nlambdas);
-  FVector ef = FVector::Zero(nlambdas);
+  DVector params = DVector::Constant(nlambdas,1.0/nlambdas); // initialize to sum to 1
+  DMatrix N = DMatrix::Constant(nlambdas,nlambdas-1, -1.0/sqrt((nlambdas-1)*(nlambdas-1)+nlambdas-1.0));
+  for (unsigned i=0; i<nlambdas-1; ++i)
+    N(i,i)= N(i,i)*(1.0-nlambdas);
+  // N is nullspace matrix, each column sums to zero
+  //cerr << N << endl;
+
+  cerr << "ITERATION 0/" << ITERATIONS << endl;
+  cerr << params << endl;
+
+  vector<DVector> paramhistory;
+  vector<DVector> deltaparamhistory;
+  vector<double> pplhistory;
+  vector<double> fractionhistory;
+
   for (int iter = 0; iter < ITERATIONS; ++iter) { // iterations
-    grad.setZero();
-    H.setZero();
-    double loss = 0;
-    unsigned numchars = 0;
+    paramhistory.push_back(params);
+    vector<string> context(5, "<s>"); // Hard-coded to be 6-gram perplexity
+    double ppl = 0.0;
+    DVector grad = DVector::Zero(nlambdas);
+    DMatrix H = DMatrix::Zero(nlambdas, nlambdas);
     for (unsigned ci = 0; ci < corpus.size(); ++ci) { // sentences in tuning corpus
       const vector<string>& sentence = corpus[ci];
-      context.resize(5);
+      //context.resize(5);
       for (unsigned t = 0; t < sentence.size(); ++t) { // words in sentence
-        ++numchars;
-        const string& ref_word_string = sentence[t];
-        int ref_word = 0; // TODO
-        double z = 0;
-	//std::cerr << "here..." << std::endl;
-        for (unsigned i = 0; i < vocab.size(); ++i) { // vocab
-          set_features(context, vocab[i], models, feats[i]);
-          us[i] = params.dot(feats[i]);
-          z += exp(double(us[i]));
-        }
-	//std::cerr << "there..." << std::endl;
-        context.push_back(ref_word_string);
-        const float logz = log(z);
+        //std::cerr << "here..." << std::endl;
+        DVector feats            = DVector::Zero(nlambdas);
+        set_features(context, sentence[t], models, feats); // probs for actual n-gram
 
-        // expected feature values
-        ef.setZero();
-        for (unsigned i = 0; i < vocab.size(); ++i) {
-          ps[i] = expf(us[i] - logz);
-          ef += ps[i] * feats[i];
-        }
-        loss -= log(ps[ref_word]);
-        const FVector& reffeats = feats[ref_word];
-        grad += ef - reffeats;
+        double z = 0.0;
+        DVector expectfeats      = DVector::Zero(nlambdas);
+        DMatrix expectfeatmatrix = DMatrix::Zero(nlambdas, nlambdas);
+        DVector iterfeats = DVector::Zero(nlambdas); // Logically, this should be in the loop's scope
+        for (unsigned i = 0; i < vocab.size(); ++i) { // probs over possible n-grams, for normalization
+          set_features(context, vocab[i], models, iterfeats);
+          double us = exp(params.dot(iterfeats)); // measure
 
+          z                += us;
+          expectfeats      += us * iterfeats;
+          expectfeatmatrix += us * (iterfeats*iterfeats.transpose());
+        }
+        expectfeats      /= z; // Expectation
+        expectfeatmatrix /= z; // Expectation
+        //std::cerr << "there..." << std::endl;
+
+        // This should add sentence[t] to the end of the context, removing the oldest word from the front
+        // if needed to keep maximum of (n-1) words (when n-grams are considered in perplexity).
+        for (unsigned i = 0; i<context.size()-1; ++i)
+          context[i]=context[i+1];
+        context[context.size()-1]=sentence[t];
+        //context.push_back(sentence[t]);
+
+        // Perplexity
+        ppl  += params.dot(feats) - log(z);
+        // Gradient
+        grad += feats - expectfeats;
         // Hessian
-        for (unsigned i = 0; i < vocab.size(); ++i)
-          H.noalias() += ps[i] * feats[i] * feats[i].transpose() -
-                         ps[i] * feats[i] * ef.transpose();
-
-        // this should just be the state for each model
+        H    += -expectfeatmatrix + expectfeats*expectfeats.transpose();
       }
       cerr << ".";
     }
-    cerr << "ITERATION " << (iter + 1) << ": PPL=" << exp(loss / numchars) << endl;
-    params = H.colPivHouseholderQr().solve(grad);
+    ppl  *= -1.0/corpus.size();
+    // The gradient and Hessian coefficients cancel out, so don't really need to do this, but it's fast.
+    grad *= -1.0/corpus.size();
+    H    *= -1.0/corpus.size();
+    cerr << "ITERATION " << iter << "/" << ITERATIONS << ": log(PPL)=" << ppl << " PPL=" << exp(ppl) << endl;
+    cerr << "Input Weights: " << endl;
     cerr << params << endl;
-  }
+    // Looks like we don't need the three lines below -- we can do it in-line
+    DMatrix Hnull = DMatrix::Zero(nlambdas-1, nlambdas-1);
+    Hnull=N.transpose()*H*N;
+    Eigen::SelfAdjointEigenSolver<DMatrix> eigensolver(Hnull);
+    cerr << "Eigenvalues:\n" << eigensolver.eigenvalues() << endl;
+    DVector deltaparams = -N*Hnull.colPivHouseholderQr().solve(N.transpose()*grad);
+    //DVector deltaparams = -N*(N.transpose()*H*N).colPivHouseholderQr().solve(N.transpose()*grad);
+
+    int reverttograd=0;
+    for (unsigned i = 0; i<nlambdas; i++)
+      if (params(i)+deltaparams(i)<0) // Can't do Newton step. Revert to descent.
+        reverttograd=1;
+    if (reverttograd==1)
+    {
+      cerr << "Reverting to gradient, since Newton step infeasible." << endl;
+      deltaparams = -N*N.transpose()*grad; // projected gradient onto unit sum constraint
+      double norm=0.0;
+      for (unsigned i = 0; i<nlambdas; i++)
+        if ((params(i)==0) && (deltaparams(i)<0)) // Project gradient to inactive constraints
+        {
+          // Unfortunate if this happens, since it breaks the nullspace conditions
+          // Unit sum will be enforced crudely, later. TODO: improve, if it matters.
+          deltaparams(i)=0; 
+          cerr << "Projecting gradient to active constraint, weight " << i << endl;
+        }
+        else
+          norm += deltaparams(i)*deltaparams(i);
+      if (norm>0)
+        deltaparams /= sqrt(norm);
+    }
+
+    cerr << "Delta weights: " << endl;
+    cerr << deltaparams << endl;
+    cerr << "Unsafeguarded weights (latest): " << endl;
+    cerr << params+deltaparams << endl;
+
+    // Collect history of function value, step, and smallest tried step size
+    deltaparamhistory.push_back(deltaparams);
+    pplhistory.push_back(ppl);
+    fractionhistory.push_back(-1); // Signifies no step yet taken.
+
+    unsigned minindex=pplhistory.size()-1;
+    for (unsigned i=0; i<pplhistory.size()-1; ++i)
+      if (pplhistory[i]<pplhistory[minindex])
+        minindex=i;
+    cerr << " Stepping from iteration " << minindex << endl;
+
+    if (fractionhistory[minindex]>0)
+      fractionhistory[minindex]*=0.5; // Step in this direction failed to decrease last time, so try again with smaller step
+    else
+    {
+      // First time to try a step. Make as large a feasible step as possible
+      fractionhistory[minindex]=1;
+      // We should be done (negative weights don't screw up the math), but they do screw
+      // up the numerics. We now explicitly disallow them:
+      for (unsigned i = 0; i<nlambdas; i++)
+        if (params(i)+deltaparams(i)<0)
+        {
+          double tmplimitfraction = params(i)/-deltaparams(i);
+          if (tmplimitfraction<fractionhistory[minindex])
+            fractionhistory[minindex]=tmplimitfraction;
+        }
+    }
+
+    params = paramhistory[minindex] + fractionhistory[minindex]*deltaparamhistory[minindex];
+
+    double sumparams=0.0;
+    for (unsigned i = 0; i<nlambdas; i++)
+    {
+      if (params(i)<1e-12)
+        params(i)=0;
+      sumparams+= params(i);
+    }
+    params /= sumparams;
+
+    int duplicateentry=0;
+    for (unsigned i=0; i<pplhistory.size(); ++i)
+      if (params==paramhistory[i])
+        duplicateentry=1;
+    if (duplicateentry==1)
+    {
+      cerr << "Duplicate weight found! " << endl;
+      fractionhistory[minindex]*=0.5; // Step in this direction is duplicate, so try again with smaller step
+      params = paramhistory[minindex] + fractionhistory[minindex]*deltaparamhistory[minindex];
+      sumparams=0.0;
+      for (unsigned i = 0; i<nlambdas; i++)
+      {
+        if (params(i)<1e-12)
+          params(i)=0;
+        sumparams+= params(i);
+      }
+      params /= sumparams;
+    }
+
+    cerr << "Safeguarded weights: " << endl;
+    cerr << params << endl;
+  } 
 }
 
 int main(int argc, char** argv) {
@@ -214,7 +332,7 @@ int main(int argc, char** argv) {
   std::vector<std::vector<std::string> > corpus;
 
   std::cerr << "Loading context-sorted ngrams: " << tuning_data << std::endl;
-  std::ifstream infile(tuning_data);
+  std::ifstream infile(tuning_data.c_str());
 
   for(std::string line; std::getline(infile, line); ) {
 
@@ -224,7 +342,7 @@ int main(int argc, char** argv) {
       std::string word;
 
       while(stream >> word) {
-	words.push_back(word);
+        words.push_back(word);
       }
     }
     corpus.push_back(words);
