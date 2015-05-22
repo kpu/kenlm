@@ -46,11 +46,7 @@ inline double logProb(Model * model, const std::vector<std::string>& ctx, const 
 
   FullScoreReturn score = model->FullScoreForgotState(context_idx, &(context_idx[ctx.size() -1]), word_idx, nextState);
 
-<<<<<<< HEAD
-  float ret = score.prob;
-=======
   double ret = score.prob;
->>>>>>> 6af9298741fee9eca01c1634f79a89d7722c510e
   //std::cerr << "w: " << word << " p: " << ret << std::endl;
   return ret;
 }
