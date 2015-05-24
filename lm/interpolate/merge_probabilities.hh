@@ -46,7 +46,7 @@ public:
   }
 
   std::size_t TotalSize() const {
-    return sizeof(WordIndex) * Order() + sizeof(float) + backoff_bytes_;
+    return sizeof(WordIndex) * Order() + sizeof(After) + backoff_bytes_;
   }
 
   float &Prob() { return Pay().prob; }
