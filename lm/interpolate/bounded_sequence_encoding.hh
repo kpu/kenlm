@@ -25,6 +25,8 @@ class BoundedSequenceEncoding {
     // Encode [0, bound_begin[0]) x [0, bound_begin[1]) x [0, bound_begin[2]) x ... x [0, *(bound_end - 1)) for entries in the sequence
     BoundedSequenceEncoding(const unsigned char *bound_begin, const unsigned char *bound_end);
 
+    std::size_t Entries() const { return entries_.size(); }
+
     std::size_t EncodedLength() const { return byte_length_; }
 
     void Encode(const unsigned char *from, void *to_void) const {
