@@ -97,12 +97,14 @@ public:
  *  back off (that is, the probability of the suffix)
  * @param fallback_from The order that the corresponding fallback
  *  probability in the fallback_probs is from
+ * @param combined_fallback interpolated fallback_probs
  * @param outputs The output streams, one for each order
  */
 void HandleSuffix(NGramHandlers &handlers, WordIndex *suffix_begin,
                   WordIndex *suffix_end,
                   const util::FixedArray<float> &fallback_probs,
                   const util::FixedArray<uint8_t> &fallback_from,
+                  float combined_fallback,
                   util::stream::Streams &outputs) {
   uint8_t order = std::distance(suffix_begin, suffix_end) + 1;
   if (order >= outputs.size()) return;
@@ -154,13 +156,14 @@ void HandleSuffix(NGramHandlers &handlers, WordIndex *suffix_begin,
 
       handler.out_record.Prob() += handler.probs[i];
     }
+    handler.out_record.LowerProb() = combined_fallback;
     handler.encoder.Encode(handler.from.begin(),
                            handler.out_record.FromBegin());
 
     // we've handled this particular ngram, so now recurse to the higher
     // order using the current ngram as the suffix
     HandleSuffix(handlers, handler.out_record.begin(), handler.out_record.end(),
-                 handler.probs, handler.from, outputs);
+                 handler.probs, handler.from, handler.out_record.Prob(), outputs);
     // consume the output
     ++output;
   }
@@ -197,6 +200,7 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
     assert(*ngram.begin() == kUNK);
     ++handlers[0][i];
   }
+  float unk_combined = unk_record.Prob();
   // flush the unk output record
   ++outputs[0];
 
@@ -213,7 +217,7 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
 
   // the two nulls are to encode that our "fallback" word is the "0-gram"
   // case, e.g. we "backed off" to UNK
-  HandleSuffix(handlers, NULL, NULL, unk_probs, unk_from, outputs);
+  HandleSuffix(handlers, NULL, NULL, unk_probs, unk_from, unk_combined, outputs);
 
   // Read the dummy "end-of-stream" symbol for each of the inputs
   for (std::size_t i = 0; i < handlers.size(); ++i) {
