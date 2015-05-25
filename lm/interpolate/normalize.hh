@@ -1,5 +1,5 @@
-#ifndef LM_INTERPOLATE_BACKOFF_AND_NORMALIZE_H
-#define LM_INTERPOLATE_BACKOFF_AND_NORMALIZE_H
+#ifndef LM_INTERPOLATE_NORMALIZE_H
+#define LM_INTERPOLATE_NORMALIZE_H
 
 #include "util/fixed_array.hh"
 
@@ -19,7 +19,7 @@ namespace lm { namespace interpolate {
 
 class InterpolateInfo;
 
-void BackoffAndNormalize(
+void Normalize(
     const InterpolateInfo &info,
     // Input full models for backoffs.  Assumes that renumbering has been done. Suffix order.
     util::FixedArray<util::stream::ChainPositions> &models_by_order,

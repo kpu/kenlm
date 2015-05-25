@@ -1,4 +1,4 @@
-#include "lm/interpolate/backoff_and_normalize.hh"
+#include "lm/interpolate/normalize.hh"
 
 #include "lm/common/compare.hh"
 #include "lm/common/ngram_stream.hh"
@@ -363,9 +363,9 @@ class Thread {
 
 } // namespace
 
-void BackoffAndNormalize(const InterpolateInfo &info, util::FixedArray<util::stream::ChainPositions> &models_by_order, util::stream::Chains &merged_probabilities, util::stream::Chains &probabilities, util::stream::Chains &backoffs) {
+void Normalize(const InterpolateInfo &info, util::FixedArray<util::stream::ChainPositions> &models_by_order, util::stream::Chains &merged_probabilities, util::stream::Chains &prob_out, util::stream::Chains &backoff_out) {
   // Arbitrarily put the thread on the merged_probabilities Chains.
-  merged_probabilities >> Thread(info, models_by_order, probabilities, backoffs);
+  merged_probabilities >> Thread(info, models_by_order, prob_out, backoff_out);
 }
 
 }} // namespaces
