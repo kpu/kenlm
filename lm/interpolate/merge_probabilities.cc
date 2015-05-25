@@ -201,6 +201,7 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
     ++handlers[0][i];
   }
   float unk_combined = unk_record.Prob();
+  unk_record.LowerProb() = unk_combined;
   // flush the unk output record
   ++outputs[0];
 
@@ -217,6 +218,7 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
 
   // the two nulls are to encode that our "fallback" word is the "0-gram"
   // case, e.g. we "backed off" to UNK
+  // TODO: stop generating vocab ids and LowerProb for unigrams.
   HandleSuffix(handlers, NULL, NULL, unk_probs, unk_from, unk_combined, outputs);
 
   // Read the dummy "end-of-stream" symbol for each of the inputs
