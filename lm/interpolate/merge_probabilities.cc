@@ -206,9 +206,10 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
   // the ngrams, then all of the (n-1)grams, etc.
   //
   // This function is the "root" of this recursive process.
-  util::FixedArray<uint8_t> unk_from;
-  unk_from.Init(handlers[0].info.Models());
-  std::fill(unk_from.begin(), unk_from.end(), 0);
+  util::FixedArray<uint8_t> unk_from(handlers[0].info.Models());
+  for (std::size_t i = 0; i < handlers[0].info.Models(); ++i) {
+    unk_from.push_back(0);
+  }
 
   // the two nulls are to encode that our "fallback" word is the "0-gram"
   // case, e.g. we "backed off" to UNK
