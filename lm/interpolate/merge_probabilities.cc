@@ -1,11 +1,24 @@
 #include "lm/interpolate/merge_probabilities.hh"
 #include "lm/common/ngram_stream.hh"
 #include "lm/interpolate/bounded_sequence_encoding.hh"
+#include "lm/interpolate/interpolate_info.hh"
 
 #include <algorithm>
 
 namespace lm {
 namespace interpolate {
+
+/**
+ * Helper to generate the BoundedSequenceEncoding used for writing the
+ * from values.
+ */
+BoundedSequenceEncoding MakeEncoder(const InterpolateInfo &info, uint8_t order) {
+  util::FixedArray<uint8_t> max_orders(info.orders.size());
+  for (std::size_t i = 0; i < info.orders.size(); ++i) {
+    max_orders.push_back(std::min(order, info.orders[i]));
+  }
+  return BoundedSequenceEncoding(max_orders.begin(), max_orders.end());
+}
 
 namespace {
 /**
@@ -34,18 +47,6 @@ public:
     from.Init(info.Models());
   }
 
-  /**
-   * Helper to generate the BoundedSequenceEncoding used for writing the
-   * from values.
-   */
-  inline static BoundedSequenceEncoding MakeEncoder(const InterpolateInfo &info,
-                                                    uint8_t order) {
-    util::FixedArray<uint8_t> max_orders(info.orders.size());
-    for (std::size_t i = 0; i < info.orders.size(); ++i) {
-      max_orders.push_back(std::min(order, info.orders[i]));
-    }
-    return BoundedSequenceEncoding(max_orders.begin(), max_orders.end());
-  }
 
   /**
    * @return the input stream for a particular model that corresponds to

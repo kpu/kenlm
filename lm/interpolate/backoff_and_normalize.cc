@@ -100,7 +100,7 @@ std::size_t MaxOrder(const util::FixedArray<util::stream::ChainPositions> &model
 
 class BackoffManager {
   public:
-    BackoffManager(const util::FixedArray<util::stream::ChainPositions> &models)
+    explicit BackoffManager(const util::FixedArray<util::stream::ChainPositions> &models)
       : entered_(MaxOrder(models)), matrix_(models.size(), entered_.size()) {
       std::size_t total = 0;
       for (const util::stream::ChainPositions *m = models.begin(); m != models.end(); ++m) {
@@ -166,28 +166,29 @@ class BackoffManager {
     BackoffMatrix matrix_;
 };
 
+typedef long double Accum;
+
 // Handles n-grams of the same order, using recursion to call another instance
 // for higher orders.
 class Recurse {
   public:
     Recurse(
+        const InterpolateInfo &info, // Must stay alive the entire time.
         std::size_t order,
         const util::stream::ChainPosition &merged_probs,
         const util::stream::ChainPosition &prob_out,
         const util::stream::ChainPosition &backoff_out,
         BackoffManager &backoffs,
-        BoundedSequenceEncoding encoding,
-        const float *lambdas,
         Recurse *higher) // higher is null for the highest order.
       : order_(order),
-        input_(merged_probs, PartialProbGamma(order, encoding.EncodedLength())),
+        encoding_(MakeEncoder(info, order)),
+        input_(merged_probs, PartialProbGamma(order, encoding_.EncodedLength())),
         prob_out_(prob_out),
         backoff_out_(backoff_out),
         backoffs_(backoffs),
-        encoding_(encoding),
-        lambdas_(lambdas),
+        lambdas_(info.lambdas.begin()),
         higher_(higher),
-        decoded_backoffs_(encoding_.Entries()),
+        decoded_backoffs_(info.Models()),
         extended_context_(order - 1) {
       // This is only for bigrams and above.  Summing unigrams is a much easier case.
       assert(order >= 2);
@@ -202,19 +203,19 @@ class Recurse {
     //   Z(w_1^{n-1}): intermediate only.
     //   p_I(x | w_1^{n-1}) for all x: w_1^{n-1}x exists: Written to prob_out_.
     //   b_I(w_1^{n-1}): Written to backoff_out_.
-    void SameContext(const NGramHeader &context, double z_lower) {
+    void SameContext(const NGramHeader &context, Accum z_lower) {
       assert(context.size() == order_ - 1);
       backoffs_.Enter(context);
       prob_out_.Mark();
 
       // This is the backoff term that applies when one assumes everything backs off:
       // \prod_i b_i(w_1^{n-1})^{\lambda_i}.
-      double backoff_once = 0.0;
+      Accum backoff_once = 0.0;
       for (std::size_t m = 0; m < decoded_backoffs_.size(); ++m) {
         backoff_once += lambdas_[m] * backoffs_.Get(m, order_ - 2);
       }
 
-      double z_delta = 0.0;
+      Accum z_delta = 0.0;
       std::size_t count = 0;
       for (; input_ && std::equal(context.begin(), context.end(), input_->begin()); ++input_, ++prob_out_, ++count) {
         // Apply backoffs to probabilities.
@@ -247,7 +248,7 @@ class Recurse {
         ProbWrite() = input_->Prob();
       }
       // TODO numerical precision.
-      double z = log10(pow(10.0, z_lower + backoff_once) + z_delta);
+      Accum z = log10(pow(10.0, z_lower + backoff_once) + z_delta);
 
       // Normalize.
       prob_out_.Rewind();
@@ -260,17 +261,17 @@ class Recurse {
       *reinterpret_cast<float*>(backoff_out_.Get()) = z_lower + backoff_once - z;
       ++backoff_out_;
 
-      if (higher_) {
+      if (higher_.get())
         higher_->ExtendContext(context, z);
-      }
+
       backoffs_.Exit(order_ - 2);
     }
 
     // Call is given a context and z(context).
     // Evaluates y context x for all y,x.
-    void ExtendContext(const NGramHeader &middle, double z_lower) {
+    void ExtendContext(const NGramHeader &middle, Accum z_lower) {
       assert(middle.size() == order_ - 2);
-      // Copy because the input will advance.
+      // Copy because the input will advance.  TODO avoid this copy by sharing amongst classes.
       std::copy(middle.begin(), middle.end(), extended_context_.begin() + 1);
       while (input_ && std::equal(middle.begin(), middle.end(), input_->begin() + 1)) {
         *extended_context_.begin() = *input_->begin();
@@ -282,6 +283,8 @@ class Recurse {
       assert(!input_);
       prob_out_.Poison();
       backoff_out_.Poison();
+      if (higher_.get())
+        higher_->Finish();
     }
 
   private:
@@ -294,23 +297,75 @@ class Recurse {
 
     const std::size_t order_;
 
+    const BoundedSequenceEncoding encoding_;
+
     ProxyStream<PartialProbGamma> input_;
     util::stream::RewindableStream prob_out_;
     util::stream::Stream backoff_out_;
 
     BackoffManager &backoffs_;
-    const BoundedSequenceEncoding encoding_;
     const float *const lambdas_;
 
     // Higher order instance of this same class.
-    Recurse *const higher_;
+    util::scoped_ptr<Recurse> higher_;
 
     // Temoporary in SameContext.
     std::vector<unsigned char> decoded_backoffs_;
-    // Temporary in ExtendContext
+    // Temporary in ExtendContext.
     std::vector<WordIndex> extended_context_;
 };
 
+class Thread {
+  public:
+    Thread(const InterpolateInfo &info, util::FixedArray<util::stream::ChainPositions> &models_by_order, util::stream::Chains &prob_out, util::stream::Chains &backoff_out)
+      : info_(info), models_by_order_(models_by_order), prob_out_(prob_out), backoff_out_(backoff_out) {}
+
+    void Run(const util::stream::ChainPositions &merged_probabilities) {
+      BackoffManager backoffs(models_by_order_);
+
+      // Unigrams do not have enocded backoff info.
+      ProxyStream<PartialProbGamma> in(merged_probabilities[0], PartialProbGamma(1, 0));
+      util::stream::RewindableStream prob_write(prob_out_[0]);
+      Accum z = 0.0;
+      prob_write.Mark();
+      WordIndex count = 0;
+      for (; in; ++in, ++prob_write, ++count) {
+        // Note assumption that probabilitity comes first
+        memcpy(prob_write.Get(), in.Get(), sizeof(WordIndex) + sizeof(float));
+        z += pow(10.0, in->Prob());
+      }
+      float z_sub = log10(z);
+      prob_write.Rewind();
+      // Normalize unigram probabilities.
+      for (WordIndex i = 0; i < count; ++i, ++prob_write) {
+        *reinterpret_cast<float*>(reinterpret_cast<uint8_t*>(prob_write.Get()) + sizeof(WordIndex)) -= z_sub;
+      }
+      prob_write.Poison();
+
+      // Now setup the higher orders.
+      util::scoped_ptr<Recurse> higher_order;
+      std::size_t max_order = MaxOrder(models_by_order_);
+      for (std::size_t order = max_order; order >= 2; --order) {
+        higher_order.reset(new Recurse(info_, order, merged_probabilities[order - 1], prob_out_[order - 1], backoff_out_[order - 2], backoffs, higher_order.release()));
+      }
+      if (max_order > 1) {
+        higher_order->ExtendContext(NGramHeader(NULL, 0), z);
+        higher_order->Finish();
+      }
+    }
+
+  private:
+    const InterpolateInfo info_;
+    util::FixedArray<util::stream::ChainPositions> &models_by_order_;
+    util::stream::ChainPositions prob_out_;
+    util::stream::ChainPositions backoff_out_;
+};
+
 } // namespace
+
+void BackoffAndNormalize(const InterpolateInfo &info, util::FixedArray<util::stream::ChainPositions> &models_by_order, util::stream::Chains &merged_probabilities, util::stream::Chains &probabilities, util::stream::Chains &backoffs) {
+  // Arbitrarily put the thread on the merged_probabilities Chains.
+  merged_probabilities >> Thread(info, models_by_order, probabilities, backoffs);
+}
 
 }} // namespaces

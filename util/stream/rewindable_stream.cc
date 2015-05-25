@@ -23,6 +23,10 @@ void RewindableStream::Init(const ChainPosition &position) {
   end_ = current_ + current_bl_->ValidSize();
 }
 
+RewindableStream::RewindableStream(const ChainPosition &position) {
+  Init(position);
+}
+
 const void *RewindableStream::Get() const {
   return current_;
 }

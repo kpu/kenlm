@@ -26,9 +26,9 @@ void BackoffAndNormalize(
     // Input PartialProbGamma from MergeProbabilities. Context order.
     util::stream::Chains &merged_probabilities,
     // Output NGram<float> with normalized probabilities. Context order.
-    util::stream::Chains &probabilities,
+    util::stream::Chains &probabilities_out,
     // Output bare floats with backoffs.  Note backoffs.size() == order - 1.  Suffix order.
-    util::stream::Chains &backoffs);
+    util::stream::Chains &backoffs_out);
 
 }} // namespaces
 

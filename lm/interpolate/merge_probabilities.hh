@@ -1,13 +1,23 @@
 #ifndef KENLM_INTERPOLATE_MERGE_PROBABILITIES_H
 #define KENLM_INTERPOLATE_MERGE_PROBABILITIES_H
 
+#include "lm/common/ngram.hh"
+#include "lm/interpolate/bounded_sequence_encoding.hh"
 #include "util/fixed_array.hh"
 #include "util/stream/multi_stream.hh"
-#include "lm/interpolate/interpolate_info.hh"
-#include "lm/common/ngram.hh"
+
+#include <stdint.h>
 
 namespace lm {
 namespace interpolate {
+
+struct InterpolateInfo;
+
+/**
+ * Make the encoding of backoff values for a given order.  This stores values
+ * in [PartialProbGamma::FromBegin(), PartialProbGamma::FromEnd())
+ */
+BoundedSequenceEncoding MakeEncoder(const InterpolateInfo &info, uint8_t order);
 
 /**
  * The first pass for the offline log-linear interpolation algorithm. This
@@ -60,6 +70,7 @@ public:
 
 private:
   struct After {
+    // Note that backoff_and_normalize assumes this comes first.
     float prob;
     float lower_prob;
     uint8_t from[];
