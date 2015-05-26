@@ -5,6 +5,8 @@
 
 #include <boost/noncopyable.hpp>
 
+#include <deque>
+
 namespace util {
 namespace stream {
 
@@ -22,6 +24,8 @@ class RewindableStream : boost::noncopyable {
      * on it later!
      */
     RewindableStream();
+
+    ~RewindableStream();
 
     /**
      * Initializes an existing RewindableStream at a specific position in
@@ -43,16 +47,24 @@ class RewindableStream : boost::noncopyable {
     /**
      * Gets the record at the current stream position. Const version.
      */
-    const void *Get() const;
+    const void *Get() const {
+      assert(!poisoned_);
+      assert(current_);
+      return current_;
+    }
 
     /**
      * Gets the record at the current stream position.
      */
-    void *Get();
+    void *Get() {
+      assert(!poisoned_);
+      assert(current_);
+      return current_;
+    }
 
-    operator bool() const { return current_; }
+    operator bool() const { return !poisoned_; }
 
-    bool operator!() const { return !(*this); }
+    bool operator!() const { return poisoned_; }
 
     /**
      * Marks the current position in the stream to be rewound to later.
@@ -80,19 +92,26 @@ class RewindableStream : boost::noncopyable {
     void Poison();
 
   private:
-    void FetchBlock();
+    void AppendBlock();
+
+    void Flush(std::deque<Block>::iterator to);
+
+    std::deque<Block> blocks_;
+    // current_ is in *blocks_it_.
+    std::deque<Block>::iterator blocks_it_;
 
     std::size_t entry_size_;
     std::size_t block_size_;
+    std::size_t block_count_;
 
-    uint8_t *marked_, *current_, *end_;
-
-    Block first_bl_;
-    Block second_bl_;
-    Block* current_bl_;
+    uint8_t *marked_, *current_;
+    const uint8_t *block_end_;
 
     PCQueue<Block> *in_, *out_;
 
+    // Have we hit poison at the end of the stream, even if rewinding?
+    bool hit_poison_;
+    // Is the curren position poison?
     bool poisoned_;
 
     WorkerProgress progress_;
