@@ -25,14 +25,6 @@ void RewindableStream::Init(const ChainPosition &position) {
   AppendBlock();
 }
 
-RewindableStream::RewindableStream(const ChainPosition &position) {
-  Init(position);
-}
-
-RewindableStream::~RewindableStream() {
-  Poison();
-}
-
 RewindableStream &RewindableStream::operator++() {
   assert(*this);
   assert(current_ < block_end_);
