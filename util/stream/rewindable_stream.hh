@@ -25,6 +25,10 @@ class RewindableStream : boost::noncopyable {
      */
     RewindableStream();
 
+    ~RewindableStream() {
+      Poison();
+    }
+
     /**
      * Initializes an existing RewindableStream at a specific position in
      * a Chain.
@@ -40,7 +44,7 @@ class RewindableStream : boost::noncopyable {
      *
      * Equivalent to RewindableStream a(); a.Init(....);
      */
-    explicit RewindableStream(const ChainPosition &position) 
+    explicit RewindableStream(const ChainPosition &position)
       : in_(NULL) {
       Init(position);
     }
