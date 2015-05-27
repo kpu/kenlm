@@ -22,9 +22,6 @@ class ModelBuffer {
     // Load from file.
     explicit ModelBuffer(const std::string &file_base);
 
-    // explicit for virtual destructor.
-    ~ModelBuffer();
-
     void Sink(util::stream::Chains &chains);
 
     void Source(util::stream::Chains &chains);

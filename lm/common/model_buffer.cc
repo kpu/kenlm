@@ -45,9 +45,6 @@ ModelBuffer::ModelBuffer(const std::string &file_base)
   }
 }
 
-// virtual destructor
-ModelBuffer::~ModelBuffer() {}
-
 void ModelBuffer::Sink(util::stream::Chains &chains) {
   // Open files.
   files_.Init(chains.size());
