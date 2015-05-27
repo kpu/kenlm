@@ -14,8 +14,8 @@ namespace {
 const char kMetadataHeader[] = "KenLM intermediate binary file";
 } // namespace
 
-ModelBuffer::ModelBuffer(const std::string &file_base, bool keep_buffer, bool output_q)
-  : file_base_(file_base), keep_buffer_(keep_buffer), output_q_(output_q) {}
+ModelBuffer::ModelBuffer(const std::string &file_base, bool keep_buffer, bool output_q, const std::vector<uint64_t> &counts)
+  : file_base_(file_base), keep_buffer_(keep_buffer), output_q_(output_q), counts_(counts) {}
 
 ModelBuffer::ModelBuffer(const std::string &file_base)
   : file_base_(file_base), keep_buffer_(false) {
@@ -25,8 +25,12 @@ ModelBuffer::ModelBuffer(const std::string &file_base)
   UTIL_THROW_IF2(token != kMetadataHeader, "File " << full_name << " begins with \"" << token << "\" not " << kMetadataHeader);
 
   token = in.ReadDelimited();
-  UTIL_THROW_IF2(token != "Order", "Expected Order, got \"" << token << "\" in " << full_name);
-  unsigned long order = in.ReadULong();
+  UTIL_THROW_IF2(token != "Counts", "Expected Counts, got \"" << token << "\" in " << full_name);
+  char got;
+  while ((got = in.get()) == ' ') {
+    counts_.push_back(in.ReadULong());
+  }
+  UTIL_THROW_IF2(got != '\n', "Expected newline at end of counts.");
 
   token = in.ReadDelimited();
   UTIL_THROW_IF2(token != "Payload", "Expected Payload, got \"" << token << "\" in " << full_name);
@@ -39,8 +43,8 @@ ModelBuffer::ModelBuffer(const std::string &file_base)
     UTIL_THROW(util::Exception, "Unknown payload " << token);
   }
 
-  files_.Init(order);
-  for (unsigned long i = 0; i < order; ++i) {
+  files_.Init(counts_.size());
+  for (unsigned long i = 0; i < counts_.size(); ++i) {
     files_.push_back(util::OpenReadOrThrow((file_base_ + '.' + boost::lexical_cast<std::string>(i + 1)).c_str()));
   }
 }
@@ -61,7 +65,11 @@ void ModelBuffer::Sink(util::stream::Chains &chains) {
   if (keep_buffer_) {
     util::scoped_fd metadata(util::CreateOrThrow((file_base_ + ".kenlm_intermediate").c_str()));
     util::FakeOFStream meta(metadata.get(), 200);
-    meta << kMetadataHeader << "\nOrder " << chains.size() << "\nPayload " << (output_q_ ? "q" : "pb") << '\n';
+    meta << kMetadataHeader << "\nCounts";
+    for (std::vector<uint64_t>::const_iterator i = counts_.begin(); i != counts_.end(); ++i) {
+      meta << ' ' << *i;
+    }
+    meta << "\nPayload " << (output_q_ ? "q" : "pb") << '\n';
   }
 }
 

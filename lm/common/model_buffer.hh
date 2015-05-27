@@ -9,6 +9,7 @@
 #include "util/fixed_array.hh"
 
 #include <string>
+#include <vector>
 
 namespace util { namespace stream { class Chains; } }
 
@@ -17,7 +18,7 @@ namespace lm { namespace common {
 class ModelBuffer {
   public:
     // Construct for writing.
-    ModelBuffer(const std::string &file_base, bool keep_buffer, bool output_q);
+    ModelBuffer(const std::string &file_base, bool keep_buffer, bool output_q, const std::vector<uint64_t> &counts);
 
     // Load from file.
     explicit ModelBuffer(const std::string &file_base);
@@ -33,6 +34,7 @@ class ModelBuffer {
     const std::string file_base_;
     const bool keep_buffer_;
     bool output_q_;
+    std::vector<uint64_t> counts_;
 
     util::FixedArray<util::scoped_fd> files_;
 };

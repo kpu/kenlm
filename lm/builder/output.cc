@@ -12,14 +12,14 @@ OutputHook::~OutputHook() {}
 Output::Output(StringPiece file_base, bool keep_buffer)
   : file_base_(file_base.data(), file_base.size()), keep_buffer_(keep_buffer) {}
 
-void Output::SinkProbs(util::stream::Chains &chains, bool output_q) {
+void Output::SinkProbs(util::stream::Chains &chains, bool output_q, const std::vector<uint64_t> &counts) {
   Apply(PROB_PARALLEL_HOOK, chains);
   if (!keep_buffer_ && !Have(PROB_SEQUENTIAL_HOOK)) {
     chains >> util::stream::kRecycle;
     chains.Wait(true);
     return;
   }
-  lm::common::ModelBuffer buf(file_base_, keep_buffer_, output_q);
+  lm::common::ModelBuffer buf(file_base_, keep_buffer_, output_q, counts);
   buf.Sink(chains);
   chains >> util::stream::kRecycle;
   chains.Wait(false);

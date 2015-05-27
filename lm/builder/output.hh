@@ -61,7 +61,7 @@ class Output : boost::noncopyable {
     const HeaderInfo &GetHeader() const { return header_; }
 
     // This is called by the pipeline.
-    void SinkProbs(util::stream::Chains &chains, bool output_q);
+    void SinkProbs(util::stream::Chains &chains, bool output_q, const std::vector<uint64_t> &counts);
 
     unsigned int Steps() const { return Have(PROB_SEQUENTIAL_HOOK); }
 
