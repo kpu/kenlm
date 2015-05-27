@@ -60,12 +60,12 @@ EndOfFileException::EndOfFileException() throw() {
 }
 EndOfFileException::~EndOfFileException() throw() {}
 
-bool InputFileIsStdin(const char path[]) {
-  return (strcmp(path, "-") == 0 || strcmp(path, "/dev/stdin") == 0);
+bool InputFileIsStdin(StringPiece path) {
+  return path == "-" || path == "/dev/stdin";
 }
 
-bool OutputFileIsStdout(const char path[]) {
-  return (strcmp(path, "-") == 0 || strcmp(path, "/dev/stdout") == 0);
+bool OutputFileIsStdout(StringPiece path) {
+  return path == "-" || path == "/dev/stdout";
 }
 
 int OpenReadOrThrow(const char *name) {

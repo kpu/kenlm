@@ -87,10 +87,7 @@ int CreateOrThrow(const char *name);
  * file path denotes standard input, but opening "/dev/stdin" may need to be
  * special as well.
  */
-bool InputPathIsStdin(const char path[]);
-inline bool InputPathIsStdin(const std::string &path) {
-  return InputPathIsStdin(path.c_str();
-}
+bool InputPathIsStdin(StringPiece path);
 
 /** Does the given output file path denote standard output?
  *
@@ -101,10 +98,7 @@ inline bool InputPathIsStdin(const std::string &path) {
  * file path denotes standard output, but opening "/dev/stdout" may need to be
  * special as well.
  */
-bool OutputPathIsStdout(const char path[]);
-inline bool OutputPathIsStdout(const std::string &path) {
-  return OutputPathIsStdout(path.c_str();
-}
+bool OutputPathIsStdout(StringPiece path);
 
 // Return value for SizeFile when it can't size properly.
 const uint64_t kBadSize = (uint64_t)-1;
