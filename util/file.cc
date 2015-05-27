@@ -60,6 +60,14 @@ EndOfFileException::EndOfFileException() throw() {
 }
 EndOfFileException::~EndOfFileException() throw() {}
 
+bool InputFileIsStdin(const char path[]) {
+  return (strcmp(path, "-") == 0 || strcmp(path, "/dev/stdin") == 0);
+}
+
+bool OutputFileIsStdout(const char path[]) {
+  return (strcmp(path, "-") == 0 || strcmp(path, "/dev/stdout") == 0);
+}
+
 int OpenReadOrThrow(const char *name) {
   int ret;
 #if defined(_WIN32) || defined(_WIN64)
