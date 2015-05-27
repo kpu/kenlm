@@ -255,7 +255,8 @@ class Recurse {
       for (std::size_t i = 0; i < count; ++i, ++prob_out_) {
         ProbWrite() -= z;
       }
-      // TODO: some sort of release on the rewindable stream?
+      // This allows the stream to release data.
+      prob_out_.Mark();
 
       // Output backoff.
       *reinterpret_cast<float*>(backoff_out_.Get()) = z_lower + backoff_once - z;
