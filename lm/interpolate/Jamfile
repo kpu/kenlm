@@ -2,7 +2,7 @@ fakelib interpolate : ../common//common [ glob *.cc : *_main.cc *_test.cc ] : <c
 
 local with-eigen = [ option.get "with-eigen" ] ;
 if $(with-eigen) {
-  exe train_params : train_params_main.cc /top//boost_program_options ..//kenlm : <include>$(with-eigen) ;
+  exe train_params : interpolate train_params_main.cc /top//boost_program_options ..//kenlm : <include>$(with-eigen) ;
 }
 
 import testing ;
