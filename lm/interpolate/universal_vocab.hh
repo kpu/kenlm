@@ -19,6 +19,10 @@ public:
     return model_index_map_[model_num][model_word_index];
   }
 
+  const WordIndex *Mapping(std::size_t model) const {
+    return &*model_index_map_[model].begin();
+  }
+
   void InsertUniversalIdx(std::size_t model_num, WordIndex word_index,
       WordIndex universal_word_index) {
     model_index_map_[model_num][word_index] = universal_word_index;
