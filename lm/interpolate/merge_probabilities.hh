@@ -58,6 +58,11 @@ public:
     return sizeof(WordIndex) * Order() + sizeof(After) + backoff_bytes_;
   }
 
+  // TODO: cache bounded sequence encoding in the pipeline?
+  static std::size_t TotalSize(const InterpolateInfo &info, uint8_t order) {
+    return sizeof(WordIndex) * order + sizeof(After) + MakeEncoder(info, order).EncodedLength();
+  }
+
   float &Prob() { return Pay().prob; }
   float Prob() const { return Pay().prob; }
 

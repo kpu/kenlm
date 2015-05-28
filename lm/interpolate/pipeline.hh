@@ -3,6 +3,7 @@
 
 #include "lm/common/model_buffer.hh"
 #include "util/fixed_array.hh"
+#include "util/stream/config.hh"
 
 #include <cstddef>
 #include <string>
@@ -11,9 +12,8 @@ namespace lm { namespace interpolate {
 
 struct Config {
   std::vector<float> lambdas;
-  std::string temp_prefix;
-  std::size_t buffer_size;
-  std::size_t total_memory;
+  util::stream::SortConfig sort;
+  std::size_t BufferSize() const { return sort.buffer_size; }
 };
 
 void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config);
