@@ -2,6 +2,7 @@
 #define LM_BUILDER_OUTPUT_H
 
 #include "lm/builder/header_info.hh"
+#include "lm/common/model_buffer.hh"
 #include "util/file.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
@@ -32,7 +33,7 @@ class OutputHook {
 
   protected:
     const HeaderInfo &GetHeader() const;
-    int GetVocabFD() const;
+    int VocabFile() const;
 
   private:
     friend class Output;
@@ -42,7 +43,7 @@ class OutputHook {
 
 class Output : boost::noncopyable {
   public:
-    Output(StringPiece file_base, bool keep_buffer);
+    Output(StringPiece file_base, bool keep_buffer, bool output_q);
 
     // Takes ownership.
     void Add(OutputHook *hook) {
@@ -54,34 +55,31 @@ class Output : boost::noncopyable {
       return !outputs_[hook_type].empty();
     }
 
-    void SetVocabFD(int to) { vocab_fd_ = to; }
-    int GetVocabFD() const { return vocab_fd_; }
+    int VocabFile() const { return buffer_.VocabFile(); }
 
     void SetHeader(const HeaderInfo &header) { header_ = header; }
     const HeaderInfo &GetHeader() const { return header_; }
 
     // This is called by the pipeline.
-    void SinkProbs(util::stream::Chains &chains, bool output_q, const std::vector<uint64_t> &counts);
+    void SinkProbs(util::stream::Chains &chains);
 
     unsigned int Steps() const { return Have(PROB_SEQUENTIAL_HOOK); }
 
   private:
     void Apply(HookType hook_type, util::stream::Chains &chains);
 
-    boost::ptr_vector<OutputHook> outputs_[NUMBER_OF_HOOKS];
-    int vocab_fd_;
-    HeaderInfo header_;
+    ModelBuffer buffer_;
 
-    std::string file_base_;
-    bool keep_buffer_;
+    boost::ptr_vector<OutputHook> outputs_[NUMBER_OF_HOOKS];
+    HeaderInfo header_;
 };
 
 inline const HeaderInfo &OutputHook::GetHeader() const {
   return master_->GetHeader();
 }
 
-inline int OutputHook::GetVocabFD() const {
-  return master_->GetVocabFD();
+inline int OutputHook::VocabFile() const {
+  return master_->VocabFile();
 }
 
 }} // namespaces

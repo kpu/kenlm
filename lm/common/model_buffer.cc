@@ -14,11 +14,12 @@ namespace {
 const char kMetadataHeader[] = "KenLM intermediate binary file";
 } // namespace
 
-ModelBuffer::ModelBuffer(const std::string &file_base, bool keep_buffer, bool output_q, const std::vector<uint64_t> &counts)
-  : file_base_(file_base), keep_buffer_(keep_buffer), output_q_(output_q), counts_(counts) {}
-
-ModelBuffer::ModelBuffer(const std::string &file_base)
-  : file_base_(file_base), keep_buffer_(false) {
+ModelBuffer::ModelBuffer(StringPiece file_base, bool keep_buffer, bool output_q)
+  : file_base_(file_base.data(), file_base.size()), keep_buffer_(keep_buffer), output_q_(output_q),
+    vocab_file_(keep_buffer ? util::CreateOrThrow((file_base_ + ".vocab").c_str()) : util::MakeTemp(file_base_)) {}
+  
+ModelBuffer::ModelBuffer(StringPiece file_base)
+  : file_base_(file_base.data(), file_base.size()), keep_buffer_(false) {
   const std::string full_name = file_base_ + ".kenlm_intermediate";
   util::FilePiece in(full_name.c_str());
   StringPiece token = in.ReadLine();
@@ -43,13 +44,16 @@ ModelBuffer::ModelBuffer(const std::string &file_base)
     UTIL_THROW(util::Exception, "Unknown payload " << token);
   }
 
+  vocab_file_.reset(util::OpenReadOrThrow((file_base_ + ".vocab").c_str()));
+
   files_.Init(counts_.size());
   for (unsigned long i = 0; i < counts_.size(); ++i) {
     files_.push_back(util::OpenReadOrThrow((file_base_ + '.' + boost::lexical_cast<std::string>(i + 1)).c_str()));
   }
 }
 
-void ModelBuffer::Sink(util::stream::Chains &chains) {
+void ModelBuffer::Sink(util::stream::Chains &chains, const std::vector<uint64_t> &counts) {
+  counts_ = counts;
   // Open files.
   files_.Init(chains.size());
   for (std::size_t i = 0; i < chains.size(); ++i) {

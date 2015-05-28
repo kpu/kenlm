@@ -18,7 +18,6 @@ class Output;
 
 struct PipelineConfig {
   std::size_t order;
-  std::string vocab_file;
   util::stream::SortConfig sort;
   InitialProbabilitiesConfig initial_probs;
   util::stream::ChainConfig read_backoffs;

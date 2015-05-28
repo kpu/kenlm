@@ -9,23 +9,22 @@ namespace lm { namespace builder {
 
 OutputHook::~OutputHook() {}
 
-Output::Output(StringPiece file_base, bool keep_buffer)
-  : file_base_(file_base.data(), file_base.size()), keep_buffer_(keep_buffer) {}
+Output::Output(StringPiece file_base, bool keep_buffer, bool output_q)
+  : buffer_(file_base, keep_buffer, output_q) {}
 
-void Output::SinkProbs(util::stream::Chains &chains, bool output_q, const std::vector<uint64_t> &counts) {
+void Output::SinkProbs(util::stream::Chains &chains) {
   Apply(PROB_PARALLEL_HOOK, chains);
-  if (!keep_buffer_ && !Have(PROB_SEQUENTIAL_HOOK)) {
+  if (!buffer_.Keep() && !Have(PROB_SEQUENTIAL_HOOK)) {
     chains >> util::stream::kRecycle;
     chains.Wait(true);
     return;
   }
-  ModelBuffer buf(file_base_, keep_buffer_, output_q, counts);
-  buf.Sink(chains);
+  buffer_.Sink(chains, header_.counts_pruned);
   chains >> util::stream::kRecycle;
   chains.Wait(false);
   if (Have(PROB_SEQUENTIAL_HOOK)) {
     std::cerr << "=== 5/5 Writing ARPA model ===" << std::endl;
-    buf.Source(chains);
+    buffer_.Source(chains);
     Apply(PROB_SEQUENTIAL_HOOK, chains);
     chains >> util::stream::kRecycle;
     chains.Wait(true);
