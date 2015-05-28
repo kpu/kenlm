@@ -76,16 +76,19 @@ void train_params(
     const std::vector<Model *>& models) {
   using namespace std;
 
-  bool AllowExtrapolation = true;
-  bool AllowNegativeParams = true;
+  bool AllowExtrapolation = true; // if true, params need not sum to one
+  bool AllowNegativeParams = true; // if true, params can be negative
   const int ITERATIONS = 20;
+  double minstepsize=1.0e-12; // convergence criterion
+  int context_size=5; // (context_size+1)-grams considered in perplexity
+  double stepdecreasefactor=0.1; // if step unsuccessful
+
   const int nlambdas = models.size() + (HAS_BIAS ? 1 : 0); // bias + #models
   DVector params = DVector::Constant(nlambdas,1.0/nlambdas); // initialize to sum to 1
   DMatrix N = DMatrix::Constant(nlambdas,nlambdas-1, -1.0/sqrt((nlambdas-1)*(nlambdas-1)+nlambdas-1.0));
   for (unsigned i=0; i<nlambdas-1; ++i)
     N(i,i)= N(i,i)*(1.0-nlambdas);
   // N is nullspace matrix, each column sums to zero
-  //cerr << N << endl;
 
   vector<DVector> paramhistory;
 
@@ -94,9 +97,6 @@ void train_params(
   DVector bestparams = DVector::Zero(nlambdas); // corresp. weights
   double stepsize = 1; // dist. from bestparams to params
   double maxbestgradstep=0.0; // max feasible step in grad. direction
-  double minstepsize=1.0e-12; // convergence criterion
-  int context_size=5; // (context_size+1)-grams considered in perplexity
-  double stepdecreasefactor=0.1; // if step unsuccessful
 
   cerr << "++ Parameter training ++" << endl;
   if (AllowExtrapolation)
