@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
 
   // This will be used to read in the binary intermediate files. There is
   // one file per order (e.g. ngrams.1, ngrams.2, ...)
-  lm::common::ModelBuffer buffer(FILE_NAME);
+  lm::ModelBuffer buffer(FILE_NAME);
 
   // Create a separate chains for each ngram order for:
   // - Input from the intermediate files
@@ -176,12 +176,12 @@ int main(int argc, char *argv[]) {
 
   // Create another model buffer for our output on e.g. csorted-ngrams.1,
   // csorted-ngrams.2, ...
-  lm::common::ModelBuffer output_buf(CONTEXT_SORTED_FILENAME, true, false);
+  lm::ModelBuffer output_buf(CONTEXT_SORTED_FILENAME, true, false, buffer.Counts());
   output_buf.Sink(prob_chains);
 
   // Create a third model buffer for our backoff output on e.g. backoff.1,
   // backoff.2, ...
-  lm::common::ModelBuffer boff_buf(BACKOFF_FILENAME, true, false);
+  lm::ModelBuffer boff_buf(BACKOFF_FILENAME, true, false, buffer.Counts());
   boff_buf.Sink(backoff_chains);
 
   // Joins all threads that chains owns,

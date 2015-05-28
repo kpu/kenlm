@@ -19,7 +19,7 @@ void Output::SinkProbs(util::stream::Chains &chains, bool output_q, const std::v
     chains.Wait(true);
     return;
   }
-  lm::common::ModelBuffer buf(file_base_, keep_buffer_, output_q, counts);
+  ModelBuffer buf(file_base_, keep_buffer_, output_q, counts);
   buf.Sink(chains);
   chains >> util::stream::kRecycle;
   chains.Wait(false);

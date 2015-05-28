@@ -8,7 +8,7 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace lm { namespace common {
+namespace lm {
 
 namespace {
 const char kMetadataHeader[] = "KenLM intermediate binary file";
@@ -80,8 +80,4 @@ void ModelBuffer::Source(util::stream::Chains &chains) {
   }
 }
 
-std::size_t ModelBuffer::Order() const {
-  return files_.size();
-}
-
-}} // namespaces
+} // namespace

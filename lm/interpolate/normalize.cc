@@ -186,7 +186,7 @@ class Recurse {
         prob_out_(prob_out),
         backoff_out_(backoff_out),
         backoffs_(backoffs),
-        lambdas_(info.lambdas.begin()),
+        lambdas_(&*info.lambdas.begin()),
         higher_(higher),
         decoded_backoffs_(info.Models()),
         extended_context_(order - 1) {

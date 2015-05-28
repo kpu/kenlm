@@ -48,7 +48,7 @@ void CheckOutput(const util::stream::ChainPosition &from) {
 }
 
 BOOST_AUTO_TEST_CASE(Unigrams) {
-  InterpolateInfo info(2);
+  InterpolateInfo info;
   info.lambdas.push_back(2.0);
   info.lambdas.push_back(-0.1);
   info.orders.push_back(1);

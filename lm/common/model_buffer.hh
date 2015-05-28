@@ -1,5 +1,5 @@
-#ifndef LM_BUILDER_MODEL_BUFFER_H
-#define LM_BUILDER_MODEL_BUFFER_H
+#ifndef LM_COMMON_MODEL_BUFFER_H
+#define LM_COMMON_MODEL_BUFFER_H
 
 /* Format with separate files in suffix order.  Each file contains
  * n-grams of the same order.
@@ -13,7 +13,7 @@
 
 namespace util { namespace stream { class Chains; } }
 
-namespace lm { namespace common {
+namespace lm {
 
 class ModelBuffer {
   public:
@@ -28,7 +28,8 @@ class ModelBuffer {
     void Source(util::stream::Chains &chains);
 
     // The order of the n-gram model that is associated with the model buffer.
-    std::size_t Order() const;
+    std::size_t Order() const { return counts_.size(); }
+    const std::vector<uint64_t> &Counts() const { return counts_; }
 
   private:
     const std::string file_base_;
@@ -39,6 +40,6 @@ class ModelBuffer {
     util::FixedArray<util::scoped_fd> files_;
 };
 
-}} // namespaces
+} // namespace lm
 
-#endif // LM_BUILDER_MODEL_BUFFER_H
+#endif // LM_COMMON_MODEL_BUFFER_H
