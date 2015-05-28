@@ -11,7 +11,7 @@ namespace interpolate {
 
 class UniversalVocab {
 public:
-  explicit UniversalVocab(const std::vector<WordIndex>& model_max_idx);
+  explicit UniversalVocab(const std::vector<WordIndex>& model_vocab_sizes);
 
   // GetUniversalIndex takes the model number and index for the specific
   // model and returns the universal model number
