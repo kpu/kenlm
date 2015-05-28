@@ -78,6 +78,28 @@ int OpenReadOrThrow(const char *name);
 // Create file if it doesn't exist, truncate if it does.  Opened for write.
 int CreateOrThrow(const char *name);
 
+/** Does the given input file path denote standard input?
+ *
+ * Returns true if, and only if, path is either "-" or "/dev/stdin".
+ *
+ * Opening standard input as a file may need some special treatment for
+ * portability.  There's a convention that a dash ("-") in place of an input
+ * file path denotes standard input, but opening "/dev/stdin" may need to be
+ * special as well.
+ */
+bool InputPathIsStdin(StringPiece path);
+
+/** Does the given output file path denote standard output?
+ *
+ * Returns true if, and only if, path is either "-" or "/dev/stdout".
+ *
+ * Opening standard output as a file may need some special treatment for
+ * portability.  There's a convention that a dash ("-") in place of an output
+ * file path denotes standard output, but opening "/dev/stdout" may need to be
+ * special as well.
+ */
+bool OutputPathIsStdout(StringPiece path);
+
 // Return value for SizeFile when it can't size properly.
 const uint64_t kBadSize = (uint64_t)-1;
 uint64_t SizeFile(int fd);

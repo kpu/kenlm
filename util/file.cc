@@ -60,6 +60,14 @@ EndOfFileException::EndOfFileException() throw() {
 }
 EndOfFileException::~EndOfFileException() throw() {}
 
+bool InputFileIsStdin(StringPiece path) {
+  return path == "-" || path == "/dev/stdin";
+}
+
+bool OutputFileIsStdout(StringPiece path) {
+  return path == "-" || path == "/dev/stdout";
+}
+
 int OpenReadOrThrow(const char *name) {
   int ret;
 #if defined(_WIN32) || defined(_WIN64)

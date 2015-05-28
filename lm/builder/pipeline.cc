@@ -277,27 +277,27 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
   }
   master >> Interpolate(std::max(master.Config().vocab_size_for_unk, counts[0] - 1 /* <s> is not included */), util::stream::ChainPositions(gamma_chains), config.prune_thresholds, config.prune_vocab, config.output_q, specials);
   gamma_chains >> util::stream::kRecycle;
-  output.SinkProbs(master.MutableChains(), config.output_q);
+  output.SinkProbs(master.MutableChains());
 }
 
 class VocabNumbering {
   public:
-    VocabNumbering(StringPiece vocab_file, StringPiece temp_prefix, bool renumber)
-      : vocab_file_(vocab_file.data(), vocab_file.size()),
-        temp_prefix_(temp_prefix.data(), temp_prefix.size()),
+    VocabNumbering(int final_vocab, StringPiece temp_prefix, bool renumber)
+      : final_vocab_(final_vocab),
         renumber_(renumber),
         specials_(kBOS, kEOS) {
-      InitFile(renumber || vocab_file.empty());
+      if (renumber) {
+        temporary_.reset(util::MakeTemp(temp_prefix));
+      }
     }
 
-    int File() const { return null_delimited_.get(); }
+    int WriteOnTheFly() const { return renumber_ ? temporary_.get() : final_vocab_; }
 
     // Compute the vocabulary mapping and return the memory used.
     std::size_t ComputeMapping(WordIndex type_count) {
       if (!renumber_) return 0;
-      util::scoped_fd previous(null_delimited_.release());
-      InitFile(vocab_file_.empty());
-      ngram::SortedVocabulary::ComputeRenumbering(type_count, previous.get(), null_delimited_.get(), vocab_mapping_);
+      ngram::SortedVocabulary::ComputeRenumbering(type_count, temporary_.get(), final_vocab_, vocab_mapping_);
+      temporary_.reset();
       return sizeof(WordIndex) * vocab_mapping_.size();
     }
 
@@ -312,15 +312,9 @@ class VocabNumbering {
     const SpecialVocab &Specials() const { return specials_; }
 
   private:
-    void InitFile(bool temp) {
-      null_delimited_.reset(temp ?
-        util::MakeTemp(temp_prefix_) :
-        util::CreateOrThrow(vocab_file_.c_str()));
-    }
-
-    std::string vocab_file_, temp_prefix_;
-
-    util::scoped_fd null_delimited_;
+    int final_vocab_;
+    // Out of order vocab file created on the fly.
+    util::scoped_fd temporary_;
 
     bool renumber_;
 
@@ -349,18 +343,17 @@ void Pipeline(PipelineConfig &config, int text_file, Output &output) {
   // master's destructor will wait for chains.  But they might be deadlocked if
   // this thread dies because e.g. it ran out of memory.
   try {
-    VocabNumbering numbering(config.vocab_file, config.TempPrefix(), config.renumber_vocabulary);
+    VocabNumbering numbering(output.VocabFile(), config.TempPrefix(), config.renumber_vocabulary);
     uint64_t token_count;
     WordIndex type_count;
     std::string text_file_name;
     std::vector<bool> prune_words;
     util::scoped_ptr<util::stream::Sort<SuffixOrder, CombineCounts> > sorted_counts(
-        CountText(text_file, numbering.File(), master, token_count, type_count, text_file_name, prune_words));
+        CountText(text_file, numbering.WriteOnTheFly(), master, token_count, type_count, text_file_name, prune_words));
     std::cerr << "Unigram tokens " << token_count << " types " << type_count << std::endl;
 
     // Create vocab mapping, which uses temporary memory, while nothing else is happening.
     std::size_t subtract_for_numbering = numbering.ComputeMapping(type_count);
-    output.SetVocabFD(numbering.File());
 
     std::cerr << "=== 2/" << master.Steps() << " Calculating and sorting adjusted counts ===" << std::endl;
     master.InitForAdjust(*sorted_counts, type_count, subtract_for_numbering);

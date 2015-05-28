@@ -22,8 +22,8 @@ BOOST_AUTO_TEST_CASE(RewindableStreamTest) {
   config.total_memory = 100;
   config.block_count = 6;
 
-  RewindableStream s;
   Chain chain(config);
+  RewindableStream s;
   chain >> Read(in.get()) >> s >> kRecycle;
   uint64_t i = 0;
   for (; s; ++s, ++i) {

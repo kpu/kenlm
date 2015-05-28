@@ -1,9 +1,8 @@
 #ifndef KENLM_INTERPOLATE_INTERPOLATE_INFO_H
 #define KENLM_INTERPOLATE_INTERPOLATE_INFO_H
 
-#include "util/fixed_array.hh"
-
 #include <cstddef>
+#include <vector>
 #include <stdint.h>
 
 namespace lm {
@@ -15,16 +14,6 @@ namespace interpolate {
  */
 struct InterpolateInfo {
   /**
-   * Creates interpolation info storage for a specific number of models.
-   * The actual data should be populated later, but the arrays will already
-   * be allocated for you.
-   */
-  explicit InterpolateInfo(std::size_t num_models) {
-    lambdas.Init(num_models);
-    orders.Init(num_models);
-  }
-
-  /**
    * @return the number of models being interpolated
    */
   std::size_t Models() const {
@@ -34,12 +23,12 @@ struct InterpolateInfo {
   /**
    * The lambda (interpolation weight) for each model.
    */
-  util::FixedArray<float> lambdas;
+  std::vector<float> lambdas;
 
   /**
    * The maximum ngram order for each model.
    */
-  util::FixedArray<uint8_t> orders;
+  std::vector<uint8_t> orders;
 };
 }
 }

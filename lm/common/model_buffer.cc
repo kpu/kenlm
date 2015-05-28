@@ -8,25 +8,30 @@
 
 #include <boost/lexical_cast.hpp>
 
-namespace lm { namespace common {
+namespace lm {
 
 namespace {
 const char kMetadataHeader[] = "KenLM intermediate binary file";
 } // namespace
 
-ModelBuffer::ModelBuffer(const std::string &file_base, bool keep_buffer, bool output_q)
-  : file_base_(file_base), keep_buffer_(keep_buffer), output_q_(output_q) {}
-
-ModelBuffer::ModelBuffer(const std::string &file_base)
-  : file_base_(file_base), keep_buffer_(false) {
+ModelBuffer::ModelBuffer(StringPiece file_base, bool keep_buffer, bool output_q)
+  : file_base_(file_base.data(), file_base.size()), keep_buffer_(keep_buffer), output_q_(output_q),
+    vocab_file_(keep_buffer ? util::CreateOrThrow((file_base_ + ".vocab").c_str()) : util::MakeTemp(file_base_)) {}
+  
+ModelBuffer::ModelBuffer(StringPiece file_base)
+  : file_base_(file_base.data(), file_base.size()), keep_buffer_(false) {
   const std::string full_name = file_base_ + ".kenlm_intermediate";
   util::FilePiece in(full_name.c_str());
   StringPiece token = in.ReadLine();
   UTIL_THROW_IF2(token != kMetadataHeader, "File " << full_name << " begins with \"" << token << "\" not " << kMetadataHeader);
 
   token = in.ReadDelimited();
-  UTIL_THROW_IF2(token != "Order", "Expected Order, got \"" << token << "\" in " << full_name);
-  unsigned long order = in.ReadULong();
+  UTIL_THROW_IF2(token != "Counts", "Expected Counts, got \"" << token << "\" in " << full_name);
+  char got;
+  while ((got = in.get()) == ' ') {
+    counts_.push_back(in.ReadULong());
+  }
+  UTIL_THROW_IF2(got != '\n', "Expected newline at end of counts.");
 
   token = in.ReadDelimited();
   UTIL_THROW_IF2(token != "Payload", "Expected Payload, got \"" << token << "\" in " << full_name);
@@ -39,16 +44,16 @@ ModelBuffer::ModelBuffer(const std::string &file_base)
     UTIL_THROW(util::Exception, "Unknown payload " << token);
   }
 
-  files_.Init(order);
-  for (unsigned long i = 0; i < order; ++i) {
+  vocab_file_.reset(util::OpenReadOrThrow((file_base_ + ".vocab").c_str()));
+
+  files_.Init(counts_.size());
+  for (unsigned long i = 0; i < counts_.size(); ++i) {
     files_.push_back(util::OpenReadOrThrow((file_base_ + '.' + boost::lexical_cast<std::string>(i + 1)).c_str()));
   }
 }
 
-// virtual destructor
-ModelBuffer::~ModelBuffer() {}
-
-void ModelBuffer::Sink(util::stream::Chains &chains) {
+void ModelBuffer::Sink(util::stream::Chains &chains, const std::vector<uint64_t> &counts) {
+  counts_ = counts;
   // Open files.
   files_.Init(chains.size());
   for (std::size_t i = 0; i < chains.size(); ++i) {
@@ -64,7 +69,11 @@ void ModelBuffer::Sink(util::stream::Chains &chains) {
   if (keep_buffer_) {
     util::scoped_fd metadata(util::CreateOrThrow((file_base_ + ".kenlm_intermediate").c_str()));
     util::FakeOFStream meta(metadata.get(), 200);
-    meta << kMetadataHeader << "\nOrder " << chains.size() << "\nPayload " << (output_q_ ? "q" : "pb") << '\n';
+    meta << kMetadataHeader << "\nCounts";
+    for (std::vector<uint64_t>::const_iterator i = counts_.begin(); i != counts_.end(); ++i) {
+      meta << ' ' << *i;
+    }
+    meta << "\nPayload " << (output_q_ ? "q" : "pb") << '\n';
   }
 }
 
@@ -75,8 +84,4 @@ void ModelBuffer::Source(util::stream::Chains &chains) {
   }
 }
 
-std::size_t ModelBuffer::Order() const {
-  return files_.size();
-}
-
-}} // namespaces
+} // namespace

@@ -28,7 +28,7 @@ void PrintARPA::Sink(util::stream::Chains &chains) {
 }
 
 void PrintARPA::Run(const util::stream::ChainPositions &positions) {
-  VocabReconstitute vocab(GetVocabFD());
+  VocabReconstitute vocab(VocabFile());
   util::FakeOFStream out(out_fd_.get());
 
   // Write header.

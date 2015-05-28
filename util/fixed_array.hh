@@ -114,12 +114,17 @@ template <class T> class FixedArray {
      * and stores it in this data structure.
      *
      * The memory backing the constructed object is managed by this data structure.
+     * I miss C++11 variadic templates.
      */
     void push_back() {
       new (end()) T();
       Constructed();
     }
     template <class C> void push_back(const C &c) {
+      new (end()) T(c);
+      Constructed();
+    }
+    template <class C> void push_back(C &c) {
       new (end()) T(c);
       Constructed();
     }

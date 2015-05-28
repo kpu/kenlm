@@ -1,13 +1,23 @@
 #ifndef KENLM_INTERPOLATE_MERGE_PROBABILITIES_H
 #define KENLM_INTERPOLATE_MERGE_PROBABILITIES_H
 
+#include "lm/common/ngram.hh"
+#include "lm/interpolate/bounded_sequence_encoding.hh"
 #include "util/fixed_array.hh"
 #include "util/stream/multi_stream.hh"
-#include "lm/interpolate/interpolate_info.hh"
-#include "lm/common/ngram.hh"
+
+#include <stdint.h>
 
 namespace lm {
 namespace interpolate {
+
+struct InterpolateInfo;
+
+/**
+ * Make the encoding of backoff values for a given order.  This stores values
+ * in [PartialProbGamma::FromBegin(), PartialProbGamma::FromEnd())
+ */
+BoundedSequenceEncoding MakeEncoder(const InterpolateInfo &info, uint8_t order);
 
 /**
  * The first pass for the offline log-linear interpolation algorithm. This
@@ -46,26 +56,28 @@ public:
   }
 
   std::size_t TotalSize() const {
-    return sizeof(WordIndex) * Order() + sizeof(float) + backoff_bytes_;
+    return sizeof(WordIndex) * Order() + sizeof(After) + backoff_bytes_;
   }
 
-  float &Prob() {
-    return *reinterpret_cast<float *>(end());
-  }
+  float &Prob() { return Pay().prob; }
+  float Prob() const { return Pay().prob; }
 
-  float Prob() const {
-    return *reinterpret_cast<const float *>(end());
-  }
+  float &LowerProb() { return Pay().lower_prob; }
+  float LowerProb() const { return Pay().lower_prob; }
 
-  const uint8_t *FromBegin() const {
-    return reinterpret_cast<const uint8_t *>(end()) + sizeof(float);
-  }
-
-  uint8_t *FromBegin() {
-    return reinterpret_cast<uint8_t *>(end()) + sizeof(float);
-  }
+  const uint8_t *FromBegin() const { return Pay().from; }
+  uint8_t *FromBegin() { return Pay().from; }
 
 private:
+  struct After {
+    // Note that backoff_and_normalize assumes this comes first.
+    float prob;
+    float lower_prob;
+    uint8_t from[];
+  };
+  const After &Pay() const { return *reinterpret_cast<const After *>(end()); }
+  After &Pay() { return *reinterpret_cast<After*>(end()); }
+
   std::size_t backoff_bytes_;
 };
 }

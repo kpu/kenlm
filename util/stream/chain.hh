@@ -158,6 +158,13 @@ class Chain {
       return block_size_;
     }
 
+    /**
+     * Number of blocks going through the Chain.
+     */
+    std::size_t BlockCount() const {
+      return config_.block_count;
+    }
+
     /** Two ways to add to the chain: Add() or operator>>. */
     ChainPosition Add();
 
