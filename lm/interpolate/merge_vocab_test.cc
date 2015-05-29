@@ -6,6 +6,7 @@
 #include "lm/lm_exception.hh"
 #include "lm/word_index.hh"
 #include "util/file.hh"
+#include "util/file_piece.hh"
 
 #include <cstring>
 
@@ -52,8 +53,10 @@ BOOST_AUTO_TEST_CASE(MergeVocabTest) {
   model_max_idx.push_back(10);
   model_max_idx.push_back(10);
 
+  util::scoped_fd combined(util::MakeTemp("temporary"));
+
   UniversalVocab universal_vocab(model_max_idx);
-  MergeVocabIndex(used_files, universal_vocab);
+  MergeVocab(used_files, universal_vocab, combined.get());
 
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(0, 0), 0);
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(1, 0), 0);
@@ -64,6 +67,21 @@ BOOST_AUTO_TEST_CASE(MergeVocabTest) {
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(0, 5), 11);
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(1, 3), 4);
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(2, 3), 10);
+
+  util::FilePiece f(combined.release());
+  BOOST_CHECK_EQUAL("<unk>", f.ReadLine('\0'));
+  BOOST_CHECK_EQUAL("a", f.ReadLine('\0'));
+  BOOST_CHECK_EQUAL("is this", f.ReadLine('\0'));
+  BOOST_CHECK_EQUAL("this a", f.ReadLine('\0'));
+  BOOST_CHECK_EQUAL("first cut", f.ReadLine('\0'));
+  BOOST_CHECK_EQUAL("this", f.ReadLine('\0'));
+  BOOST_CHECK_EQUAL("a first", f.ReadLine('\0'));
+  BOOST_CHECK_EQUAL("cut", f.ReadLine('\0'));
+  BOOST_CHECK_EQUAL("is", f.ReadLine('\0'));
+  BOOST_CHECK_EQUAL("i", f.ReadLine('\0'));
+  BOOST_CHECK_EQUAL("secd", f.ReadLine('\0'));
+  BOOST_CHECK_EQUAL("first", f.ReadLine('\0'));
+  BOOST_CHECK_THROW(f.ReadLine('\0'), util::EndOfFileException);
 }
 
 BOOST_AUTO_TEST_CASE(MergeVocabNoUnkTest) {
@@ -75,7 +93,8 @@ BOOST_AUTO_TEST_CASE(MergeVocabNoUnkTest) {
   model_max_idx.push_back(10);
 
   UniversalVocab universal_vocab(model_max_idx);
-  BOOST_CHECK_THROW(MergeVocabIndex(used_files, universal_vocab), FormatLoadException);
+  util::scoped_fd combined(util::MakeTemp("temporary"));
+  BOOST_CHECK_THROW(MergeVocab(used_files, universal_vocab, combined.get()), FormatLoadException);
 }
 
 BOOST_AUTO_TEST_CASE(MergeVocabWrongOrderTest) {
@@ -90,7 +109,8 @@ BOOST_AUTO_TEST_CASE(MergeVocabWrongOrderTest) {
   model_max_idx.push_back(10);
 
   lm::interpolate::UniversalVocab universal_vocab(model_max_idx);
-  BOOST_CHECK_THROW(MergeVocabIndex(used_files, universal_vocab), FormatLoadException);
+  util::scoped_fd combined(util::MakeTemp("temporary"));
+  BOOST_CHECK_THROW(MergeVocab(used_files, universal_vocab, combined.get()), FormatLoadException);
 }
 
 }}} // namespaces

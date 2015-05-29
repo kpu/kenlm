@@ -133,13 +133,17 @@ template <class T> class FixedArray {
       Constructed();
     }
 
+    void pop_back() {
+      back().~T();
+      --newed_end_;
+    }
+
     /**
      * Removes all elements from this array.
      */
     void clear() {
-      for (T *i = begin(); i != end(); ++i)
-        i->~T();
-      newed_end_ = begin();
+      while (newed_end_ != begin())
+        pop_back();
     }
 
   protected:
