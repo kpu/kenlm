@@ -100,14 +100,20 @@ template <class T> class FixedArray {
      *
      * @param i Index of the object to reference
      */
-    T &operator[](std::size_t i) { return begin()[i]; }
+    T &operator[](std::size_t i) {
+      assert(i < size());
+      return begin()[i];
+    }
 
     /**
      * Gets a const reference to the object with index i currently stored in this data structure.
      *
      * @param i Index of the object to reference
      */
-    const T &operator[](std::size_t i) const { return begin()[i]; }
+    const T &operator[](std::size_t i) const {
+      assert(i < size());
+      return begin()[i];
+    }
 
     /**
      * Constructs a new object using the provided parameter,
