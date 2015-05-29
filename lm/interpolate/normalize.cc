@@ -56,6 +56,11 @@ class BackoffQueueEntry {
       entry_ = 0.0;
     }
 
+    ~BackoffQueueEntry() {
+      // Burn off backoffs that are not used to compute a probability.
+      for (; stream_; ++stream_) {}
+    }
+
     operator bool() const { return stream_; }
 
     NGramHeader operator*() const { return *stream_; }
@@ -310,7 +315,7 @@ class Recurse {
     // Higher order instance of this same class.
     util::scoped_ptr<Recurse> higher_;
 
-    // Temoporary in SameContext.
+    // Temporary in SameContext.
     std::vector<unsigned char> decoded_backoffs_;
     // Temporary in ExtendContext.
     std::vector<WordIndex> extended_context_;
@@ -365,6 +370,7 @@ class Thread {
 } // namespace
 
 void Normalize(const InterpolateInfo &info, util::FixedArray<util::stream::ChainPositions> &models_by_order, util::stream::Chains &merged_probabilities, util::stream::Chains &prob_out, util::stream::Chains &backoff_out) {
+  assert(prob_out.size() == backoff_out.size() + 1);
   // Arbitrarily put the thread on the merged_probabilities Chains.
   merged_probabilities >> Thread(info, models_by_order, prob_out, backoff_out);
 }
