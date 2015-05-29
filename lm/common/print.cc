@@ -23,6 +23,15 @@ VocabReconstitute::VocabReconstitute(int fd) {
   map_.push_back(i);
 }
 
+namespace {
+template <class Payload> void PrintLead(const VocabReconstitute &vocab, ProxyStream<Payload> &stream, util::FakeOFStream &out) {
+  out << stream->Value().prob << '\t' << vocab.Lookup(*stream->begin());
+  for (const WordIndex *i = stream->begin() + 1; i != stream->end(); ++i) {
+    out << ' ' << vocab.Lookup(*i);
+  }
+}
+} // namespace
+
 void PrintARPA::Run(const util::stream::ChainPositions &positions) {
   VocabReconstitute vocab(vocab_fd_);
   util::FakeOFStream out(out_fd_);
@@ -32,21 +41,21 @@ void PrintARPA::Run(const util::stream::ChainPositions &positions) {
   }
   out << '\n';
 
-  for (unsigned order = 1; order <= positions.size(); ++order) {
+  for (unsigned order = 1; order < positions.size(); ++order) {
     out << "\\" << order << "-grams:" << '\n';
-    for (NGramStream<ProbBackoff> stream(positions[order - 1]); stream; ++stream) {
-      // Correcting for numerical precision issues.  Take that IRST.
-      out << stream->Value().prob << '\t' << vocab.Lookup(*stream->begin());
-      for (const WordIndex *i = stream->begin() + 1; i != stream->end(); ++i) {
-        out << ' ' << vocab.Lookup(*i);
-      }
-      if (order != positions.size())
-        out << '\t' << stream->Value().backoff;
-      out << '\n';
-
+    for (ProxyStream<NGram<ProbBackoff> > stream(positions[order - 1], NGram<ProbBackoff>(NULL, order)); stream; ++stream) {
+      PrintLead(vocab, stream, out);
+      out << '\t' << stream->Value().backoff << '\n';
     }
     out << '\n';
   }
+
+  out << "\\" << positions.size() << "-grams:" << '\n';
+  for (ProxyStream<NGram<Prob> > stream(positions.back(), NGram<Prob>(NULL, positions.size())); stream; ++stream) {
+    PrintLead(vocab, stream, out);
+    out << '\n';
+  }
+  out << '\n';
   out << "\\end\\\n";
 }
 
