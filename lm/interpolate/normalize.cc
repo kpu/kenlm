@@ -36,7 +36,7 @@ class BackoffMatrix {
 
   private:
     const std::size_t max_order_;
-    util::FixedArray<float> backing_;
+    std::vector<float> backing_;
 };
 
 struct SuffixLexicographicLess : public std::binary_function<NGramHeader, NGramHeader, bool> {
@@ -101,12 +101,12 @@ std::size_t MaxOrder(const util::FixedArray<util::stream::ChainPositions> &model
 class BackoffManager {
   public:
     explicit BackoffManager(const util::FixedArray<util::stream::ChainPositions> &models)
-      : entered_(MaxOrder(models)), matrix_(models.size(), entered_.size()) {
+      : entered_(MaxOrder(models)), matrix_(models.size(), MaxOrder(models)) {
       std::size_t total = 0;
       for (const util::stream::ChainPositions *m = models.begin(); m != models.end(); ++m) {
         total += m->size();
       }
-      for (std::size_t i = 0; i < entered_.size(); ++i) {
+      for (std::size_t i = 0; i < MaxOrder(models); ++i) {
         entered_.push_back(models.size());
       }
       owner_.Init(total);
