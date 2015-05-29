@@ -238,7 +238,7 @@ void MergeProbabilities(
     util::FixedArray<util::stream::ChainPositions> &models_by_order,
     util::stream::Chains &output_chains) {
   NGramHandlers handlers(models_by_order.size());
-  for (std::size_t i = 0; i < handlers.size(); ++i) {
+  for (std::size_t i = 0; i < models_by_order.size(); ++i) {
     handlers.push_back(i + 1, info, models_by_order);
   }
 

@@ -62,19 +62,19 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
   InterpolateInfo info;
   info.lambdas = config.lambdas;
   std::vector<WordIndex> vocab_sizes;
-  UniversalVocab vocab(vocab_sizes);
+
   util::scoped_fd vocab_null(util::MakeTemp(config.sort.temp_prefix));
   std::size_t max_order = 0;
-  {
-    util::FixedArray<util::scoped_fd> vocab_files;
-    for (ModelBuffer *i = models.begin(); i != models.end(); ++i) {
-      info.orders.push_back(i->Order());
-      vocab_sizes.push_back(i->Counts()[0]);
-      vocab_files.push_back(util::DupOrThrow(i->VocabFile()));
-      max_order = std::max(max_order, i->Order());
-    }
-    MergeVocab(vocab_files, vocab, vocab_null.get());
+  util::FixedArray<util::scoped_fd> vocab_files(models.size());
+  for (ModelBuffer *i = models.begin(); i != models.end(); ++i) {
+    info.orders.push_back(i->Order());
+    vocab_sizes.push_back(i->Counts()[0]);
+    vocab_files.push_back(util::DupOrThrow(i->VocabFile()));
+    max_order = std::max(max_order, i->Order());
   }
+  UniversalVocab vocab(vocab_sizes);
+  MergeVocab(vocab_files, vocab, vocab_null.get());
+  vocab_files.clear();
 
   // Pass 1: merge probabilities
   util::FixedArray<util::stream::Chains> input_chains(models.size());
