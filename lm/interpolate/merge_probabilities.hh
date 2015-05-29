@@ -1,5 +1,5 @@
-#ifndef KENLM_INTERPOLATE_MERGE_PROBABILITIES_H
-#define KENLM_INTERPOLATE_MERGE_PROBABILITIES_H
+#ifndef LM_INTERPOLATE_MERGE_PROBABILITIES_H
+#define LM_INTERPOLATE_MERGE_PROBABILITIES_H
 
 #include "lm/common/ngram.hh"
 #include "lm/interpolate/bounded_sequence_encoding.hh"
@@ -40,7 +40,6 @@ void MergeProbabilities(
     const InterpolateInfo &info,
     util::FixedArray<util::stream::ChainPositions> &models_by_order,
     util::stream::Chains &output_chains);
-}
 
 /**
  * This class represents the output payload for this pass, which consists
@@ -57,6 +56,11 @@ public:
 
   std::size_t TotalSize() const {
     return sizeof(WordIndex) * Order() + sizeof(After) + backoff_bytes_;
+  }
+
+  // TODO: cache bounded sequence encoding in the pipeline?
+  static std::size_t TotalSize(const InterpolateInfo &info, uint8_t order) {
+    return sizeof(WordIndex) * order + sizeof(After) + MakeEncoder(info, order).EncodedLength();
   }
 
   float &Prob() { return Pay().prob; }
@@ -80,5 +84,6 @@ private:
 
   std::size_t backoff_bytes_;
 };
-}
-#endif
+
+}} // namespaces
+#endif // LM_INTERPOLATE_MERGE_PROBABILITIES_H
