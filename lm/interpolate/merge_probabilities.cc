@@ -144,7 +144,7 @@ void HandleSuffix(NGramHandlers &handlers, WordIndex *suffix_begin,
                   float combined_fallback,
                   util::stream::Streams &outputs) {
   uint8_t order = std::distance(suffix_begin, suffix_end) + 1;
-  if (order >= outputs.size()) return;
+  if (order > outputs.size()) return;
 
   util::stream::Stream &output = outputs[order - 1];
   NGramHandler &handler = handlers[order - 1];
