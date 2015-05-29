@@ -256,10 +256,11 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
   // TODO: stop generating vocab ids and LowerProb for unigrams.
   HandleSuffix(handlers, NULL, NULL, unk_probs, unk_from, unk_combined, outputs);
 
-  // Verify we reached the end.
+  // Verify we reached the end.  And poison!
   for (std::size_t i = 0; i < handlers.size(); ++i) {
     UTIL_THROW_IF2(handlers[i].ActiveSize(),
                      "MergeProbabilities did not exhaust all ngram streams");
+    outputs[i].Poison();
   }
 }
 }
