@@ -20,6 +20,9 @@ class ChainPositions : public util::FixedArray<util::stream::ChainPosition> {
   public:
     ChainPositions() {}
 
+    explicit ChainPositions(std::size_t bound) : 
+      util::FixedArray<util::stream::ChainPosition>(bound) {}
+
     void Init(Chains &chains);
 
     explicit ChainPositions(Chains &chains) {

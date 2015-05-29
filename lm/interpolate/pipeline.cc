@@ -2,6 +2,7 @@
 
 #include "lm/common/compare.hh"
 #include "lm/common/renumber.hh"
+#include "lm/interpolate/backoff_reunification.hh"
 #include "lm/interpolate/interpolate_info.hh"
 #include "lm/interpolate/merge_probabilities.hh"
 #include "lm/interpolate/merge_vocab.hh"
@@ -59,16 +60,19 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config) {
   InterpolateInfo info;
   info.lambdas = config.lambdas;
   std::vector<WordIndex> vocab_sizes;
-  util::FixedArray<util::scoped_fd> vocab_files;
-  std::size_t max_order = 0;
-  for (ModelBuffer *i = models.begin(); i != models.end(); ++i) {
-    info.orders.push_back(i->Order());
-    vocab_sizes.push_back(i->Counts()[0]);
-    vocab_files.push_back(util::DupOrThrow(i->VocabFile()));
-    max_order = std::max(max_order, i->Order());
-  }
   UniversalVocab vocab(vocab_sizes);
-  MergeVocabIndex(vocab_files, vocab);
+  util::scoped_fd vocab_null(util::MakeTemp(config.sort.temp_prefix));
+  std::size_t max_order = 0;
+  {
+    util::FixedArray<util::scoped_fd> vocab_files;
+    for (ModelBuffer *i = models.begin(); i != models.end(); ++i) {
+      info.orders.push_back(i->Order());
+      vocab_sizes.push_back(i->Counts()[0]);
+      vocab_files.push_back(util::DupOrThrow(i->VocabFile()));
+      max_order = std::max(max_order, i->Order());
+    }
+    MergeVocab(vocab_files, vocab, vocab_null.get());
+  }
 
   // Pass 1: merge probabilities
   util::FixedArray<util::stream::Chains> input_chains(models.size());
@@ -101,9 +105,23 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config) {
 
   // Pass 3: backoffs in the right place.
   ApplySort<SuffixOrder>(config.sort, probabilities);
+  // TODO destroy universal vocab to save RAM.
   // TODO these should be freed before merge sort happens in the above function.
   backoffs.Wait(true);
   merged_probs.Wait(true);
+
+  util::stream::ChainPositions prob_pos(max_order - 1);
+  util::stream::Chains combined(max_order - 1);
+  for (std::size_t i = 0; i < max_order - 1; ++i) {
+    backoffs[i] >> backoff_buffers[i].Source(true);
+    prob_pos.push_back(probabilities[i].Add());
+    combined.push_back(util::stream::ChainConfig(NGram<ProbBackoff>::TotalSize(i + 1), 2, config.BufferSize()));
+  }
+  util::stream::ChainPositions backoff_pos(backoffs);
+
+  ReunifyBackoff(prob_pos, backoff_pos, combined);
+
+  // TODO: output combined for lower orders, highest order from probabilities
 }
 
 }} // namespaces

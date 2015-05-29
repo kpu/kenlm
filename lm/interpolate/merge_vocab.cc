@@ -3,6 +3,7 @@
 #include "lm/interpolate/universal_vocab.hh"
 #include "lm/lm_exception.hh"
 #include "lm/vocab.hh"
+#include "util/fake_ofstream.hh"
 #include "util/file_piece.hh"
 
 #include <queue>
@@ -22,15 +23,18 @@ class VocabFileReader {
     operator bool() const { return !eof_; }
     uint64_t operator*() const { return Value(); }
 
-    uint64_t Value(void) const { return hash_value_; }
-    size_t ModelNum(void) const { return model_num_; }
-    WordIndex CurrentIndex(void) const { return current_index_; }
+    uint64_t Value() const { return hash_value_; }
+    size_t ModelNum() const { return model_num_; }
+    WordIndex CurrentIndex() const { return current_index_; }
+
+    StringPiece Word() const { return word_; }
 
   private:
     uint64_t hash_value_;
     WordIndex current_index_;
     bool eof_;
     size_t model_num_;
+    StringPiece word_;
     util::FilePiece file_piece_;
 };
 
@@ -39,10 +43,9 @@ VocabFileReader::VocabFileReader(const int fd, const size_t model_num, uint64_t 
   current_index_(0),
   eof_(false),
   model_num_(model_num),
-  file_piece_(fd)
-{
-  StringPiece vocab_elem = file_piece_.ReadLine('\0');
-  UTIL_THROW_IF(vocab_elem != "<unk>",
+  file_piece_(fd) {
+  word_ = file_piece_.ReadLine('\0');
+  UTIL_THROW_IF(word_ != "<unk>",
                 FormatLoadException,
                 "Vocabulary words are in the wrong place.");
   // setup to initial value
@@ -50,15 +53,14 @@ VocabFileReader::VocabFileReader(const int fd, const size_t model_num, uint64_t 
 }
 
 VocabFileReader &VocabFileReader::operator++() {
-  StringPiece vocab_elem;
   try {
-    vocab_elem = file_piece_.ReadLine('\0');
+    word_ = file_piece_.ReadLine('\0');
   } catch(util::EndOfFileException &e) {
     eof_ = true;
     return *this;
   }
   uint64_t prev_hash_value = hash_value_;
-  hash_value_ = ngram::detail::HashForVocab(vocab_elem.data(), vocab_elem.size());
+  hash_value_ = ngram::detail::HashForVocab(word_.data(), word_.size());
 
   // hash values should be monotonically increasing
   UTIL_THROW_IF(hash_value_ < prev_hash_value, FormatLoadException,
@@ -75,7 +77,7 @@ class CompareFiles {
 public:
   bool operator()(const VocabFileReader* x,
                   const VocabFileReader* y)
-  { return x->Value()> y->Value(); }
+  { return x->Value() > y->Value(); }
 };
 
 class Readers : public util::FixedArray<VocabFileReader> {
@@ -89,7 +91,7 @@ class Readers : public util::FixedArray<VocabFileReader> {
 
 } // namespace
 
-void MergeVocabIndex(util::FixedArray<util::scoped_fd> &files, UniversalVocab &vocab) {
+void MergeVocab(util::FixedArray<util::scoped_fd> &files, UniversalVocab &vocab, int write_file) {
   typedef std::priority_queue<VocabFileReader*, std::vector<VocabFileReader*>, CompareFiles> HeapType;
   HeapType heap;
   Readers readers(files.size());
@@ -104,9 +106,13 @@ void MergeVocabIndex(util::FixedArray<util::scoped_fd> &files, UniversalVocab &v
   // global_index starts with <unk> which is 0
   WordIndex global_index = 0;
 
+  util::FakeOFStream out(write_file);
+  out << "<unk>" << '\0';
+
   while (!heap.empty()) {
     VocabFileReader* top_vocab_file = heap.top();
     if (top_vocab_file->Value() != prev_hash_value) {
+      out << top_vocab_file->Word() << '\0';
       global_index++;
     }
     vocab.InsertUniversalIdx(top_vocab_file->ModelNum(),
