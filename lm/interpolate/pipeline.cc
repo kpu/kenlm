@@ -104,6 +104,13 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config) {
   // TODO these should be freed before merge sort happens in the above function.
   backoffs.Wait(true);
   merged_probs.Wait(true);
+
+  for (std::size_t i = 0; i < max_order - 1; ++i) {
+    backoffs[i] >> backoff_buffers.back().Source(true);
+  }
+
+  ReunifyBackoff(probabilities, backoffs, );
+  ModelBuffer output(
 }
 
 }} // namespaces

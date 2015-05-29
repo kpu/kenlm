@@ -21,24 +21,18 @@ enum HookType {
   NUMBER_OF_HOOKS // Keep this last so we know how many values there are.
 };
 
-class Output;
-
 class OutputHook {
   public:
-    explicit OutputHook(HookType hook_type) : type_(hook_type), master_(NULL) {}
+    explicit OutputHook(HookType hook_type) : type_(hook_type) {}
 
     virtual ~OutputHook();
 
-    virtual void Sink(util::stream::Chains &chains) = 0;
+    virtual void Sink(const HeaderInfo &info, int vocab_file, util::stream::Chains &chains) = 0;
 
-  protected:
-    const HeaderInfo &GetHeader() const;
-    int VocabFile() const;
+    HookType Type() const { return type_; }
 
   private:
-    friend class Output;
-    const HookType type_;
-    const Output *master_;
+    HookType type_;
 };
 
 class Output : boost::noncopyable {
@@ -47,8 +41,7 @@ class Output : boost::noncopyable {
 
     // Takes ownership.
     void Add(OutputHook *hook) {
-      hook->master_ = this;
-      outputs_[hook->type_].push_back(hook);
+      outputs_[hook->Type()].push_back(hook);
     }
 
     bool Have(HookType hook_type) const {
@@ -74,13 +67,18 @@ class Output : boost::noncopyable {
     HeaderInfo header_;
 };
 
-inline const HeaderInfo &OutputHook::GetHeader() const {
-  return master_->GetHeader();
-}
+class PrintHook : public OutputHook {
+  public:
+    // Takes ownership
+    PrintHook(int write_fd, bool verbose_header)
+      : OutputHook(PROB_SEQUENTIAL_HOOK), file_(write_fd), verbose_header_(verbose_header) {}
 
-inline int OutputHook::VocabFile() const {
-  return master_->VocabFile();
-}
+    void Sink(const HeaderInfo &info, int vocab_file, util::stream::Chains &chains);
+
+  private:
+    util::scoped_fd file_;
+    bool verbose_header_;
+};
 
 }} // namespaces
 
