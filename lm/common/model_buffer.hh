@@ -26,6 +26,8 @@ class ModelBuffer {
     // Must call VocabFile and populate before calling this function.
     void Sink(util::stream::Chains &chains, const std::vector<uint64_t> &counts);
 
+    // Read files and write to the given chains.  If fewer chains are provided,
+    // only do the lower orders.
     void Source(util::stream::Chains &chains);
 
     // The order of the n-gram model that is associated with the model buffer.

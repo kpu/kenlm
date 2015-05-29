@@ -78,8 +78,8 @@ void ModelBuffer::Sink(util::stream::Chains &chains, const std::vector<uint64_t>
 }
 
 void ModelBuffer::Source(util::stream::Chains &chains) {
-  assert(chains.size() == files_.size());
-  for (unsigned int i = 0; i < files_.size(); ++i) {
+  assert(chains.size() <= files_.size());
+  for (unsigned int i = 0; i < chains.size(); ++i) {
     chains[i] >> util::stream::PRead(files_[i].get());
   }
 }
