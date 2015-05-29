@@ -1,14 +1,15 @@
-fakelib interpolate : ../common//common [ glob *.cc : *_main.cc *_test.cc ] : <cxxflags>-fopenmp ;
+fakelib interp : ../common//common [ glob *.cc : *_main.cc *_test.cc ] : <cxxflags>-fopenmp ;
 
 local with-eigen = [ option.get "with-eigen" ] ;
 if $(with-eigen) {
-  exe train_params : interpolate train_params_main.cc /top//boost_program_options ..//kenlm : <include>$(with-eigen) ;
+  exe train_params : interp train_params_main.cc /top//boost_program_options ..//kenlm : <include>$(with-eigen) ;
 }
 
-import testing ;
-exe streaming_example : ../builder//builder interpolate streaming_example_main.cc /top//boost_program_options ;
+exe interpolate : interpolate_main.cc interp /top//boost_program_options ;
+exe streaming_example : ../builder//builder interp streaming_example_main.cc /top//boost_program_options ;
 
-unit-test normalize_test : interpolate normalize_test.cc /top//boost_unit_test_framework ;
-unit-test backoff_reunification_test : interpolate backoff_reunification_test.cc /top//boost_unit_test_framework ;
-unit-test bounded_sequence_encoding_test : interpolate bounded_sequence_encoding_test.cc /top//boost_unit_test_framework ;
-run merge_vocab_test.cc interpolate /top//boost_unit_test_framework : : merge_test/test1 merge_test/test2 merge_test/test3 merge_test/test_bad_order merge_test/test_no_unk ;
+import testing ;
+unit-test normalize_test : interp normalize_test.cc /top//boost_unit_test_framework ;
+unit-test backoff_reunification_test : interp backoff_reunification_test.cc /top//boost_unit_test_framework ;
+unit-test bounded_sequence_encoding_test : interp bounded_sequence_encoding_test.cc /top//boost_unit_test_framework ;
+run merge_vocab_test.cc interp /top//boost_unit_test_framework : : merge_test/test1 merge_test/test2 merge_test/test3 merge_test/test_bad_order merge_test/test_no_unk ;

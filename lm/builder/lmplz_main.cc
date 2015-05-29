@@ -1,5 +1,6 @@
 #include "lm/builder/output.hh"
 #include "lm/builder/pipeline.hh"
+#include "lm/common/size_option.hh"
 #include "lm/lm_exception.hh"
 #include "util/file.hh"
 #include "util/file_piece.hh"
@@ -12,21 +13,6 @@
 #include <vector>
 
 namespace {
-class SizeNotify {
-  public:
-    SizeNotify(std::size_t &out) : behind_(out) {}
-
-    void operator()(const std::string &from) {
-      behind_ = util::ParseSize(from);
-    }
-
-  private:
-    std::size_t &behind_;
-};
-
-boost::program_options::typed_value<std::string> *SizeOption(std::size_t &to, const char *default_value) {
-  return boost::program_options::value<std::string>()->notifier(SizeNotify(to))->default_value(default_value);
-}
 
 // Parse and validate pruning thresholds then return vector of threshold counts
 // for each n-grams order.
@@ -105,9 +91,9 @@ int main(int argc, char *argv[]) {
       ("interpolate_unigrams", po::value<bool>(&pipeline.initial_probs.interpolate_unigrams)->default_value(true)->implicit_value(true), "Interpolate the unigrams (default) as opposed to giving lots of mass to <unk> like SRI.  If you want SRI's behavior with a large <unk> and the old lmplz default, use --interpolate_unigrams 0.")
       ("skip_symbols", po::bool_switch(), "Treat <s>, </s>, and <unk> as whitespace instead of throwing an exception")
       ("temp_prefix,T", po::value<std::string>(&pipeline.sort.temp_prefix)->default_value("/tmp/lm"), "Temporary file prefix")
-      ("memory,S", SizeOption(pipeline.sort.total_memory, util::GuessPhysicalMemory() ? "80%" : "1G"), "Sorting memory")
-      ("minimum_block", SizeOption(pipeline.minimum_block, "8K"), "Minimum block size to allow")
-      ("sort_block", SizeOption(pipeline.sort.buffer_size, "64M"), "Size of IO operations for sort (determines arity)")
+      ("memory,S", lm:: SizeOption(pipeline.sort.total_memory, util::GuessPhysicalMemory() ? "80%" : "1G"), "Sorting memory")
+      ("minimum_block", lm::SizeOption(pipeline.minimum_block, "8K"), "Minimum block size to allow")
+      ("sort_block", lm::SizeOption(pipeline.sort.buffer_size, "64M"), "Size of IO operations for sort (determines arity)")
       ("block_count", po::value<std::size_t>(&pipeline.block_count)->default_value(2), "Block count (per order)")
       ("vocab_estimate", po::value<lm::WordIndex>(&pipeline.vocab_estimate)->default_value(1000000), "Assume this vocabulary size for purposes of calculating memory in step 1 (corpus count) and pre-sizing the hash table")
       ("vocab_pad", po::value<uint64_t>(&pipeline.vocab_size_for_unk)->default_value(0), "If the vocabulary is smaller than this value, pad with <unk> to reach this size. Requires --interpolate_unigrams")
