@@ -76,6 +76,7 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
   MergeVocab(vocab_files, vocab, vocab_null.get());
   vocab_files.clear();
 
+  std::cerr << "Merging probabilities." << std::endl;
   // Pass 1: merge probabilities
   util::FixedArray<util::stream::Chains> input_chains(models.size());
   util::FixedArray<util::stream::ChainPositions> models_by_order(models.size());
@@ -93,6 +94,7 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
 
   // Pass 2: normalize.
   ApplySort<ContextOrder>(config.sort, merged_probs);
+  std::cerr << "Normalizing" << std::endl;
   SetupInputs(config.BufferSize(), vocab, models, true, input_chains, models_by_order);
   util::stream::Chains probabilities(max_order), backoffs(max_order - 1);
   for (std::size_t i = 0; i < max_order; ++i) {
@@ -106,7 +108,7 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
   util::FixedArray<util::stream::FileBuffer> backoff_buffers(backoffs.size());
   for (std::size_t i = 0; i < max_order - 1; ++i) {
     backoff_buffers.push_back(util::MakeTemp(config.sort.temp_prefix));
-    backoffs[i] >> backoff_buffers.back().Sink() >> util::stream::kRecycle;
+    backoffs[i] >> backoff_buffers.back().Sink();
   }
 
   // Pass 3: backoffs in the right place.
@@ -115,6 +117,7 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
   // TODO these should be freed before merge sort happens in the above function.
   backoffs.Wait(true);
   merged_probs.Wait(true);
+  std::cerr << "Reunifying backoffs" << std::endl;
 
   util::stream::ChainPositions prob_pos(max_order - 1);
   util::stream::Chains combined(max_order - 1);
