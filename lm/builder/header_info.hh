@@ -5,6 +5,8 @@
 #include <vector>
 #include <stdint.h>
 
+namespace lm { namespace builder {
+
 // Some configuration info that is used to add
 // comments to the beginning of an ARPA file
 struct HeaderInfo {
@@ -20,5 +22,7 @@ struct HeaderInfo {
   // TODO: Add smoothing type
   // TODO: More info if multiple models were interpolated
 };
+
+}} // namespaces
 
 #endif

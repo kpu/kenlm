@@ -1,6 +1,7 @@
 #include "lm/interpolate/pipeline.hh"
 
 #include "lm/common/compare.hh"
+#include "lm/common/print.hh"
 #include "lm/common/renumber.hh"
 #include "lm/interpolate/backoff_reunification.hh"
 #include "lm/interpolate/interpolate_info.hh"
@@ -9,6 +10,7 @@
 #include "lm/interpolate/normalize.hh"
 #include "lm/interpolate/universal_vocab.hh"
 #include "util/stream/chain.hh"
+#include "util/stream/count_records.hh"
 #include "util/stream/io.hh"
 #include "util/stream/multi_stream.hh"
 #include "util/stream/sort.hh"
@@ -55,7 +57,7 @@ template <class SortOrder> void ApplySort(const util::stream::SortConfig &config
 
 } // namespace
 
-void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config) {
+void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int write_file) {
   // Setup InterpolateInfo and UniversalVocab.
   InterpolateInfo info;
   info.lambdas = config.lambdas;
@@ -84,6 +86,10 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config) {
     merged_probs.push_back(util::stream::ChainConfig(PartialProbGamma::TotalSize(info, i + 1), 2, config.BufferSize())); // TODO: not buffer_size
   }
   MergeProbabilities(info, models_by_order, merged_probs);
+  std::vector<uint64_t> counts(max_order);
+  for (std::size_t i = 0; i < max_order; ++i) {
+    merged_probs[i] >> util::stream::CountRecords(&counts[i]);
+  }
 
   // Pass 2: normalize.
   ApplySort<ContextOrder>(config.sort, merged_probs);
@@ -121,7 +127,18 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config) {
 
   ReunifyBackoff(prob_pos, backoff_pos, combined);
 
-  // TODO: output combined for lower orders, highest order from probabilities
+  util::stream::ChainPositions output_pos(max_order);
+  for (std::size_t i = 0; i < max_order - 1; ++i) {
+    output_pos.push_back(combined[i].Add());
+  }
+  output_pos.push_back(probabilities.back().Add());
+
+  probabilities >> util::stream::kRecycle;
+  backoffs >> util::stream::kRecycle;
+  combined >> util::stream::kRecycle;
+
+  // TODO genericize to ModelBuffer etc.
+  PrintARPA(vocab_null.get(), write_file, counts).Run(output_pos);
 }
 
 }} // namespaces

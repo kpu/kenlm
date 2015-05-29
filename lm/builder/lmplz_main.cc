@@ -1,6 +1,5 @@
 #include "lm/builder/output.hh"
 #include "lm/builder/pipeline.hh"
-#include "lm/builder/print.hh"
 #include "lm/lm_exception.hh"
 #include "util/file.hh"
 #include "util/file_piece.hh"
@@ -219,7 +218,7 @@ int main(int argc, char *argv[]) {
       }
       lm::builder::Output output(writing_intermediate ? intermediate : pipeline.sort.temp_prefix, writing_intermediate, pipeline.output_q);
       if (!writing_intermediate || vm.count("arpa")) {
-        output.Add(new lm::builder::PrintARPA(out.release(), verbose_header));
+        output.Add(new lm::builder::PrintHook(out.release(), verbose_header));
       }
       lm::builder::Pipeline(pipeline, in.release(), output);
     } catch (const util::MallocException &e) {

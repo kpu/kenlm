@@ -1,54 +1,18 @@
-#ifndef LM_BUILDER_PRINT_H
-#define LM_BUILDER_PRINT_H
+#ifndef LM_BUILDER_DEBUG_PRINT_H
+#define LM_BUILDER_DEBUG_PRINT_H
 
-#include "lm/common/ngram_stream.hh"
-#include "lm/builder/output.hh"
 #include "lm/builder/payload.hh"
-#include "lm/common/ngram.hh"
+#include "lm/common/print.hh"
+#include "lm/common/ngram_stream.hh"
 #include "util/fake_ofstream.hh"
 #include "util/file.hh"
-#include "util/mmap.hh"
-#include "util/string_piece.hh"
 
 #include <boost/lexical_cast.hpp>
 
-#include <ostream>
-#include <cassert>
-
-// Warning: print routines read all unigrams before all bigrams before all
-// trigrams etc.  So if other parts of the chain move jointly, you'll have to
-// buffer.
-
 namespace lm { namespace builder {
-
-class VocabReconstitute {
-  public:
-    // fd must be alive for life of this object; does not take ownership.
-    explicit VocabReconstitute(int fd);
-
-    const char *Lookup(WordIndex index) const {
-      assert(index < map_.size() - 1);
-      return map_[index];
-    }
-
-    StringPiece LookupPiece(WordIndex index) const {
-      return StringPiece(map_[index], map_[index + 1] - 1 - map_[index]);
-    }
-
-    std::size_t Size() const {
-      // There's an extra entry to support StringPiece lengths.
-      return map_.size() - 1;
-    }
-
-  private:
-    util::scoped_memory memory_;
-    std::vector<const char*> map_;
-};
-
 // Not defined, only specialized.
 template <class T> void PrintPayload(util::FakeOFStream &to, const BuildingPayload &payload);
 template <> inline void PrintPayload<uint64_t>(util::FakeOFStream &to, const BuildingPayload &payload) {
-  // TODO slow
   to << payload.count;
 }
 template <> inline void PrintPayload<Uninterpolated>(util::FakeOFStream &to, const BuildingPayload &payload) {
@@ -101,19 +65,6 @@ template <class V> class Print {
     int to_;
 };
 
-class PrintARPA : public OutputHook {
-  public:
-    explicit PrintARPA(int fd, bool verbose_header)
-      : OutputHook(PROB_SEQUENTIAL_HOOK), out_fd_(fd), verbose_header_(verbose_header) {}
-
-    void Sink(util::stream::Chains &chains);
-
-    void Run(const util::stream::ChainPositions &positions);
-
-  private:
-    util::scoped_fd out_fd_;
-    bool verbose_header_;
-};
-
 }} // namespaces
-#endif // LM_BUILDER_PRINT_H
+
+#endif // LM_BUILDER_DEBUG_PRINT_H

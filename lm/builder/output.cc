@@ -1,6 +1,8 @@
 #include "lm/builder/output.hh"
 
 #include "lm/common/model_buffer.hh"
+#include "lm/common/print.hh"
+#include "util/fake_ofstream.hh"
 #include "util/stream/multi_stream.hh"
 
 #include <iostream>
@@ -33,8 +35,18 @@ void Output::SinkProbs(util::stream::Chains &chains) {
 
 void Output::Apply(HookType hook_type, util::stream::Chains &chains) {
   for (boost::ptr_vector<OutputHook>::iterator entry = outputs_[hook_type].begin(); entry != outputs_[hook_type].end(); ++entry) {
-    entry->Sink(chains);
+    entry->Sink(header_, VocabFile(), chains);
   }
+}
+
+void PrintHook::Sink(const HeaderInfo &info, int vocab_file, util::stream::Chains &chains) {
+  if (verbose_header_) {
+    util::FakeOFStream out(file_.get(), 50);
+    out << "# Input file: " << info.input_file << '\n';
+    out << "# Token count: " << info.token_count << '\n';
+    out << "# Smoothing: Modified Kneser-Ney" << '\n';
+  }
+  chains >> PrintARPA(vocab_file, file_.get(), info.counts_pruned);
 }
 
 }} // namespaces
