@@ -105,6 +105,10 @@ template <class T> class GenericStreams : public util::FixedArray<T> {
     GenericStreams(const ChainPositions &positions) {
       Init(positions);
     }
+
+    void Init(std::size_t amount) {
+      P::Init(amount);
+    }
 };
 
 template <class T> inline Chains &operator>>(Chains &chains, GenericStreams<T> &streams) {

@@ -4,6 +4,8 @@
 #include "lm/interpolate/interpolate_info.hh"
 
 #include <algorithm>
+#include <limits>
+#include <numeric>
 
 namespace lm {
 namespace interpolate {
@@ -21,6 +23,7 @@ BoundedSequenceEncoding MakeEncoder(const InterpolateInfo &info, uint8_t order) 
 }
 
 namespace {
+
 /**
  * A simple wrapper class that holds information needed to read and write
  * the ngrams of a particular order. This class has the memory needed to
@@ -38,30 +41,64 @@ public:
       : info(ifo),
         encoder(MakeEncoder(info, order)),
         out_record(order, encoder.EncodedLength()) {
+    std::size_t count_has_order = 0;
+    for (std::size_t i = 0; i < models_by_order.size(); ++i) {
+      count_has_order += (models_by_order[i].size() >= order);
+    }
+    inputs_.Init(count_has_order);
+    for (std::size_t i = 0; i < models_by_order.size(); ++i) {
+      if (models_by_order[i].size() < order)
+        continue;
+      inputs_.push_back(models_by_order[i][order - 1]);
+      if (inputs_.back()) {
+        active_.resize(active_.size() + 1);
+        active_.back().model = i;
+        active_.back().stream = &inputs_.back();
+      }
+    }
 
     // have to init outside since NGramStreams doesn't forward to
     // GenericStreams ctor given a ChainPositions
-    inputs.Init(models_by_order[order - 1]);
 
     probs.Init(info.Models());
     from.Init(info.Models());
+    for (std::size_t i = 0; i < info.Models(); ++i) {
+      probs.push_back(0.0);
+      from.push_back(0);
+    }
   }
 
+  struct StreamIndex {
+    NGramStream<ProbBackoff> *stream;
+    NGramStream<ProbBackoff> &Stream() { return *stream; }
+    std::size_t model;
+  };
+
+  std::size_t ActiveSize() const {
+    return active_.size();
+  }
 
   /**
    * @return the input stream for a particular model that corresponds to
    * this ngram order
    */
-  lm::NGramStream<ProbBackoff> &operator[](std::size_t idx) {
-    return inputs[idx];
+  StreamIndex &operator[](std::size_t idx) {
+    return active_[idx];
+  }
+
+  void erase(std::size_t idx) {
+    active_.erase(active_.begin() + idx);
   }
 
   const InterpolateInfo &info;
-  lm::NGramStreams<ProbBackoff> inputs;
   BoundedSequenceEncoding encoder;
   PartialProbGamma out_record;
   util::FixedArray<float> probs;
   util::FixedArray<uint8_t> from;
+
+private:
+  std::vector<StreamIndex> active_;
+  NGramStreams<ProbBackoff> inputs_;
 };
 
 /**
@@ -114,48 +151,41 @@ void HandleSuffix(NGramHandlers &handlers, WordIndex *suffix_begin,
 
   while (true) {
     // find the next smallest ngram which matches our suffix
+    // TODO: priority queue driven.
     WordIndex *minimum = NULL;
-    for (std::size_t i = 0; i < handler.info.Models(); ++i) {
-      if (!std::equal(suffix_begin, suffix_end, handler[i]->begin() + 1))
+    for (std::size_t i = 0; i < handler.ActiveSize(); ++i) {
+      if (!std::equal(suffix_begin, suffix_end, handler[i].Stream()->begin() + 1))
         continue;
 
       // if we either haven't set a minimum yet or this one is smaller than
       // the minimum we found before, replace it
-      WordIndex *last = handler[i]->begin();
-      if (!minimum || *last < *minimum) { minimum = handler[i]->begin(); }
+      WordIndex *last = handler[i].Stream()->begin();
+      if (!minimum || *last < *minimum) { minimum = handler[i].Stream()->begin(); }
     }
 
     // no more ngrams of this order match our suffix, so we're done
-    // the check against the max int here is how we know that the streams
-    // are done being read
-    if (!minimum || *minimum == std::numeric_limits<WordIndex>::max()) return;
+    if (!minimum) return;
 
     handler.out_record.ReBase(output.Get());
     std::copy(minimum, minimum + order, handler.out_record.begin());
 
-    // "multiply" together probabilities from all models, populating the from
-    // field as we go for each model
-    handler.out_record.Prob() = 0;
-    for (std::size_t i = 0; i < handler.info.Models(); ++i) {
-      // found this ngram without backing off, so record its probability
-      // and order - 1 directly
+    // Default case is having backed off.
+    std::copy(fallback_probs.begin(), fallback_probs.end(), handler.probs.begin());
+    std::copy(fallback_from.begin(), fallback_from.end(), handler.from.begin());
+
+    for (std::size_t i = 0; i < handler.ActiveSize();) {
       if (std::equal(handler.out_record.begin(), handler.out_record.end(),
-                     handler[i]->begin())) {
-        handler.probs[i] = handler.info.lambdas[i] * handler[i]->Value().prob;
+                     handler[i].Stream()->begin())) {
+        handler.probs[i] = handler.info.lambdas[handler[i].model] * handler[i].Stream()->Value().prob;
         handler.from[i] = order - 1;
-
-        // consume the ngram
-        ++handler[i];
+        if (++handler[i].Stream()) {
+          ++i;
+        } else {
+          handler.erase(i);
+        }
       }
-      // otherwise, we needed to back off, so grab the probability value from
-      // the fallback probabilities and record the fallback level
-      else {
-        handler.probs[i] = fallback_probs[i];
-        handler.from[i] = fallback_from[i];
-      }
-
-      handler.out_record.Prob() += handler.probs[i];
     }
+    handler.out_record.Prob() = std::accumulate(handler.probs.begin(), handler.probs.end(), 0.0);
     handler.out_record.LowerProb() = combined_fallback;
     handler.encoder.Encode(handler.from.begin(),
                            handler.out_record.FromBegin());
@@ -184,7 +214,7 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
   util::FixedArray<float> unk_probs(handlers[0].info.Models());
 
   // start by populating the ngram id from the first stream
-  lm::NGram<ProbBackoff> ngram = *handlers[0][0];
+  lm::NGram<ProbBackoff> ngram = *handlers[0][0].Stream();
   unk_record.ReBase(outputs[0].Get());
   std::copy(ngram.begin(), ngram.end(), unk_record.begin());
   unk_record.Prob() = 0;
@@ -193,12 +223,17 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
   // model probabilities together into the unk record
   //
   // note that from doesn't need to be set for unigrams
-  for (std::size_t i = 0; i < handlers[0].info.Models(); ++i) {
-    ngram = *handlers[0][i];
-    unk_probs[i] = ngram.Value().prob;
+  assert(handlers[0].ActiveSize() == handlers[0].info.Models());
+  for (std::size_t i = 0; i < handlers[0].info.Models();) {
+    ngram = *handlers[0][i].Stream();
+    unk_probs.push_back(ngram.Value().prob);
     unk_record.Prob() += handlers[0].info.lambdas[i] * unk_probs[i];
     assert(*ngram.begin() == kUNK);
-    ++handlers[0][i];
+    if (++handlers[0][i].Stream()) {
+      ++i;
+    } else {
+      handlers[0].erase(i);
+    }
   }
   float unk_combined = unk_record.Prob();
   unk_record.LowerProb() = unk_combined;
@@ -221,14 +256,10 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
   // TODO: stop generating vocab ids and LowerProb for unigrams.
   HandleSuffix(handlers, NULL, NULL, unk_probs, unk_from, unk_combined, outputs);
 
-  // Read the dummy "end-of-stream" symbol for each of the inputs
+  // Verify we reached the end.
   for (std::size_t i = 0; i < handlers.size(); ++i) {
-    for (std::size_t j = 0; j < handlers[i].inputs.size(); ++j) {
-      UTIL_THROW_IF2(*handlers[i][j]->begin()
-                         != std::numeric_limits<WordIndex>::max(),
+    UTIL_THROW_IF2(handlers[i].ActiveSize(),
                      "MergeProbabilities did not exhaust all ngram streams");
-      ++handlers[i][j];
-    }
   }
 }
 }
@@ -237,8 +268,8 @@ void MergeProbabilities(
     const InterpolateInfo &info,
     util::FixedArray<util::stream::ChainPositions> &models_by_order,
     util::stream::Chains &output_chains) {
-  NGramHandlers handlers(models_by_order.size());
-  for (std::size_t i = 0; i < models_by_order.size(); ++i) {
+  NGramHandlers handlers(output_chains.size());
+  for (std::size_t i = 0; i < output_chains.size(); ++i) {
     handlers.push_back(i + 1, info, models_by_order);
   }
 
