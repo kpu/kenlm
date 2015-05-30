@@ -97,8 +97,16 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
   std::cerr << "Normalizing" << std::endl;
   SetupInputs(config.BufferSize(), vocab, models, true, input_chains, models_by_order);
   util::stream::Chains probabilities(max_order), backoffs(max_order - 1);
+  std::size_t block_count = 2;
   for (std::size_t i = 0; i < max_order; ++i) {
-    probabilities.push_back(util::stream::ChainConfig(NGram<float>::TotalSize(i + 1), 2, config.BufferSize()));
+    // Careful accounting to ensure RewindableStream can fit the entire vocabulary.
+    block_count = std::max<std::size_t>(block_count, 2);
+    // This much needs to fit in RewindableStream.
+    std::size_t fit = NGram<float>::TotalSize(i + 1) * counts[0];
+    // fit / (block_count - 1) rounded up
+    std::size_t min_block = (fit + block_count - 2) / (block_count - 1);
+    std::size_t specify = std::max(config.BufferSize(), min_block * block_count);
+    probabilities.push_back(util::stream::ChainConfig(NGram<float>::TotalSize(i + 1), block_count, specify));
   }
   for (std::size_t i = 0; i < max_order - 1; ++i) {
     backoffs.push_back(util::stream::ChainConfig(sizeof(float), 2, config.BufferSize()));
