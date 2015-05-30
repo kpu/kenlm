@@ -56,11 +56,6 @@ class BackoffQueueEntry {
       entry_ = 0.0;
     }
 
-    ~BackoffQueueEntry() {
-      // Burn off backoffs that are not used to compute a probability.
-      for (; stream_; ++stream_) {}
-    }
-
     operator bool() const { return stream_; }
 
     NGramHeader operator*() const { return *stream_; }
@@ -106,7 +101,7 @@ std::size_t MaxOrder(const util::FixedArray<util::stream::ChainPositions> &model
 class BackoffManager {
   public:
     explicit BackoffManager(const util::FixedArray<util::stream::ChainPositions> &models)
-      : entered_(MaxOrder(models)), matrix_(models.size(), MaxOrder(models)) {
+      : entered_(MaxOrder(models)), matrix_(models.size(), MaxOrder(models)), skip_write_(MaxOrder(models)) {
       std::size_t total = 0;
       for (const util::stream::ChainPositions *m = models.begin(); m != models.end(); ++m) {
         total += m->size();
@@ -125,6 +120,10 @@ class BackoffManager {
       }
     }
 
+    void SetupSkip(std::size_t order, util::stream::Stream &stream) {
+      skip_write_[order - 2] = &stream;
+    }
+
     // Move up the backoffs for the given n-gram.  The n-grams must be provided
     // in suffix lexicographic order.
     void Enter(const NGramHeader &to) {
@@ -133,13 +132,9 @@ class BackoffManager {
         assert(entered_[i].empty());
       }
       SuffixLexicographicLess less;
-      while (!queue_.empty() && less(**queue_.top(), to)) {
-        BackoffQueueEntry *top = queue_.top();
-        queue_.pop();
-        if (top->Next())
-          queue_.push(top);
-      }
-      while (!queue_.empty() && (*queue_.top())->Order() == to.Order() && std::equal(to.begin(), to.end(), (*queue_.top())->begin())) {
+      while (!queue_.empty() && less(**queue_.top(), to))
+        SkipRecord();
+      while (TopMatches(to)) {
         BackoffQueueEntry *matches = queue_.top();
         entered_[to.Order() - 1].push_back(matches);
         matches->Enter();
@@ -159,7 +154,30 @@ class BackoffManager {
       return matrix_.Backoff(model, order_minus_1);
     }
 
+    void Finish() {
+      while (!queue_.empty())
+        SkipRecord();
+    }
+
   private:
+    void SkipRecord() {
+      BackoffQueueEntry *top = queue_.top();
+      queue_.pop();
+      // Is this the last instance of the n-gram?
+      if (!TopMatches(**top)) {
+        // An n-gram is being skipped.  Called once per skipped n-gram,
+        // regardless of how many models it comes from.
+        *reinterpret_cast<float*>(skip_write_[(*top)->Order() - 1]->Get()) = 0.0;
+        ++*skip_write_[(*top)->Order() - 1];
+      }
+      if (top->Next())
+        queue_.push(top);
+    }
+
+    bool TopMatches(const NGramHeader &header) const {
+      return !queue_.empty() && (*queue_.top())->Order() == header.Order() && std::equal(header.begin(), header.end(), (*queue_.top())->begin());
+    }
+
     EntryOwner owner_;
     std::priority_queue<BackoffQueueEntry*, std::vector<BackoffQueueEntry*>, PtrGreater> queue_;
 
@@ -169,6 +187,8 @@ class BackoffManager {
     std::size_t order_;
 
     BackoffMatrix matrix_;
+
+    std::vector<util::stream::Stream*> skip_write_;
 };
 
 typedef long double Accum;
@@ -293,6 +313,9 @@ class Recurse {
         higher_->Finish();
     }
 
+    // The BackoffManager class also injects backoffs when it skips ahead e.g. b(</s>) = 1
+    util::stream::Stream &BackoffStream() { return backoff_out_; }
+
   private:
     // Write the probability to the correct place in prob_out_.  Should use a proxy but currently incompatible with RewindableStream.
     float &ProbWrite() {
@@ -327,8 +350,6 @@ class Thread {
       : info_(info), models_by_order_(models_by_order), prob_out_(prob_out), backoff_out_(backoff_out) {}
 
     void Run(const util::stream::ChainPositions &merged_probabilities) {
-      BackoffManager backoffs(models_by_order_);
-
       // Unigrams do not have enocded backoff info.
       ProxyStream<PartialProbGamma> in(merged_probabilities[0], PartialProbGamma(1, 0));
       util::stream::RewindableStream prob_write(prob_out_[0]);
@@ -350,9 +371,11 @@ class Thread {
 
       // Now setup the higher orders.
       util::scoped_ptr<Recurse> higher_order;
+      BackoffManager backoffs(models_by_order_);
       std::size_t max_order = merged_probabilities.size();
       for (std::size_t order = max_order; order >= 2; --order) {
         higher_order.reset(new Recurse(info_, order, merged_probabilities[order - 1], prob_out_[order - 1], backoff_out_[order - 2], backoffs, higher_order.release()));
+        backoffs.SetupSkip(order, higher_order->BackoffStream());
       }
       if (max_order > 1) {
         higher_order->ExtendContext(NGramHeader(NULL, 0), z);
