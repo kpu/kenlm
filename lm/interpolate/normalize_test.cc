@@ -30,7 +30,7 @@ class WriteInput {
 void CheckOutput(const util::stream::ChainPosition &from) {
   NGramStream<float> in(from);
   float sum = 0.0;
-  for (WordIndex i = 0; i < sizeof(kInputs) / sizeof(float) - 1 /* </s> at the end */; ++i) {
+  for (WordIndex i = 0; i < sizeof(kInputs) / sizeof(float) - 1 /* <s> at the end */; ++i) {
     sum += pow(10.0, kInputs[i]);
   }
   sum = log10(sum);
