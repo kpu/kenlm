@@ -361,6 +361,8 @@ class Thread {
         memcpy(prob_write.Get(), in.Get(), sizeof(WordIndex) + sizeof(float));
         z += pow(10.0, in->Prob());
       }
+      // TODO HACK TODO: lmplz outputs p(<s>) = 1 to get q to compute nicely.  That will always result in 1.0 more than it should be.
+      z -= 1.0;
       float z_sub = log10(z);
       prob_write.Rewind();
       // Normalize unigram probabilities.
