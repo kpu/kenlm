@@ -350,7 +350,7 @@ class Thread {
 
       // Now setup the higher orders.
       util::scoped_ptr<Recurse> higher_order;
-      std::size_t max_order = MaxOrder(models_by_order_);
+      std::size_t max_order = merged_probabilities.size();
       for (std::size_t order = max_order; order >= 2; --order) {
         higher_order.reset(new Recurse(info_, order, merged_probabilities[order - 1], prob_out_[order - 1], backoff_out_[order - 2], backoffs, higher_order.release()));
       }
