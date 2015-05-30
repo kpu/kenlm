@@ -12,7 +12,7 @@
 namespace lm { namespace interpolate { namespace {
 
 // log without backoff
-const float kInputs[] = {-0.3, 1.2, -9.8, 4.0, -7.0};
+const float kInputs[] = {-0.3, 1.2, -9.8, 4.0, -7.0, 0.0};
 
 class WriteInput {
   public:
@@ -30,20 +30,22 @@ class WriteInput {
 void CheckOutput(const util::stream::ChainPosition &from) {
   NGramStream<float> in(from);
   float sum = 0.0;
-  for (WordIndex i = 0; i < sizeof(kInputs) / sizeof(float); ++i) {
+  for (WordIndex i = 0; i < sizeof(kInputs) / sizeof(float) - 1 /* </s> at the end */; ++i) {
     sum += pow(10.0, kInputs[i]);
   }
   sum = log10(sum);
   BOOST_REQUIRE(in);
-  BOOST_CHECK_EQUAL(kInputs[0] - sum, in->Value());
+  BOOST_CHECK_CLOSE(kInputs[0] - sum, in->Value(), 0.0001);
   BOOST_REQUIRE(++in);
-  BOOST_CHECK_EQUAL(kInputs[1] - sum, in->Value());
+  BOOST_CHECK_CLOSE(kInputs[1] - sum, in->Value(), 0.0001);
   BOOST_REQUIRE(++in);
-  BOOST_CHECK_EQUAL(kInputs[2] - sum, in->Value());
+  BOOST_CHECK_CLOSE(kInputs[2] - sum, in->Value(), 0.0001);
   BOOST_REQUIRE(++in);
-  BOOST_CHECK_EQUAL(kInputs[3] - sum, in->Value());
+  BOOST_CHECK_CLOSE(kInputs[3] - sum, in->Value(), 0.0001);
   BOOST_REQUIRE(++in);
-  BOOST_CHECK_EQUAL(kInputs[4] - sum, in->Value());
+  BOOST_CHECK_CLOSE(kInputs[4] - sum, in->Value(), 0.0001);
+  BOOST_REQUIRE(++in);
+  BOOST_CHECK_CLOSE(kInputs[5] - sum, in->Value(), 0.0001);
   BOOST_CHECK(!++in);
 }
 
