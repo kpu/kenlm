@@ -183,6 +183,8 @@ void HandleSuffix(NGramHandlers &handlers, WordIndex *suffix_begin,
         } else {
           handler.erase(i);
         }
+      } else {
+        ++i;
       }
     }
     handler.out_record.Prob() = std::accumulate(handler.probs.begin(), handler.probs.end(), 0.0);
