@@ -19,7 +19,7 @@ void RewindableStream::Init(const ChainPosition &position) {
   entry_size_ = position.GetChain().EntrySize();
   block_size_ = position.GetChain().BlockSize();
   block_count_ = position.GetChain().BlockCount();
-  blocks_it_ = blocks_.begin();
+  blocks_it_ = 0;
   marked_ = NULL;
   UTIL_THROW_IF2(block_count_ < 2, "RewindableStream needs block_count at least two");
   AppendBlock();
@@ -29,19 +29,22 @@ RewindableStream &RewindableStream::operator++() {
   assert(*this);
   assert(current_ < block_end_);
   assert(current_);
+  assert(blocks_it_ < blocks_.size());
   current_ += entry_size_;
   if (UTIL_UNLIKELY(current_ == block_end_)) {
     // Fetch another block if necessary.
-    if (++blocks_it_ == blocks_.end()) {
+    if (++blocks_it_ == blocks_.size()) {
       if (!marked_) {
-        Flush(blocks_it_);
+        Flush(blocks_.begin() + blocks_it_);
+        blocks_it_ = 0;
       }
       AppendBlock();
+      assert(poisoned_ || (blocks_it_ == blocks_.size() - 1));
       if (poisoned_) return *this;
-      blocks_it_ = blocks_.end() - 1;
     }
-    current_ = static_cast<uint8_t*>(blocks_it_->Get());
-    block_end_ = current_ + blocks_it_->ValidSize();
+    Block &cur_block = blocks_[blocks_it_];
+    current_ = static_cast<uint8_t*>(cur_block.Get());
+    block_end_ = current_ + cur_block.ValidSize();
   }
   assert(current_);
   return *this;
@@ -49,25 +52,27 @@ RewindableStream &RewindableStream::operator++() {
 
 void RewindableStream::Mark() {
   marked_ = current_;
-  Flush(blocks_it_);
+  Flush(blocks_.begin() + blocks_it_);
+  blocks_it_ = 0;
 }
 
 void RewindableStream::Rewind() {
   if (current_ != marked_) {
     poisoned_ = false;
   }
-  blocks_it_ = blocks_.begin();
+  blocks_it_ = 0;
   current_ = marked_;
 }
 
 void RewindableStream::Poison() {
   if (blocks_.empty()) return;
   assert(*this);
-  assert(blocks_it_ == blocks_.end() - 1);
+  assert(blocks_it_ == blocks_.size() - 1);
 
   // Produce all buffered blocks.
   blocks_.back().SetValidSize(current_ - static_cast<uint8_t*>(blocks_.back().Get()));
   Flush(blocks_.end());
+  blocks_it_ = 0;
 
   Block poison;
   if (!hit_poison_) {
@@ -103,6 +108,7 @@ void RewindableStream::AppendBlock() {
   } while (UTIL_UNLIKELY(get.ValidSize() == 0));
   current_ = static_cast<uint8_t*>(blocks_.back().Get());
   block_end_ = static_cast<const uint8_t*>(blocks_.back().ValidEnd());
+  blocks_it_ = blocks_.size() - 1;
 }
 
 void RewindableStream::Flush(std::deque<Block>::iterator to) {

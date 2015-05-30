@@ -102,8 +102,8 @@ class RewindableStream : boost::noncopyable {
     void Flush(std::deque<Block>::iterator to);
 
     std::deque<Block> blocks_;
-    // current_ is in *blocks_it_.
-    std::deque<Block>::iterator blocks_it_;
+    // current_ is in blocks_[blocks_it_] unless poisoned_.
+    std::size_t blocks_it_;
 
     std::size_t entry_size_;
     std::size_t block_size_;
