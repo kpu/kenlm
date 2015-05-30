@@ -176,8 +176,8 @@ void HandleSuffix(NGramHandlers &handlers, WordIndex *suffix_begin,
     for (std::size_t i = 0; i < handler.ActiveSize();) {
       if (std::equal(handler.out_record.begin(), handler.out_record.end(),
                      handler[i].Stream()->begin())) {
-        handler.probs[i] = handler.info.lambdas[handler[i].model] * handler[i].Stream()->Value().prob;
-        handler.from[i] = order - 1;
+        handler.probs[handler[i].model] = handler.info.lambdas[handler[i].model] * handler[i].Stream()->Value().prob;
+        handler.from[handler[i].model] = order - 1;
         if (++handler[i].Stream()) {
           ++i;
         } else {
