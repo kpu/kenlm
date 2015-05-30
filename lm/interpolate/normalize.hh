@@ -17,7 +17,7 @@ class Chains;
 
 namespace lm { namespace interpolate {
 
-class InterpolateInfo;
+struct InterpolateInfo;
 
 void Normalize(
     const InterpolateInfo &info,
