@@ -363,11 +363,11 @@ class Thread {
       }
       // TODO HACK TODO: lmplz outputs p(<s>) = 1 to get q to compute nicely.  That will always result in 1.0 more than it should be.
       z -= 1.0;
-      float z_sub = log10(z);
+      float log_z = log10(z);
       prob_write.Rewind();
       // Normalize unigram probabilities.
       for (WordIndex i = 0; i < count; ++i, ++prob_write) {
-        *reinterpret_cast<float*>(reinterpret_cast<uint8_t*>(prob_write.Get()) + sizeof(WordIndex)) -= z_sub;
+        *reinterpret_cast<float*>(reinterpret_cast<uint8_t*>(prob_write.Get()) + sizeof(WordIndex)) -= log_z;
       }
       prob_write.Poison();
 
@@ -380,7 +380,7 @@ class Thread {
         backoffs.SetupSkip(order, higher_order->BackoffStream());
       }
       if (max_order > 1) {
-        higher_order->ExtendContext(NGramHeader(NULL, 0), z);
+        higher_order->ExtendContext(NGramHeader(NULL, 0), log_z);
         higher_order->Finish();
       }
     }
