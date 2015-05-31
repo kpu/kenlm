@@ -65,6 +65,115 @@ void set_features(const std::vector<std::string>& ctx,
   }
 }
 
+void translate_input(
+    const std::vector<std::vector<std::string> >& corpus,
+    const std::vector<std::string>& gvocab,
+    const std::vector<Model *>& models,
+    std::vector<std::vector<std::vector<WordIndex> > >&translated_corpus,
+    std::vector<std::vector<WordIndex> >&translated_vocab
+  ) {
+  translated_corpus.resize(models.size());
+  translated_vocab.resize(models.size());
+  for (unsigned mn=0; mn < models.size(); ++mn) { // models 
+
+    const Vocabulary &vocab = models[mn]->GetVocabulary();
+
+    for (unsigned i = 0; i < gvocab.size(); ++i) {
+      translated_vocab[mn].push_back(vocab.Index(gvocab[i]));
+    }
+    
+    translated_corpus[mn].resize(corpus.size());
+    for (unsigned ci = 0; ci < corpus.size(); ++ci) { // sentences in tuning corpus
+      const std::vector<std::string>& sentence = corpus[ci];
+      for (int t = sentence.size() -1; t >= 0; --t) { // words in sentence
+        translated_corpus[mn][ci].push_back(vocab.Index(sentence[t]));
+      }
+      for (int i=0; i<5; ++i) {
+        translated_corpus[mn][ci].push_back(vocab.Index("<s>"));
+      }
+    }
+  }
+}
+      
+
+void train_params_fast(
+    const std::vector<std::vector<std::string> >& corpus,
+    const std::vector<std::string>& vocab,
+    const std::vector<Model *>& models) {
+  using namespace std;
+
+  // model / sentence / words in sentence in reverse order with <s> padding 
+  std::vector<std::vector<std::vector<WordIndex> > > t_corpus;
+  std::vector<std::vector<WordIndex> > t_vocab;
+  translate_input(corpus, vocab, models, t_corpus, t_vocab);
+
+
+
+  const int ITERATIONS = 10;
+  const int nlambdas = models.size() + (HAS_BIAS ? 1 : 0); // bias + #models
+  FVector params = FVector::Zero(nlambdas);
+  vector<FVector> feats(vocab.size(), params);
+  vector<float> us(vocab.size(), 0);
+  vector<float> ps(vocab.size(), 0);
+  FVector grad = FVector::Zero(nlambdas);
+  FMatrix H = FMatrix::Zero(nlambdas, nlambdas);
+  FVector ef = FVector::Zero(nlambdas);
+  for (int iter = 0; iter < ITERATIONS; ++iter) { // iterations
+    grad.setZero();
+    H.setZero();
+    double loss = 0;
+    unsigned numchars = 0;
+    for (unsigned ci = 0; ci < corpus.size(); ++ci) { // sentences in tuning corpus
+      const vector<string>& sentence = corpus[ci];
+      double z = 0;
+      for (int t = sentence.size() -1 ; t >=0; --t) { // words in sentence
+        ++numchars;
+        int ref_word = 0;
+        for (unsigned i = 0; i < vocab.size(); ++i) { // vocab
+          // set_features(context, vocab[i], models, feats[i]);
+          for (unsigned j=0; j < models.size(); ++j) {
+            // NOTE: reference ---- WordIndex word_idx = t_corpus[j][ci][t];
+            WordIndex word_idx = t_vocab[j][i];
+            State nextState; //throwaway
+            FullScoreReturn score = models[j]->FullScoreForgotState(&(t_corpus[j][ci][t]), &(t_corpus[j][ci][t+5]), word_idx, nextState);
+            feats[i](j) = score.prob;
+            // feats[i](j) = logProb(models[j], ctx, word);
+          }
+          
+          us[i] = params.dot(feats[i]);
+          z += exp(double(us[i]));
+        }
+	//std::cerr << "there..." << std::endl;
+        const float logz = log(z);
+
+        // expected feature values
+        ef.setZero();
+        for (unsigned i = 0; i < vocab.size(); ++i) {
+          ps[i] = expf(us[i] - logz);
+          ef += ps[i] * feats[i];
+        }
+        loss -= log(ps[ref_word]);
+        const FVector& reffeats = feats[ref_word];
+        grad += ef - reffeats;
+
+        // Hessian
+        for (unsigned i = 0; i < vocab.size(); ++i)
+          H.noalias() += ps[i] * feats[i] * feats[i].transpose() -
+                         ps[i] * feats[i] * ef.transpose();
+
+        // this should just be the state for each model
+      }
+      cerr << ".";
+    }
+    cerr << "ITERATION " << (iter + 1) << ": PPL=" << exp(loss / numchars) << endl;
+    params = H.colPivHouseholderQr().solve(grad);
+    cerr << params << endl;
+  }
+}
+          
+  
+
+
 //const util::FixedArray<Model *>& models)
 void train_params(
     const std::vector<std::vector<std::string> >& corpus,
@@ -89,7 +198,7 @@ void train_params(
     unsigned numchars = 0;
     for (unsigned ci = 0; ci < corpus.size(); ++ci) { // sentences in tuning corpus
       const vector<string>& sentence = corpus[ci];
-      context.resize(5);
+      std::fill(context.begin(), context.end(), "<s>");
       for (unsigned t = 0; t < sentence.size(); ++t) { // words in sentence
         ++numchars;
         const string& ref_word_string = sentence[t];
@@ -175,11 +284,12 @@ int main(int argc, char** argv) {
   //Growable vocab here
   //GrowableVocab gvoc(100000); //dummy default
 
-  //no comment
   std::map<std::string, int*> vmap;
+  util::FixedArray<WordIndex> vm(2);
 
   //stuff it into the
   EnumerateGlobalVocab * globalVocabBuilder = new EnumerateGlobalVocab(&vmap, lms.size());
+  // EnumerateGlobalVocab * globalVocabBuilder = new EnumerateGlobalVocab(vm);
 
   Config cfg;
   cfg.enumerate_vocab = (EnumerateVocab *) globalVocabBuilder;
@@ -230,7 +340,7 @@ int main(int argc, char** argv) {
     corpus.push_back(words);
   }
 
-  train_params(corpus, vocab, models);
+  train_params_fast(corpus, vocab, models);
 
   return 0;
 }
