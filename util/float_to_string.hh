@@ -8,13 +8,13 @@ namespace util {
 
 template <> struct ToStringBuf<double> {
   // DoubleToStringConverter::kBase10MaximalLength + 1 for null paranoia.
-  static const unsigned kBytes = 18;
+  static const unsigned kBytes = 19;
 };
 
 // Single wasn't documented in double conversion, so be conservative and
 // say the same as double.
 template <> struct ToStringBuf<float> {
-  static const unsigned kBytes = 18;
+  static const unsigned kBytes = 19;
 };
 
 char *ToString(double value, char *to);
