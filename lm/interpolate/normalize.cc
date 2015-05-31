@@ -260,7 +260,7 @@ class Recurse {
           // Lower p(x | w_2^{n-1}) gets all the backoffs except the highest.
           input_->LowerProb() += accumulated * lambda;
           // Charge the backoff b(w_1^{n-1}) if applicable, but only to attain p(x | w_1^{n-1})
-          if (decoded_backoffs_[m] < order_ - 2) {
+          if (decoded_backoffs_[m] < order_ - 1) {
             accumulated += backoffs_.Get(m, order_ - 2);
           }
           input_->Prob() += accumulated * lambda;
