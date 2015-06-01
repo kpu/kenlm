@@ -83,7 +83,7 @@ void train_params(
   int context_size=5; // (context_size+1)-grams considered in perplexity
   double stepdecreasefactor=0.1; // if step unsuccessful
 
-  const int nlambdas = models.size() + (HAS_BIAS ? 1 : 0); // bias + #models
+  const std::size_t nlambdas = models.size() + (HAS_BIAS ? 1 : 0); // bias + #models
   DVector params = DVector::Constant(nlambdas,1.0/nlambdas); // initialize to sum to 1
   DMatrix N = DMatrix::Constant(nlambdas,nlambdas-1, -1.0/sqrt((nlambdas-1)*(nlambdas-1)+nlambdas-1.0));
   for (unsigned i=0; i<nlambdas-1; ++i)
@@ -452,7 +452,7 @@ int main(int argc, char** argv) {
   //load models
   //util::FixedArray<Model *> models(lms.size());
   std::vector<Model *> models;
-  for(int i=0; i < lms.size(); i++) {
+  for(std::size_t i=0; i < lms.size(); i++) {
     std::cerr << "Loading LM file: " << lms[i] << std::endl;
 
     //haaaack
