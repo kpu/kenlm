@@ -126,13 +126,14 @@ void train_params(
     cerr << params << endl;
 
     paramhistory.push_back(params);
-    vector<string> context(context_size, "<s>"); // Hard-coded to be 6-gram perplexity
+    vector<string> context(context_size); // Hard-coded to be 6-gram perplexity
     double ppl = 0.0;
     DVector grad = DVector::Zero(nlambdas);
     DMatrix H = DMatrix::Zero(nlambdas, nlambdas);
     for (unsigned ci = 0; ci < corpus.size(); ++ci) { // sentences in tuning corpus
       const vector<string>& sentence = corpus[ci];
-      //context.resize(5);
+      // pad our beginning context
+      std::fill(context.begin(), context.end(), "<s>");
       for (unsigned t = 0; t < sentence.size(); ++t) { // words in sentence
         //std::cerr << "here..." << std::endl;
         DVector feats            = DVector::Zero(nlambdas);
