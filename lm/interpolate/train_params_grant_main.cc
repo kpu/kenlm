@@ -30,14 +30,35 @@ bool HAS_BIAS = true;
 using namespace lm::ngram;
 using namespace lm;
 
-inline double logProb(Model * model, const std::vector<std::string>& ctx, const std::string& word) {
+inline double logProb(Model * model, double unkprob, const std::vector<std::string>& ctx, const std::string& word) {
 
+  // Horribly inefficient
+  const Vocabulary &vocab = model->GetVocabulary();
+
+  WordIndex word_idx = vocab.Index(word);
+  if (word_idx == lm::kUNK)
+    return unkprob;
+
+  WordIndex context_idx[ctx.size()];
+  //reverse context
+  for(unsigned int i = 0; i < ctx.size(); i++) {
+    context_idx[ctx.size() - 1 - i] = vocab.Index(ctx[i]);
+  }
+
+  State nextState; //throwaway
+  FullScoreReturn score = model->FullScoreForgotState(context_idx, &(context_idx[ctx.size() -1]), word_idx, nextState);
+
+  double ret = score.prob;
+  //std::cerr << "w: " << word << " p: " << ret << std::endl;
+  return ret;
+}
+
+inline double logProb(Model * model, const std::vector<std::string>& ctx, WordIndex word_idx) {
   // Horribly inefficient
   const Vocabulary &vocab = model->GetVocabulary();
 
   State nextState; //throwaway
 
-  WordIndex word_idx = vocab.Index(word);
   WordIndex context_idx[ctx.size()];
 
   //reverse context
@@ -55,6 +76,7 @@ inline double logProb(Model * model, const std::vector<std::string>& ctx, const 
 void set_features(const std::vector<std::string>& ctx,
     const std::string& word,
     const std::vector<Model *>& models,
+    const std::vector<double>& unkprobs,
     DVector& v) {
 
   //std::cerr << "setting feats for " << word << std::endl;
@@ -62,10 +84,10 @@ void set_features(const std::vector<std::string>& ctx,
   if (HAS_BIAS) {
     v(0) = 1;
     for (unsigned i=0; i < models.size(); ++i)
-      v(i + 1) = logProb(models[i], ctx, word);
+      v(i + 1) = logProb(models[i], unkprobs[i], ctx, word);
   } else {
     for (unsigned i=0; i < models.size(); ++i)
-      v(i) = logProb(models[i], ctx, word);
+      v(i) = logProb(models[i], unkprobs[i], ctx, word);
   }
 }
 
@@ -135,17 +157,24 @@ void train_params(
       // pad our beginning context
       std::fill(context.begin(), context.end(), "<s>");
       for (unsigned t = 0; t < sentence.size(); ++t) { // words in sentence
+
+        std::vector<double> unkprobs(models.size());
+        for (std::size_t mi = 0; mi < models.size(); ++mi) {
+          unkprobs[mi] = logProb(models[mi], context, lm::kUNK);
+        }
+
         //std::cerr << "here..." << std::endl;
         DVector feats            = DVector::Zero(nlambdas);
-        set_features(context, sentence[t], models, feats); // probs for actual n-gram
+        set_features(context, sentence[t], models, unkprobs, feats); // probs for actual n-gram
 
         double z = 0.0;
         double maxlogprob=0.0; // Allows us to avoid overflow with negative params
         DVector expectfeats      = DVector::Zero(nlambdas);
         DMatrix expectfeatmatrix = DMatrix::Zero(nlambdas, nlambdas);
         DVector iterfeats = DVector::Zero(nlambdas); // Logically, this should be in the loop's scope
+
         for (unsigned i = 0; i < vocab.size(); ++i) { // probs over possible n-grams, for normalization
-          set_features(context, vocab[i], models, iterfeats);
+          set_features(context, vocab[i], models, unkprobs, iterfeats);
           double logprob = params.dot(iterfeats);
           if (i==0)
             //maxlogprob=logprob;// more precise, less underflow
