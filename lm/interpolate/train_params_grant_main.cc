@@ -166,6 +166,7 @@ void train_params(
           expectfeats      += us * iterfeats;
           expectfeatmatrix += us * (iterfeats*iterfeats.transpose());
         }
+        z -= 1.0; // fix for p("<s>") = 1
         expectfeats      /= z; // Expectation
         expectfeatmatrix /= z; // Expectation
         //std::cerr << "there..." << std::endl;
