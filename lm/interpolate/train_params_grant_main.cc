@@ -172,10 +172,8 @@ void train_params(
 
         // This should add sentence[t] to the end of the context, removing the oldest word from the front
         // if needed to keep maximum of (n-1) words (when n-grams are considered in perplexity).
-        for (unsigned i = 0; i<context.size()-1; ++i)
-          context[i]=context[i+1];
-        context[context.size()-1]=sentence[t];
-        //context.push_back(sentence[t]); // old code
+        context[0] = sentence[t];
+        std::rotate(context.begin(), context.begin() + 1, context.end());
 
         // Perplexity (actually log(perplexity))
         ppl  += params.dot(feats) - log(z);
