@@ -74,14 +74,21 @@ void train_params(
     const std::vector<std::vector<std::string> >& corpus,
     const std::vector<std::string>& vocab,
     const std::vector<Model *>& models) {
+
+  // A safeguarded Newton's method to find optimum parameters.
+  // Reverts to steepest-descent linesearch if Newton step does not improve objective.
+  //
+  // Two Boolean variables below are used to "AllowExtrapolation" and "AllowNegativeParams".
+
   using namespace std;
 
   bool AllowExtrapolation = true; // if true, params need not sum to one
   bool AllowNegativeParams = true; // if true, params can be negative
   const int ITERATIONS = 20;
-  double minstepsize=1.0e-12; // convergence criterion
+  double minstepsize=1.0e-9; // convergence criterion
   int context_size=5; // (context_size+1)-grams considered in perplexity
   double stepdecreasefactor=0.1; // if step unsuccessful
+  double stepsize = 1.0; // Initial step size
 
   const int nlambdas = models.size() + (HAS_BIAS ? 1 : 0); // bias + #models
   DVector params = DVector::Constant(nlambdas,1.0/nlambdas); // initialize to sum to 1
@@ -95,18 +102,17 @@ void train_params(
   double bestppl=0.0; // best recorded ppl
   DVector bestgrad = DVector::Zero(nlambdas); // corresp. gradient, feasible direction
   DVector bestparams = DVector::Zero(nlambdas); // corresp. weights
-  double stepsize = 1; // dist. from bestparams to params
   double maxbestgradstep=0.0; // max feasible step in grad. direction
 
   cerr << "++ Parameter training ++" << endl;
   if (AllowExtrapolation)
-    cerr << "Allowing extrapolation (sharpening and flattening of individual LM distributions)" << endl;
+    cerr << " Allowing extrapolation (sharpening and flattening of individual LM distributions)" << endl;
   else
-    cerr << "Interpolating only (not sharpening or flattening individual LM distributions)" << endl;
+    cerr << " Interpolating only (not sharpening or flattening individual LM distributions)" << endl;
   if (AllowNegativeParams)
-    cerr << "Allowing negative parameters\n" <<
-      " (more general but slow and rarely useful\n" <<
-      "  -LM with negative weight has probability rankings reversed and is weighted higher than all LMs with positive weights)" << endl;
+    cerr << " Allowing negative parameters\n" <<
+      "  (more general but slow and rarely useful\n" <<
+      "   -LM with negative weight has probability rankings reversed and is weighted more highly than all LMs with positive weights)" << endl;
   else
     cerr << "Not allowing negative parameters (mild assumption, and faster)" << endl;
   cerr << " Maximum number of iterations: " << ITERATIONS << endl;
@@ -130,11 +136,11 @@ void train_params(
     double ppl = 0.0;
     DVector grad = DVector::Zero(nlambdas);
     DMatrix H = DMatrix::Zero(nlambdas, nlambdas);
+    cerr << "o";
     for (unsigned ci = 0; ci < corpus.size(); ++ci) { // sentences in tuning corpus
       const vector<string>& sentence = corpus[ci];
       //context.resize(5);
       for (unsigned t = 0; t < sentence.size(); ++t) { // words in sentence
-        //std::cerr << "here..." << std::endl;
         DVector feats            = DVector::Zero(nlambdas);
         set_features(context, sentence[t], models, feats); // probs for actual n-gram
 
@@ -148,10 +154,11 @@ void train_params(
           double logprob = params.dot(iterfeats);
           if (i==0)
             //maxlogprob=logprob;// more precise, less underflow
-            maxlogprob=0.0;// saves operations
+            maxlogprob=0.0;// reduces number of updates
           else
             if (logprob>maxlogprob)
             {
+              // Adjust all old values to new scaling
               double adjust = exp(maxlogprob-logprob);
               z                *= adjust;
               expectfeats      *= adjust;
@@ -159,7 +166,6 @@ void train_params(
               maxlogprob=logprob;
             }
           double us = exp(params.dot(iterfeats)-maxlogprob); // measure
-          //double us = exp(params.dot(iterfeats)); // measure
 
           z                += us;
           expectfeats      += us * iterfeats;
@@ -167,7 +173,6 @@ void train_params(
         }
         expectfeats      /= z; // Expectation
         expectfeatmatrix /= z; // Expectation
-        //std::cerr << "there..." << std::endl;
 
         // This should add sentence[t] to the end of the context, removing the oldest word from the front
         // if needed to keep maximum of (n-1) words (when n-grams are considered in perplexity).
@@ -189,11 +194,9 @@ void train_params(
     // The gradient and Hessian coefficients cancel out, so don't really need to do this, but it's fast.
     grad *= -1.0/corpus.size();
     H    *= -1.0/corpus.size();
-    //cerr << "ITERATION " << iter << "/" << ITERATIONS << ": log(PPL)=" << ppl << " PPL=" << exp(ppl) << endl;
     cerr << " log(PPL)=" << ppl << " PPL=" << exp(ppl) << endl;
-    //cerr << "Input Weights: " << endl;
-    //cerr << params << endl;
 
+    // Use results to determine next params to evaluate
     if ((ppl<bestppl) || (iter==0))
     {
       // Found a new best
@@ -202,85 +205,97 @@ void train_params(
       double beststepsize=stepsize;
       if (iter>0)
         cerr << " New best point found, step size " << beststepsize << endl;
+      else
+        cerr << " New best point found" << endl;
 
       bestgrad=grad;
       DVector deltaparams = DVector::Zero(nlambdas);
 
       bool reverttograd=false;
-      bool solvesuccess=true;
 
-      // Find Newton step
-      if (AllowExtrapolation)
       {
-        deltaparams = -H.colPivHouseholderQr().solve(grad);
-        Eigen::SelfAdjointEigenSolver<DMatrix> eigensolver(H);
-        cerr << "Eigenvalues (best if all positive):\n" << eigensolver.eigenvalues() << endl;
-        solvesuccess = grad.isApprox(-H*deltaparams);
-      }
-      else
-      {
-        bestgrad=N*N.transpose()*bestgrad; // Project gradient to interpolation space
-
-        // need to work in nullspace to maintain unit sum
-        DMatrix Hnull = DMatrix::Zero(nlambdas-1, nlambdas-1);
-
-        // Looks like we don't need the three lines below -- we can do it in-line (if we don't want eigenvalues)
-        Hnull=N.transpose()*H*N;
-        Eigen::SelfAdjointEigenSolver<DMatrix> eigensolver(Hnull);
-        cerr << "Eigenvalues (best if all positive):\n" << eigensolver.eigenvalues() << endl;
-        deltaparams = -N*Hnull.fullPivHouseholderQr().solve(N.transpose()*grad);
-        solvesuccess = (N.transpose()*grad).isApprox(-Hnull*deltaparams);
-      }
-      // eventually, params = bestparams + deltaparams;
-      if (solvesuccess)
-      {
-        stepsize=0.0;
-        for (unsigned i = 0; i<nlambdas; i++)
-          stepsize += deltaparams(i)*deltaparams(i);
-        stepsize=sqrt(stepsize); // holds length of Newton step
-        cerr << "Newton step, length " << stepsize << ": " << endl;
-        cerr << deltaparams << endl;
-
-        // Don't let the Newton step get much bigger than last successful step (likely would have to shrink)
-        if (stepsize>2.0*beststepsize)
+        double gradnorm=0.0;
+        double solvenorm=0.0;
+        double errnorm=0.0;
+        // Find Newton step
+        if (AllowExtrapolation)
         {
-          stepsize=2.0*beststepsize;
-          reverttograd=true;
-          cerr << "Reverting to gradient, because Newton step is too large." << endl;
+          deltaparams = -H.colPivHouseholderQr().solve(grad);
+          Eigen::SelfAdjointEigenSolver<DMatrix> eigensolver(H);
+          cerr << "Eigenvalues (negative values should be negligible):\n" << eigensolver.eigenvalues() << endl;
+          gradnorm=grad.norm();
+          solvenorm=(H*deltaparams).norm();
+          errnorm=(grad+H*deltaparams).norm();
         }
-      }
-      else
-      {
-        stepsize=2.0*beststepsize;
-        reverttograd=true;
-        cerr << "Reverting to gradient, because Newton step computation unsuccessful." << endl;
-      }
-      // Make the gradient unit norm, in feasible search direction.
-      if (!AllowNegativeParams)
-      {
-        // Project gradient to be a feasible search direction
-        vector<bool> active(nlambdas,false);
-        unsigned numactive=0;
-        for (unsigned i = 0; i<nlambdas; i++)
-          if ((bestparams(i)==0) && (bestgrad(i)>0)) // Project gradient to inactive constraints
-          {
-            active[i]=true;
-            bestgrad(i)=0.0;// Do this now, in case extrapolation allowed.
-            ++numactive;
-          }
-        if (numactive>0)
+        else
         {
-          if (!AllowExtrapolation)
+          bestgrad=N*N.transpose()*bestgrad; // Project gradient to interpolation space
+
+          // need to work in nullspace to maintain unit sum
+          DMatrix Hnull = DMatrix::Zero(nlambdas-1, nlambdas-1);
+
+          // Looks like we don't need the three lines below -- we can do it in-line (if we don't want eigenvalues)
+          Hnull=N.transpose()*H*N;
+          Eigen::SelfAdjointEigenSolver<DMatrix> eigensolver(Hnull);
+          cerr << "Eigenvalues (best if all positive):\n" << eigensolver.eigenvalues() << endl;
+          deltaparams = -N*Hnull.fullPivHouseholderQr().solve(N.transpose()*grad);
+          gradnorm=(N.transpose()*grad).norm();
+          solvenorm=(Hnull*deltaparams).norm();
+          errnorm=(N.transpose()*grad+Hnull*deltaparams).norm();
+        }
+        // eventually, params = bestparams + deltaparams;
+        cerr << " Error norm " << errnorm << ", gradient norm " << gradnorm << ", solution norm " << solvenorm << endl;
+        // Check for numerical errors. Don't trust Newton step if they are too big.
+        if (errnorm<1e-12* std::max(1.0,std::min(gradnorm,solvenorm)))
+        {
+          stepsize=0.0;
+          for (unsigned i = 0; i<nlambdas; i++)
+            stepsize += deltaparams(i)*deltaparams(i);
+          stepsize=sqrt(stepsize); // holds length of Newton step
+          cerr << "Newton step, length " << stepsize << ": " << endl;
+          cerr << deltaparams << endl;
+
+          // Don't let the Newton step get much bigger than last successful step (likely would have to shrink later, anyway)
+          if (stepsize>2.0*beststepsize)
           {
-            // Project gradient, for activity concerns
-            DMatrix tmpN = DMatrix::Constant(nlambdas,nlambdas-1, -1.0/sqrt((nlambdas-numactive-1)*(nlambdas-numactive-1)+nlambdas-numactive-1.0));
-            for (unsigned i=0; i<nlambdas-1; ++i)
-              tmpN(i,i)= tmpN(i,i)*(1.0-(nlambdas-numactive));
-            for (unsigned i=0; i<nlambdas; ++i)
-              if (active[i])
-                for (unsigned j=0; j<nlambdas-1; ++i)
-                  tmpN(i,j)=0;
-            bestgrad = -tmpN*tmpN.transpose()*bestgrad; // projected gradient onto unit sum and active set constraints
+            stepsize=1.5*beststepsize;
+            reverttograd=true;
+            cerr << "Reverting to gradient, because Newton step is too large." << endl;
+          }
+        }
+        else
+        {
+          stepsize=1.5*beststepsize;
+          reverttograd=true;
+          cerr << "Reverting to gradient, because Newton step computation unsuccessful." << endl;
+        }
+        // Make the gradient unit norm, in feasible search direction.
+        if (!AllowNegativeParams)
+        {
+          // Project gradient to be a feasible search direction
+          vector<bool> active(nlambdas,false);
+          unsigned numactive=0;
+          for (unsigned i = 0; i<nlambdas; i++)
+            if ((bestparams(i)==0) && (bestgrad(i)>0)) // Project gradient to inactive constraints
+            {
+              active[i]=true;
+              bestgrad(i)=0.0;// Do this now, in case extrapolation allowed.
+              ++numactive;
+            }
+          if (numactive>0)
+          {
+            if (!AllowExtrapolation)
+            {
+              // Project gradient, for activity concerns
+              DMatrix tmpN = DMatrix::Constant(nlambdas,nlambdas-1, -1.0/sqrt((nlambdas-numactive-1)*(nlambdas-numactive-1)+nlambdas-numactive-1.0));
+              for (unsigned i=0; i<nlambdas-1; ++i)
+                tmpN(i,i)= tmpN(i,i)*(1.0-(nlambdas-numactive));
+              for (unsigned i=0; i<nlambdas; ++i)
+                if (active[i])
+                  for (unsigned j=0; j<nlambdas-1; ++i)
+                    tmpN(i,j)=0;
+              bestgrad = -tmpN*tmpN.transpose()*bestgrad; // projected gradient onto unit sum and active set constraints
+            }
           }
         }
       }
@@ -333,17 +348,15 @@ void train_params(
       params=bestparams+deltaparams;
       cerr << "Delta weights, step size " << stepsize << ": " << endl;
       cerr << deltaparams << endl;
-      //cerr << "Safeguarded weights: " << endl;
-      //cerr << params << endl;
     }
     else
     {
-      // Last attempt failed at being better.
+      // Last attempt failed at being better, so move in gradient direction with reduced step.
       stepsize=std::min(stepdecreasefactor*stepsize,maxbestgradstep); // stepsize reduction factor is empirical
       cerr << "Taking smaller step: " << stepsize << endl;
       params = bestparams - bestgrad * stepsize;
     }
-    // Clean them up.
+    // Clean the parameters up.
     double sumparams=0.0;
     for (unsigned i = 0; i<nlambdas; i++)
     {
@@ -361,7 +374,7 @@ void train_params(
     for (unsigned i=0; i<paramhistory.size(); ++i)
       if (params==paramhistory[i])
         duplicateentry=true;
-    while ((duplicateentry) && (dedupattempts<50))
+    while ((duplicateentry) && (stepsize>=minstepsize))
     {
       dedupattempts++;
       cerr << "Duplicate weight found: " << endl;
@@ -392,7 +405,6 @@ void train_params(
 
   cerr << "Training complete. Best weights:" << endl;
   cerr << setprecision(16) << bestparams << endl;
-
 }
 
 int main(int argc, char** argv) {
@@ -400,7 +412,7 @@ int main(int argc, char** argv) {
   std::string tuning_data;
   std::vector<std::string> lms;
 
-  try {
+  try { 
     namespace po = boost::program_options;
     po::options_description options("train-params");
 
@@ -443,7 +455,7 @@ int main(int argc, char** argv) {
   //no comment
   std::map<std::string, int*> vmap;
 
-  //stuff it into the
+  //stuff it into the 
   EnumerateGlobalVocab * globalVocabBuilder = new EnumerateGlobalVocab(&vmap, lms.size());
 
   Config cfg;
@@ -468,12 +480,12 @@ int main(int argc, char** argv) {
   std::vector<std::string> vocab;
   std::cerr << "Global Vocab Map has size: " << vmap.size() << std::endl;
 
-  std::pair<StringPiece,int *> me;
+  std::pair<StringPiece,int *> me; 
 
   for(std::map<std::string, int*>::iterator iter = vmap.begin(); iter != vmap.end(); ++iter) {
     vocab.push_back(iter->first);
   }
-  std::cerr << "Vocab vector has size: " << vocab.size() << std::endl;
+  std::cerr << "Vocab vector has size: " << vocab.size() << std::endl;  
 
   //load context sorted ngrams into vector of vectors
   std::vector<std::vector<std::string> > corpus;
