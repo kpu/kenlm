@@ -15,9 +15,6 @@
 #include "util/stream/timer.hh"
 #include "util/tokenize_piece.hh"
 
-#include <boost/unordered_set.hpp>
-#include <boost/unordered_map.hpp>
-
 #include <functional>
 
 #include <stdint.h>
