@@ -1,7 +1,6 @@
 #ifndef LM_INTERPOLATE_BACKOFF_MATRIX_H
 #define LM_INTERPOLATE_BACKOFF_MATRIX_H
 
-#include <algorithm>
 #include <cstddef>
 #include <vector>
 
@@ -10,9 +9,7 @@ namespace lm { namespace interpolate {
 class BackoffMatrix {
   public:
     BackoffMatrix(std::size_t num_models, std::size_t max_order)
-      : max_order_(max_order), backing_(num_models * max_order) {
-      std::fill(backing_.begin(), backing_.end(), 0.0f);
-    }
+      : max_order_(max_order), backing_(num_models * max_order) {}
 
     float &Backoff(std::size_t model, std::size_t order_minus_1) {
       return backing_[model * max_order_ + order_minus_1];
