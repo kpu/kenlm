@@ -7,6 +7,7 @@ Local modifications:
 4. Remove test hook
 5. Non-x86 support from the branch_lut code
 6. Rename functions
+7. Require __SSE2__ on i386
 
 Copyright (C) 2014 Milo Yip
 
@@ -66,7 +67,7 @@ const char gDigitsLut[200] = {
 // SSE2 implementation according to http://0x80.pl/articles/sse-itoa.html
 // Modifications: (1) fix incorrect digits (2) accept all ranges (3) write to user provided buffer.
 
-#if defined(i386) || defined(__amd64) || defined(_M_IX86) || defined(_M_X64)
+#if defined(__amd64) || defined(_M_X64) || (defined(__SSE2__) && (defined(_M_IX86) || defined(i386)))
 
 #include <emmintrin.h>
 
