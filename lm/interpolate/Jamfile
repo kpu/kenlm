@@ -1,9 +1,9 @@
-fakelib interp : ../common//common [ glob *.cc : *_main.cc *_test.cc ] : <cxxflags>-fopenmp ;
+fakelib interp : ../common//common [ glob *.cc : *_main.cc *_test.cc tune_instance.cc ] : <cxxflags>-fopenmp ;
 
 local with-eigen = [ option.get "with-eigen" ] ;
 if $(with-eigen) {
-  exe train_params : interp train_params_grant_main.cc /top//boost_program_options ..//kenlm : <include>$(with-eigen) ;
-  exe perf_enum_gv : interpolate perf_enum_gv_main.cc /top//boost_program_options ..//kenlm : <include>$(with-eigen) ;
+  exe train_params : tune_instance.cc train_params_main.cc interp /top//boost_program_options ..//kenlm : <include>$(with-eigen) ;
+  exe perf_enum_gv : interp perf_enum_gv_main.cc /top//boost_program_options ..//kenlm : <include>$(with-eigen) ;
 }
 
 exe interpolate : interpolate_main.cc interp /top//boost_program_options ;
