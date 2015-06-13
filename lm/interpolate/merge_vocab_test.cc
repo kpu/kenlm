@@ -1,9 +1,11 @@
 #define BOOST_TEST_MODULE InterpolateMergeVocabTest
 #include <boost/test/unit_test.hpp>
 
+#include "lm/enumerate_vocab.hh"
 #include "lm/interpolate/merge_vocab.hh"
 #include "lm/interpolate/universal_vocab.hh"
 #include "lm/lm_exception.hh"
+#include "lm/vocab.hh"
 #include "lm/word_index.hh"
 #include "util/file.hh"
 #include "util/file_piece.hh"
@@ -40,6 +42,11 @@ class TestFiles {
     util::scoped_fd test[3], no_unk, bad_order;
 };
 
+class DoNothingEnumerate : public EnumerateVocab {
+  public:
+    void Add(WordIndex, const StringPiece &) {}
+};
+
 BOOST_AUTO_TEST_CASE(MergeVocabTest) {
   TestFiles files;
 
@@ -56,7 +63,10 @@ BOOST_AUTO_TEST_CASE(MergeVocabTest) {
   util::scoped_fd combined(util::MakeTemp("temporary"));
 
   UniversalVocab universal_vocab(model_max_idx);
-  MergeVocab(used_files, universal_vocab, combined.get());
+  {
+    ngram::ImmediateWriteWordsWrapper writer(NULL, combined.get(), 0);
+    MergeVocab(used_files, universal_vocab, writer);
+  }
 
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(0, 0), 0);
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(1, 0), 0);
@@ -93,8 +103,8 @@ BOOST_AUTO_TEST_CASE(MergeVocabNoUnkTest) {
   model_max_idx.push_back(10);
 
   UniversalVocab universal_vocab(model_max_idx);
-  util::scoped_fd combined(util::MakeTemp("temporary"));
-  BOOST_CHECK_THROW(MergeVocab(used_files, universal_vocab, combined.get()), FormatLoadException);
+  DoNothingEnumerate nothing;
+  BOOST_CHECK_THROW(MergeVocab(used_files, universal_vocab, nothing), FormatLoadException);
 }
 
 BOOST_AUTO_TEST_CASE(MergeVocabWrongOrderTest) {
@@ -109,8 +119,8 @@ BOOST_AUTO_TEST_CASE(MergeVocabWrongOrderTest) {
   model_max_idx.push_back(10);
 
   lm::interpolate::UniversalVocab universal_vocab(model_max_idx);
-  util::scoped_fd combined(util::MakeTemp("temporary"));
-  BOOST_CHECK_THROW(MergeVocab(used_files, universal_vocab, combined.get()), FormatLoadException);
+  DoNothingEnumerate nothing;
+  BOOST_CHECK_THROW(MergeVocab(used_files, universal_vocab, nothing), FormatLoadException);
 }
 
 }}} // namespaces

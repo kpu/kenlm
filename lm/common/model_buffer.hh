@@ -39,6 +39,7 @@ class ModelBuffer {
     }
 
     int VocabFile() const { return vocab_file_.get(); }
+    int StealVocabFile() { return vocab_file_.release(); }
 
     bool Keep() const { return keep_buffer_; }
 

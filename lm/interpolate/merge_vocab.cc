@@ -1,9 +1,9 @@
 #include "lm/interpolate/merge_vocab.hh"
 
+#include "lm/enumerate_vocab.hh"
 #include "lm/interpolate/universal_vocab.hh"
 #include "lm/lm_exception.hh"
 #include "lm/vocab.hh"
-#include "util/fake_ofstream.hh"
 #include "util/file_piece.hh"
 
 #include <queue>
@@ -91,7 +91,7 @@ class Readers : public util::FixedArray<VocabFileReader> {
 
 } // namespace
 
-void MergeVocab(util::FixedArray<util::scoped_fd> &files, UniversalVocab &vocab, int write_file) {
+void MergeVocab(util::FixedArray<util::scoped_fd> &files, UniversalVocab &vocab, EnumerateVocab &enumerate) {
   typedef std::priority_queue<VocabFileReader*, std::vector<VocabFileReader*>, CompareFiles> HeapType;
   HeapType heap;
   Readers readers(files.size());
@@ -106,14 +106,11 @@ void MergeVocab(util::FixedArray<util::scoped_fd> &files, UniversalVocab &vocab,
   // global_index starts with <unk> which is 0
   WordIndex global_index = 0;
 
-  util::FakeOFStream out(write_file);
-  out << "<unk>" << '\0';
-
+  enumerate.Add(0, "<unk>");
   while (!heap.empty()) {
     VocabFileReader* top_vocab_file = heap.top();
     if (top_vocab_file->Value() != prev_hash_value) {
-      out << top_vocab_file->Word() << '\0';
-      global_index++;
+      enumerate.Add(++global_index, top_vocab_file->Word());
     }
     vocab.InsertUniversalIdx(top_vocab_file->ModelNum(),
         top_vocab_file->CurrentIndex(),

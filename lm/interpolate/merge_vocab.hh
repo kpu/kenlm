@@ -5,12 +5,16 @@
 #include "util/fixed_array.hh"
 
 namespace lm {
+
+class EnumerateVocab;
+
 namespace interpolate {
 
 class UniversalVocab;
 
-// Takes ownership of vocab_files
-void MergeVocab(util::FixedArray<util::scoped_fd> &vocab_files, UniversalVocab &vocab, int vocab_write_file);
+// Takes ownership of vocab_files.
+// The combined vocabulary is enumerated with enumerate.
+void MergeVocab(util::FixedArray<util::scoped_fd> &vocab_files, UniversalVocab &vocab, EnumerateVocab &enumerate);
 
 }} // namespaces
 

@@ -3,6 +3,7 @@
 #include "lm/common/compare.hh"
 #include "lm/common/print.hh"
 #include "lm/common/renumber.hh"
+#include "lm/vocab.hh"
 #include "lm/interpolate/backoff_reunification.hh"
 #include "lm/interpolate/interpolate_info.hh"
 #include "lm/interpolate/merge_probabilities.hh"
@@ -73,7 +74,10 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
     max_order = std::max(max_order, i->Order());
   }
   UniversalVocab vocab(vocab_sizes);
-  MergeVocab(vocab_files, vocab, vocab_null.get());
+  {
+    ngram::ImmediateWriteWordsWrapper writer(NULL, vocab_null.get(), 0);
+    MergeVocab(vocab_files, vocab, writer);
+  }
   vocab_files.clear();
 
   std::cerr << "Merging probabilities." << std::endl;
