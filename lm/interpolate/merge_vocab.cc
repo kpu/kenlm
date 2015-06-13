@@ -91,7 +91,7 @@ class Readers : public util::FixedArray<VocabFileReader> {
 
 } // namespace
 
-void MergeVocab(util::FixedArray<util::scoped_fd> &files, UniversalVocab &vocab, EnumerateVocab &enumerate) {
+WordIndex MergeVocab(util::FixedArray<util::scoped_fd> &files, UniversalVocab &vocab, EnumerateVocab &enumerate) {
   typedef std::priority_queue<VocabFileReader*, std::vector<VocabFileReader*>, CompareFiles> HeapType;
   HeapType heap;
   Readers readers(files.size());
@@ -123,6 +123,7 @@ void MergeVocab(util::FixedArray<util::scoped_fd> &files, UniversalVocab &vocab,
       heap.push(top_vocab_file);
     }
   }
+  return global_index + 1;
 }
 
 } // namespace interpolate
