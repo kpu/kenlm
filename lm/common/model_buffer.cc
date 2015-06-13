@@ -84,4 +84,8 @@ void ModelBuffer::Source(util::stream::Chains &chains) {
   }
 }
 
+void ModelBuffer::Source(std::size_t order_minus_1, util::stream::Chain &chain) {
+  chain >> util::stream::PRead(files_[order_minus_1].get());
+}
+
 } // namespace

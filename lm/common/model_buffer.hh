@@ -11,7 +11,10 @@
 #include <string>
 #include <vector>
 
-namespace util { namespace stream { class Chains; } }
+namespace util { namespace stream {
+class Chains;
+class Chain;
+}} // namespaces
 
 namespace lm {
 
@@ -29,6 +32,8 @@ class ModelBuffer {
     // Read files and write to the given chains.  If fewer chains are provided,
     // only do the lower orders.
     void Source(util::stream::Chains &chains);
+
+    void Source(std::size_t order_minus_1, util::stream::Chain &chain);
 
     // The order of the n-gram model that is associated with the model buffer.
     std::size_t Order() const { return counts_.size(); }
