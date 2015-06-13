@@ -1,9 +1,9 @@
 #include "lm/builder/initial_probabilities.hh"
 
 #include "lm/builder/discount.hh"
-#include "lm/builder/special.hh"
 #include "lm/builder/hash_gamma.hh"
 #include "lm/builder/payload.hh"
+#include "lm/common/special.hh"
 #include "lm/common/ngram_stream.hh"
 #include "util/murmur_hash.hh"
 #include "util/file.hh"

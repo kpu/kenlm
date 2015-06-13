@@ -1,9 +1,9 @@
-#ifndef LM_BUILDER_SPECIAL_H
-#define LM_BUILDER_SPECIAL_H
+#ifndef LM_COMMON_SPECIAL_H
+#define LM_COMMON_SPECIAL_H
 
 #include "lm/word_index.hh"
 
-namespace lm { namespace builder {
+namespace lm {
 
 class SpecialVocab {
   public:
@@ -22,6 +22,6 @@ class SpecialVocab {
     WordIndex eos_;
 };
 
-}} // namespaces
+} // namespace lm
 
-#endif // LM_BUILDER_SPECIAL_H
+#endif // LM_COMMON_SPECIAL_H

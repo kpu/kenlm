@@ -1,7 +1,7 @@
 #ifndef LM_BUILDER_INTERPOLATE_H
 #define LM_BUILDER_INTERPOLATE_H
 
-#include "lm/builder/special.hh"
+#include "lm/common/special.hh"
 #include "lm/word_index.hh"
 #include "util/stream/multi_stream.hh"
 

@@ -10,9 +10,8 @@
 namespace util { namespace stream { class Chains; } }
 
 namespace lm {
-namespace builder {
-
 class SpecialVocab;
+namespace builder {
 
 struct InitialProbabilitiesConfig {
   // These should be small buffers to keep the adder from getting too far ahead
