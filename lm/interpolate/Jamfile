@@ -1,14 +1,16 @@
 fakelib interp : ../common//common [ glob *.cc : *_main.cc *_test.cc tune_instance.cc tune_derivatives.cc ] : <cxxflags>-fopenmp ;
 
+import testing ;
+
 local with-eigen = [ option.get "with-eigen" ] ;
 if $(with-eigen) {
   fakelib tuning : tune_instance.cc tune_derivatives.cc interp ..//kenlm : <include>$(with-eigen) ;
+  unit-test tune_derivatives_test : tune_derivatives_test.cc tuning /top//boost_unit_test_framework : <include>$(with-eigen) ;
 }
 
 exe interpolate : interpolate_main.cc interp /top//boost_program_options ;
 exe streaming_example : ../builder//builder interp streaming_example_main.cc /top//boost_program_options ;
 
-import testing ;
 unit-test normalize_test : interp normalize_test.cc /top//boost_unit_test_framework ;
 unit-test backoff_reunification_test : interp backoff_reunification_test.cc /top//boost_unit_test_framework ;
 unit-test bounded_sequence_encoding_test : interp bounded_sequence_encoding_test.cc /top//boost_unit_test_framework ;

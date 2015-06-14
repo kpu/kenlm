@@ -4,6 +4,7 @@ namespace lm { namespace interpolate {
 
 ComputeDerivative::ComputeDerivative(const util::FixedArray<Instance> &instances, const Matrix &ln_unigrams) 
   : instances_(instances), ln_unigrams_(ln_unigrams) {
+  neg_correct_summed_ = Vector::Zero(ln_unigrams.cols());
   for (const Instance *i = instances.begin(); i != instances.end(); ++i) {
     neg_correct_summed_ -= i->ln_correct;
   }
