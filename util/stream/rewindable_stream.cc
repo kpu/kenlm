@@ -47,6 +47,9 @@ RewindableStream &RewindableStream::operator++() {
     block_end_ = current_ + cur_block.ValidSize();
   }
   assert(current_);
+  assert(current_ >= static_cast<uint8_t*>(blocks_[blocks_it_].Get()));
+  assert(current_ < block_end_);
+  assert(block_end_ == blocks_[blocks_it_].ValidEnd());
   return *this;
 }
 
@@ -62,6 +65,12 @@ void RewindableStream::Rewind() {
   }
   blocks_it_ = 0;
   current_ = marked_;
+  block_end_ = static_cast<const uint8_t*>(blocks_[blocks_it_].ValidEnd());
+
+  assert(current_);
+  assert(current_ >= static_cast<uint8_t*>(blocks_[blocks_it_].Get()));
+  assert(current_ < block_end_);
+  assert(block_end_ == blocks_[blocks_it_].ValidEnd());
 }
 
 void RewindableStream::Poison() {
