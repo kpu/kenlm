@@ -19,7 +19,7 @@ void ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matri
   // \sum_x p_I(x)ln p_i(x)
   Accum Z_epsilon = full_uni.sum();
   full_uni /= Z_epsilon;
-  // unigram_cross(i) is the cross entropy of p_i against p_I.
+  // unigram_cross(i) is \sum_{all x} p_I(x) log p_i(x)
   Vector unigram_cross(ln_unigrams_.transpose() * full_uni);
 
   Vector weighted_extensions;
@@ -34,14 +34,14 @@ void ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matri
       sum_x_p_I += full_uni(*x);
     }
     weighted_extensions = (n->ln_extensions * weights).array().exp();
-    Accum Z_context = Z_epsilon * weighted_backoffs + weighted_extensions.sum() - weighted_backoffs * sum_x_p_I;
+    Accum Z_context = Z_epsilon * weighted_backoffs * (1.0 - sum_x_p_I) + weighted_extensions.sum();
 
     Accum B_I = Z_epsilon / Z_context * weighted_backoffs;
+
     // Add uncorrected unigram term to backoff.
     gradient.noalias() += B_I * (n->ln_backoff + unigram_cross);
-
     // Correction term: add correct values
-    gradient.noalias() += n->ln_extensions.transpose() * weighted_extensions;
+    gradient.noalias() += n->ln_extensions.transpose() * weighted_extensions / Z_context;
     // Subtract values that should not have been charged.
     gradient -= sum_x_p_I * B_I * n->ln_backoff;
     for (std::vector<WordIndex>::const_iterator x = n->extension_words.begin(); x != n->extension_words.end(); ++x) {
