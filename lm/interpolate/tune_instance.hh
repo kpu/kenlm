@@ -23,30 +23,26 @@ typedef double Accum;
 typedef Matrix UnigramProbs;
 
 // The instance w_1^n
-class Instance {
-  public:
-    explicit Instance(std::size_t num_models);
+struct Instance {
+  explicit Instance(std::size_t num_models);
 
-  private:
-    friend class InstanceBuilder;
+  // Pre-multiplied backoffs to unigram.
+  // ln_backoff(i) = ln \prod_j b_i(w_j^{n-1})
+  Vector ln_backoff;
 
-    // Pre-multiplied backoffs to unigram.
-    // backoff_(i) = ln \prod_j b_i(w_j^{n-1})
-    Vector backoff_;
+  // ln_correct(i) = ln p_i(w_n | w_1^{n-1})
+  // Note this is unweighted.  It appears as a term in the gradient.
+  Vector ln_correct;
 
-    // correct_(i) = ln p_i(w_n | w_1^{n-1})
-    // Note this is unweighted.  It appears as a term in the gradient.
-    Vector correct_;
+  // Correct probability values if any of the models does not back off to unigram.
+  // ln_extension_values(i,j) = ln p_j(extension_words[i] | w_1^{n-1})
+  Matrix ln_extensions;
 
-    // Correct probability values if any of the models does not back off to unigram.
-    // extension_values_(i,j) = ln p_j(extension_words_[i] | w_1^{n-1})
-    Matrix extension_values_;
-
-    // Word indices corresponding to rows of extension_values_.
-    std::vector<WordIndex> extension_words_;
+  // Word indices corresponding to rows of extension_values_.
+  std::vector<WordIndex> extension_words;
 };
 
-void Load(int fd, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, UnigramProbs &unigrams);
+void LoadInstances(int fd, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, UnigramProbs &unigrams);
 
 }} // namespaces
 #endif // LM_INTERPOLATE_TUNE_INSTANCE_H

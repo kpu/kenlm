@@ -49,10 +49,10 @@ class InstanceBuilder {
         accum += *i;
         *i = accum;
       }
-      out.backoff_(model_index) = accum;
-      std::size_t old_rows = out.extension_values_.rows();
-      out.extension_values_.conservativeResize(extensions_.size(), Eigen::NoChange_t());
-      out.extension_words_.resize(extensions_.size());
+      out.ln_backoff(model_index) = accum;
+      std::size_t old_rows = out.ln_extensions.rows();
+      out.ln_extensions.conservativeResize(extensions_.size(), Eigen::NoChange_t());
+      out.extension_words.resize(extensions_.size());
       for (boost::unordered_map<WordIndex, ContinueValue>::iterator i = extensions_.begin(); i != extensions_.end(); ++i) {
         // Compute backed off probability.
         if (i->second.order == 0) {
@@ -60,13 +60,13 @@ class InstanceBuilder {
           i->second.order = 1;
         }
         i->second.ln_prob += backoffs_[i->second.order - 1];
-        out.extension_values_(i->second.row, model_index) = i->second.ln_prob;
+        out.ln_extensions(i->second.row, model_index) = i->second.ln_prob;
         // Fill in other models.
         if (i->second.row > old_rows) {
           for (std::size_t m = 0; m < model_index; ++m) {
-            out.extension_values_(i->second.row, m) = unigrams(i->first, m) + out.backoff_(m);
+            out.ln_extensions(i->second.row, m) = unigrams(i->first, m) + out.ln_backoff(m);
           }
-          out.extension_words_[i->second.row] = i->first;
+          out.extension_words[i->second.row] = i->first;
         }
         // Prepare for next model.
         i->second.order = 0;
@@ -74,9 +74,9 @@ class InstanceBuilder {
       // Fill in probability of correct word.
       boost::unordered_map<WordIndex, ContinueValue>::const_iterator correct_it = extensions_.find(correct_);
       if (correct_it == extensions_.end()) {
-        out.correct_(model_index) = unigrams(correct_, model_index) + out.backoff_(model_index);
+        out.ln_correct(model_index) = unigrams(correct_, model_index) + out.ln_backoff(model_index);
       } else {
-        out.correct_(model_index) = out.extension_values_(correct_it->second.row, model_index);
+        out.ln_correct(model_index) = out.ln_extensions(correct_it->second.row, model_index);
       }
       std::fill(backoffs_.begin(), backoffs_.end(), 0.0);
     }
@@ -233,7 +233,9 @@ class IdentifyTuning : public EnumerateVocab {
 
 } // namespace
 
-void Load(int tuning_file, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, UnigramProbs &unigrams) {
+Instance::Instance(std::size_t num_models) : ln_backoff(num_models), ln_correct(num_models), ln_extensions(0, num_models) {}
+
+void LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, UnigramProbs &unigrams) {
   util::FixedArray<ModelBuffer> models(model_names.size());
   std::vector<WordIndex> vocab_sizes;
   vocab_sizes.reserve(model_names.size());
@@ -300,6 +302,7 @@ void Load(int tuning_file, const std::vector<StringPiece> &model_names, util::Fi
     for (std::size_t instance = 0; instance < tuning_words.size(); ++instance) {
       builders[instance].Dump(m, unigrams, instances[instance]);
     }
+    unigrams(bos, m) = -std::numeric_limits<Accum>::infinity();
   }
 }
 
