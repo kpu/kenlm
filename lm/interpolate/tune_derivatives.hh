@@ -7,13 +7,13 @@ namespace lm { namespace interpolate {
 
 class ComputeDerivative {
   public:
-    explicit ComputeDerivative(const util::FixedArray<Instance> &instances, const UnigramProbs &unigrams);
+    explicit ComputeDerivative(const util::FixedArray<Instance> &instances, const Matrix &ln_unigrams);
 
     void Iteration(const Vector &weights, Vector &gradient, Matrix &hessian);
 
   private:
     const util::FixedArray<Instance> &instances_;
-    const UnigramProbs &unigrams_;
+    const Matrix &ln_unigrams_;
 
     // correct_summed_(i) = -\sum_n ln p_i(w_n | w_1^{n-1})
     Vector neg_correct_summed_;

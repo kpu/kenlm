@@ -42,7 +42,7 @@ class InstanceBuilder {
       }
     }
 
-    void Dump(std::size_t model_index, UnigramProbs &unigrams, Instance &out) {
+    void Dump(std::size_t model_index, Matrix &unigrams, Instance &out) {
       // Turn backoffs into multiplied values (added in log space).
       float accum = 0.0;
       for (std::vector<float>::reverse_iterator i = backoffs_.rbegin(); i != backoffs_.rend(); ++i) {
@@ -124,9 +124,9 @@ typedef boost::unordered_map<uint64_t, DispatchContext> ContextMap;
 
 class UnigramLoader {
   public:
-    UnigramLoader(ContextMap &contexts_for_backoffs, UnigramProbs &probs, std::size_t model_number)
+    UnigramLoader(ContextMap &contexts_for_backoffs, Matrix &ln_probs, std::size_t model_number)
       : map_(contexts_for_backoffs),
-        prob_(probs.col(model_number)) {}
+        prob_(ln_probs.col(model_number)) {}
 
     void Run(const util::stream::ChainPosition &position) {
       // TODO handle the case of a unigram model?
@@ -141,7 +141,7 @@ class UnigramLoader {
 
   private:
     ContextMap &map_;
-    UnigramProbs::ColXpr prob_;
+    Matrix::ColXpr prob_;
     std::size_t model_;
 };
 
@@ -235,7 +235,7 @@ class IdentifyTuning : public EnumerateVocab {
 
 Instance::Instance(std::size_t num_models) : ln_backoff(num_models), ln_correct(num_models), ln_extensions(0, num_models) {}
 
-void LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, UnigramProbs &unigrams) {
+void LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, Matrix &ln_unigrams) {
   util::FixedArray<ModelBuffer> models(model_names.size());
   std::vector<WordIndex> vocab_sizes;
   vocab_sizes.reserve(model_names.size());
@@ -283,7 +283,7 @@ void LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names,
     }
   }
 
-  unigrams.resize(combined_vocab_size, models.size());
+  ln_unigrams.resize(combined_vocab_size, models.size());
 
   // Scan through input files.  Sadly not parallel due to an underlying hash table.
   for (std::size_t m = 0; m < models.size(); ++m) {
@@ -292,7 +292,7 @@ void LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names,
       models[m].Source(order - 1, chain);
       chain >> Renumber(vocab.Mapping(m), order);
       if (order == 1) {
-        chain >> UnigramLoader(cmap, unigrams, m);
+        chain >> UnigramLoader(cmap, ln_unigrams, m);
       } else if (order < models[m].Order()) {
         chain >> MiddleLoader(cmap);
       } else {
@@ -300,9 +300,9 @@ void LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names,
       }
     }
     for (std::size_t instance = 0; instance < tuning_words.size(); ++instance) {
-      builders[instance].Dump(m, unigrams, instances[instance]);
+      builders[instance].Dump(m, ln_unigrams, instances[instance]);
     }
-    unigrams(bos, m) = -std::numeric_limits<Accum>::infinity();
+    ln_unigrams(bos, m) = -std::numeric_limits<Accum>::infinity();
   }
 }
 

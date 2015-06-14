@@ -19,9 +19,6 @@ typedef Eigen::VectorXd Vector;
 
 typedef double Accum;
 
-// Unigram probabilities: row is word, column is model.  $unigram(x, i) = p_i(x)$
-typedef Matrix UnigramProbs;
-
 // The instance w_1^n
 struct Instance {
   explicit Instance(std::size_t num_models);
@@ -42,7 +39,7 @@ struct Instance {
   std::vector<WordIndex> extension_words;
 };
 
-void LoadInstances(int fd, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, UnigramProbs &unigrams);
+void LoadInstances(int fd, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, Matrix &ln_unigrams);
 
 }} // namespaces
 #endif // LM_INTERPOLATE_TUNE_INSTANCE_H
