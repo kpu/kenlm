@@ -70,6 +70,18 @@ BOOST_AUTO_TEST_CASE(Small) {
   expected_gradient(1) += p_I(1) * log(model_1_word_1);
   expected_gradient(1) += p_I(2) * log(0.1 * 0.4);
   BOOST_CHECK_CLOSE(expected_gradient(1), gradient(1), 0.01);
+
+  Matrix expected_hessian(2, 2);
+  expected_hessian(1, 0) =
+    // First term
+    p_I(0) * log(0.1 * 0.2) * log(0.6 * 0.4) +
+    p_I(1) * log(0.4 * 0.2) * log(model_1_word_1) +
+    p_I(2) * log(model_0_word_2) * log(0.1 * 0.4);
+  expected_hessian(1, 0) -=
+    (p_I(0) * log(0.1 * 0.2) + p_I(1) * log(0.4 * 0.2) + p_I(2) * log(model_0_word_2)) *
+    (p_I(0) * log(0.6 * 0.4) + p_I(1) * log(model_1_word_1) + p_I(2) * log(0.1 * 0.4));
+  expected_hessian(0, 1) = expected_hessian(1, 0);
+  BOOST_CHECK_CLOSE(expected_hessian(1, 0), hessian(1, 0), 0.01);
 }
 
 }}} // namespaces
