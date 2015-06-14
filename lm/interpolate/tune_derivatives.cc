@@ -37,14 +37,14 @@ void ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matri
 
     Accum B_I = Z_epsilon / Z_context * weighted_backoffs;
     // Add uncorrected unigram term to backoff.
-    gradient += B_I * (n->ln_backoff + unigram_cross);
+    gradient.noalias() += B_I * (n->ln_backoff + unigram_cross);
 
     // Correction term: add correct values
-    gradient += n->ln_extensions.transpose() * weighted_extensions;
+    gradient.noalias() += n->ln_extensions.transpose() * weighted_extensions;
     // Subtract values that should not have been charged.
     gradient -= sum_x_p_I * B_I * n->ln_backoff;
     for (std::vector<WordIndex>::const_iterator x = n->extension_words.begin(); x != n->extension_words.end(); ++x) {
-      gradient -= full_uni(*x) * B_I * ln_unigrams_.row(*x);
+      gradient.noalias() -= full_uni(*x) * B_I * ln_unigrams_.row(*x);
     }
   }
   // TODO Hessian
