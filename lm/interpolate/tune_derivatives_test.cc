@@ -60,12 +60,16 @@ BOOST_AUTO_TEST_CASE(Small) {
     pow(model_0_word_2, 0.9) * pow(0.1 * 0.4, 1.2);
   p_I /= p_I.sum();
 
-  Vector expected_gradient(2);
-  expected_gradient(0) = -instance.ln_correct(0);
+  Vector expected_gradient = -instance.ln_correct;
   expected_gradient(0) += p_I(0) * log(0.1 * 0.2);
   expected_gradient(0) += p_I(1) * log(0.4 * 0.2);
   expected_gradient(0) += p_I(2) * log(model_0_word_2);
   BOOST_CHECK_CLOSE(expected_gradient(0), gradient(0), 0.01);
+  
+  expected_gradient(1) += p_I(0) * log(0.6 * 0.4);
+  expected_gradient(1) += p_I(1) * log(model_1_word_1);
+  expected_gradient(1) += p_I(2) * log(0.1 * 0.4);
+  BOOST_CHECK_CLOSE(expected_gradient(1), gradient(1), 0.01);
 }
 
 }}} // namespaces
