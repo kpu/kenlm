@@ -130,13 +130,21 @@ class UnigramLoader {
 
     void Run(const util::stream::ChainPosition &position) {
       // TODO handle the case of a unigram model?
-      for (NGramStream<ProbBackoff> input(position); input; ++input) {
-        prob_(*input->begin()) = input->Value().prob * M_LN10;
+      NGramStream<ProbBackoff> input(position);
+      assert(input);
+      Accum unk = input->Value().prob * M_LN10;
+      WordIndex previous = 0;
+      for (; input; ++input) {
+        WordIndex word = *input->begin();
+        prob_.segment(previous, word - previous) = Vector::Constant(word - previous, unk);
+        prob_(word) = input->Value().prob * M_LN10;
         ContextMap::iterator i = map_.find(util::MurmurHashNative(input->begin(), sizeof(WordIndex)));
         if (i != map_.end()) {
           i->second.MatchedBackoff(1, input->Value().backoff * M_LN10);
         }
+        previous = word + 1;
       }
+      prob_.segment(previous, prob_.rows() - previous) = Vector::Constant(prob_.rows() - previous, unk);
     }
 
   private:
