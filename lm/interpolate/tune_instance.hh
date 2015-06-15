@@ -39,7 +39,8 @@ struct Instance {
   std::vector<WordIndex> extension_words;
 };
 
-void LoadInstances(int fd, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, Matrix &ln_unigrams);
+// Takes ownership of test_file
+void LoadInstances(int test_file, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, Matrix &ln_unigrams);
 
 }} // namespaces
 #endif // LM_INTERPOLATE_TUNE_INSTANCE_H
