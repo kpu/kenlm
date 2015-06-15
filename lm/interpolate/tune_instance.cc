@@ -163,7 +163,7 @@ class MiddleLoader {
       const std::size_t full_size = (uint8_t*)input->end() - (uint8_t*)input->begin();
       const std::size_t context_size = full_size - sizeof(WordIndex);
       ContextMap::iterator i;
-      for (NGramStream<ProbBackoff> input(position); input; ++input) {
+      for (; input; ++input) {
         i = map_.find(util::MurmurHashNative(input->begin(), full_size));
         if (i != map_.end()) {
           i->second.MatchedBackoff(input->Order(), input->Value().backoff * M_LN10);
@@ -247,7 +247,7 @@ void LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names,
   util::FixedArray<ModelBuffer> models(model_names.size());
   std::vector<WordIndex> vocab_sizes;
   vocab_sizes.reserve(model_names.size());
-  util::FixedArray<util::scoped_fd> vocab_files;
+  util::FixedArray<util::scoped_fd> vocab_files(model_names.size());
   std::size_t max_order = 0;
   for (std::vector<StringPiece>::const_iterator i = model_names.begin(); i != model_names.end(); ++i) {
     models.push_back(*i);
