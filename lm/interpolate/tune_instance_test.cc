@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(Toy) {
 
   std::vector<WordIndex>::const_iterator row_a_it = std::find(instances[0].extension_words.begin(), instances[0].extension_words.end(), 2);
   BOOST_REQUIRE(row_a_it != instances[0].extension_words.end());
-  WordIndex row_a = *row_a_it;
+  WordIndex row_a = row_a_it - instances[0].extension_words.begin();
   BOOST_CHECK_CLOSE(-0.37712017 * M_LN10, instances[0].ln_extensions(row_a, 0), 0.001);
 
   // p_0(c | <s>) = p_0(c)b_0(<s>) = 10^(-0.90309 + -0.30103)
