@@ -82,6 +82,7 @@ BOOST_AUTO_TEST_CASE(Small) {
     (p_I(0) * log(0.6 * 0.4) + p_I(1) * log(model_1_word_1) + p_I(2) * log(0.1 * 0.4));
   expected_hessian(0, 1) = expected_hessian(1, 0);
   BOOST_CHECK_CLOSE(expected_hessian(1, 0), hessian(1, 0), 0.01);
+  BOOST_CHECK_CLOSE(expected_hessian(0, 1), hessian(0, 1), 0.01);
 }
 
 }}} // namespaces
