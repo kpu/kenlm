@@ -2,7 +2,7 @@
 
 namespace lm { namespace interpolate {
 
-ComputeDerivative::ComputeDerivative(const util::FixedArray<Instance> &instances, const Matrix &ln_unigrams) 
+ComputeDerivative::ComputeDerivative(const util::FixedArray<Instance> &instances, const Matrix &ln_unigrams)
   : instances_(instances), ln_unigrams_(ln_unigrams) {
   neg_correct_summed_ = Vector::Zero(ln_unigrams.cols());
   for (const Instance *i = instances.begin(); i != instances.end(); ++i) {
@@ -17,10 +17,9 @@ void ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matri
   // TODO: loop instead to force low-memory evaluation
   // Compute p_I(x).
   Vector interp_uni((ln_unigrams_ * weights).array().exp());
-  // \sum_x p_I(x)ln p_i(x)
   Accum Z_epsilon = interp_uni.sum();
   interp_uni /= Z_epsilon;
-  // unigram_cross(i) is \sum_{all x} p_I(x) log p_i(x)
+  // unigram_cross(i) = \sum_{all x} p_I(x) ln p_i(x)
   Vector unigram_cross(ln_unigrams_.transpose() * interp_uni);
 
   Accum B_I_sum = 0.0;
@@ -61,7 +60,7 @@ void ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matri
 
     convolve = unigram_cross * n->ln_backoff.transpose();
     // There's one missing term here, which is independent of context and done at the end.
-    hessian.noalias() += 
+    hessian.noalias() +=
       // First term of Hessian, assuming all models back off to unigram.
       B_I * (convolve + convolve.transpose() + n->ln_backoff * n->ln_backoff.transpose())
       // Second term of Hessian, with correct full probabilities.
