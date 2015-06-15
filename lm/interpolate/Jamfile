@@ -6,6 +6,8 @@ local with-eigen = [ option.get "with-eigen" ] ;
 if $(with-eigen) {
   fakelib tuning : tune_instance.cc tune_derivatives.cc interp ..//kenlm : <include>$(with-eigen) ;
   unit-test tune_derivatives_test : tune_derivatives_test.cc tuning /top//boost_unit_test_framework : <include>$(with-eigen) ;
+  obj tune_instance_test.o : tune_instance_test.cc /top//boost_unit_test_framework : <include>$(with-eigen) ;
+  run tune_instance_test.o tuning /top//boost_unit_test_framework : : tune_instance_data/toy0.1 ;
 }
 
 exe interpolate : interpolate_main.cc interp /top//boost_program_options ;
