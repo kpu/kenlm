@@ -20,7 +20,7 @@ void TuneWeights(int tune_file, const std::vector<StringPiece> &model_names, Vec
   for (std::size_t iteration = 0; iteration < 10 /*TODO fancy stopping criteria */; ++iteration) {
     std::cerr << "Iteration " << iteration << ": weights =";
     for (Vector::Index i = 0; i < weights.rows(); ++i) {
-      std::cerr << ' ' << (weights(i) / M_LN10);
+      std::cerr << ' ' << (weights(i) * M_LN10);
     }
     std::cerr << std::endl;
     std::cerr  << "Perplexity = " <<
@@ -30,7 +30,7 @@ void TuneWeights(int tune_file, const std::vector<StringPiece> &model_names, Vec
     weights -= 0.7 * hessian.inverse() * gradient;
   }
   // Internally converted to ln, which is equivalent to upweighting.
-  weights /= M_LN10;
+  weights *= M_LN10;
 }
 }} // namespaces
 
