@@ -313,7 +313,7 @@ void LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names,
     for (std::size_t instance = 0; instance < tuning_words.size(); ++instance) {
       builders[instance].Dump(m, ln_unigrams, instances[instance]);
     }
-    ln_unigrams(bos, m) = -std::numeric_limits<Accum>::infinity();
+    ln_unigrams(bos, m) = -999;//-std::numeric_limits<Accum>::infinity();
   }
 }
 
