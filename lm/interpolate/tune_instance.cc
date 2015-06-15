@@ -51,6 +51,7 @@ class InstanceBuilder {
       }
       out.ln_backoff(model_index) = accum;
       std::size_t old_rows = out.ln_extensions.rows();
+      // TODO avoid?
       out.ln_extensions.conservativeResize(extensions_.size(), Eigen::NoChange_t());
       out.extension_words.resize(extensions_.size());
       for (boost::unordered_map<WordIndex, ContinueValue>::iterator i = extensions_.begin(); i != extensions_.end(); ++i) {
@@ -62,7 +63,7 @@ class InstanceBuilder {
         i->second.ln_prob += backoffs_[i->second.order - 1];
         out.ln_extensions(i->second.row, model_index) = i->second.ln_prob;
         // Fill in other models.
-        if (i->second.row > old_rows) {
+        if (i->second.row >= old_rows) {
           for (std::size_t m = 0; m < model_index; ++m) {
             out.ln_extensions(i->second.row, m) = unigrams(i->first, m) + out.ln_backoff(m);
           }
