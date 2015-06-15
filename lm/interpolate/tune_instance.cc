@@ -6,6 +6,7 @@
 #include "lm/enumerate_vocab.hh"
 #include "lm/interpolate/merge_vocab.hh"
 #include "lm/interpolate/universal_vocab.hh"
+#include "lm/lm_exception.hh"
 #include "util/file_piece.hh"
 #include "util/murmur_hash.hh"
 #include "util/stream/chain.hh"
@@ -210,6 +211,7 @@ class IdentifyTuning : public EnumerateVocab {
       std::vector<std::size_t> &eos = words_[util::MurmurHashNative("</s>", 4)];
       for (util::FilePiece f(tuning_file); f.ReadLineOrEOF(line);) {
         for (util::TokenIter<util::BoolCharacter, true> word(line, util::kSpaces); word; ++word) {
+          UTIL_THROW_IF(*word == "<s>" || *word == "</s>", FormatLoadException, "Illegal word in tuning data: " << *word);
           words_[util::MurmurHashNative(word->data(), word->size())].push_back(counter++);
         }
         eos.push_back(counter++);
