@@ -10,7 +10,7 @@ ComputeDerivative::ComputeDerivative(const util::FixedArray<Instance> &instances
   }
 }
 
-void ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matrix &hessian) {
+Accum ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matrix &hessian) {
   gradient = neg_correct_summed_;
   hessian = Matrix::Zero(weights.rows(), weights.rows());
 
@@ -22,7 +22,8 @@ void ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matri
   // unigram_cross(i) = \sum_{all x} p_I(x) ln p_i(x)
   Vector unigram_cross(ln_unigrams_.transpose() * interp_uni);
 
-  Accum B_I_sum = 0.0;
+  Accum sum_B_I = 0.0;
+  Accum sum_ln_Z_context = 0.0;
 
   Vector weighted_extensions;
   Matrix convolve;
@@ -39,9 +40,10 @@ void ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matri
     }
     weighted_extensions = (n->ln_extensions * weights).array().exp();
     Accum Z_context = Z_epsilon * weighted_backoffs * (1.0 - sum_x_p_I) + weighted_extensions.sum();
+    sum_ln_Z_context += log(Z_context);
 
     Accum B_I = Z_epsilon / Z_context * weighted_backoffs;
-    B_I_sum += B_I;
+    sum_B_I += B_I;
 
     // This is the gradient term for this instance except for -log p_i(w_n | w_1^{n-1}) which was accounted for as part of neg_correct_sum_.
     // full_cross(i) is \sum_{all x} p_I(x | context) log p_i(x | context)
@@ -79,8 +81,9 @@ void ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matri
 
   for (Matrix::Index x = 0; x < interp_uni.rows(); ++x) {
     // \sum_{contexts} B_I(context) \sum_x p_I(x) log p_i(x) log p_j(x)
-    hessian.noalias() += B_I_sum * interp_uni(x) * ln_unigrams_.row(x).transpose() * ln_unigrams_.row(x);
+    hessian.noalias() += sum_B_I * interp_uni(x) * ln_unigrams_.row(x).transpose() * ln_unigrams_.row(x);
   }
+  return exp((neg_correct_summed_.dot(weights) + sum_ln_Z_context) / static_cast<double>(instances_.size()));
 }
 
 }} // namespaces

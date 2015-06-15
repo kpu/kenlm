@@ -17,12 +17,12 @@ void TuneWeights(int tune_file, const std::vector<StringPiece> &model_names, Vec
   weights = Vector::Zero(model_names.size());
   Vector gradient;
   Matrix hessian;
-  for (std::size_t iteration = 0; iteration < 10 /*TODO*/; ++iteration) {
-    derive.Iteration(weights, gradient, hessian);
-    std::cerr << "gradient\n" << gradient << std::endl;
-    std::cerr << "hessian\n" << hessian << std::endl;
+  for (std::size_t iteration = 0; iteration < 20 /*TODO*/; ++iteration) {
+    std::cerr << "Perplexity = " <<
+      derive.Iteration(weights, gradient, hessian)
+      << std::endl;
     weights -= hessian.inverse() * gradient;
-    std::cerr << "Weights\n" << weights << std::endl;
+    std::cerr << "Weights " << weights << std::endl;
   }
   // Internally converted to ln, which is equivalent to upweighting.
   weights /= M_LN10;
