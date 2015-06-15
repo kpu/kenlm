@@ -22,7 +22,7 @@ namespace lm { namespace interpolate {
 // backoffs for the context separately so they can be applied to probabilities.
 class InstanceBuilder {
   public:
-    InstanceBuilder(WordIndex correct, std::size_t max_order) 
+    InstanceBuilder(WordIndex correct, std::size_t max_order)
       : backoffs_(max_order), correct_(correct) {}
 
     void MatchedBackoff(uint8_t order, float ln_backoff) {
@@ -276,7 +276,7 @@ void LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names,
   const WordIndex eos = tuning_words.back();
   for (std::size_t i = 0; i < tuning_words.size(); ++i) {
     instances.push_back(model_names.size());
-    builders.push_back(max_order, tuning_words[i]);
+    builders.push_back(tuning_words[i], max_order);
     for (std::size_t j = 0; j < context.size(); ++j) {
       cmap[util::MurmurHashNative(&context[j], sizeof(WordIndex) * (context.size() - j))].Register(builders.back());
     }

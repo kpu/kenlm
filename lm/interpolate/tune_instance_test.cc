@@ -13,6 +13,12 @@
 
 namespace lm { namespace interpolate { namespace {
 
+Matrix::Index FindRow(const std::vector<WordIndex> &words, WordIndex word) {
+  std::vector<WordIndex>::const_iterator it = std::find(words.begin(), words.end(), word);
+  BOOST_REQUIRE(it != words.end());
+  return it - words.begin();
+}
+
 BOOST_AUTO_TEST_CASE(Toy) {
   util::scoped_fd test_input(util::MakeTemp("temporary"));
   {
@@ -68,10 +74,14 @@ BOOST_AUTO_TEST_CASE(Toy) {
   BOOST_REQUIRE_EQUAL(3, instances[0].ln_extensions.rows());
   BOOST_REQUIRE_EQUAL(3, instances[0].extension_words.size());
 
-  std::vector<WordIndex>::const_iterator row_a_it = std::find(instances[0].extension_words.begin(), instances[0].extension_words.end(), 2);
-  BOOST_REQUIRE(row_a_it != instances[0].extension_words.end());
-  WordIndex row_a = row_a_it - instances[0].extension_words.begin();
-  BOOST_CHECK_CLOSE(-0.37712017 * M_LN10, instances[0].ln_extensions(row_a, 0), 0.001);
+  // <s> a
+  BOOST_CHECK_CLOSE(-0.37712017 * M_LN10, instances[0].ln_extensions(FindRow(instances[0].extension_words, 2), 0), 0.001);
+  // <s> c
+  BOOST_CHECK_CLOSE((-0.90309 + -0.30103) * M_LN10, instances[0].ln_extensions(FindRow(instances[0].extension_words, 4), 0), 0.001);
+  BOOST_CHECK_CLOSE(-0.4740302 * M_LN10, instances[0].ln_extensions(FindRow(instances[0].extension_words, 4), 1), 0.001);
+
+  // <s> c </s>
+  BOOST_CHECK_CLOSE(-0.09113217 * M_LN10, instances[1].ln_extensions(FindRow(instances[1].extension_words, 3), 1), 0.001);
 
   // p_0(c | <s>) = p_0(c)b_0(<s>) = 10^(-0.90309 + -0.30103)
   BOOST_CHECK_CLOSE((-0.90309 + -0.30103) * M_LN10, instances[0].ln_correct(0), 0.001);
