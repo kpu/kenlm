@@ -17,13 +17,17 @@ void TuneWeights(int tune_file, const std::vector<StringPiece> &model_names, Vec
   weights = Vector::Constant(model_names.size(), 1.0 / model_names.size());
   Vector gradient;
   Matrix hessian;
-  for (std::size_t iteration = 0; iteration < 5 /*TODO*/; ++iteration) {
-    std::cerr << "Weights " << weights << std::endl;
-    std::cerr << "Perplexity = " <<
+  for (std::size_t iteration = 0; iteration < 10 /*TODO fancy stopping criteria */; ++iteration) {
+    std::cerr << "Iteration " << iteration << ": weights =";
+    for (Vector::Index i = 0; i < weights.rows(); ++i) {
+      std::cerr << ' ' << (weights(i) / M_LN10);
+    }
+    std::cerr << std::endl;
+    std::cerr  << "Perplexity = " <<
       derive.Iteration(weights, gradient, hessian)
       << std::endl;
-    std::cerr << "Gradient = \n" << gradient << "\n hessian = \n" << hessian << "\n";
-    weights -= hessian.inverse() * gradient;
+    // TODO: 1.0 step size was too big and it kept getting unstable.  More math.
+    weights -= 0.7 * hessian.inverse() * gradient;
   }
   // Internally converted to ln, which is equivalent to upweighting.
   weights /= M_LN10;
@@ -49,5 +53,5 @@ int main(int argc, char *argv[]) {
   }
   lm::interpolate::Vector weights;
   lm::interpolate::TuneWeights(util::OpenReadOrThrow(tuning_file.c_str()), model_names, weights);
-  std::cout << weights << std::endl;
+  std::cout << weights.transpose() << std::endl;
 }
