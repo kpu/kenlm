@@ -7,7 +7,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-local-typedefs"
-#include <Eigen/Eigen>
+#include <Eigen/Core>
 #pragma GCC diagnostic pop
 
 #include <vector>
