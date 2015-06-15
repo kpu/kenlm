@@ -8,12 +8,14 @@
 namespace lm { namespace interpolate { namespace {
 
 BOOST_AUTO_TEST_CASE(Small) {
-  // Three vocabulary words, two models.
-  Matrix unigrams(3, 2);
+  // Three vocabulary words plus <s>, two models.
+  Matrix unigrams(4, 2);
   unigrams <<
     0.1, 0.6,
     0.4, 0.3,
-    0.5, 0.1;
+    0.5, 0.1,
+    // <s>
+    1.0, 1.0;
   unigrams = unigrams.array().log();
 
   // One instance
@@ -23,7 +25,6 @@ BOOST_AUTO_TEST_CASE(Small) {
 
   instance.ln_backoff << 0.2, 0.4;
   instance.ln_backoff = instance.ln_backoff.array().log();
-
 
   // Sparse cases: model 0 word 2 and model 1 word 1.
 
@@ -44,7 +45,7 @@ BOOST_AUTO_TEST_CASE(Small) {
     model_0_word_2, 0.1 * 0.4;
   instance.ln_extensions = instance.ln_extensions.array().log();
 
-  ComputeDerivative compute(instances, unigrams);
+  ComputeDerivative compute(instances, unigrams, 3);
   Vector weights(2);
   weights << 0.9, 1.2;
 
@@ -65,7 +66,7 @@ BOOST_AUTO_TEST_CASE(Small) {
   expected_gradient(0) += p_I(1) * log(0.4 * 0.2);
   expected_gradient(0) += p_I(2) * log(model_0_word_2);
   BOOST_CHECK_CLOSE(expected_gradient(0), gradient(0), 0.01);
-  
+
   expected_gradient(1) += p_I(0) * log(0.6 * 0.4);
   expected_gradient(1) += p_I(1) * log(model_1_word_1);
   expected_gradient(1) += p_I(2) * log(0.1 * 0.4);

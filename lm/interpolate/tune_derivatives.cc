@@ -2,8 +2,8 @@
 
 namespace lm { namespace interpolate {
 
-ComputeDerivative::ComputeDerivative(const util::FixedArray<Instance> &instances, const Matrix &ln_unigrams)
-  : instances_(instances), ln_unigrams_(ln_unigrams) {
+ComputeDerivative::ComputeDerivative(const util::FixedArray<Instance> &instances, const Matrix &ln_unigrams, WordIndex bos)
+  : instances_(instances), ln_unigrams_(ln_unigrams), bos_(bos) {
   neg_correct_summed_ = Vector::Zero(ln_unigrams.cols());
   for (const Instance *i = instances.begin(); i != instances.end(); ++i) {
     neg_correct_summed_ -= i->ln_correct;
@@ -17,6 +17,8 @@ Accum ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matr
   // TODO: loop instead to force low-memory evaluation
   // Compute p_I(x).
   Vector interp_uni((ln_unigrams_ * weights).array().exp());
+  // Even -inf doesn't work for <s> because weights can be negative.  Manually set it to zero.
+  interp_uni(bos_) = 0.0;
   Accum Z_epsilon = interp_uni.sum();
   interp_uni /= Z_epsilon;
   // unigram_cross(i) = \sum_{all x} p_I(x) ln p_i(x)

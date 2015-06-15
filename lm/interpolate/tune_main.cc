@@ -12,17 +12,18 @@ namespace lm { namespace interpolate {
 void TuneWeights(int tune_file, const std::vector<StringPiece> &model_names, Vector &weights) {
   util::FixedArray<Instance> instances;
   Matrix ln_unigrams;
-  LoadInstances(tune_file, model_names, instances, ln_unigrams);
-  ComputeDerivative derive(instances, ln_unigrams);
-  weights = Vector::Zero(model_names.size());
+  WordIndex bos = LoadInstances(tune_file, model_names, instances, ln_unigrams);
+  ComputeDerivative derive(instances, ln_unigrams, bos);
+  weights = Vector::Constant(model_names.size(), 1.0 / model_names.size());
   Vector gradient;
   Matrix hessian;
-  for (std::size_t iteration = 0; iteration < 20 /*TODO*/; ++iteration) {
+  for (std::size_t iteration = 0; iteration < 5 /*TODO*/; ++iteration) {
+    std::cerr << "Weights " << weights << std::endl;
     std::cerr << "Perplexity = " <<
       derive.Iteration(weights, gradient, hessian)
       << std::endl;
+    std::cerr << "Gradient = \n" << gradient << "\n hessian = \n" << hessian << "\n";
     weights -= hessian.inverse() * gradient;
-    std::cerr << "Weights " << weights << std::endl;
   }
   // Internally converted to ln, which is equivalent to upweighting.
   weights /= M_LN10;

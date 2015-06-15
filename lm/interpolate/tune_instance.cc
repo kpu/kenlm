@@ -246,7 +246,7 @@ class IdentifyTuning : public EnumerateVocab {
 
 Instance::Instance(std::size_t num_models) : ln_backoff(num_models), ln_correct(num_models), ln_extensions(0, num_models) {}
 
-void LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, Matrix &ln_unigrams) {
+WordIndex LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, Matrix &ln_unigrams) {
   util::FixedArray<ModelBuffer> models(model_names.size());
   std::vector<WordIndex> vocab_sizes;
   vocab_sizes.reserve(model_names.size());
@@ -313,8 +313,9 @@ void LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names,
     for (std::size_t instance = 0; instance < tuning_words.size(); ++instance) {
       builders[instance].Dump(m, ln_unigrams, instances[instance]);
     }
-    ln_unigrams(bos, m) = -999;//-std::numeric_limits<Accum>::infinity();
+    ln_unigrams(bos, m) = -99; // Does not matter as long as it does not produce nans since tune_derivatives sets this to zero.
   }
+  return bos;
 }
 
 }} // namespaces

@@ -41,13 +41,14 @@ BOOST_AUTO_TEST_CASE(Toy) {
 
   util::FixedArray<Instance> instances;
   Matrix ln_unigrams;
-  LoadInstances(test_input.release(), model_names, instances, ln_unigrams);
+  // Returns vocab id of <s>
+  BOOST_CHECK_EQUAL(1, LoadInstances(test_input.release(), model_names, instances, ln_unigrams));
   // <unk>
   BOOST_CHECK_CLOSE(-0.90309 * M_LN10, ln_unigrams(0, 0), 0.001);
   BOOST_CHECK_CLOSE(-1 * M_LN10, ln_unigrams(0, 1), 0.001);
   // <s>
-  BOOST_CHECK_GT(-998.0, ln_unigrams(1, 0));
-  BOOST_CHECK_GT(-998.0, ln_unigrams(1, 1));
+  BOOST_CHECK_GT(-98.0, ln_unigrams(1, 0));
+  BOOST_CHECK_GT(-98.0, ln_unigrams(1, 1));
   // a
   BOOST_CHECK_CLOSE(-0.46943438 * M_LN10, ln_unigrams(2, 0), 0.001);
   BOOST_CHECK_CLOSE(-0.6146491 * M_LN10, ln_unigrams(2, 1), 0.001);
