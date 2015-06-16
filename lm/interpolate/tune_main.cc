@@ -36,6 +36,7 @@ void TuneWeights(int tune_file, const std::vector<StringPiece> &model_names, Vec
 }} // namespaces
 
 int main(int argc, char *argv[]) {
+  Eigen::initParallel();
   namespace po = boost::program_options;
   // TODO help
   po::options_description options("Tuning options");

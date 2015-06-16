@@ -17,7 +17,7 @@ namespace lm { namespace interpolate {
 typedef Eigen::MatrixXd Matrix;
 typedef Eigen::VectorXd Vector;
 
-typedef double Accum;
+typedef Matrix::Scalar Accum;
 
 // The instance w_1^n
 struct Instance {
