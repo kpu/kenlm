@@ -228,8 +228,8 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
   assert(handlers[0].ActiveSize() == handlers[0].info.Models());
   for (std::size_t i = 0; i < handlers[0].info.Models();) {
     ngram = *handlers[0][i].Stream();
-    unk_probs.push_back(ngram.Value().prob);
-    unk_record.Prob() += handlers[0].info.lambdas[i] * unk_probs[i];
+    unk_probs.push_back(handlers[0].info.lambdas[i] * ngram.Value().prob);
+    unk_record.Prob() += unk_probs[i];
     assert(*ngram.begin() == kUNK);
     if (++handlers[0][i].Stream()) {
       ++i;
