@@ -7,8 +7,10 @@ cdef extern from "lm/return.hh" namespace "lm":
         unsigned char ngram_length
 
 cdef extern from "lm/state.hh" namespace "lm::ngram":
-    cdef struct State:
-        pass
+    cdef cppclass State :
+        int Compare(const State &other) const
+
+    int hash_value(const State &state) 
 
 cdef extern from "lm/virtual_interface.hh" namespace "lm::base":
     cdef cppclass Vocabulary:
