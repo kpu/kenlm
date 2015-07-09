@@ -20,7 +20,7 @@ words = ['<s>'] + sentence.split() + ['</s>']
 for i, (prob, length, oov) in enumerate(model.full_scores(sentence)):
     print('{0} {1}: {2}'.format(prob, length, ' '.join(words[i+2-length:i+2])))
     if oov:
-        print '\t"{0}" is an OOV'.format(words[i+1])
+        print('\t"{0}" is an OOV'.format(words[i+1]))
 
 # Find out-of-vocabulary words
 for w in words:
