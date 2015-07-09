@@ -16,14 +16,15 @@ cmake_minimum_required(VERSION 2.8.8)
 # Define a single cmake project
 project(kenlm)
 
-#include(CTest)
-
 # Compile all executables into bin/
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
 # Compile all libraries into lib/
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
+# Tell cmake that we want unit tests to be compiled
+include(CTest)
+enable_testing()
 
 # We need boost
 find_package(Boost 1.36.0 REQUIRED COMPONENTS
@@ -34,7 +35,7 @@ find_package(Boost 1.36.0 REQUIRED COMPONENTS
 )
 
 
-#enable_testing()
+
 
 # Define where include files live
 include_directories(
