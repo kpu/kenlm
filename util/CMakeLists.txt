@@ -29,8 +29,11 @@ set(KENLM_UTIL_SOURCE
 		exception.cc 
 		file.cc 
 		file_piece.cc 
+		float_to_string.cc
+		integer_to_string.cc
 		mmap.cc 
 		murmur_hash.cc 
+		parallel_read.cc
 		pool.cc 
 		read_compressed.cc 
 		scoped.cc 

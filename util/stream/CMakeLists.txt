@@ -31,6 +31,7 @@ set(KENLM_UTIL_STREAM_SOURCE
 		${CMAKE_CURRENT_SOURCE_DIR}/io.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/line_input.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/multi_progress.cc
+		${CMAKE_CURRENT_SOURCE_DIR}/rewindable_stream.cc
 	PARENT_SCOPE)
 
 

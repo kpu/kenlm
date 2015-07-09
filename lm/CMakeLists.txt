@@ -52,6 +52,7 @@ add_library(kenlm OBJECT ${KENLM_SOURCE})
 
 # This directory has children that need to be processed
 add_subdirectory(builder)
+add_subdirectory(common)
 add_subdirectory(filter)
 
 

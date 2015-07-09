@@ -28,8 +28,8 @@ set(KENLM_BUILDER_SOURCE
 		${CMAKE_CURRENT_SOURCE_DIR}/corpus_count.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/initial_probabilities.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/interpolate.cc
+		${CMAKE_CURRENT_SOURCE_DIR}/output.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/pipeline.cc
-		${CMAKE_CURRENT_SOURCE_DIR}/print.cc
 	)
 
 
@@ -42,7 +42,7 @@ add_library(kenlm_builder OBJECT ${KENLM_BUILDER_SOURCE})
 
 
 # Compile the executable, linking against the requisite dependent object files
-add_executable(lmplz lmplz_main.cc $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_builder> $<TARGET_OBJECTS:kenlm_util>)
+add_executable(lmplz lmplz_main.cc $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_common> $<TARGET_OBJECTS:kenlm_builder> $<TARGET_OBJECTS:kenlm_util>)
 
 # Link the executable against boost
 target_link_libraries(lmplz ${Boost_LIBRARIES})
@@ -60,7 +60,7 @@ if(BUILD_TESTING)
     foreach(test ${KENLM_BOOST_TESTS_LIST})
 
       # Compile the executable, linking against the requisite dependent object files
-      add_executable(${test} ${test}.cc $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_builder> $<TARGET_OBJECTS:kenlm_util>)
+      add_executable(${test} ${test}.cc $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_common> $<TARGET_OBJECTS:kenlm_builder> $<TARGET_OBJECTS:kenlm_util>)
 
       # Require the following compile flag
       set_target_properties(${test} PROPERTIES COMPILE_FLAGS "-DBOOST_TEST_DYN_LINK -DBOOST_PROGRAM_OPTIONS_DYN_LINK")
