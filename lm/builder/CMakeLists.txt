@@ -47,6 +47,8 @@ add_executable(lmplz lmplz_main.cc $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenl
 # Link the executable against boost
 target_link_libraries(lmplz ${Boost_LIBRARIES})
 
+# Group executables together
+set_target_properties(lmplz PROPERTIES FOLDER executables)
 
 if(BUILD_TESTING)
 

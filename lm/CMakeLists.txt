@@ -73,6 +73,9 @@ foreach(exe ${EXE_LIST})
   # Link the executable against boost
   target_link_libraries(${exe} ${Boost_LIBRARIES})
 
+  # Group executables together
+  set_target_properties(${exe} PROPERTIES FOLDER executables)
+
 # End for loop
 endforeach(exe)
 
