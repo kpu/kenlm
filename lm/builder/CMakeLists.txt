@@ -76,6 +76,9 @@ if(BUILD_TESTING)
       add_test(NAME ${test}_test 
                COMMAND $<TARGET_FILE:${test}>)
 
+      # Group unit tests together
+      set_target_properties(${test} PROPERTIES FOLDER "unit_tests")
+      
     # End for loop
     endforeach(test)
 
