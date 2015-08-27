@@ -14,16 +14,6 @@ namespace ngram {
 // ZeroRemaining first.
 class State {
   public:
-	State()
-    {}
-
-	State(const State &copy)
-    :length(copy.length)
-  	{
-		memcpy(words, copy.words, sizeof(WordIndex) * (KENLM_MAX_ORDER - 1));
-		memcpy(backoff, copy.backoff, sizeof(float) * (KENLM_MAX_ORDER - 1));
-	}
-
     bool operator==(const State &other) const {
       if (length != other.length) return false;
       return !memcmp(words, other.words, length * sizeof(WordIndex));
@@ -64,16 +54,6 @@ inline uint64_t hash_value(const State &state, uint64_t seed = 0) {
 }
 
 struct Left {
-  Left()
-  {}
-
-  Left(const Left &copy)
-  :length(copy.length)
-  ,full(copy.full)
-  {
-	memcpy(pointers, copy.pointers, sizeof(uint64_t) * (KENLM_MAX_ORDER - 1));
-  }
-
   bool operator==(const Left &other) const {
     return
       length == other.length &&
@@ -111,14 +91,6 @@ inline uint64_t hash_value(const Left &left) {
 }
 
 struct ChartState {
-	ChartState()
-	{}
-
-	ChartState(const ChartState &copy)
-	:left(copy.left)
-	,right(copy.right)
-	{}
-
   bool operator==(const ChartState &other) const {
     return (right == other.right) && (left == other.left);
   }
