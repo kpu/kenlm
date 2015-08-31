@@ -45,7 +45,7 @@ add_library(kenlm_builder OBJECT ${KENLM_BUILDER_SOURCE})
 add_executable(lmplz lmplz_main.cc $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_common> $<TARGET_OBJECTS:kenlm_builder> $<TARGET_OBJECTS:kenlm_util>)
 
 # Link the executable against boost
-target_link_libraries(lmplz ${Boost_LIBRARIES})
+target_link_libraries(lmplz ${Boost_LIBRARIES} pthread)
 
 # Group executables together
 set_target_properties(lmplz PROPERTIES FOLDER executables)
@@ -68,7 +68,7 @@ if(BUILD_TESTING)
       set_target_properties(${test} PROPERTIES COMPILE_FLAGS "-DBOOST_TEST_DYN_LINK -DBOOST_PROGRAM_OPTIONS_DYN_LINK")
   
       # Link the executable against boost
-      target_link_libraries(${test} ${Boost_LIBRARIES})
+      target_link_libraries(${test} ${Boost_LIBRARIES} pthread)
       
       # Specify command arguments for how to run each unit test
       #

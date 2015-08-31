@@ -55,7 +55,7 @@ if(BUILD_TESTING)
       set_target_properties(${test} PROPERTIES COMPILE_FLAGS -DBOOST_TEST_DYN_LINK)
   
       # Link the executable against boost
-      target_link_libraries(${test} ${Boost_LIBRARIES})
+      target_link_libraries(${test} ${Boost_LIBRARIES} pthread)
       
       # Specify command arguments for how to run each unit test
       #

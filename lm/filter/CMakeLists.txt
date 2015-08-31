@@ -52,7 +52,7 @@ foreach(exe ${EXE_LIST})
 	add_executable(${exe} ${exe}_main.cc $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_filter> $<TARGET_OBJECTS:kenlm_util>)
 
   # Link the executable against boost
-  target_link_libraries(${exe} ${Boost_LIBRARIES})
+  target_link_libraries(${exe} ${Boost_LIBRARIES} pthread)
 
   # Group executables together
   set_target_properties(${exe} PROPERTIES FOLDER executables)
