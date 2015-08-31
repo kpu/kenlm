@@ -11,10 +11,10 @@
 namespace util {
 
 /**
- * Defines a fixed-size collection.
+ * Defines an array with fixed maximum size.
  *
- * Ever want an array of things by they don't have a default constructor or are
- * non-copyable?  FixedArray allows constructing one at a time.
+ * Ever want an array of things but they don't have a default constructor or
+ * are non-copyable?  FixedArray allows constructing one at a time.
  */
 template <class T> class FixedArray {
   public:
