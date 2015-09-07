@@ -31,9 +31,7 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, int 
   Width kEOS = model.GetVocabulary().EndSentence();
   Width buf[4096];
   float sum = 0.0;
-  while (true) {
-    std::size_t got = util::ReadOrEOF(fd_in, buf, sizeof(buf));
-    if (!got) break;
+  while (std::size_t got = util::ReadOrEOF(fd_in, buf, sizeof(buf))) {
     UTIL_THROW_IF2(got % sizeof(Width), "File size not a multiple of vocab id size " << sizeof(Width));
     got /= sizeof(Width);
     // Do even stuff first.
