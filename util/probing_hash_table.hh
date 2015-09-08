@@ -111,7 +111,7 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
     }
 
     // Must be assigned to later.
-    ProbingHashTable() : entries_(0), mod_(2),
+    ProbingHashTable() : entries_(0), mod_(2)
 #ifdef DEBUG
       , initialized_(false)
 #endif
