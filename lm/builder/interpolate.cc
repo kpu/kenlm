@@ -9,6 +9,7 @@
 #include "util/fixed_array.hh"
 #include "util/murmur_hash.hh"
 
+#include <iostream>
 #include <cassert>
 #include <cmath>
 
