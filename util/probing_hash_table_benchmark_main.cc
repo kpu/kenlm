@@ -41,10 +41,15 @@ class URandom {
     util::scoped_fd file_;
 };
 
+std::size_t Size(uint64_t entries, float multiplier = 1.5) {
+  typedef util::ProbingHashTable<Entry, util::IdentityHash, std::equal_to<Entry::Key>, Power2Mod> Table;
+  // Always round up to power of 2 for fair comparison.
+  return Power2Mod::RoundBuckets(Table::Size(entries, multiplier) / sizeof(Entry)) * sizeof(Entry);
+}
+
 template <class Mod> bool Test(URandom &rn, uint64_t entries, const uint64_t *const queries_begin, const uint64_t *const queries_end, float multiplier = 1.5) {
   typedef util::ProbingHashTable<Entry, util::IdentityHash, std::equal_to<Entry::Key>, Mod> Table;
-  // Always round up to power of 2 for fair comparison.
-  std::size_t size = Power2Mod::RoundBuckets(Table::Size(entries, multiplier) / sizeof(Entry)) * sizeof(Entry);
+  std::size_t size = Size(entries, multiplier);
   scoped_malloc backing(util::CallocOrThrow(size));
   Table table(backing.get(), size);
 
@@ -69,9 +74,9 @@ template <class Mod> bool TestRun(uint64_t lookups = 20000000, float multiplier 
   URandom rn;
   util::scoped_malloc queries(util::CallocOrThrow(lookups * sizeof(uint64_t)));
   rn.Batch(static_cast<uint64_t*>(queries.get()), static_cast<uint64_t*>(queries.get()) + lookups);
-  
+  uint64_t physical_mem_limit = util::GuessPhysicalMemory() / 2;
   bool meaningless = true;
-  for (uint64_t i = 4; i <= 10000000000ULL; i *= 4) {
+  for (uint64_t i = 4; Size(i / multiplier) < physical_mem_limit; i *= 4) {
     meaningless ^= util::Test<Mod>(rn, i / multiplier, static_cast<const uint64_t*>(queries.get()), static_cast<const uint64_t*>(queries.get()) + lookups, multiplier);
   }
   return meaningless;
