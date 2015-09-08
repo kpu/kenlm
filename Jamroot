@@ -62,7 +62,7 @@ build-project util ;
 lib kenlm : lm//kenlm ;
 
 install-bin-libs lm//programs util//programs kenlm ;
-install-headers prefix-include : [ glob-tree *.hh : dist include ] : . ;
+install-headers prefix-include : [ glob-tree *.hh : dist include prefix-include ] : . ;
 alias install : prefix-bin prefix-lib prefix-include ; 
 explicit headers ;
 explicit install ;
