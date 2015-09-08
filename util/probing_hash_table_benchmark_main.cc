@@ -3,7 +3,14 @@
 #include "util/usage.hh"
 
 #include <boost/random/mersenne_twister.hpp>
+#include <boost/version.hpp>
+#if BOOST_VERSION >= 104700
 #include <boost/random/uniform_int_distribution.hpp>
+#define UTIL_INT_DIST boost::random::uniform_int_distribution
+#else
+#include <boost/random/uniform_int.hpp>
+#define UTIL_INT_DIST boost::random::uniform_int
+#endif
 
 #include <iostream>
 
@@ -23,7 +30,7 @@ template <class Mod> bool Test(uint64_t entries, uint64_t lookups = 20000000, fl
   scoped_malloc backing(util::CallocOrThrow(size));
   Table table(backing.get(), size);
   boost::random::mt19937 gen;
-  boost::random::uniform_int_distribution<uint64_t> dist(std::numeric_limits<uint64_t>::min(), std::numeric_limits<uint64_t>::max());
+  UTIL_INT_DIST<uint64_t> dist(std::numeric_limits<uint64_t>::min(), std::numeric_limits<uint64_t>::max());
   double start = UserTime();
   for (uint64_t i = 0; i < entries; ++i) {
     Entry entry;
