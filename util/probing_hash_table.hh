@@ -35,7 +35,7 @@ class DivMod {
     }
 
     template <class It> It Ideal(It begin, uint64_t hash) const {
-      return begin + hash % buckets_;
+      return begin + (hash % buckets_);
     }
 
     template <class BaseIt, class OutIt> void Next(BaseIt begin, BaseIt end, OutIt &it) const {
@@ -111,7 +111,7 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
     }
 
     // Must be assigned to later.
-    ProbingHashTable() : entries_(0), mod_(2)
+    ProbingHashTable() : mod_(1), entries_(0)
 #ifdef DEBUG
       , initialized_(false)
 #endif
@@ -165,7 +165,6 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
           out = i;
           return false;
         }
-        if (++i == end_) i = begin_;
       }
     }
 
