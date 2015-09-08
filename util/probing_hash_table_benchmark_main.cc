@@ -45,7 +45,7 @@ template <class Mod> bool Test(uint64_t entries, uint64_t lookups = 20000000, fl
     typename Table::ConstIterator it;
     meaningless ^= table.Find(dist(gen), it);
   }
-  std::cout << entries << ' ' << size << ' ' << (inserted - start) << ' ' << (UserTime() - inserted) / static_cast<double>(lookups) << '\n';
+  std::cout << entries << ' ' << size << ' ' << (inserted - start) / static_cast<double>(entries) << ' ' << (UserTime() - inserted) / static_cast<double>(lookups) << '\n';
   return meaningless;
 }
 
