@@ -6,10 +6,12 @@
 #include <boost/version.hpp>
 #if BOOST_VERSION >= 104700
 #include <boost/random/uniform_int_distribution.hpp>
+#define UTIL_TWISTER boost::random::mt19937
 #define UTIL_INT_DIST boost::random::uniform_int_distribution
 #else
 #include <boost/random/uniform_int.hpp>
-#define UTIL_INT_DIST boost::random::uniform_int
+#define UTIL_TWISTER boost::mt19937
+#define UTIL_INT_DIST boost::uniform_int
 #endif
 
 #include <iostream>
@@ -29,7 +31,7 @@ template <class Mod> bool Test(uint64_t entries, uint64_t lookups = 20000000, fl
   std::size_t size = Power2Mod::RoundBuckets(Table::Size(entries, multiplier) / sizeof(Entry)) * sizeof(Entry);
   scoped_malloc backing(util::CallocOrThrow(size));
   Table table(backing.get(), size);
-  boost::random::mt19937 gen;
+  UTIL_TWISTER gen;
   UTIL_INT_DIST<uint64_t> dist(std::numeric_limits<uint64_t>::min(), std::numeric_limits<uint64_t>::max());
   double start = UserTime();
   for (uint64_t i = 0; i < entries; ++i) {
