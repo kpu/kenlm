@@ -16,10 +16,10 @@ struct Entry {
   Key GetKey() const { return key; }
 };
 
-typedef util::ProbingHashTable<Entry, util::IdentityHash> Table;
-
-void Test(uint64_t entries, uint64_t lookups, float multiplier = 1.5) {
-  std::size_t size = Table::Size(entries, multiplier);
+template <class Mod> bool Test(uint64_t entries, uint64_t lookups = 20000000, float multiplier = 1.5) {
+  typedef util::ProbingHashTable<Entry, util::IdentityHash, std::equal_to<Entry::Key>, Mod> Table;
+  // Always round up to power of 2 for fair comparison.
+  std::size_t size = Power2Mod::RoundBuckets(Table::Size(entries, multiplier) / sizeof(Entry)) * sizeof(Entry);
   scoped_malloc backing(util::CallocOrThrow(size));
   Table table(backing.get(), size);
   boost::random::mt19937 gen;
@@ -33,17 +33,25 @@ void Test(uint64_t entries, uint64_t lookups, float multiplier = 1.5) {
   double inserted = UserTime();
   bool meaningless = true;
   for (uint64_t i = 0; i < lookups; ++i) {
-    Table::ConstIterator it;
+    typename Table::ConstIterator it;
     meaningless ^= table.Find(dist(gen), it);
   }
-  std::cout << meaningless << ' ' << entries << ' ' << multiplier << ' ' << (inserted - start) << ' ' << (UserTime() - inserted) / static_cast<double>(lookups) << std::endl;
+  std::cout << entries << ' ' << size << ' ' << (inserted - start) << ' ' << (UserTime() - inserted) / static_cast<double>(lookups) << '\n';
+  return meaningless;
 }
 
 } // namespace
 } // namespace util
 
 int main() {
-  for (uint64_t i = 1; i <= 10000000ULL; i *= 10) {
-    util::Test(i, 10000000);
+  bool meaningless = false;
+  std::cout << "#Integer division\n";
+  for (uint64_t i = 1; i <= 100000000ULL; i *= 10) {
+    meaningless ^= util::Test<util::DivMod>(i);
   }
+  std::cout << "#Masking\n";
+  for (uint64_t i = 1; i <= 100000000ULL; i *= 10) {
+    meaningless ^= util::Test<util::Power2Mod>(i);
+  }
+  std::cerr << "Meaningless: " << meaningless << '\n';
 }
