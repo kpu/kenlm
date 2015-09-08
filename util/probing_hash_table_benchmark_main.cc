@@ -29,7 +29,6 @@ template <class Mod> bool Test(uint64_t entries, const std::vector<uint64_t> &lo
   typedef util::ProbingHashTable<Entry, util::IdentityHash, std::equal_to<Entry::Key>, Mod> Table;
   // Always round up to power of 2 for fair comparison.
   std::size_t size = Power2Mod::RoundBuckets(Table::Size(entries, multiplier) / sizeof(Entry)) * sizeof(Entry);
-  std::cerr << (static_cast<float>(size / sizeof(Entry)) / entries) << std::endl;
   scoped_malloc backing(util::CallocOrThrow(size));
   Table table(backing.get(), size);
 
