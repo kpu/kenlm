@@ -192,7 +192,7 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
     }
 
     // Iterator is both input and output.
-    template <class Key> bool FindFromIterator(const Key key, ConstIterator &i) const {
+    template <class Key> bool FindFromIdeal(const Key key, ConstIterator &i) const {
 #ifdef DEBUG
       assert(initialized_);
 #endif
@@ -205,7 +205,7 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
 
     template <class Key> bool Find(const Key key, ConstIterator &out) const {
       out = Ideal(key);
-      return FindFromIterator(key, out);
+      return FindFromIdeal(key, out);
     }
 
     // Like Find but we're sure it must be there.
