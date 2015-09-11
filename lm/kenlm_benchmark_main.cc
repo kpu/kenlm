@@ -59,7 +59,7 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, int 
   }
   std::cerr << "Probability sum is " << sum << std::endl;
 
-  std::cout << "CPU_excluding_load:" << (util::CPUTime() - loaded) << " CPU_per_query:" << ((util::CPUTime() - loaded) / static_cast<double>(completed)) << std::endl;
+  std::cout << "CPU_excluding_load:" << (util::CPUTime() - loaded) << " CPU_per_query:" << ((util::CPUTime() - loaded) / static_cast<double>(completed)) << " Queries:" << completed << std::endl;
 }
 
 template <class Model, class Width> void DispatchFunction(const Model &model, bool query) {
