@@ -274,6 +274,7 @@ template <class Num> uint64_t ParseNum(const std::string &arg) {
     return static_cast<uint64_t>(static_cast<double>(value) * static_cast<double>(mem) / 100.0);
   }
 
+  if (after == "k") after == "K";
   std::string units("bKMGTPEZY");
   std::string::size_type index = units.find(after[0]);
   UTIL_THROW_IF_ARG(index == std::string::npos, SizeParseError, (arg), "the allowed suffixes are " << units << "%.");
