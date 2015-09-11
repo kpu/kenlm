@@ -31,9 +31,16 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, int 
   Width kEOS = model.GetVocabulary().EndSentence();
   Width buf[4096];
   float sum = 0.0;
+  uint64_t completed = 0;
+
+  double loaded = util::CPUTime();
+  std::cout << "After loading: ";
+  util::PrintUsage(std::cout);
+
   while (std::size_t got = util::ReadOrEOF(fd_in, buf, sizeof(buf))) {
     UTIL_THROW_IF2(got % sizeof(Width), "File size not a multiple of vocab id size " << sizeof(Width));
     got /= sizeof(Width);
+    completed += got;
     // Do even stuff first.
     const Width *even_end = buf + (got & ~1);
     // Alternating states
@@ -50,7 +57,9 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, int 
       next_state = (*i++ == kEOS) ? begin_state : &state[2];
     }
   }
-  std::cout << "Sum is " << sum << std::endl;
+  std::cerr << "Probability sum is " << sum << std::endl;
+
+  std::cout << "CPU_excluding_load:" << (util::CPUTime() - loaded) << " CPU_per_query:" << ((util::CPUTime() - loaded) / static_cast<double>(completed)) << std::endl;
 }
 
 template <class Model, class Width> void DispatchFunction(const Model &model, bool query) {
@@ -62,7 +71,10 @@ template <class Model, class Width> void DispatchFunction(const Model &model, bo
 }
 
 template <class Model> void DispatchWidth(const char *file, bool query) {
-  Model model(file);
+  lm::ngram::Config config;
+  config.load_method = util::READ;
+  std::cerr << "Using load_method = READ." << std::endl;
+  Model model(file, config);
   lm::WordIndex bound = model.GetVocabulary().Bound();
   if (bound <= 256) {
     DispatchFunction<Model, uint8_t>(model, query);
