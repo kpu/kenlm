@@ -113,14 +113,14 @@ template <class Mod> bool Test(URandom &rn, uint64_t entries, const uint64_t *co
   util::HugeMalloc(size, true, backing);
   Table table(backing.get(), size);
 
-  double start = UserTime();
+  double start = CPUTime();
   for (uint64_t i = 0; i < entries; ++i) {
     Entry entry;
     entry.key = rn.Get();
     table.Insert(entry);
   }
-  double inserted = UserTime() - start;
-  double before_lookup = UserTime();
+  double inserted = CPUTime() - start;
+  double before_lookup = CPUTime();
   PrefetchQueue<Table> queue(table);
   for (const uint64_t *i = queries_begin; i != queries_end; ++i) {
     queue.Add(*i);
@@ -128,7 +128,7 @@ template <class Mod> bool Test(URandom &rn, uint64_t entries, const uint64_t *co
     meaningless ^= table.Find(*i, it);*/
   }
   bool meaningless = queue.Drain();
-  std::cout << entries << ' ' << size << ' ' << (inserted / static_cast<double>(entries)) << ' ' << (UserTime() - before_lookup) / static_cast<double>(queries_end - queries_begin) << '\n';
+  std::cout << entries << ' ' << size << ' ' << (inserted / static_cast<double>(entries)) << ' ' << (CPUTime() - before_lookup) / static_cast<double>(queries_end - queries_begin) << '\n';
   return meaningless;
 }
 
@@ -150,6 +150,7 @@ template <class Mod> bool TestRun(uint64_t lookups = 20000000, float multiplier 
 
 int main() {
   bool meaningless = false;
+  std::cout << "#CPU time\n" << std::endl;
   std::cout << "#Integer division\n";
   meaningless ^= util::TestRun<util::DivMod>();
   std::cout << "#Masking\n";

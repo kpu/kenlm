@@ -135,12 +135,12 @@ double WallTime() {
   return Subtract(GetWall(), kRecordStart.Started());
 }
 
-double UserTime() {
+double CPUTime() {
 #if !defined(_WIN32) && !defined(_WIN64)
   struct rusage usage;
   if (getrusage(RUSAGE_SELF, &usage))
     return 0.0;
-  return DoubleSec(usage.ru_utime);
+  return DoubleSec(usage.ru_utime) + DoubleSec(usage.ru_stime);
 #endif
   return 0.0;
 }
