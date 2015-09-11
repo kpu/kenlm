@@ -15,6 +15,7 @@ class MallocException : public ErrnoException {
 };
 
 void *MallocOrThrow(std::size_t requested);
+void *CallocOrThrow(std::size_t requested);
 
 /* Unfortunately, defining the operator* for void * makes the compiler complain.
  * So scoped is specialized to void.  This includes the functionality common to
