@@ -1,6 +1,6 @@
 #include "util/file.hh"
 #include "util/probing_hash_table.hh"
-#include "util/scoped.hh"
+#include "util/mmap.hh"
 #include "util/usage.hh"
 
 #include <iostream>
@@ -109,7 +109,8 @@ std::size_t Size(uint64_t entries, float multiplier = 1.5) {
 template <class Mod> bool Test(URandom &rn, uint64_t entries, const uint64_t *const queries_begin, const uint64_t *const queries_end, float multiplier = 1.5) {
   typedef util::ProbingHashTable<Entry, util::IdentityHash, std::equal_to<Entry::Key>, Mod> Table;
   std::size_t size = Size(entries, multiplier);
-  scoped_malloc backing(util::CallocOrThrow(size));
+  scoped_memory backing;
+  util::HugeMalloc(size, true, backing);
   Table table(backing.get(), size);
 
   double start = UserTime();
@@ -133,7 +134,8 @@ template <class Mod> bool Test(URandom &rn, uint64_t entries, const uint64_t *co
 
 template <class Mod> bool TestRun(uint64_t lookups = 20000000, float multiplier = 1.5) {
   URandom rn;
-  util::scoped_malloc queries(util::CallocOrThrow(lookups * sizeof(uint64_t)));
+  util::scoped_memory queries;
+  HugeMalloc(lookups * sizeof(uint64_t), true, queries);
   rn.Batch(static_cast<uint64_t*>(queries.get()), static_cast<uint64_t*>(queries.get()) + lookups);
   uint64_t physical_mem_limit = util::GuessPhysicalMemory() / 2;
   bool meaningless = true;

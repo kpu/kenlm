@@ -2,7 +2,7 @@
 #define UTIL_PROBING_HASH_TABLE_H
 
 #include "util/exception.hh"
-#include "util/scoped.hh"
+#include "util/mmap.hh"
 
 #include <algorithm>
 #include <cstddef>
@@ -336,9 +336,11 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
     typedef EqualT Equal;
 
     AutoProbing(std::size_t initial_size = 5, const Key &invalid = Key(), const Hash &hash_func = Hash(), const Equal &equal_func = Equal()) :
-      allocated_(Backend::Size(initial_size, 1.5)), mem_(util::MallocOrThrow(allocated_)), backend_(mem_.get(), allocated_, invalid, hash_func, equal_func) {
-      threshold_ = initial_size * 1.2;
-      Clear();
+      allocated_(Backend::Size(initial_size, 1.2)), mem_(allocated_, KeyIsRawZero(invalid)), backend_(mem_.get(), allocated_, invalid, hash_func, equal_func) {
+      threshold_ = std::min<std::size_t>(backend_.buckets_ - 1, backend_.buckets_ * 0.9);
+      if (!KeyIsRawZero(invalid)) {
+        Clear();
+      }
     }
 
     // Assumes that the key is unique.  Multiple insertions won't cause a failure, just inconsistent lookup.
@@ -379,16 +381,23 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
 
   private:
     void DoubleIfNeeded() {
-      if (Size() < threshold_)
+      if (UTIL_LIKELY(Size() < threshold_))
         return;
-      mem_.call_realloc(backend_.DoubleTo());
+      HugeRealloc(backend_.DoubleTo(), KeyIsRawZero(backend_.invalid_), mem_);
       allocated_ = backend_.DoubleTo();
-      backend_.Double(mem_.get());
-      threshold_ *= 2;
+      backend_.Double(mem_.get(), !KeyIsRawZero(backend_.invalid_));
+      threshold_ = std::min<std::size_t>(backend_.buckets_ - 1, backend_.buckets_ * 0.9);
+    }
+
+    bool KeyIsRawZero(const Key &key) {
+      for (const uint8_t *i = reinterpret_cast<const uint8_t*>(&key); i < reinterpret_cast<const uint8_t*>(&key) + sizeof(Key); ++i) {
+        if (*i) return false;
+      }
+      return true;
     }
 
     std::size_t allocated_;
-    util::scoped_malloc mem_;
+    util::scoped_memory mem_;
     Backend backend_;
     std::size_t threshold_;
 };
