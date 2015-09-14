@@ -30,10 +30,10 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, int 
   const lm::ngram::State *next_state = begin_state;
   Width kEOS = model.GetVocabulary().EndSentence();
   Width buf[4096];
-  float sum = 0.0;
-  while (true) {
-    std::size_t got = util::ReadOrEOF(fd_in, buf, sizeof(buf));
-    if (!got) break;
+  // Numerical precision: batch sums.
+  double total = 0.0;
+  while (std::size_t got = util::ReadOrEOF(fd_in, buf, sizeof(buf))) {
+    float sum = 0.0;
     UTIL_THROW_IF2(got % sizeof(Width), "File size not a multiple of vocab id size " << sizeof(Width));
     got /= sizeof(Width);
     // Do even stuff first.
@@ -51,8 +51,9 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, int 
       sum += model.FullScore(*next_state, *i, state[2]).prob;
       next_state = (*i++ == kEOS) ? begin_state : &state[2];
     }
+    total += sum;
   }
-  std::cout << "Sum is " << sum << std::endl;
+  std::cout << "Sum is " << total << std::endl;
 }
 
 template <class Model, class Width> void DispatchFunction(const Model &model, bool query) {
