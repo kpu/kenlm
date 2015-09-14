@@ -191,6 +191,9 @@ class Master {
       chains_.clear();
       std::cerr << "Chain sizes:";
       for (std::size_t i = 0; i < config_.order; ++i) {
+        // Always have enough for at least one record.
+        // This was crashing if e.g. there was no 5-gram.
+        assignments[i] = std::max(assignments[i], block_count[i] * NGram<BuildingPayload>::TotalSize(i + 1));
         std::cerr << ' ' << (i+1) << ":" << assignments[i];
         chains_.push_back(util::stream::ChainConfig(NGram<BuildingPayload>::TotalSize(i + 1), block_count[i], assignments[i]));
       }

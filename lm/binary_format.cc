@@ -169,8 +169,7 @@ void *BinaryFormat::SetupJustVocab(std::size_t memory_size, uint8_t order) {
   vocab_size_ = memory_size;
   if (!write_mmap_) {
     header_size_ = 0;
-    util::MapAnonymous(memory_size, memory_vocab_);
-    util::AdviseHugePages(memory_vocab_.get(), memory_size);
+    util::HugeMalloc(memory_size, true, memory_vocab_);
     return reinterpret_cast<uint8_t*>(memory_vocab_.get());
   }
   header_size_ = TotalHeaderSize(order);
@@ -181,16 +180,16 @@ void *BinaryFormat::SetupJustVocab(std::size_t memory_size, uint8_t order) {
   switch (write_method_) {
     case Config::WRITE_MMAP:
       mapping_.reset(util::MapZeroedWrite(file_.get(), total), total, util::scoped_memory::MMAP_ALLOCATED);
+      util::AdviseHugePages(vocab_base, total);
       vocab_base = mapping_.get();
       break;
     case Config::WRITE_AFTER:
       util::ResizeOrThrow(file_.get(), 0);
-      util::MapAnonymous(total, memory_vocab_);
+      util::HugeMalloc(total, true, memory_vocab_);
       vocab_base = memory_vocab_.get();
       break;
   }
   strncpy(reinterpret_cast<char*>(vocab_base), kMagicIncomplete, header_size_);
-  util::AdviseHugePages(vocab_base, total);
   return reinterpret_cast<uint8_t*>(vocab_base) + header_size_;
 }
 
@@ -200,7 +199,7 @@ void *BinaryFormat::GrowForSearch(std::size_t memory_size, std::size_t vocab_pad
   std::size_t new_size = header_size_ + vocab_size_ + vocab_pad_ + memory_size;
   vocab_string_offset_ = new_size;
   if (!write_mmap_ || write_method_ == Config::WRITE_AFTER) {
-    util::MapAnonymous(memory_size, memory_search_);
+    util::HugeMalloc(memory_size, true, memory_search_);
     assert(header_size_ == 0 || write_mmap_);
     vocab_base = reinterpret_cast<uint8_t*>(memory_vocab_.get()) + header_size_;
     util::AdviseHugePages(memory_search_.get(), memory_size);

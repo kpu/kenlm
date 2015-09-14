@@ -27,7 +27,7 @@ void *MallocOrThrow(std::size_t requested) {
 }
 
 void *CallocOrThrow(std::size_t requested) {
-  return InspectAddr(std::calloc(1, requested), requested, "calloc");
+  return InspectAddr(std::calloc(requested, 1), requested, "calloc");
 }
 
 void scoped_malloc::call_realloc(std::size_t requested) {

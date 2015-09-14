@@ -27,29 +27,13 @@
 
 namespace util {
 
-long SizePage() {
+std::size_t SizePage() {
 #if defined(_WIN32) || defined(_WIN64)
   SYSTEM_INFO si;
   GetSystemInfo(&si);
   return si.dwAllocationGranularity;
 #else
   return sysconf(_SC_PAGE_SIZE);
-#endif
-}
-
-void SyncOrThrow(void *start, size_t length) {
-#if defined(_WIN32) || defined(_WIN64)
-  UTIL_THROW_IF(!::FlushViewOfFile(start, length), ErrnoException, "Failed to sync mmap");
-#else
-  UTIL_THROW_IF(length && msync(start, length, MS_SYNC), ErrnoException, "Failed to sync mmap");
-#endif
-}
-
-void UnmapOrThrow(void *start, size_t length) {
-#if defined(_WIN32) || defined(_WIN64)
-  UTIL_THROW_IF(!::UnmapViewOfFile(start), ErrnoException, "Failed to unmap a file");
-#else
-  UTIL_THROW_IF(munmap(start, length), ErrnoException, "munmap failed");
 #endif
 }
 
@@ -66,13 +50,23 @@ scoped_mmap::~scoped_mmap() {
   }
 }
 
+namespace {
+template <class T> T RoundUpPow2(T value, T mult) {
+  return ((value - 1) & ~(mult - 1)) + mult;
+}
+} // namespace
+
+scoped_memory::scoped_memory(std::size_t size, bool zeroed) : data_(NULL), size_(0), source_(NONE_ALLOCATED) {
+  HugeMalloc(size, zeroed, *this);
+}
+
 void scoped_memory::reset(void *data, std::size_t size, Alloc source) {
   switch(source_) {
+    case MMAP_ROUND_UP_ALLOCATED:
+      scoped_mmap(data_, RoundUpPow2(size_, (std::size_t)SizePage()));
+      break;
     case MMAP_ALLOCATED:
       scoped_mmap(data_, size_);
-      break;
-    case ARRAY_ALLOCATED:
-      delete [] reinterpret_cast<char*>(data_);
       break;
     case MALLOC_ALLOCATED:
       free(data_);
@@ -85,7 +79,7 @@ void scoped_memory::reset(void *data, std::size_t size, Alloc source) {
   source_ = source;
 }
 
-void scoped_memory::call_realloc(std::size_t size) {
+/*void scoped_memory::call_realloc(std::size_t size) {
   assert(source_ == MALLOC_ALLOCATED || source_ == NONE_ALLOCATED);
   void *new_data = realloc(data_, size);
   if (!new_data) {
@@ -95,7 +89,17 @@ void scoped_memory::call_realloc(std::size_t size) {
     size_ = size;
     source_ = MALLOC_ALLOCATED;
   }
-}
+}*/
+
+const int kFileFlags =
+#if defined(_WIN32) || defined(_WIN64)
+  0 // MapOrThrow ignores flags on windows
+#elif defined(MAP_FILE)
+  MAP_FILE | MAP_SHARED
+#else
+  MAP_SHARED
+#endif
+  ;
 
 void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int fd, uint64_t offset) {
 #ifdef MAP_POPULATE // Linux specific
@@ -126,15 +130,168 @@ void *MapOrThrow(std::size_t size, bool for_write, int flags, bool prefault, int
   return ret;
 }
 
-const int kFileFlags =
+void SyncOrThrow(void *start, size_t length) {
 #if defined(_WIN32) || defined(_WIN64)
-  0 // MapOrThrow ignores flags on windows
-#elif defined(MAP_FILE)
-  MAP_FILE | MAP_SHARED
+  UTIL_THROW_IF(!::FlushViewOfFile(start, length), ErrnoException, "Failed to sync mmap");
 #else
-  MAP_SHARED
+  UTIL_THROW_IF(length && msync(start, length, MS_SYNC), ErrnoException, "Failed to sync mmap");
 #endif
-  ;
+}
+
+void UnmapOrThrow(void *start, size_t length) {
+#if defined(_WIN32) || defined(_WIN64)
+  UTIL_THROW_IF(!::UnmapViewOfFile(start), ErrnoException, "Failed to unmap a file");
+#else
+  UTIL_THROW_IF(munmap(start, length), ErrnoException, "munmap failed");
+#endif
+}
+
+// Linux huge pages.
+#ifdef __linux__
+
+namespace {
+
+bool AnonymousMap(std::size_t size, int flags, bool populate, util::scoped_memory &to) {
+  if (populate) flags |= MAP_POPULATE;
+  void *ret = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | flags, -1, 0);
+  if (ret == MAP_FAILED) return false;
+  to.reset(ret, size, scoped_memory::MMAP_ALLOCATED);
+  return true;
+}
+
+bool TryHuge(std::size_t size, uint8_t alignment_bits, bool populate, util::scoped_memory &to) {
+  // Don't bother with these cases.
+  if (size < (1ULL << alignment_bits) || (1ULL << alignment_bits) < SizePage())
+    return false;
+
+  // First try: Linux >= 3.8 with manually configured hugetlb pages available.
+#ifdef MAP_HUGE_SHIFT
+  if (AnonymousMap(size, MAP_HUGETLB | (alignment_bits << MAP_HUGE_SHIFT), populate, to))
+    return true;
+#endif
+
+  // Second try: manually configured hugetlb pages exist, but kernel too old to
+  // pick size or not available.  This might pick the wrong size huge pages,
+  // but the sysadmin must have made them available in the first place.
+  if (AnonymousMap(size, MAP_HUGETLB, populate, to))
+    return true;
+
+  // Third try: align to a multiple of the huge page size by overallocating.
+  // I feel bad about doing this, but it's also how posix_memalign is
+  // implemented.  And the memory is virtual.
+
+  // Round up requested size to multiple of page size.  This will allow the pages after to be munmapped.
+  std::size_t size_up = RoundUpPow2(size, SizePage());
+
+  std::size_t ask = size_up + (1 << alignment_bits) - SizePage();
+  // Don't populate because this is asking for more than we will use.
+  scoped_mmap larger(mmap(NULL, ask, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0), ask);
+  if (larger.get() == MAP_FAILED) return false;
+
+  // Throw out pages before the alignment point.
+  uintptr_t base = reinterpret_cast<uintptr_t>(larger.get());
+  // Round up to next multiple of alignment.
+  uintptr_t rounded_up = RoundUpPow2(base, static_cast<uintptr_t>(1) << alignment_bits);
+  if (base != rounded_up) {
+    // If this throws an exception (which it shouldn't) then we want to unmap the whole thing by keeping it in larger.
+    UnmapOrThrow(larger.get(), rounded_up - base);
+    larger.steal();
+    larger.reset(reinterpret_cast<void*>(rounded_up), ask - (rounded_up - base));
+  }
+
+  // Throw out pages after the requested size.
+  assert(larger.size() >= size_up);
+  if (larger.size() > size_up) {
+    // This is where we assume size_up is a multiple of page size.
+    UnmapOrThrow(static_cast<uint8_t*>(larger.get()) + size_up, larger.size() - size_up);
+    larger.reset(larger.steal(), size_up);
+  }
+  madvise(larger.get(), size_up, MADV_HUGEPAGE);
+  to.reset(larger.steal(), size, scoped_memory::MMAP_ROUND_UP_ALLOCATED);
+  return true;
+}
+
+} // namespace
+
+#endif
+
+void HugeMalloc(std::size_t size, bool zeroed, scoped_memory &to) {
+  to.reset();
+#ifdef __linux__
+  // TODO: architectures/page sizes other than 2^21 and 2^30.
+  // Attempt 1 GB pages.
+  // If the user asked for zeroed memory, assume they want it populated.
+  if (size >= (1ULL << 30) && TryHuge(size, 30, zeroed, to))
+    return;
+  // Attempt 2 MB pages.
+  if (size >= (1ULL << 21) && TryHuge(size, 21, zeroed, to))
+    return;
+#endif // __linux__
+  // Non-linux will always do this, as will small allocations on Linux.
+  to.reset(zeroed ? calloc(1, size) : malloc(size), size, scoped_memory::MALLOC_ALLOCATED);
+  UTIL_THROW_IF(!to.get(), ErrnoException, "Failed to allocate " << size << " bytes");
+}
+
+#ifdef __linux__
+const std::size_t kTransitionHuge = std::max<std::size_t>(1ULL << 21, SizePage());
+#endif // __linux__
+
+void HugeRealloc(std::size_t to, bool zero_new, scoped_memory &mem) {
+  if (!to) {
+    mem.reset();
+    return;
+  }
+  std::size_t from_size = mem.size();
+  switch (mem.source()) {
+    case scoped_memory::NONE_ALLOCATED:
+      HugeMalloc(to, zero_new, mem);
+      return;
+#ifdef __linux__
+    case scoped_memory::MMAP_ROUND_UP_ALLOCATED:
+      // for mremap's benefit.
+      from_size = RoundUpPow2(from_size, SizePage());
+    case scoped_memory::MMAP_ALLOCATED:
+      // Downsizing below barrier?
+      if (to <= SizePage()) {
+        scoped_malloc replacement(malloc(to));
+        memcpy(replacement.get(), mem.get(), std::min(to, mem.size()));
+        if (zero_new && to > mem.size())
+          memset(static_cast<uint8_t*>(replacement.get()) + mem.size(), 0, to - mem.size());
+        mem.reset(replacement.release(), to, scoped_memory::MALLOC_ALLOCATED);
+      } else {
+        void *new_addr = mremap(mem.get(), from_size, to, MREMAP_MAYMOVE);
+        UTIL_THROW_IF(!new_addr, ErrnoException, "Failed to mremap from " << from_size << " to " << to);
+        mem.steal();
+        mem.reset(new_addr, to, scoped_memory::MMAP_ALLOCATED);
+      }
+      return;
+#endif // __linux__
+    case scoped_memory::MALLOC_ALLOCATED:
+#ifdef __linux__
+      // Transition larger allocations to huge pages, but don't keep trying if we're still malloc allocated.
+      if (to >= kTransitionHuge && mem.size() < kTransitionHuge) {
+        scoped_memory replacement;
+        HugeMalloc(to, zero_new, replacement);
+        memcpy(replacement.get(), mem.get(), mem.size());
+        // This can't throw.
+        mem.reset(replacement.get(), replacement.size(), replacement.source());
+        replacement.steal();
+        return;
+      }
+#endif // __linux__
+      {
+        void *new_addr = std::realloc(mem.get(), to);
+        UTIL_THROW_IF(!new_addr, ErrnoException, "realloc to " << to << " bytes failed.");
+        if (zero_new && to > mem.size())
+          memset(static_cast<uint8_t*>(new_addr) + mem.size(), 0, to - mem.size());
+        mem.steal();
+        mem.reset(new_addr, to, scoped_memory::MALLOC_ALLOCATED);
+      }
+      return;
+    default:
+      UTIL_THROW(Exception, "HugeRealloc called with type " << mem.source());
+  }
+}
 
 void MapRead(LoadMethod method, int fd, uint64_t offset, std::size_t size, scoped_memory &out) {
   switch (method) {
@@ -151,31 +308,15 @@ void MapRead(LoadMethod method, int fd, uint64_t offset, std::size_t size, scope
     case POPULATE_OR_READ:
 #endif
     case READ:
-      out.reset(MallocOrThrow(size), size, scoped_memory::MALLOC_ALLOCATED);
+      HugeMalloc(size, false, out);
       SeekOrThrow(fd, offset);
       ReadOrThrow(fd, out.get(), size);
       break;
     case PARALLEL_READ:
-      out.reset(MallocOrThrow(size), size, scoped_memory::MALLOC_ALLOCATED);
+      HugeMalloc(size, false, out);
       ParallelRead(fd, out.get(), size, offset);
       break;
   }
-}
-
-// Allocates zeroed memory in to.
-void MapAnonymous(std::size_t size, util::scoped_memory &to) {
-  to.reset();
-#if defined(_WIN32) || defined(_WIN64)
-  to.reset(calloc(1, size), size, scoped_memory::MALLOC_ALLOCATED);
-#else
-  to.reset(MapOrThrow(size, true,
-#  if defined(MAP_ANONYMOUS)
-      MAP_ANONYMOUS | MAP_PRIVATE // Linux
-#  else
-      MAP_ANON | MAP_PRIVATE // BSD
-#  endif
-      , false, -1, 0), size, scoped_memory::MMAP_ALLOCATED);
-#endif
 }
 
 void *MapZeroedWrite(int fd, std::size_t size) {

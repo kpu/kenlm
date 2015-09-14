@@ -135,12 +135,12 @@ double WallTime() {
   return Subtract(GetWall(), kRecordStart.Started());
 }
 
-double UserTime() {
+double CPUTime() {
 #if !defined(_WIN32) && !defined(_WIN64)
   struct rusage usage;
   if (getrusage(RUSAGE_SELF, &usage))
     return 0.0;
-  return DoubleSec(usage.ru_utime);
+  return DoubleSec(usage.ru_utime) + DoubleSec(usage.ru_stime);
 #endif
   return 0.0;
 }
@@ -274,6 +274,7 @@ template <class Num> uint64_t ParseNum(const std::string &arg) {
     return static_cast<uint64_t>(static_cast<double>(value) * static_cast<double>(mem) / 100.0);
   }
 
+  if (after == "k") after == "K";
   std::string units("bKMGTPEZY");
   std::string::size_type index = units.find(after[0]);
   UTIL_THROW_IF_ARG(index == std::string::npos, SizeParseError, (arg), "the allowed suffixes are " << units << "%.");

@@ -56,7 +56,7 @@ FilePiece::FilePiece(std::istream &stream, const char *name, std::size_t min_buf
   InitializeNoRead("istream", min_buffer);
 
   fallback_to_read_ = true;
-  data_.reset(MallocOrThrow(default_map_size_), default_map_size_, scoped_memory::MALLOC_ALLOCATED);
+  HugeMalloc(default_map_size_, false, data_);
   position_ = data_.begin();
   position_end_ = position_;
 
@@ -282,7 +282,7 @@ void FilePiece::TransitionToRead() {
   assert(!fallback_to_read_);
   fallback_to_read_ = true;
   data_.reset();
-  data_.reset(MallocOrThrow(default_map_size_), default_map_size_, scoped_memory::MALLOC_ALLOCATED);
+  HugeMalloc(default_map_size_, false, data_);
   position_ = data_.begin();
   position_end_ = position_;
 
@@ -313,8 +313,7 @@ void FilePiece::ReadShift() {
       // Buffer too small.
       std::size_t valid_length = position_end_ - position_;
       default_map_size_ *= 2;
-      data_.call_realloc(default_map_size_);
-      UTIL_THROW_IF(!data_.get(), ErrnoException, "realloc failed for " << default_map_size_);
+      HugeRealloc(default_map_size_, false, data_);
       position_ = data_.begin();
       position_end_ = position_ + valid_length;
     } else {
