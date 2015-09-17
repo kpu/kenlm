@@ -24,3 +24,9 @@ jam-files/engine/bootstrap/
 doc/
 ._*
 include/
+windows/Win32
+windows/x64
+windows/*.user
+windows/*.sdf
+windows/*.opensdf
+windows/*.suo
