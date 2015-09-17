@@ -7,6 +7,11 @@
 #include <cerrno>
 #include <cstring>
 
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#include <io.h>
+#endif
+
 namespace util {
 
 Exception::Exception() throw() {}
@@ -94,5 +99,20 @@ ErrnoException::~ErrnoException() throw() {}
 
 OverflowException::OverflowException() throw() {}
 OverflowException::~OverflowException() throw() {}
+
+#if defined(_WIN32) || defined(_WIN64)
+WindowsException::WindowsException(unsigned int last_error) throw() {
+    char error_msg[256] = "";
+    if (!FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, last_error, LANG_NEUTRAL, error_msg, sizeof(error_msg), NULL))
+    {
+        *this << "Windows error " << GetLastError() << " while formatting Windows error " << last_error << ". ";
+    }
+    else
+    {
+        *this << "Windows error " << last_error << ": " << error_msg;
+    }
+}
+WindowsException::~WindowsException() throw() {}
+#endif
 
 } // namespace util
