@@ -147,17 +147,34 @@ std::size_t GuardLarge(std::size_t size) {
 }
 }
 
+#if defined(_WIN32) || defined(_WIN64)
+namespace {
+const std::size_t kMaxDWORD = static_cast<std::size_t>(4294967295UL);
+} // namespace
+#endif
+
 std::size_t PartialRead(int fd, void *to, std::size_t amount) {
 #if defined(_WIN32) || defined(_WIN64)
-  int ret = _read(fd, to, GuardLarge(amount));
+    DWORD ret;
+    HANDLE file_handle = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
+    DWORD larger_size = static_cast<DWORD>(std::min<std::size_t>(kMaxDWORD, amount));
+    DWORD smaller_size = 28672; // Received reports that 31346 worked but higher values did not. This rounds down to the nearest multiple of 4096, the page size. 
+    if (!ReadFile(file_handle, to, larger_size, &ret, NULL))
+    {
+        DWORD last_error = GetLastError();
+        if (last_error != ERROR_NOT_ENOUGH_MEMORY || !ReadFile(file_handle, to, smaller_size, &ret, NULL)) {
+
+            UTIL_THROW_ARG(WindowsException, (last_error), "Windows error in ReadFile.");
+        }
+    }
 #else
   errno = 0;
   ssize_t ret;
   do {
     ret = read(fd, to, GuardLarge(amount));
   } while (ret == -1 && errno == EINTR);
-#endif
   UTIL_THROW_IF_ARG(ret < 0, FDException, (fd), "while reading " << amount << " bytes");
+#endif
   return static_cast<std::size_t>(ret);
 }
 
@@ -211,12 +228,6 @@ void WriteOrThrow(FILE *to, const void *data, std::size_t size) {
   if (!size) return;
   UTIL_THROW_IF(1 != std::fwrite(data, size, 1, to), ErrnoException, "Short write; requested size " << size);
 }
-
-#if defined(_WIN32) || defined(_WIN64)
-namespace {
-const std::size_t kMaxDWORD = static_cast<std::size_t>(4294967295UL);
-} // namespace
-#endif
 
 void ErsatzPRead(int fd, void *to_void, std::size_t size, uint64_t off) {
   uint8_t *to = static_cast<uint8_t*>(to_void);
