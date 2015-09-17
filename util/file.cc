@@ -163,8 +163,7 @@ std::size_t PartialRead(int fd, void *to, std::size_t amount) {
     {
         DWORD last_error = GetLastError();
         if (last_error != ERROR_NOT_ENOUGH_MEMORY || !ReadFile(file_handle, to, smaller_size, &ret, NULL)) {
-
-            UTIL_THROW_ARG(WindowsException, (last_error), "Windows error in ReadFile.");
+            UTIL_THROW(WindowsException, "Windows error in ReadFile.");
         }
     }
 #else
@@ -241,7 +240,7 @@ void ErsatzPRead(int fd, void *to_void, std::size_t size, uint64_t off) {
     memset(&overlapped, 0, sizeof(OVERLAPPED));
     overlapped.Offset = static_cast<DWORD>(off);
     overlapped.OffsetHigh = static_cast<DWORD>(off >> 32);
-    UTIL_THROW_IF(!ReadFile((HANDLE)_get_osfhandle(fd), to, reading, &ret, &overlapped), Exception, "ReadFile failed for offset " << off);
+    UTIL_THROW_IF(!ReadFile((HANDLE)_get_osfhandle(fd), to, reading, &ret, &overlapped), WindowsException, "ReadFile failed for offset " << off);
 #else
     ssize_t ret;
     errno = 0;

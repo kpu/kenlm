@@ -152,9 +152,9 @@ inline std::size_t CheckOverflow(uint64_t value) {
 #if defined(_WIN32) || defined(_WIN64)
 /* Thrown for Windows specific operations. */
 class WindowsException : public Exception {
-public:
-	WindowsException(unsigned int last_error) throw();
-	~WindowsException() throw();
+  public:
+    WindowsException() throw();
+    ~WindowsException() throw();
 };
 #endif
 
