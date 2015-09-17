@@ -4,6 +4,8 @@
 
 #include <cstdlib>
 
+#include <algorithm>
+
 namespace util {
 
 Pool::Pool() {

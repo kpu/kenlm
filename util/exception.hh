@@ -149,6 +149,15 @@ inline std::size_t CheckOverflow(uint64_t value) {
   return CheckOverflowInternal<sizeof(std::size_t)>(value);
 }
 
+#if defined(_WIN32) || defined(_WIN64)
+/* Thrown for Windows specific operations. */
+class WindowsException : public Exception {
+public:
+	WindowsException(unsigned int last_error) throw();
+	~WindowsException() throw();
+};
+#endif
+
 } // namespace util
 
 #endif // UTIL_EXCEPTION_H
