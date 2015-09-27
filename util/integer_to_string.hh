@@ -51,6 +51,9 @@ template <> struct ToStringBuf<int64_t> {
   enum { kBytes = 20 };
 };
 
+// Maximum over this and float.
+enum { kToStringMaxBytes = 20 };
+
 } // namespace util
 
 #endif // UTIL_INTEGER_TO_STRING_H

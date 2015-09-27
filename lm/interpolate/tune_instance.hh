@@ -1,46 +1,86 @@
 #ifndef LM_INTERPOLATE_TUNE_INSTANCE_H
 #define LM_INTERPOLATE_TUNE_INSTANCE_H
 
+#include "lm/interpolate/tune_matrix.hh"
 #include "lm/word_index.hh"
-#include "util/fixed_array.hh"
+#include "util/scoped.hh"
+#include "util/stream/config.hh"
 #include "util/string_piece.hh"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-local-typedefs"
-#include <Eigen/Core>
-#pragma GCC diagnostic pop
+#include <boost/optional.hpp>
 
 #include <vector>
 
+namespace util { namespace stream {
+template <class S, class T> class Sort;
+class Chain;
+class FileBuffer;
+}} // namespaces
+
 namespace lm { namespace interpolate {
 
-typedef Eigen::MatrixXd Matrix;
-typedef Eigen::VectorXd Vector;
+typedef uint32_t InstanceIndex;
+typedef uint32_t ModelIndex;
 
-typedef Matrix::Scalar Accum;
+struct Extension {
+  // Which tuning instance does this belong to?
+  InstanceIndex instance;
+  WordIndex word;
+  ModelIndex model;
+  // ln p_{model} (word | context(instance))
+  float ln_prob;
 
-// The instance w_1^n
-struct Instance {
-  explicit Instance(std::size_t num_models);
-
-  // Pre-multiplied backoffs to unigram.
-  // ln_backoff(i) = ln \prod_j b_i(w_j^{n-1})
-  Vector ln_backoff;
-
-  // ln_correct(i) = ln p_i(w_n | w_1^{n-1})
-  // Note this is unweighted.  It appears as a term in the gradient.
-  Vector ln_correct;
-
-  // Correct probability values if any of the models does not back off to unigram.
-  // ln_extension_values(i,j) = ln p_j(extension_words[i] | w_1^{n-1})
-  Matrix ln_extensions;
-
-  // Word indices corresponding to rows of extension_values_.
-  std::vector<WordIndex> extension_words;
+  bool operator<(const Extension &other) const {
+    if (instance != other.instance)
+      return instance < other.instance;
+    if (word != other.word)
+      return word < other.word;
+    if (model != other.model)
+      return model < other.model;
+    return false;
+  }
 };
 
-// Takes ownership of tune_file.  Returns the index of <s>.
-WordIndex LoadInstances(int tune_file, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, Matrix &ln_unigrams);
+class Instances {
+  public:
+    Instances(int tune_file, const std::vector<StringPiece> &model_names);
+
+    Eigen::ConstRowXpr Backoffs(InstanceIndex instance) const {
+      return ln_backoffs_.row(instance);
+    }
+
+    const Vector &CorrectGradientTerm() const { return neg_ln_correct_sum_; }
+
+    const Matrix &LNUnigrams() const { return ln_unigrams_; }
+
+    void ReadExtensions(util::stream::Chain &to);
+
+  private:
+    // backoffs_(instance, model) is the backoff all the way to unigrams.
+    typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BackoffMatrix;
+    BackoffMatrix ln_backoffs_;
+    
+    // neg_correct_sum_(model) = -\sum_{instances} ln p_{model}(correct(instance) | context(instance)).
+    // This appears as a term in the gradient.
+    Vector neg_ln_correct_sum_;
+
+    // unigrams_(word, model) = ln p_{model}(word).
+    Matrix ln_unigrams_;
+
+    struct ExtensionCompare {
+      bool operator()(const void *f, const void *s) const {
+        return reinterpret_cast<const Extension &>(f) < reinterpret_cast<const Extension &>(s);
+      }    
+    };
+
+    // This is the source of data for the first iteration.
+    util::scoped_ptr<util::stream::Sort<ExtensionCompare> > extensions_first_;
+
+    // Source of data for subsequent iterations.  This contains already-sorted data.
+    util::scoped_ptr<util::stream::FileBuffer> extensions_subsequent_;
+
+    const util::stream::SortConfig sorting_config_;
+};
 
 }} // namespaces
 #endif // LM_INTERPOLATE_TUNE_INSTANCE_H

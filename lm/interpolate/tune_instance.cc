@@ -15,87 +15,90 @@
 #include <boost/unordered_map.hpp>
 
 #include <cmath>
+#include <limits>
 #include <vector>
 
 namespace lm { namespace interpolate {
 
-// Intermediate representation of an Instance while it is being built.  Has
-// backoffs for the context separately so they can be applied to probabilities.
-class InstanceBuilder {
+// An extension without backoff weights applied yet.
+#pragma pack(push)
+#pragma pack(1)
+struct InitialExtension {
+  Extension ext;
+  // Order from which it came.
+  uint8_t order;
+};
+#pragma pack(pop)
+
+// Intended use
+// For each model:
+//   stream through orders jointly in suffix order:
+//     Call MatchedBackoff for full matches.
+//     Call Exit when the context matches.
+//   Call FinishModel with the unigram probability of the correct word, get full
+//   probability in return.
+// Use Backoffs to adjust records that were written to the stream.
+class InstanceMatch {
   public:
-    InstanceBuilder(WordIndex correct, std::size_t max_order)
-      : backoffs_(max_order), correct_(correct) {}
+    InstanceMatch(ModelIndex models, uint8_t max_order, const WordIndex correct)
+      : seen_(std::numeric_limits<WordIndex>::max()),
+        backoffs_(Matrix::Zeros(models, max_order)),
+        correct_(correct), correct_from_(1), correct_ln_prob_(std::numeric_limits<float>::quiet_NaN()) {}
 
-    void MatchedBackoff(uint8_t order, float ln_backoff) {
-      backoffs_[order - 1] = ln_backoff;
+    void MatchedBackoff(ModelIndex model, uint8_t order, float ln_backoff) {
+      backoffs_(model, order - 1) = ln_backoff;
     }
 
-    void MatchedContext(uint8_t order, WordIndex word, float ln_prob) {
-      std::pair<WordIndex, ContinueValue> to_ins;
-      to_ins.first = word;
-      to_ins.second.ln_prob = ln_prob;
-      to_ins.second.order = order;
-      to_ins.second.row = extensions_.size();
-      std::pair<boost::unordered_map<WordIndex, ContinueValue>::iterator, bool> ret(extensions_.insert(to_ins));
-      if (!ret.second && ret.first->second.order < order) {
-        ret.first->second.ln_prob = ln_prob;
-        ret.first->second.order = order;
+    // We only want the highest-order matches, which are the first to be exited for a given word.
+    void Exit(const InitialExtension &from, util::stream::Stream &out) {
+      if (from.ext.word == seen_) return;
+      seen_ = from.ext.word;
+      *static_cast<InitialExtension*>(out.Get()) = from;
+      ++out;
+      if (UTIL_UNLIKELY(correct_ == from.ext.word)) {
+        correct_from_ = from.order;
+        correct_ln_prob_ = from.ext.ln_prob;
       }
     }
 
-    void Dump(std::size_t model_index, Matrix &unigrams, Instance &out) {
+    WordIndex Correct() const { return correct_; }
+
+    // Call this after each model has been passed through.  The 
+    float FinishModel(ModelIndex model, float correct_ln_unigram) {
+      seen_ = std::numeric_limits<WordIndex>::max();
       // Turn backoffs into multiplied values (added in log space).
+      // So backoffs_(model, order - 1) is the penalty for matching order.
       float accum = 0.0;
-      for (std::vector<float>::reverse_iterator i = backoffs_.rbegin(); i != backoffs_.rend(); ++i) {
-        accum += *i;
-        *i = accum;
+      for (int order = backoffs_.cols() - 1; order >= 0; --order) {
+        accum += backoffs_(model, order);
+        backoffs_(model, order) = accum;
       }
-      out.ln_backoff(model_index) = accum;
-      std::size_t old_rows = out.ln_extensions.rows();
-      // TODO avoid?
-      out.ln_extensions.conservativeResize(extensions_.size(), Eigen::NoChange_t());
-      out.extension_words.resize(extensions_.size());
-      for (boost::unordered_map<WordIndex, ContinueValue>::iterator i = extensions_.begin(); i != extensions_.end(); ++i) {
-        // Compute backed off probability.
-        if (i->second.order == 0) {
-          i->second.ln_prob = unigrams(i->first, model_index);
-          i->second.order = 1;
-        }
-        i->second.ln_prob += backoffs_[i->second.order - 1];
-        out.ln_extensions(i->second.row, model_index) = i->second.ln_prob;
-        // Fill in other models.
-        if (i->second.row >= old_rows) {
-          for (std::size_t m = 0; m < model_index; ++m) {
-            out.ln_extensions(i->second.row, m) = unigrams(i->first, m) + out.ln_backoff(m);
-          }
-          out.extension_words[i->second.row] = i->first;
-        }
-        // Prepare for next model.
-        i->second.order = 0;
+      if (correct_from_ == 1) {
+        correct_ln_prob_ = correct_ln_unigram;
       }
-      // Fill in probability of correct word.
-      boost::unordered_map<WordIndex, ContinueValue>::const_iterator correct_it = extensions_.find(correct_);
-      if (correct_it == extensions_.end()) {
-        out.ln_correct(model_index) = unigrams(correct_, model_index) + out.ln_backoff(model_index);
-      } else {
-        out.ln_correct(model_index) = out.ln_extensions(correct_it->second.row, model_index);
+      if (correct_from_ - 1 < backoffs_.cols()) {
+        correct_ln_prob_ += backoffs_(model, correct_from_ - 1);
       }
-      std::fill(backoffs_.begin(), backoffs_.end(), 0.0);
+      correct_from_ = 1;
+      return correct_ln_prob_;
+    }
+
+    const Matrix &Backoffs() const {
+      return backoffs_;
     }
 
   private:
-    struct ContinueValue {
-      float ln_prob;
-      uint8_t order;
-      std::size_t row;
-    };
+    // What's the last word we've seen?  Used to act only on exiting the longest match.
+    WordIndex seen_;
 
-    // This map persists across models being loaded and maps words to their row of the extension_values_ matrix.
-    boost::unordered_map<WordIndex, ContinueValue> extensions_;
-
-    std::vector<float> backoffs_;
+    Matrix backoffs_;
 
     const WordIndex correct_;
+
+    // These only apply to the most recent model.
+    uint8_t correct_from_;
+
+    float correct_ln_prob_;
 };
 
 namespace {
@@ -103,26 +106,56 @@ namespace {
 // Forward information to multiple instances of a context.
 class DispatchContext {
   public:
-    void Register(InstanceBuilder &context) {
+    void Register(InstanceMatch &context) {
       registered_.push_back(&context);
     }
 
     void MatchedBackoff(uint8_t order, float ln_backoff) {
-      for (std::vector<InstanceBuilder*>::iterator i = registered_.begin(); i != registered_.end(); ++i)
+      for (std::vector<InstanceMatch*>::iterator i = registered_.begin(); i != registered_.end(); ++i)
         (*i)->MatchedBackoff(order, ln_backoff);
     }
 
-    void MatchedContext(uint8_t order, WordIndex word, float ln_prob) {
-      for (std::vector<InstanceBuilder*>::iterator i = registered_.begin(); i != registered_.end(); ++i)
-        (*i)->MatchedContext(order, word, ln_prob);
+    void Exit(const InitialExtension &from, util::stream::Stream &out) {
+      for (std::vector<InstanceMatch*>::iterator i = registered_.begin(); i != registered_.end(); ++i) {
+        (*i)->Exit(from, out);
+      }
     }
 
   private:
-    std::vector<InstanceBuilder*> registered_;
+    std::vector<InstanceMatch*> registered_;
 };
 
 // Map from n-gram hash to contexts in the tuning data.
 typedef boost::unordered_map<uint64_t, DispatchContext> ContextMap;
+
+class ApplyBackoffs {
+  public:
+    explicit ApplyBackoffs(const InstanceMatch *backoffs) : backoffs_(backoffs) {}
+
+    void Run(const util::stream::ChainPosition &position) {
+      for (util::stream::Stream stream(position); stream; ++stream) {
+        InitialExtension &ini = *reinterpret_cast<InitialExtension*>(stream.Get());
+        ini.ext.ln_prob += backoffs_[ini.ext.instance] 
+      }
+    }
+
+  private:
+    const InstanceMatch *backoffs_;
+};
+
+Instances::ReadExtensions(util::stream::Chain &on) {
+  if (extensions_first_.get()) {
+    // Lazy sort and save a sorted copy to disk.  TODO: cut down on record size by stripping out order information?
+    extensions_first_->Output(on);
+    extensions_first_->reset();
+    // TODO: apply backoff data!!!!
+
+    extensions_subsequent_.reset(new util::stream::FileBuffer(util::MakeTemp(sorting_config_.temp_prefix)));
+    on >> extensions_subsequent_->Sink();
+  } else {
+    on >> extensions_subsequent_->Source();
+  }
+}
 
 class UnigramLoader {
   public:
