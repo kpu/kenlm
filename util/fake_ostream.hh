@@ -6,6 +6,7 @@
 #include "util/string_piece.hh"
 
 #include <cassert>
+#include <limits>
 #include <string>
 
 #include <stdint.h>
@@ -51,8 +52,7 @@ template <class Derived> class FakeOStream {
     };
   public:
     template <class T> typename EnableIfKludge<ToStringBuf<T>::kBytes>::type &operator<<(const T value) {
-      C().AdvanceTo(ToString(value, C().Ensure(ToStringBuf<T>::kBytes)));
-      return C();
+      return CallToString(value);
     }
 
     /* clang on OS X appears to consider std::size_t aka unsigned long distinct
@@ -63,31 +63,29 @@ template <class Derived> class FakeOStream {
      * Also, delegating to *this << static_cast<uint64_t>(value) would loop
      * indefinitely on gcc.
      */
-    Derived &operator<<(std::size_t value) {
-      C().AdvanceTo(ToString(static_cast<uint64_t>(value), C().Ensure(ToStringBuf<uint64_t>::kBytes)));
-      return C();
-    }
+    Derived &operator<<(std::size_t value) { return CoerceToString(value); }
 
-    Derived &operator<<(char val) {
+    // union types will map to int, but don't pass the template magic above in gcc.
+    Derived &operator<<(int value) { return CoerceToString(value); }
+
+    // gcc considers these distinct from uint64_t
+    Derived &operator<<(unsigned long long value) { return CoerceToString(value); }
+    Derived &operator<<(signed long long value) { return CoerceToString(value); }
+
+    // Character types that get copied as bytes instead of displayed as integers.
+    Derived &operator<<(char val) { return put(val); }
+    Derived &operator<<(signed char val) { return put(static_cast<char>(val)); }
+    Derived &operator<<(unsigned char val) { return put(static_cast<char>(val)); }
+
+    Derived &put(char val) {
       char *c = C().Ensure(1);
       *c = val;
       C().AdvanceTo(++c);
       return C();
     }
 
-    Derived &operator<<(signed char val) {
-      return *this << static_cast<char>(val);
-    }
-
-    Derived &operator<<(unsigned char val) {
-      return *this << static_cast<char>(val);
-    }
-
-    Derived &put(char c) {
-      return *this << c;
-    }
-
   private:
+    // References to derived class for convenience.
     Derived &C() {
       return *static_cast<Derived*>(this);
     }
@@ -95,10 +93,32 @@ template <class Derived> class FakeOStream {
     const Derived &C() const {
       return *static_cast<const Derived*>(this);
     }
+
+    template <class From, unsigned Length = sizeof(From), bool Signed = std::numeric_limits<From>::is_signed> struct Coerce {};
+
+    template <class From> struct Coerce<From, 2, false> { typedef uint16_t To; };
+    template <class From> struct Coerce<From, 4, false> { typedef uint32_t To; };
+    template <class From> struct Coerce<From, 8, false> { typedef uint64_t To; };
+
+    template <class From> struct Coerce<From, 2, true> { typedef int16_t To; };
+    template <class From> struct Coerce<From, 4, true> { typedef int32_t To; };
+    template <class From> struct Coerce<From, 8, true> { typedef int64_t To; };
+
+    template <class From> Derived &CoerceToString(const From value) {
+      return CallToString(static_cast<typename Coerce<From>::To>(value));
+    }
+
+    // This is separate to prevent an infinite loop if the compiler considers
+    // types the same (i.e. gcc std::size_t and uint64_t or uint32_t).
+    template <class T> Derived &CallToString(const T value) {
+      C().AdvanceTo(ToString(value, C().Ensure(ToStringBuf<T>::kBytes)));
+      return C();
+    }
 };
 
 class FakeSStream : public FakeOStream<FakeSStream> {
   public:
+    // Semantics: appends to string.  Remember to clear first!
     explicit FakeSStream(std::string &out)
       : out_(out) {}
 

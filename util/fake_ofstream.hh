@@ -57,6 +57,11 @@ class FakeOFStream : public FakeOStream<FakeOFStream> {
       return *this;
     }
 
+    FakeOFStream &seekp(uint64_t to) {
+      util::SeekOrThrow(fd_, to);
+      return *this;
+    }
+
   protected:
     friend class FakeOStream;
     // For writes directly to buffer guaranteed to have amount < buffer size.
