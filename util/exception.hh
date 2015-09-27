@@ -1,9 +1,10 @@
 #ifndef UTIL_EXCEPTION_H
 #define UTIL_EXCEPTION_H
 
+#include "util/fake_ostream.hh"
+
 #include <exception>
 #include <limits>
-#include <sstream>
 #include <string>
 #include <stdint.h>
 
@@ -16,11 +17,7 @@ class Exception : public std::exception {
     Exception() throw();
     virtual ~Exception() throw();
 
-    Exception(const Exception &from);
-    Exception &operator=(const Exception &from);
-
-    // Not threadsafe, but probably doesn't matter.  FWIW, Boost's exception guidance implies that what() isn't threadsafe.
-    const char *what() const throw();
+    const char *what() const throw() { return what_.c_str(); }
 
     // For use by the UTIL_THROW macros.
     void SetLocation(
@@ -38,8 +35,7 @@ class Exception : public std::exception {
       typedef T Identity;
     };
 
-    std::stringstream stream_;
-    mutable std::string text_;
+    std::string what_;
 };
 
 /* This implements the normal operator<< for Exception and all its children.
@@ -47,7 +43,7 @@ class Exception : public std::exception {
  * boost::enable_if.
  */
 template <class Except, class Data> typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const Data &data) {
-  e.stream_ << data;
+  FakeSStream(e.what_) << data;
   return e;
 }
 
