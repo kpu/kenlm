@@ -4,6 +4,7 @@
  */
 #include "lm/read_arpa.hh"
 #include "util/exception.hh"
+#include "util/fake_ofstream.hh"
 #include "util/string_piece.hh"
 #include "util/tokenize_piece.hh"
 
@@ -28,17 +29,6 @@ class ARPAInputException : public util::Exception {
     virtual ~ARPAInputException() throw();
 };
 
-class ARPAOutputException : public util::ErrnoException {
-  public:
-    ARPAOutputException(const char *prefix, const std::string &file_name) throw();
-    virtual ~ARPAOutputException() throw();
-
-    const std::string &File() const throw() { return file_name_; }
-
-  private:
-    const std::string file_name_;
-};
-
 // Handling for the counts of n-grams at the beginning of ARPA files.
 size_t SizeNeededForCounts(const std::vector<uint64_t> &number);
 
@@ -55,11 +45,7 @@ class ARPAOutput : boost::noncopyable {
     void BeginLength(unsigned int length);
 
     void AddNGram(const StringPiece &line) {
-      try {
-        file_ << line << '\n';
-      } catch (const std::ios_base::failure &f) {
-        throw ARPAOutputException("Writing an n-gram", file_name_);
-      }
+      file_ << line << '\n';
       ++fast_counter_;
     }
 
@@ -76,9 +62,8 @@ class ARPAOutput : boost::noncopyable {
     void Finish();
 
   private:
-    const std::string file_name_;
-    boost::scoped_array<char> buffer_;
-    std::fstream file_;
+    util::scoped_fd file_backing_;
+    util::FakeOFStream file_;
     size_t fast_counter_;
     std::vector<uint64_t> counts_;
 };
