@@ -258,7 +258,9 @@
     <ClInclude Include="..\util\double-conversion\ieee.h" />
     <ClInclude Include="..\util\double-conversion\strtod.h" />
     <ClInclude Include="..\util\double-conversion\utils.h" />
-    <ClInclude Include="..\util\fake_ofstream.hh" />
+    <ClInclude Include="..\util\file_stream.hh" />
+    <ClInclude Include="..\util\string_stream.hh" />
+    <ClInclude Include="..\util\fake_ostream.hh" />
     <ClInclude Include="..\util\fixed_array.hh" />
     <ClInclude Include="..\util\float_to_string.hh" />
     <ClInclude Include="..\util\integer_to_string.hh" />

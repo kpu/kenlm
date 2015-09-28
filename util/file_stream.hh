@@ -1,8 +1,8 @@
 /* Like std::ofstream but without being incredibly slow.  Backed by a raw fd.
  * Supports most of the built-in types except for void* and long double.
  */
-#ifndef UTIL_FAKE_OFSTREAM_H
-#define UTIL_FAKE_OFSTREAM_H
+#ifndef UTIL_FILE_STREAM_H
+#define UTIL_FILE_STREAM_H
 
 #include "util/fake_ostream.hh"
 #include "util/file.hh"
@@ -15,15 +15,15 @@
 
 namespace util {
 
-class FakeOFStream : public FakeOStream<FakeOFStream> {
+class FileStream : public FakeOStream<FileStream> {
   public:
-    FakeOFStream(int out = -1, std::size_t buffer_size = 8192)
+    FileStream(int out = -1, std::size_t buffer_size = 8192)
       : buf_(util::MallocOrThrow(std::max<std::size_t>(buffer_size, kToStringMaxBytes))),
         current_(static_cast<char*>(buf_.get())),
         end_(current_ + std::max<std::size_t>(buffer_size, kToStringMaxBytes)),
         fd_(out) {}
 
-    ~FakeOFStream() {
+    ~FileStream() {
       flush();
     }
 
@@ -32,7 +32,7 @@ class FakeOFStream : public FakeOStream<FakeOFStream> {
       fd_ = to;
     }
 
-    FakeOFStream &flush() {
+    FileStream &flush() {
       if (current_ != buf_.get()) {
         util::WriteOrThrow(fd_, buf_.get(), current_ - (char*)buf_.get());
         current_ = static_cast<char*>(buf_.get());
@@ -41,7 +41,7 @@ class FakeOFStream : public FakeOStream<FakeOFStream> {
     }
 
     // For writes of arbitrary size.
-    FakeOFStream &write(const void *data, std::size_t length) {
+    FileStream &write(const void *data, std::size_t length) {
       if (UTIL_LIKELY(current_ + length <= end_)) {
         std::memcpy(current_, data, length);
         current_ += length;
@@ -57,13 +57,13 @@ class FakeOFStream : public FakeOStream<FakeOFStream> {
       return *this;
     }
 
-    FakeOFStream &seekp(uint64_t to) {
+    FileStream &seekp(uint64_t to) {
       util::SeekOrThrow(fd_, to);
       return *this;
     }
 
   protected:
-    friend class FakeOStream;
+    friend class FakeOStream<FileStream>;
     // For writes directly to buffer guaranteed to have amount < buffer size.
     char *Ensure(std::size_t amount) {
       if (UTIL_UNLIKELY(current_ + amount > end_)) {

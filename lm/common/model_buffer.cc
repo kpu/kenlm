@@ -1,6 +1,6 @@
 #include "lm/common/model_buffer.hh"
 #include "util/exception.hh"
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/file.hh"
 #include "util/file_piece.hh"
 #include "util/stream/io.hh"
@@ -68,7 +68,7 @@ void ModelBuffer::Sink(util::stream::Chains &chains, const std::vector<uint64_t>
   }
   if (keep_buffer_) {
     util::scoped_fd metadata(util::CreateOrThrow((file_base_ + ".kenlm_intermediate").c_str()));
-    util::FakeOFStream meta(metadata.get(), 200);
+    util::FileStream meta(metadata.get(), 200);
     meta << kMetadataHeader << "\nCounts";
     for (std::vector<uint64_t>::const_iterator i = counts_.begin(); i != counts_.end(); ++i) {
       meta << ' ' << *i;

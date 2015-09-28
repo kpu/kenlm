@@ -5,7 +5,7 @@
 #include <iostream>
 #include <string>
 
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/file.hh"
 #include "util/file_piece.hh"
 
@@ -28,7 +28,7 @@ class CountOutput : boost::noncopyable {
     }
 
   private:
-    util::FakeOFStream file_;
+    util::FileStream file_;
 };
 
 class CountBatch {

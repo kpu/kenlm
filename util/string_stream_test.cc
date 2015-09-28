@@ -1,7 +1,7 @@
 #define BOOST_LEXICAL_CAST_ASSUME_C_LOCALE
 #define BOOST_TEST_MODULE FakeOStreamTest
 
-#include "util/fake_ostream.hh"
+#include "util/string_stream.hh"
 #include <boost/test/unit_test.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -12,7 +12,7 @@ namespace util { namespace {
 
 template <class T> void TestEqual(const T value) {
   std::string str;
-  FakeSStream(str) << value;
+  StringStream(str) << value;
   BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(value), str);
 }
 

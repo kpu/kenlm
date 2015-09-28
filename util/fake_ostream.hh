@@ -7,7 +7,6 @@
 
 #include <cassert>
 #include <limits>
-#include <string>
 
 #include <stdint.h>
 
@@ -84,6 +83,8 @@ template <class Derived> class FakeOStream {
       return C();
     }
 
+    char widen(char val) const { return val; }
+
   private:
     // References to derived class for convenience.
     Derived &C() {
@@ -114,37 +115,6 @@ template <class Derived> class FakeOStream {
       C().AdvanceTo(ToString(value, C().Ensure(ToStringBuf<T>::kBytes)));
       return C();
     }
-};
-
-class FakeSStream : public FakeOStream<FakeSStream> {
-  public:
-    // Semantics: appends to string.  Remember to clear first!
-    explicit FakeSStream(std::string &out)
-      : out_(out) {}
-
-    FakeSStream &flush() { return *this; }
-
-    FakeSStream &write(const void *data, std::size_t length) {
-      out_.append(static_cast<const char*>(data), length);
-      return *this;
-    }
-
-  protected:
-    friend class FakeOStream;
-    char *Ensure(std::size_t amount) {
-      std::size_t current = out_.size();
-      out_.resize(out_.size() + amount);
-      return &out_[current];
-    }
-
-    void AdvanceTo(char *to) {
-      assert(to <= &*out_.end());
-      assert(to >= &*out_.begin());
-      out_.resize(to - &*out_.begin());
-    }
-
-  private:
-    std::string &out_;
 };
 
 } // namespace

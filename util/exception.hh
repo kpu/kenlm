@@ -1,7 +1,7 @@
 #ifndef UTIL_EXCEPTION_H
 #define UTIL_EXCEPTION_H
 
-#include "util/fake_ostream.hh"
+#include "util/string_stream.hh"
 
 #include <exception>
 #include <limits>
@@ -43,7 +43,7 @@ class Exception : public std::exception {
  * boost::enable_if.
  */
 template <class Except, class Data> typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const Data &data) {
-  FakeSStream(e.what_) << data;
+  StringStream(e.what_) << data;
   return e;
 }
 

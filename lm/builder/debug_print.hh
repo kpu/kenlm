@@ -4,21 +4,21 @@
 #include "lm/builder/payload.hh"
 #include "lm/common/print.hh"
 #include "lm/common/ngram_stream.hh"
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/file.hh"
 
 #include <boost/lexical_cast.hpp>
 
 namespace lm { namespace builder {
 // Not defined, only specialized.
-template <class T> void PrintPayload(util::FakeOFStream &to, const BuildingPayload &payload);
-template <> inline void PrintPayload<uint64_t>(util::FakeOFStream &to, const BuildingPayload &payload) {
+template <class T> void PrintPayload(util::FileStream &to, const BuildingPayload &payload);
+template <> inline void PrintPayload<uint64_t>(util::FileStream &to, const BuildingPayload &payload) {
   to << payload.count;
 }
-template <> inline void PrintPayload<Uninterpolated>(util::FakeOFStream &to, const BuildingPayload &payload) {
+template <> inline void PrintPayload<Uninterpolated>(util::FileStream &to, const BuildingPayload &payload) {
   to << log10(payload.uninterp.prob) << ' ' << log10(payload.uninterp.gamma);
 }
-template <> inline void PrintPayload<ProbBackoff>(util::FakeOFStream &to, const BuildingPayload &payload) {
+template <> inline void PrintPayload<ProbBackoff>(util::FileStream &to, const BuildingPayload &payload) {
   to << payload.complete.prob << ' ' << payload.complete.backoff;
 }
 
@@ -36,7 +36,7 @@ template <class V> class Print {
 
     void Run(const util::stream::ChainPositions &chains) {
       util::scoped_fd fd(to_);
-      util::FakeOFStream out(to_);
+      util::FileStream out(to_);
       NGramStreams<BuildingPayload> streams(chains);
       for (NGramStream<BuildingPayload> *s = streams.begin(); s != streams.end(); ++s) {
         DumpStream(*s, out);
@@ -45,13 +45,13 @@ template <class V> class Print {
 
     void Run(const util::stream::ChainPosition &position) {
       util::scoped_fd fd(to_);
-      util::FakeOFStream out(to_);
+      util::FileStream out(to_);
       NGramStream<BuildingPayload> stream(position);
       DumpStream(stream, out);
     }
 
   private:
-    void DumpStream(NGramStream<BuildingPayload> &stream, util::FakeOFStream &to) {
+    void DumpStream(NGramStream<BuildingPayload> &stream, util::FileStream &to) {
       for (; stream; ++stream) {
         PrintPayload<V>(to, stream->Value());
         for (const WordIndex *w = stream->begin(); w != stream->end(); ++w) {

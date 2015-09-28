@@ -4,7 +4,7 @@
 #include "lm/enumerate_vocab.hh"
 #include "lm/lm_exception.hh"
 #include "lm/virtual_interface.hh"
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/murmur_hash.hh"
 #include "util/pool.hh"
 #include "util/probing_hash_table.hh"
@@ -44,7 +44,7 @@ class ImmediateWriteWordsWrapper : public EnumerateVocab {
   private:
     EnumerateVocab *inner_;
 
-    util::FakeOFStream stream_;
+    util::FileStream stream_;
 };
 
 // When the binary size isn't known yet.
@@ -225,7 +225,7 @@ class WriteUniqueWords {
     }
 
   private:
-    util::FakeOFStream word_list_;
+    util::FileStream word_list_;
 };
 
 class NoOpUniqueWords {

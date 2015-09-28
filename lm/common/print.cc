@@ -1,7 +1,7 @@
 #include "lm/common/print.hh"
 
 #include "lm/common/ngram_stream.hh"
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/file.hh"
 #include "util/mmap.hh"
 #include "util/scoped.hh"
@@ -24,7 +24,7 @@ VocabReconstitute::VocabReconstitute(int fd) {
 }
 
 namespace {
-template <class Payload> void PrintLead(const VocabReconstitute &vocab, ProxyStream<Payload> &stream, util::FakeOFStream &out) {
+template <class Payload> void PrintLead(const VocabReconstitute &vocab, ProxyStream<Payload> &stream, util::FileStream &out) {
   out << stream->Value().prob << '\t' << vocab.Lookup(*stream->begin());
   for (const WordIndex *i = stream->begin() + 1; i != stream->end(); ++i) {
     out << ' ' << vocab.Lookup(*i);
@@ -34,7 +34,7 @@ template <class Payload> void PrintLead(const VocabReconstitute &vocab, ProxyStr
 
 void PrintARPA::Run(const util::stream::ChainPositions &positions) {
   VocabReconstitute vocab(vocab_fd_);
-  util::FakeOFStream out(out_fd_);
+  util::FileStream out(out_fd_);
   out << "\\data\\\n";
   for (size_t i = 0; i < positions.size(); ++i) {
     out << "ngram " << (i+1) << '=' << counts_[i] << '\n';

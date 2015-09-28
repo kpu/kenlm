@@ -1,5 +1,5 @@
 #include "lm/model.hh"
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/file.hh"
 #include "util/file_piece.hh"
 #include "util/usage.hh"
@@ -10,7 +10,7 @@ namespace {
 
 template <class Model, class Width> void ConvertToBytes(const Model &model, int fd_in) {
   util::FilePiece in(fd_in);
-  util::FakeOFStream out(1);
+  util::FileStream out(1);
   Width width;
   StringPiece word;
   const Width end_sentence = (Width)model.GetVocabulary().EndSentence();

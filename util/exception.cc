@@ -25,7 +25,7 @@ void Exception::SetLocation(const char *file, unsigned int line, const char *fun
    */
   std::string old_text;
   std::swap(old_text, what_);
-  FakeSStream stream(what_);
+  StringStream stream(what_);
   stream << file << ':' << line;
   if (func) stream << " in " << func << " threw ";
   if (child_name) {

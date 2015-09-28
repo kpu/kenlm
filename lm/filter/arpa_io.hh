@@ -4,7 +4,7 @@
  */
 #include "lm/read_arpa.hh"
 #include "util/exception.hh"
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/string_piece.hh"
 #include "util/tokenize_piece.hh"
 
@@ -63,7 +63,7 @@ class ARPAOutput : boost::noncopyable {
 
   private:
     util::scoped_fd file_backing_;
-    util::FakeOFStream file_;
+    util::FileStream file_;
     size_t fast_counter_;
     std::vector<uint64_t> counts_;
 };

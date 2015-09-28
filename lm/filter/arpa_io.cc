@@ -1,5 +1,6 @@
 #include "lm/filter/arpa_io.hh"
 #include "util/file_piece.hh"
+#include "util/string_stream.hh"
 
 #include <iostream>
 #include <ostream>
@@ -33,7 +34,7 @@ template <class Stream> void WriteCounts(Stream &out, const std::vector<uint64_t
 
 size_t SizeNeededForCounts(const std::vector<uint64_t> &number) {
   std::string buf;
-  util::FakeSStream stream(buf);
+  util::StringStream stream(buf);
   WriteCounts(stream, number);
   return buf.size();
 }

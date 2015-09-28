@@ -6,7 +6,7 @@
 #include "lm/config.hh"
 #include "lm/weights.hh"
 #include "util/exception.hh"
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/file.hh"
 #include "util/joint_sort.hh"
 #include "util/murmur_hash.hh"
@@ -182,7 +182,7 @@ void SortedVocabulary::ComputeRenumbering(WordIndex types, int from_words, int t
   std::sort(entries.begin(), entries.end());
   // Write out new vocab file.
   {
-    util::FakeOFStream out(to_words);
+    util::FileStream out(to_words);
     out << "<unk>" << '\0';
     for (std::vector<RenumberEntry>::const_iterator i = entries.begin(); i != entries.end(); ++i) {
       out << i->str << '\0';

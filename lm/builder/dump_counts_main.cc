@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
       UTIL_THROW_IF(*i >= vocab.Size(), util::Exception, "Vocab ID " << *i << " is larger than the vocab file's maximum of " << vocab.Size() << ".  Are you sure you have the right order and vocab file for these counts?");
       std::cout << vocab.Lookup(*i) << ' ';
     }
-    // TODO don't use std::cout because it is slow.  Add fast uint64_t printing support to FakeOFStream.
+    // TODO don't use std::cout because it is slow.  Add fast uint64_t printing support to FileStream.
     std::cout << *reinterpret_cast<const uint64_t*>(words + order) << '\n';
   }
 }

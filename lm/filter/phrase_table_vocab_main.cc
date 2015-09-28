@@ -1,4 +1,4 @@
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/file_piece.hh"
 #include "util/murmur_hash.hh"
 #include "util/pool.hh"
@@ -68,7 +68,7 @@ class TargetWords {
     }
 
     void Print() const {
-      util::FakeOFStream out(1);
+      util::FileStream out(1);
       for (std::vector<boost::unordered_set<const char *> >::const_iterator i = vocab_.begin(); i != vocab_.end(); ++i) {
         for (boost::unordered_set<const char *>::const_iterator j = i->begin(); j != i->end(); ++j) {
           out << *j << ' ';

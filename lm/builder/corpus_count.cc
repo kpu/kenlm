@@ -5,7 +5,7 @@
 #include "lm/lm_exception.hh"
 #include "lm/vocab.hh"
 #include "lm/word_index.hh"
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/file.hh"
 #include "util/file_piece.hh"
 #include "util/murmur_hash.hh"

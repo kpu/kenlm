@@ -1,6 +1,6 @@
 #include "lm/interpolate/tune_instance.hh"
 
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/file.hh"
 #include "util/string_piece.hh"
 
@@ -22,7 +22,7 @@ Matrix::Index FindRow(const std::vector<WordIndex> &words, WordIndex word) {
 BOOST_AUTO_TEST_CASE(Toy) {
   util::scoped_fd test_input(util::MakeTemp("temporary"));
   {
-    util::FakeOFStream(test_input.get()) << "c\n";
+    util::FileStream(test_input.get()) << "c\n";
   }
 
   StringPiece dir("tune_instance_data/");

@@ -2,7 +2,7 @@
 
 #include "lm/common/model_buffer.hh"
 #include "lm/common/print.hh"
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/stream/multi_stream.hh"
 
 #include <iostream>
@@ -41,7 +41,7 @@ void Output::Apply(HookType hook_type, util::stream::Chains &chains) {
 
 void PrintHook::Sink(const HeaderInfo &info, int vocab_file, util::stream::Chains &chains) {
   if (verbose_header_) {
-    util::FakeOFStream out(file_.get(), 50);
+    util::FileStream out(file_.get(), 50);
     out << "# Input file: " << info.input_file << '\n';
     out << "# Token count: " << info.token_count << '\n';
     out << "# Smoothing: Modified Kneser-Ney" << '\n';

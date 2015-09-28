@@ -3,7 +3,7 @@
 
 #include "lm/enumerate_vocab.hh"
 #include "lm/model.hh"
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/file_piece.hh"
 #include "util/usage.hh"
 
@@ -42,7 +42,7 @@ class QueryPrinter {
     }
 
   private:
-    util::FakeOFStream out_;
+    util::FileStream out_;
     bool print_word_;
     bool print_line_;
     bool print_summary_;

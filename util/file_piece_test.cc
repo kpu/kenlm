@@ -1,7 +1,7 @@
 // Tests might fail if you have creative characters in your path.  Sue me.
 #include "util/file_piece.hh"
 
-#include "util/fake_ofstream.hh"
+#include "util/file_stream.hh"
 #include "util/file.hh"
 #include "util/scoped.hh"
 
@@ -138,7 +138,7 @@ BOOST_AUTO_TEST_CASE(Numbers) {
   scoped_fd file(MakeTemp(FileLocation()));
   const float floating = 3.2;
   {
-    util::FakeOFStream writing(file.get());
+    util::FileStream writing(file.get());
     writing << "94389483984398493890287 " << floating << " 5";
   }
   SeekOrThrow(file.get(), 0);
