@@ -17,7 +17,7 @@ wrappers = ;
 local with-nplm = [ option.get "with-nplm" ] ;
 if $(with-nplm) {
   lib nplm : : <search>$(with-nplm)/src ;
-  obj nplm.o : wrappers/nplm.cc : <include>.. <include>$(with-nplm)/src <cxxflags>-fopenmp ;
+  obj nplm.o : wrappers/nplm.cc : <include>.. <include>$(with-nplm)/src <cxxflags>-fopenmp <include>$(with-nplm)/3rdparty/eigen <define>NPLM_DOUBLE_PRECISION=0 ;
   alias nplm-all : nplm.o nplm ..//boost_thread : : : <cxxflags>-fopenmp <linkflags>-fopenmp <define>WITH_NPLM <library>..//boost_thread ;
   wrappers += nplm-all ;
 }
