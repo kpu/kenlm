@@ -5,6 +5,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include <cstddef>
 #include <limits>
 
 namespace util { namespace {
@@ -43,6 +44,8 @@ BOOST_AUTO_TEST_CASE(Integer) {
   TestCorners<long long>();
   TestCorners<unsigned long long>();
   TestCorners<signed long long>();
+
+  TestCorners<std::size_t>();
 }
 
 enum TinyEnum { EnumValue };
