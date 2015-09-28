@@ -136,13 +136,25 @@ double WallTime() {
 }
 
 double CPUTime() {
-#if !defined(_WIN32) && !defined(_WIN64)
+#if defined(_WIN32) || defined(_WIN64)
+  return 0.0;
+#else
   struct rusage usage;
   if (getrusage(RUSAGE_SELF, &usage))
     return 0.0;
   return DoubleSec(usage.ru_utime) + DoubleSec(usage.ru_stime);
 #endif
-  return 0.0;
+}
+
+uint64_t RSSMax() {
+#if defined(_WIN32) || defined(_WIN64)
+  return 0;
+#else
+  struct rusage usage;
+  if (getrusage(RUSAGE_SELF, &usage))
+    return 0;
+  return static_cast<uint64_t>(usage.ru_maxrss) * 1024;
+#endif
 }
 
 void PrintUsage(std::ostream &out) {

@@ -12,6 +12,9 @@ double WallTime();
 // User + system time.
 double CPUTime();
 
+// Resident usage in bytes.
+uint64_t RSSMax();
+
 void PrintUsage(std::ostream &to);
 
 // Determine how much physical memory there is.  Return 0 on failure.

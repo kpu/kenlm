@@ -33,8 +33,8 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, int 
 
   uint64_t completed = 0;
   double loaded = util::CPUTime();
-  std::cout << "After loading: ";
-  util::PrintUsage(std::cout);
+
+  std::cout << "CPU_to_load: " << loaded << std::endl;
 
   // Numerical precision: batch sums.
   double total = 0.0;
@@ -60,9 +60,11 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, int 
     }
     total += sum;
   }
+  double after = util::CPUTime();
   std::cerr << "Probability sum is " << total << std::endl;
-
-  std::cout << "CPU_excluding_load:" << (util::CPUTime() - loaded) << " CPU_per_query:" << ((util::CPUTime() - loaded) / static_cast<double>(completed)) << " Queries:" << completed << std::endl;
+  std::cout << "Queries: " << completed << std::endl;
+  std::cout << "CPU_excluding_load: " << (after - loaded) << "\nCPU_per_query: " << ((after - loaded) / static_cast<double>(completed)) << std::endl;
+  std::cout << "RSSMax: " << util::RSSMax() << std::endl;
 }
 
 template <class Model, class Width> void DispatchFunction(const Model &model, bool query) {
@@ -131,11 +133,10 @@ int main(int argc, char *argv[]) {
       << argv[0] << " vocab $model <$text >$text.vocab\n"
       << "#Ensure files are in RAM.\n"
       << "cat $text.vocab $model >/dev/null\n"
-      << "#Timed query against the model, including loading.\n"
-      << "time " << argv[0] << " query $model <$text.vocab\n";
+      << "#Timed query against the model.\n"
+      << argv[0] << " query $model <$text.vocab\n";
     return 1;
   }
   Dispatch(argv[2], !strcmp(argv[1], "query"));
-  util::PrintUsage(std::cerr);
   return 0;
 }
