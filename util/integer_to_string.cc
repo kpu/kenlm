@@ -643,7 +643,7 @@ namespace {
 const char kHexDigits[] = "0123456789abcdef";
 } // namespace
 
-char *ToString(void *v, char *to) {
+char *ToString(const void *v, char *to) {
   // Apparently it's 0, not 0x0.  
   if (!v) {
     *to++ = '0';

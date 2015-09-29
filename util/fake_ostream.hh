@@ -76,6 +76,12 @@ template <class Derived> class FakeOStream {
     Derived &operator<<(signed char val) { return put(static_cast<char>(val)); }
     Derived &operator<<(unsigned char val) { return put(static_cast<char>(val)); }
 
+    // This is here to catch all the other pointer types.
+    Derived &operator<<(const void *value) { return CallToString(value); }
+    // This is here because the above line also catches const char*.
+    Derived &operator<<(const char *value) { return *this << StringPiece(value); }
+    Derived &operator<<(char *value) { return *this << StringPiece(value); }
+
     Derived &put(char val) {
       char *c = C().Ensure(1);
       *c = val;

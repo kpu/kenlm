@@ -18,7 +18,7 @@ char *ToString(int64_t value, char *to);
 char *ToString(uint16_t value, char *to);
 char *ToString(int16_t value, char *to);
 
-char *ToString(void *value, char *to);
+char *ToString(const void *value, char *to);
 
 inline char *ToString(bool value, char *to) {
   *to++ = '0' + value;
@@ -53,9 +53,9 @@ template <> struct ToStringBuf<int64_t> {
   enum { kBytes = 20 };
 };
 
-template <> struct ToStringBuf<void*> {
+template <> struct ToStringBuf<const void*> {
   // Either 18 on 64-bit or 10 on 32-bit.
-  enum { kBytes = sizeof(void*) * 2 + 2 };
+  enum { kBytes = sizeof(const void*) * 2 + 2 };
 };
 
 // Maximum over this and float.
