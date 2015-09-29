@@ -18,6 +18,8 @@ char *ToString(int64_t value, char *to);
 char *ToString(uint16_t value, char *to);
 char *ToString(int16_t value, char *to);
 
+char *ToString(void *value, char *to);
+
 inline char *ToString(bool value, char *to) {
   *to++ = '0' + value;
   return to;
@@ -49,6 +51,11 @@ template <> struct ToStringBuf<uint64_t> {
 template <> struct ToStringBuf<int64_t> {
   // Not a typo.  2^63 has 19 digits.
   enum { kBytes = 20 };
+};
+
+template <> struct ToStringBuf<void*> {
+  // Either 18 on 64-bit or 10 on 32-bit.
+  enum { kBytes = sizeof(void*) * 2 + 2 };
 };
 
 // Maximum over this and float.

@@ -13,7 +13,7 @@
 namespace util {
 
 /* Like std::ostream but without being incredibly slow.
- * Supports most of the built-in types except for void* and long double.
+ * Supports most of the built-in types except for long double.
  * 
  * The FakeOStream class is intended to be inherited from.  The inherting class
  * should provide:

@@ -1,5 +1,5 @@
 /* Like std::ofstream but without being incredibly slow.  Backed by a raw fd.
- * Supports most of the built-in types except for void* and long double.
+ * Supports most of the built-in types except for long double.
  */
 #ifndef UTIL_FILE_STREAM_H
 #define UTIL_FILE_STREAM_H

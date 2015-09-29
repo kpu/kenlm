@@ -1,3 +1,4 @@
+#include <iostream>
 /* Fast integer to string conversion.
 Source: https://github.com/miloyip/itoa-benchmark
 Local modifications:
@@ -635,6 +636,30 @@ char *ToString(int16_t value, char *to) {
 }
 char *ToString(uint16_t value, char *to) {
   return ToString((uint32_t)value, to);
+}
+
+// void * to string.  This hasn't been optimized at all really.
+namespace {
+const char kHexDigits[] = "0123456789abcdef";
+} // namespace
+
+char *ToString(void *v, char *to) {
+  // Apparently it's 0, not 0x0.  
+  if (!v) {
+    *to++ = '0';
+    return to;
+  }
+
+  *to++ = '0';
+  *to++ = 'x';
+  uintptr_t value = reinterpret_cast<uintptr_t>(v);
+  uint8_t shift = sizeof(void*) * 8 - 4;
+  for (; !(value >> shift); shift -= 4) {}
+  for (; ; shift -= 4) {
+    *to++ = kHexDigits[(value >> shift) & 0xf];
+    if (!shift) break;
+  }
+  return to;
 }
 
 } // namespace util
