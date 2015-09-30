@@ -206,7 +206,9 @@ bool TryHuge(std::size_t size, uint8_t alignment_bits, bool populate, util::scop
     UnmapOrThrow(static_cast<uint8_t*>(larger.get()) + size_up, larger.size() - size_up);
     larger.reset(larger.steal(), size_up);
   }
+#ifdef MADV_HUGEPAGE
   madvise(larger.get(), size_up, MADV_HUGEPAGE);
+#endif
   to.reset(larger.steal(), size, scoped_memory::MMAP_ROUND_UP_ALLOCATED);
   return true;
 }
