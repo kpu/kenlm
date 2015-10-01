@@ -70,6 +70,7 @@ template <class Derived> class FakeOStream {
     // gcc considers these distinct from uint64_t
     Derived &operator<<(unsigned long long value) { return CoerceToString(value); }
     Derived &operator<<(signed long long value) { return CoerceToString(value); }
+    Derived &operator<<(long value) { return CoerceToString(value); }
 
     // Character types that get copied as bytes instead of displayed as integers.
     Derived &operator<<(char val) { return put(val); }
