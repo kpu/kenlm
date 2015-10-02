@@ -644,14 +644,16 @@ const char kHexDigits[] = "0123456789abcdef";
 } // namespace
 
 char *ToString(const void *v, char *to) {
-  // Apparently it's 0, not 0x0.  
+  *to++ = '0';
+  *to++ = 'x';
+
+  // Fun fact: gcc/clang boost::lexical_cast on Linux do just "0" while clang on OS X does "0x0"
+  // I happen to prefer 0x0.
   if (!v) {
     *to++ = '0';
     return to;
   }
 
-  *to++ = '0';
-  *to++ = 'x';
   uintptr_t value = reinterpret_cast<uintptr_t>(v);
   uint8_t shift = sizeof(void*) * 8 - 4;
   for (; !(value >> shift); shift -= 4) {}

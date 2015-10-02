@@ -15,7 +15,12 @@ template <class T> void TestValue(const T value) {
   char buf[ToStringBuf<T>::kBytes];
   StringPiece result(buf, ToString(value, buf) - buf);
   BOOST_REQUIRE_GE(static_cast<std::size_t>(ToStringBuf<T>::kBytes), result.size());
-  BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(value), result);
+  if (value) {
+    BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(value), result);
+  } else {
+    // Platforms can do void * as 0x0 or 0.
+    BOOST_CHECK(result == "0x0" || result == "0");
+  }
 }
 
 template <class T> void TestCorners() {
