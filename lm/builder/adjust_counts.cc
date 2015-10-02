@@ -269,7 +269,7 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
     std::size_t same = full->end() - 1 - different;
 
     // STEP 1: Output all the n-grams that changed.
-    for (; lower_valid >= &streams[same]; --lower_valid) {
+    for (; lower_valid >= streams.begin() + same; --lower_valid) {
       uint64_t order_minus_1 = lower_valid - streams_begin;
       if(actual_counts[order_minus_1] <= prune_thresholds_[order_minus_1])
         (*lower_valid)->Value().Mark();
