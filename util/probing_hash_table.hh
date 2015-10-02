@@ -296,6 +296,13 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
       }
     }
 
+    ConstIterator RawBegin() const {
+      return begin_;
+    }
+    ConstIterator RawEnd() const {
+      return end_;
+    }
+
   private:
     friend class AutoProbing<Entry, Hash, Equal>;
 
@@ -377,6 +384,13 @@ template <class EntryT, class HashT, class EqualT = std::equal_to<typename Entry
 
     void Clear() {
       backend_.Clear();
+    }
+
+    ConstIterator RawBegin() const {
+      return backend_.RawBegin();
+    }
+    ConstIterator RawEnd() const {
+      return backend_.RawEnd();
     }
 
   private:
