@@ -54,4 +54,21 @@ BOOST_AUTO_TEST_CASE(EnumCase) {
   TestEqual(EnumValue);
 }
 
+BOOST_AUTO_TEST_CASE(Strings) {
+  TestEqual("foo");
+  const char *a = "bar";
+  TestEqual(a);
+  StringPiece piece("abcdef");
+  TestEqual(piece);
+  TestEqual(StringPiece());
+
+  char non_const[3];
+  non_const[0] = 'b';
+  non_const[1] = 'c';
+  non_const[2] = 0;
+  std::string out;
+  StringStream(out) << "a" << non_const << 'c';
+  BOOST_CHECK_EQUAL("abcc", out);
+}
+
 }} // namespaces
