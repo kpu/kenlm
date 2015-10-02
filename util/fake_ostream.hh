@@ -42,40 +42,36 @@ template <class Derived> class FakeOStream {
       return C().write(str.data(), str.size());
     }
 
-    // For anything with ToStringBuf<T>::kBytes, define operator<< using ToString.
-    // This includes uint64_t, int64_t, uint32_t, int32_t, uint16_t, int16_t,
-    // float, double
+    // Handle integers by size and signedness.
   private:
-    template <int Arg> struct EnableIfKludge {
+    template <class Arg> struct EnableIfKludge {
       typedef Derived type;
     };
+    template <class From, unsigned Length = sizeof(From), bool Signed = std::numeric_limits<From>::is_signed, bool IsInteger = std::numeric_limits<From>::is_integer> struct Coerce {};
+
+    template <class From> struct Coerce<From, 2, false, true> { typedef uint16_t To; };
+    template <class From> struct Coerce<From, 4, false, true> { typedef uint32_t To; };
+    template <class From> struct Coerce<From, 8, false, true> { typedef uint64_t To; };
+
+    template <class From> struct Coerce<From, 2, true, true> { typedef int16_t To; };
+    template <class From> struct Coerce<From, 4, true, true> { typedef int32_t To; };
+    template <class From> struct Coerce<From, 8, true, true> { typedef int64_t To; };
   public:
-    template <class T> typename EnableIfKludge<ToStringBuf<T>::kBytes>::type &operator<<(const T value) {
-      return CallToString(value);
+    template <class From> typename EnableIfKludge<typename Coerce<From>::To>::type &operator<<(const From value) {
+      return CallToString(static_cast<typename Coerce<From>::To>(value));
     }
-
-    /* clang on OS X appears to consider std::size_t aka unsigned long distinct
-     * from uint64_t.  So this function makes clang work.  gcc considers
-     * uint64_t and std::size_t the same (on 64-bit) so this isn't necessary.
-     * But it does no harm since gcc sees it as a specialization of the
-     * EnableIfKludge template.
-     * Also, delegating to *this << static_cast<uint64_t>(value) would loop
-     * indefinitely on gcc.
-     */
-    Derived &operator<<(std::size_t value) { return CoerceToString(value); }
-
-    // union types will map to int, but don't pass the template magic above in gcc.
-    Derived &operator<<(int value) { return CoerceToString(value); }
-
-    // gcc considers these distinct from uint64_t
-    Derived &operator<<(unsigned long long value) { return CoerceToString(value); }
-    Derived &operator<<(signed long long value) { return CoerceToString(value); }
-    Derived &operator<<(long value) { return CoerceToString(value); }
 
     // Character types that get copied as bytes instead of displayed as integers.
     Derived &operator<<(char val) { return put(val); }
     Derived &operator<<(signed char val) { return put(static_cast<char>(val)); }
     Derived &operator<<(unsigned char val) { return put(static_cast<char>(val)); }
+
+    Derived &operator<<(bool val) { return put(val + '0'); }
+    // enums will fall back to int but are not caught by the template.
+    Derived &operator<<(int val) { return CallToString(static_cast<typename Coerce<int>::To>(val)); }
+
+    Derived &operator<<(float val) { return CallToString(val); }
+    Derived &operator<<(double val) { return CallToString(val); }
 
     // This is here to catch all the other pointer types.
     Derived &operator<<(const void *value) { return CallToString(value); }
@@ -100,20 +96,6 @@ template <class Derived> class FakeOStream {
 
     const Derived &C() const {
       return *static_cast<const Derived*>(this);
-    }
-
-    template <class From, unsigned Length = sizeof(From), bool Signed = std::numeric_limits<From>::is_signed> struct Coerce {};
-
-    template <class From> struct Coerce<From, 2, false> { typedef uint16_t To; };
-    template <class From> struct Coerce<From, 4, false> { typedef uint32_t To; };
-    template <class From> struct Coerce<From, 8, false> { typedef uint64_t To; };
-
-    template <class From> struct Coerce<From, 2, true> { typedef int16_t To; };
-    template <class From> struct Coerce<From, 4, true> { typedef int32_t To; };
-    template <class From> struct Coerce<From, 8, true> { typedef int64_t To; };
-
-    template <class From> Derived &CoerceToString(const From value) {
-      return CallToString(static_cast<typename Coerce<From>::To>(value));
     }
 
     // This is separate to prevent an infinite loop if the compiler considers
