@@ -13,7 +13,7 @@ cmake_minimum_required(VERSION 2.8.8)
 # This CMake file was created by Lane Schwartz <dowobeha@gmail.com>
 
 
-set(KENLM_MAX_ORDER 6)
+set(KENLM_MAX_ORDER 6 CACHE STRING "Maximum supported ngram order")
 
 add_definitions(-DKENLM_MAX_ORDER=${KENLM_MAX_ORDER})
 
