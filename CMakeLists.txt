@@ -26,6 +26,12 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 include(CTest)
 enable_testing()
 
+# Add our CMake helper functions
+include(cmake/KenLMFunctions.cmake)
+
+# And our helper modules
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
+
 # We need boost
 find_package(Boost 1.36.0 REQUIRED COMPONENTS
   program_options 
@@ -43,6 +49,7 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
 )
 
+option(BUILD_INTERPOLATE "Build language model interpolation code" OFF)
 
 # Process subdirectories
 add_subdirectory(util)

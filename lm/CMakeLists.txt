@@ -64,76 +64,27 @@ set(EXE_LIST
   build_binary
 )
 
-# Iterate through the executable list   
-foreach(exe ${EXE_LIST})
+AddExes(EXES ${EXE_LIST}
+        DEPENDS $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util>
+        LIBRARIES ${Boost_LIBRARIES} pthread)
 
-  # Compile the executable, linking against the requisite dependent object files
-  add_executable(${exe} ${exe}_main.cc $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util>)
-
-  # Link the executable against boost
-  target_link_libraries(${exe} ${Boost_LIBRARIES} pthread)
-
-  # Group executables together
-  set_target_properties(${exe} PROPERTIES FOLDER executables)
-
-# End for loop
-endforeach(exe)
-
-
-# Install the executable files
-install(TARGETS ${EXE_LIST} DESTINATION bin)
-
-
+# Conditionally build the interpolation code
+if(BUILD_INTERPOLATE)
+  add_subdirectory(interpolate)
+endif()
 
 if(BUILD_TESTING)
 
-    # Explicitly list the Boost test files to be compiled
-    set(KENLM_BOOST_TESTS_LIST
-      left_test
-      model_test
-      partial_test
-    )
+  set(KENLM_BOOST_TESTS_LIST left_test partial_test)
+  AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}
+           DEPENDS $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util>
+           LIBRARIES ${Boost_LIBRARIES} pthread
+           TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/test.arpa)
 
-    # Iterate through the Boost tests list   
-    foreach(test ${KENLM_BOOST_TESTS_LIST})
-
-      # Compile the executable, linking against the requisite dependent object files
-      add_executable(${test} ${test}.cc $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util>)
-
-      # Require the following compile flag
-      set_target_properties(${test} PROPERTIES COMPILE_FLAGS -DBOOST_TEST_DYN_LINK)
-  
-      # Link the executable against boost
-      target_link_libraries(${test} ${Boost_LIBRARIES} pthread)
-
-      # model_test requires an extra command line parameter
-      if ("${test}" STREQUAL "model_test")
-        set(test_params 
-            ${CMAKE_CURRENT_SOURCE_DIR}/test.arpa 
-            ${CMAKE_CURRENT_SOURCE_DIR}/test_nounk.arpa
-        )
-      else()
-        set(test_params 
-            ${CMAKE_CURRENT_SOURCE_DIR}/test.arpa
-        )      
-      endif()
-      
-      # Specify command arguments for how to run each unit test
-      #
-      # Assuming that foo was defined via add_executable(foo ...),
-      #   the syntax $<TARGET_FILE:foo> gives the full path to the executable.
-      #
-      add_test(NAME ${test}_test 
-               COMMAND $<TARGET_FILE:${test}> ${test_params})
-
-      # Group unit tests together
-      set_target_properties(${test} PROPERTIES FOLDER "unit_tests")
-      
-    # End for loop
-    endforeach(test)
-
+  # model_test requires an extra command line parameter
+  KenLMAddTest(TEST model_test
+               DEPENDS $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util>
+               LIBRARIES ${Boost_LIBRARIES} pthread
+               TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/test.arpa
+                         ${CMAKE_CURRENT_SOURCE_DIR}/test_nounk.arpa)
 endif()
-
-
-
-

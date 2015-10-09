@@ -58,52 +58,24 @@ add_library(kenlm_util OBJECT ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL
 # Only compile and run unit tests if tests should be run
 if(BUILD_TESTING)
 
-    # Explicitly list the Boost test files to be compiled
-    set(KENLM_BOOST_TESTS_LIST
-      bit_packing_test
-      file_piece_test
-      joint_sort_test
-      multi_intersection_test
-      probing_hash_table_test
-      read_compressed_test
-      sorted_uniform_test
-      tokenize_piece_test
-    )
+  # Explicitly list the Boost test files to be compiled
+  set(KENLM_BOOST_TESTS_LIST
+    bit_packing_test
+    joint_sort_test
+    multi_intersection_test
+    probing_hash_table_test
+    read_compressed_test
+    sorted_uniform_test
+    tokenize_piece_test
+  )
 
-    # Iterate through the Boost tests list   
-    foreach(test ${KENLM_BOOST_TESTS_LIST})
+  AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}
+           DEPENDS $<TARGET_OBJECTS:kenlm_util>
+           LIBRARIES ${Boost_LIBRARIES} pthread)
 
-      # Compile the executable, linking against the requisite dependent object files
-      add_executable(${test} ${test}.cc $<TARGET_OBJECTS:kenlm_util>)
-
-      # Require the following compile flag
-      set_target_properties(${test} PROPERTIES COMPILE_FLAGS -DBOOST_TEST_DYN_LINK)
-  
-      # Link the executable against boost
-      target_link_libraries(${test} ${Boost_LIBRARIES} pthread)
-
-      # file_piece_test requires an extra command line parameter
-      if ("${test}" STREQUAL "file_piece_test")
-        set(test_params 
-            ${CMAKE_CURRENT_SOURCE_DIR}/file_piece.cc
-        )
-      else()
-        set(test_params 
-        )      
-      endif()
-            
-      # Specify command arguments for how to run each unit test
-      #
-      # Assuming that foo was defined via add_executable(foo ...),
-      #   the syntax $<TARGET_FILE:foo> gives the full path to the executable.
-      #
-      add_test(NAME ${test}_test 
-               COMMAND $<TARGET_FILE:${test}> ${test_params})
-
-      # Group unit tests together
-      set_target_properties(${test} PROPERTIES FOLDER "unit_tests")
-
-    # End for loop
-    endforeach(test)
-
+  # file_piece_test requires an extra command line parameter
+  KenLMAddTest(TEST file_piece_test
+               DEPENDS $<TARGET_OBJECTS:kenlm_util>
+               LIBRARIES ${Boost_LIBRARIES} pthread
+               TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/file_piece.cc)
 endif()

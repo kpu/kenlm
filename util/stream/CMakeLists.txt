@@ -37,38 +37,14 @@ set(KENLM_UTIL_STREAM_SOURCE
 
 
 if(BUILD_TESTING)
+  # Explicitly list the Boost test files to be compiled
+  set(KENLM_BOOST_TESTS_LIST
+    io_test
+    sort_test
+    stream_test
+  )
 
-    # Explicitly list the Boost test files to be compiled
-    set(KENLM_BOOST_TESTS_LIST
-      io_test
-      sort_test
-      stream_test
-    )
-
-    # Iterate through the Boost tests list   
-    foreach(test ${KENLM_BOOST_TESTS_LIST})
-
-      # Compile the executable, linking against the requisite dependent object files
-      add_executable(${test} ${test}.cc $<TARGET_OBJECTS:kenlm_util>)
-
-      # Require the following compile flag
-      set_target_properties(${test} PROPERTIES COMPILE_FLAGS -DBOOST_TEST_DYN_LINK)
-  
-      # Link the executable against boost
-      target_link_libraries(${test} ${Boost_LIBRARIES} pthread)
-      
-      # Specify command arguments for how to run each unit test
-      #
-      # Assuming that foo was defined via add_executable(foo ...),
-      #   the syntax $<TARGET_FILE:foo> gives the full path to the executable.
-      #
-      add_test(NAME ${test}_test 
-               COMMAND $<TARGET_FILE:${test}>)
-
-      # Group unit tests together
-      set_target_properties(${test} PROPERTIES FOLDER "unit_tests")
-   
-    # End for loop
-    endforeach(test)
-
+  AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}
+           DEPENDS $<TARGET_OBJECTS:kenlm_util>
+           LIBRARIES ${Boost_LIBRARIES} pthread)
 endif()
