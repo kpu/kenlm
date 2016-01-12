@@ -33,10 +33,9 @@ template <class Stream> void WriteCounts(Stream &out, const std::vector<uint64_t
 }
 
 size_t SizeNeededForCounts(const std::vector<uint64_t> &number) {
-  std::string buf;
-  util::StringStream stream(buf);
+  util::StringStream stream;
   WriteCounts(stream, number);
-  return buf.size();
+  return stream.str().size();
 }
 
 bool IsEntirelyWhiteSpace(const StringPiece &line) {

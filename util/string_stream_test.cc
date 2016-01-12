@@ -11,9 +11,9 @@
 namespace util { namespace {
 
 template <class T> void TestEqual(const T value) {
-  std::string str;
-  StringStream(str) << value;
-  BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(value), str);
+  StringStream strme;
+  strme << value;
+  BOOST_CHECK_EQUAL(boost::lexical_cast<std::string>(value), strme.str());
 }
 
 template <class T> void TestCorners() {
@@ -66,15 +66,15 @@ BOOST_AUTO_TEST_CASE(Strings) {
   non_const[0] = 'b';
   non_const[1] = 'c';
   non_const[2] = 0;
-  std::string out;
-  StringStream(out) << "a" << non_const << 'c';
-  BOOST_CHECK_EQUAL("abcc", out);
+
+  StringStream out;
+  out << "a" << non_const << 'c';
+  BOOST_CHECK_EQUAL("abcc", out.str());
 
   // Now test as a separate object.
-  out.clear();
-  StringStream stream(out);
+  StringStream stream;
   stream << "a" << non_const << 'c' << piece;
-  BOOST_CHECK_EQUAL("abccabcdef", out);
+  BOOST_CHECK_EQUAL("abccabcdef", stream.str());
 }
 
 }} // namespaces

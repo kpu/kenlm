@@ -17,7 +17,7 @@ class Exception : public std::exception {
     Exception() throw();
     virtual ~Exception() throw();
 
-    const char *what() const throw() { return what_.c_str(); }
+    const char *what() const throw() { return what_.str().c_str(); }
 
     // For use by the UTIL_THROW macros.
     void SetLocation(
@@ -35,7 +35,7 @@ class Exception : public std::exception {
       typedef T Identity;
     };
 
-    std::string what_;
+    StringStream what_;
 };
 
 /* This implements the normal operator<< for Exception and all its children.
@@ -43,7 +43,7 @@ class Exception : public std::exception {
  * boost::enable_if.
  */
 template <class Except, class Data> typename Except::template ExceptionTag<Except&>::Identity operator<<(Except &e, const Data &data) {
-  StringStream(e.what_) << data;
+  e.what_ << data;
   return e;
 }
 

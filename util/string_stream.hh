@@ -10,9 +10,7 @@ namespace util {
 
 class StringStream : public FakeOStream<StringStream> {
   public:
-    // Semantics: appends to string.  Remember to clear first!
-    explicit StringStream(std::string &out)
-      : out_(out) {}
+    StringStream() {}
 
     StringStream &flush() { return *this; }
 
@@ -20,6 +18,12 @@ class StringStream : public FakeOStream<StringStream> {
       out_.append(static_cast<const char*>(data), length);
       return *this;
     }
+
+    const std::string &str() const { return out_; }
+
+    void str(const std::string &val) { out_ = val; }
+
+    void swap(std::string &str) { std::swap(out_, str); }
 
   protected:
     friend class FakeOStream<StringStream>;
@@ -36,7 +40,7 @@ class StringStream : public FakeOStream<StringStream> {
     }
 
   private:
-    std::string &out_;
+    std::string out_;
 };
 
 } // namespace
