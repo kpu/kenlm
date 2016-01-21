@@ -58,6 +58,7 @@ class FileStream : public FakeOStream<FileStream> {
     }
 
     FileStream &seekp(uint64_t to) {
+      flush();
       util::SeekOrThrow(fd_, to);
       return *this;
     }
