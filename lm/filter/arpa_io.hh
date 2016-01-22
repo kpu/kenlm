@@ -64,7 +64,7 @@ class ARPAOutput : boost::noncopyable {
   private:
     util::scoped_fd file_backing_;
     util::FileStream file_;
-    size_t fast_counter_;
+    uint64_t fast_counter_;
     std::vector<uint64_t> counts_;
 };
 

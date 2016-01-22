@@ -56,6 +56,7 @@ void ARPAOutput::ReserveForCounts(std::streampos reserve) {
 
 void ARPAOutput::BeginLength(unsigned int length) {
   file_ << '\\' << length << "-grams:" << '\n';
+  fast_counter_ = 0;
 }
 
 void ARPAOutput::EndLength(unsigned int length) {
