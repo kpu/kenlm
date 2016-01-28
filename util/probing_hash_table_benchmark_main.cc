@@ -2,6 +2,11 @@
 #include "util/probing_hash_table.hh"
 #include "util/mmap.hh"
 #include "util/usage.hh"
+#include "util/thread_pool.hh"
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/locks.hpp>
+#include <sys/resource.h>
+#include <sys/time.h>
 
 #include <iostream>
 
@@ -170,12 +175,128 @@ bool TestRun(uint64_t lookups = 20000000, float multiplier = 1.5) {
   return meaningless;
 }
 
+template<class Table>
+struct ParallelTestRequest{
+  ParallelTestRequest() : queries_begin_(NULL), queries_end_(NULL), table_(NULL) {}
+  ParallelTestRequest(const uint64_t *queries_begin, const uint64_t *queries_end, Table *table) :
+      queries_begin_(queries_begin),
+      queries_end_(queries_end),
+      table_(table) {}
+  bool operator==(const ParallelTestRequest &rhs) const {
+    return this->queries_begin_ == rhs.queries_begin_ && this->queries_end_ == rhs.queries_end_;
+  }
+  const uint64_t *queries_begin_;
+  const uint64_t *queries_end_;
+  Table * table_;
+};
+
+struct ParallelTestConstruct{
+  ParallelTestConstruct(boost::mutex &lock) : lock_(lock){}
+  boost::mutex &lock_;
+
+};
+
+template<class Queue>
+struct ParallelTestHandler{
+  typedef ParallelTestRequest<typename Queue::Table> Request;
+  ParallelTestHandler(const ParallelTestConstruct &construct) : lock_(construct.lock_){}
+  void operator()(Request request){
+    Queue queue(*request.table_);
+    struct rusage usage;
+    double start= 0.0;
+    double end = 0.0;
+    if(getrusage(RUSAGE_THREAD, &usage)){
+      std::cout << "Could not get start time";
+      return;
+    }
+    else {
+      double user_time = static_cast<double>(usage.ru_utime.tv_sec) + (static_cast<double>(usage.ru_utime.tv_usec) / 1000000.0);
+      double sys_time = static_cast<double>(usage.ru_stime.tv_sec) + (static_cast<double>(usage.ru_stime.tv_usec) / 1000000.0);
+      start = user_time + sys_time;
+    }
+    for(const uint64_t *i = request.queries_begin_; i != request.queries_end_; ++i){
+      queue.Add(*i);
+    }
+    bool meaningless = queue.Drain();
+    if(getrusage(RUSAGE_THREAD, &usage)){
+      std::cout << "Could not get end time";
+      return;
+    }
+    else {
+      double user_time = static_cast<double>(usage.ru_utime.tv_sec) + (static_cast<double>(usage.ru_utime.tv_usec) / 1000000.0);
+      double sys_time = static_cast<double>(usage.ru_stime.tv_sec) + (static_cast<double>(usage.ru_stime.tv_usec) / 1000000.0);
+      end = user_time + sys_time;
+    }
+    boost::unique_lock<boost::mutex> produce_lock(lock_);
+    std::cout << end - start << " ";
+    std::cerr << "Meaningless " << meaningless << std::endl;
+  }
+  boost::mutex &lock_;
+};
+//template<class Queue> boost::mutex ParallelTestHandler<Queue>::lock_;
+
+template<class Queue>
+void ParallelTest(URandom &rn, uint64_t entries,  const uint64_t *const queries_begin,
+                  const uint64_t *const queries_end, bool ordinary_malloc, std::size_t num_threads,
+                  float multiplier = 1.5){
+    std::size_t size = Size(entries, multiplier);
+    scoped_memory backing;
+    if (ordinary_malloc) {
+      backing.reset(util::CallocOrThrow(size), size, scoped_memory::MALLOC_ALLOCATED);
+    } else {
+      util::HugeMalloc(size, true, backing);
+    }
+    typename Queue::Table table(backing.get(), size);
+    for (uint64_t i = 0; i < entries; ++i) {
+      Entry entry;
+      entry.key = rn.Get();
+      table.Insert(entry);
+    }
+    boost::mutex lock;
+    ParallelTestConstruct construct(lock);
+    ParallelTestRequest<typename Queue::Table> poison(NULL, NULL, NULL);
+    {
+      util::ThreadPool<ParallelTestHandler<Queue> > pool(num_threads, num_threads, construct, poison);
+      const uint64_t queries_per_thread =(static_cast<uint64_t>(queries_end-queries_begin)/num_threads);
+      for (const uint64_t *i = queries_begin; i + queries_per_thread <= queries_end; i += queries_per_thread){
+        ParallelTestRequest<typename Queue::Table> request(i, i+queries_per_thread, &table);
+        pool.Produce(request);
+      }
+    } // pool gets deallocated and all jobs finish
+    std::cout << std::endl;
+}
+
+void ParallelTestRun(uint64_t lookups = 20000000, float multiplier = 1.5) {
+  URandom rn;
+  util::scoped_memory queries;
+  HugeMalloc(lookups * sizeof(uint64_t), true, queries);
+  rn.Batch(static_cast<uint64_t*>(queries.get()), static_cast<uint64_t*>(queries.get()) + lookups);
+  const uint64_t *const queries_begin = static_cast<const uint64_t*>(queries.get());
+  typedef util::ProbingHashTable<Entry, util::IdentityHash, std::equal_to<Entry::Key>, Power2Mod> Table;
+  typedef util::ProbingHashTable<Entry, util::IdentityHash, std::equal_to<Entry::Key>, DivMod> TableDiv;
+  uint64_t physical_mem_limit = util::GuessPhysicalMemory() / 2;
+  for (uint64_t i = 4; Size(i / multiplier) < physical_mem_limit; i *= 4) {
+    for(std::size_t num_threads = 1; num_threads <= 16; num_threads*=2){
+      std::cout << static_cast<std::size_t>(i / multiplier) << ' ' << Size(i / multiplier) << ' ' << num_threads << ' ' << std::endl;
+      util::ParallelTest<Immediate<TableDiv> >(rn, i/multiplier, queries_begin, queries_begin + lookups, true, num_threads, multiplier);
+      util::ParallelTest<Immediate<Table> >(rn, i/multiplier, queries_begin, queries_begin + lookups, true, num_threads, multiplier);
+      util::ParallelTest<PrefetchQueue<Table, 4> >(rn, i/multiplier, queries_begin, queries_begin + lookups, true, num_threads, multiplier);
+      util::ParallelTest<Immediate<Table> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, multiplier);
+      util::ParallelTest<PrefetchQueue<Table, 2> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, multiplier);
+      util::ParallelTest<PrefetchQueue<Table, 4> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, multiplier);
+      util::ParallelTest<PrefetchQueue<Table, 8> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, multiplier);
+      util::ParallelTest<PrefetchQueue<Table, 16> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, multiplier);
+    }
+  }
+}
+
 } // namespace
 } // namespace util
 
 int main() {
-  bool meaningless = false;
+  //bool meaningless = false;
   std::cout << "#CPU time\n";
-  meaningless ^= util::TestRun();
-  std::cerr << "Meaningless: " << meaningless << '\n';
+  //meaningless ^= util::TestRun();
+  util::ParallelTestRun();
+  //std::cerr << "Meaningless: " << meaningless << '\n';
 }
