@@ -52,9 +52,8 @@ class scoped_mmap {
     scoped_mmap &operator=(const scoped_mmap &);
 };
 
-/* For when the memory might come from mmap, new char[], or malloc.  Uses NULL
- * and 0 for blanks even though mmap signals errors with (void*)-1).  The reset
- * function checks that blank for mmap.
+/* For when the memory might come from mmap or malloc.  Uses NULL and 0 for
+ * blanks even though mmap signals errors with (void*)-1).
  */
 class scoped_memory {
   public:
