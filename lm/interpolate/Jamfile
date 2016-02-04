@@ -4,11 +4,12 @@ import testing ;
 
 local with-eigen = [ option.get "with-eigen" ] ;
 if $(with-eigen) {
-  fakelib tuning : tune_instance.cc tune_derivatives.cc interp ..//kenlm : <include>$(with-eigen) ;
-  unit-test tune_derivatives_test : tune_derivatives_test.cc tuning /top//boost_unit_test_framework : <include>$(with-eigen) ;
+  obj tune_instance.o : tune_instance.cc interp ..//kenlm : <include>$(with-eigen) ;
+  obj tune_instance_test.o : tune_instance_test.cc ..//kenlm /top//boost_unit_test_framework : <include>$(with-eigen) ;
+  run tune_instance_test.o tune_instance.o interp ..//kenlm ../common//common ../../util/stream//stream /top//boost_unit_test_framework : : tune_instance_data/toy0.1 ;
 
-  obj tune_instance_test.o : tune_instance_test.cc /top//boost_unit_test_framework : <include>$(with-eigen) ;
-  run tune_instance_test.o tuning /top//boost_unit_test_framework : : tune_instance_data/toy0.1 ;
+  fakelib tuning : tune_instance.o tune_derivatives.cc interp ..//kenlm : <include>$(with-eigen) ;
+  unit-test tune_derivatives_test : tune_derivatives_test.cc tuning /top//boost_unit_test_framework : <include>$(with-eigen) ;
 
   exe tune : tune_main.cc tuning /top//boost_program_options : <include>$(with-eigen) ;
 }
