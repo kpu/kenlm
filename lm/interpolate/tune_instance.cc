@@ -346,12 +346,12 @@ class ExtensionsFirstIteration {
 
         void Run(const util::stream::ChainPosition &position) {
           // There should always be tuning instances.
-          assert(!by_instance_.empty());
           const std::vector<Matrix> &backoffs = *backoffs_by_instance_;
+          assert(!backoffs.empty());
           uint8_t max_order = backoffs.front().cols();
           for (util::stream::Stream stream(position); stream; ++stream) {
             InitialExtension &ini = *reinterpret_cast<InitialExtension*>(stream.Get());
-            assert(ini.ext.order > 1); // If it's an extension, it should be higher than a unigram.
+            assert(ini.order > 1); // If it's an extension, it should be higher than a unigram.
             if (ini.order != max_order) {
               ini.ext.ln_prob += backoffs[ini.ext.instance](ini.ext.model, ini.order - 1);
             }
