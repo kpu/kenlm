@@ -12,7 +12,6 @@
 #include <vector>
 
 namespace util { namespace stream {
-template <class S, class T> class Sort;
 class Chain;
 class FileBuffer;
 }} // namespaces
@@ -30,22 +29,30 @@ struct Extension {
   // ln p_{model} (word | context(instance))
   float ln_prob;
 
-  bool operator<(const Extension &other) const {
-    if (instance != other.instance)
-      return instance < other.instance;
-    if (word != other.word)
-      return word < other.word;
-    if (model != other.model)
-      return model < other.model;
-    return false;
-  }
+  bool operator<(const Extension &other) const;
+};
+
+class ExtensionsFirstIteration;
+
+struct InstancesConfig {
+  // For batching the model reads.  This is per order.
+  std::size_t model_read_chain_mem;
+  // This is being sorted, make it larger.
+  std::size_t extension_write_chain_mem;
+  std::size_t lazy_memory;
+  util::stream::SortConfig sort;
 };
 
 class Instances {
-  public:
-    Instances(int tune_file, const std::vector<StringPiece> &model_names);
+  private:
+    typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BackoffMatrix;
 
-    Eigen::ConstRowXpr Backoffs(InstanceIndex instance) const {
+  public:
+    Instances(int tune_file, const std::vector<StringPiece> &model_names, const InstancesConfig &config);
+
+    // Full backoff from unigram for each model.
+    typedef BackoffMatrix::ConstRowXpr FullBackoffs;
+    FullBackoffs Backoffs(InstanceIndex instance) const {
       return ln_backoffs_.row(instance);
     }
 
@@ -53,33 +60,32 @@ class Instances {
 
     const Matrix &LNUnigrams() const { return ln_unigrams_; }
 
-    void ReadExtensions(util::stream::Chain &to);
+    // The chain shold be uninitialized coming in.
+    void ReadExtensions(util::stream::Chain &chain);
+
+    // Vocab id of the beginning of sentence.  Used to ignore it for normalization.
+    WordIndex BOS() const { return bos_; }
 
   private:
     // backoffs_(instance, model) is the backoff all the way to unigrams.
-    typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BackoffMatrix;
     BackoffMatrix ln_backoffs_;
     
     // neg_correct_sum_(model) = -\sum_{instances} ln p_{model}(correct(instance) | context(instance)).
     // This appears as a term in the gradient.
     Vector neg_ln_correct_sum_;
 
-    // unigrams_(word, model) = ln p_{model}(word).
+    // ln_unigrams_(word, model) = ln p_{model}(word).
     Matrix ln_unigrams_;
 
-    struct ExtensionCompare {
-      bool operator()(const void *f, const void *s) const {
-        return reinterpret_cast<const Extension &>(f) < reinterpret_cast<const Extension &>(s);
-      }    
-    };
-
     // This is the source of data for the first iteration.
-    util::scoped_ptr<util::stream::Sort<ExtensionCompare> > extensions_first_;
+    util::scoped_ptr<ExtensionsFirstIteration> extensions_first_;
 
     // Source of data for subsequent iterations.  This contains already-sorted data.
     util::scoped_ptr<util::stream::FileBuffer> extensions_subsequent_;
 
-    const util::stream::SortConfig sorting_config_;
+    WordIndex bos_;
+
+    std::string temp_prefix_;
 };
 
 }} // namespaces

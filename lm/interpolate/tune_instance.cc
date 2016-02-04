@@ -1,5 +1,24 @@
+/* Load tuning instances and filter underlying models to them.  A tuning
+ * instance is an n-gram in the tuning file.  To tune towards these, we want
+ * the correct probability p_i(w_n | w_1^{n-1}) from each model as well as
+ * all the denominators p_i(v | w_1^{n-1}) that appear in normalization.
+ * 
+ * In other words, we filter the models to only those n-grams whose context
+ * appears in the tuning data.  This can be divided into two categories:
+ * - All unigrams.  This goes into Instances::ln_unigrams_
+ * - Bigrams and above whose context appears in the tuning data.  These are
+ *   known as extensions.  We only care about the longest extension for each
+ *   w_1^{n-1}v since that is what will be used for the probability.
+ * Because there is a large number of extensions (we tried keeping them in RAM
+ * and ran out), the streaming framework is used to keep track of extensions
+ * and sort them so they can be streamed in.  Downstream code 
+ * (tune_derivatives.hh) takes a stream of extensions ordered by tuning
+ * instance, the word v, and the model the extension came from.
+ */
 #include "lm/interpolate/tune_instance.hh"
 
+#include "lm/common/compare.hh"
+#include "lm/common/joint_order.hh"
 #include "lm/common/model_buffer.hh"
 #include "lm/common/ngram_stream.hh"
 #include "lm/common/renumber.hh"
@@ -10,8 +29,11 @@
 #include "util/file_piece.hh"
 #include "util/murmur_hash.hh"
 #include "util/stream/chain.hh"
+#include "util/stream/io.hh"
+#include "util/stream/sort.hh"
 #include "util/tokenize_piece.hh"
 
+#include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>
 
 #include <cmath>
@@ -19,6 +41,18 @@
 #include <vector>
 
 namespace lm { namespace interpolate {
+
+bool Extension::operator<(const Extension &other) const {
+  if (instance != other.instance)
+    return instance < other.instance;
+  if (word != other.word)
+    return word < other.word;
+  if (model != other.model)
+    return model < other.model;
+  return false;
+}
+
+namespace {
 
 // An extension without backoff weights applied yet.
 #pragma pack(push)
@@ -30,6 +64,12 @@ struct InitialExtension {
 };
 #pragma pack(pop)
 
+struct InitialExtensionCompare {
+  bool operator()(const void *first, const void *second) const {
+    return reinterpret_cast<const InitialExtension *>(first)->ext < reinterpret_cast<const InitialExtension *>(second)->ext;
+  }
+};
+
 // Intended use
 // For each model:
 //   stream through orders jointly in suffix order:
@@ -37,12 +77,13 @@ struct InitialExtension {
 //     Call Exit when the context matches.
 //   Call FinishModel with the unigram probability of the correct word, get full
 //   probability in return.
-// Use Backoffs to adjust records that were written to the stream.
+// Use backoffs_out to adjust records that were written to the stream.
+// backoffs_out(model, order - 1) is the penalty for matching order.
 class InstanceMatch {
   public:
-    InstanceMatch(ModelIndex models, uint8_t max_order, const WordIndex correct)
+    InstanceMatch(Matrix &backoffs_out, const WordIndex correct)
       : seen_(std::numeric_limits<WordIndex>::max()),
-        backoffs_(Matrix::Zeros(models, max_order)),
+        backoffs_(backoffs_out),
         correct_(correct), correct_from_(1), correct_ln_prob_(std::numeric_limits<float>::quiet_NaN()) {}
 
     void MatchedBackoff(ModelIndex model, uint8_t order, float ln_backoff) {
@@ -63,7 +104,10 @@ class InstanceMatch {
 
     WordIndex Correct() const { return correct_; }
 
-    // Call this after each model has been passed through.  The 
+    // Call this after each model has been passed through.  Provide the unigram
+    // probability of the correct word (which follows the given context).
+    // This function will return the fully-backed-off probability of the correct
+    // word.
     float FinishModel(ModelIndex model, float correct_ln_unigram) {
       seen_ = std::numeric_limits<WordIndex>::max();
       // Turn backoffs into multiplied values (added in log space).
@@ -83,15 +127,11 @@ class InstanceMatch {
       return correct_ln_prob_;
     }
 
-    const Matrix &Backoffs() const {
-      return backoffs_;
-    }
-
   private:
     // What's the last word we've seen?  Used to act only on exiting the longest match.
     WordIndex seen_;
 
-    Matrix backoffs_;
+    Matrix &backoffs_;
 
     const WordIndex correct_;
 
@@ -101,140 +141,128 @@ class InstanceMatch {
     float correct_ln_prob_;
 };
 
-namespace {
-
-// Forward information to multiple instances of a context.
+// Forward information to multiple instances of a context.  So if the tuning
+// set contains
+//   a b c d e
+//   a b c d e
+// there's one DispatchContext for a b c d which calls two InstanceMatch, one
+// for each tuning instance.  This might be to inform them about a b c d g in
+// one of the models.
 class DispatchContext {
   public:
     void Register(InstanceMatch &context) {
       registered_.push_back(&context);
     }
 
-    void MatchedBackoff(uint8_t order, float ln_backoff) {
+    void MatchedBackoff(ModelIndex model, uint8_t order, float ln_backoff) {
       for (std::vector<InstanceMatch*>::iterator i = registered_.begin(); i != registered_.end(); ++i)
-        (*i)->MatchedBackoff(order, ln_backoff);
+        (*i)->MatchedBackoff(model, order, ln_backoff);
     }
 
-    void Exit(const InitialExtension &from, util::stream::Stream &out) {
+    void Exit(InitialExtension &from, util::stream::Stream &out, const InstanceMatch *base_instance) {
       for (std::vector<InstanceMatch*>::iterator i = registered_.begin(); i != registered_.end(); ++i) {
+        from.ext.instance = *i - base_instance;
         (*i)->Exit(from, out);
       }
     }
 
   private:
+    // TODO make these offsets in a big array rather than separately allocated.
     std::vector<InstanceMatch*> registered_;
 };
 
-// Map from n-gram hash to contexts in the tuning data.
+// Map from n-gram hash to contexts in the tuning data.  TODO: probing hash table?
 typedef boost::unordered_map<uint64_t, DispatchContext> ContextMap;
 
-class ApplyBackoffs {
+// Handle all the orders of a single model at once.
+class JointOrderCallback {
   public:
-    explicit ApplyBackoffs(const InstanceMatch *backoffs) : backoffs_(backoffs) {}
+    JointOrderCallback(
+        std::size_t model,
+        std::size_t full_order_minus_1,
+        ContextMap &contexts,
+        util::stream::Stream &out,
+        const InstanceMatch *base_instance) 
+      : full_order_minus_1_(full_order_minus_1),
+        contexts_(contexts),
+        out_(out),
+        base_instance_(base_instance) {
+      ext_.ext.model = model;
+    }
 
-    void Run(const util::stream::ChainPosition &position) {
-      for (util::stream::Stream stream(position); stream; ++stream) {
-        InitialExtension &ini = *reinterpret_cast<InitialExtension*>(stream.Get());
-        ini.ext.ln_prob += backoffs_[ini.ext.instance] 
+    void Enter(std::size_t order_minus_1, const void *data) {}
+
+    void Exit(std::size_t order_minus_1, void *data) {
+      // Match the full n-gram for backoffs.
+      if (order_minus_1 != full_order_minus_1_) {
+        NGram<ProbBackoff> gram(data, order_minus_1 + 1);
+        ContextMap::iterator i = contexts_.find(util::MurmurHashNative(gram.begin(), gram.Order() * sizeof(WordIndex)));
+        if (UTIL_UNLIKELY(i != contexts_.end())) {
+          i->second.MatchedBackoff(ext_.ext.model, gram.Order(), gram.Value().backoff * M_LN10);
+        }
+      }
+      // Match the context of the n-gram to indicate it's an extension.
+      ContextMap::iterator i = contexts_.find(util::MurmurHashNative(data, order_minus_1 * sizeof(WordIndex)));
+      if (UTIL_UNLIKELY(i != contexts_.end())) {
+        NGram<Prob> gram(data, order_minus_1 + 1);
+        // model is already set.
+        // instance is set by DispatchContext.
+        // That leaves word, ln_prob, and order.
+        ext_.ext.word = *(gram.end() - 1);
+        ext_.ext.ln_prob = gram.Value().prob * M_LN10;
+        ext_.order = order_minus_1 + 1;
+        // model was already set in the constructor.
+        // ext_.ext.instance is set by the Exit call.
+        i->second.Exit(ext_, out_, base_instance_);
       }
     }
 
+    void Run(const util::stream::ChainPositions &positions) {
+      JointOrder<JointOrderCallback, SuffixOrder>(positions, *this);
+    }
+
   private:
-    const InstanceMatch *backoffs_;
+    const std::size_t full_order_minus_1_;
+
+    // Mapping is constant but values are being manipulated to tell them about
+    // n-grams.
+    ContextMap &contexts_;
+    
+    // Reused variable.  model is set correctly.
+    InitialExtension ext_;
+
+    util::stream::Stream &out_;
+    
+    const InstanceMatch *const base_instance_;    
 };
 
-Instances::ReadExtensions(util::stream::Chain &on) {
-  if (extensions_first_.get()) {
-    // Lazy sort and save a sorted copy to disk.  TODO: cut down on record size by stripping out order information?
-    extensions_first_->Output(on);
-    extensions_first_->reset();
-    // TODO: apply backoff data!!!!
-
-    extensions_subsequent_.reset(new util::stream::FileBuffer(util::MakeTemp(sorting_config_.temp_prefix)));
-    on >> extensions_subsequent_->Sink();
-  } else {
-    on >> extensions_subsequent_->Source();
-  }
-}
-
-class UnigramLoader {
+// This populates the ln_unigrams_ matrix.  It can (and should for efficiency)
+// be run in the same scan as JointOrderCallback.
+class ReadUnigrams {
   public:
-    UnigramLoader(ContextMap &contexts_for_backoffs, Matrix &ln_probs, std::size_t model_number)
-      : map_(contexts_for_backoffs),
-        prob_(ln_probs.col(model_number)) {}
+    explicit ReadUnigrams(Matrix::ColXpr out) : out_(out) {}
 
-    void Run(const util::stream::ChainPosition &position) {
-      // TODO handle the case of a unigram model?
-      NGramStream<ProbBackoff> input(position);
-      assert(input);
-      Accum unk = input->Value().prob * M_LN10;
+    // Read renumbered unigrams, fill with <unk> otherwise.
+    void Run(const util::stream::ChainPosition &position) { 
+      NGramStream<ProbBackoff> stream(position);
+      assert(stream);
+      Accum unk = stream->Value().prob * M_LN10;
       WordIndex previous = 0;
-      for (; input; ++input) {
-        WordIndex word = *input->begin();
-        prob_.segment(previous, word - previous) = Vector::Constant(word - previous, unk);
-        prob_(word) = input->Value().prob * M_LN10;
-        ContextMap::iterator i = map_.find(util::MurmurHashNative(input->begin(), sizeof(WordIndex)));
-        if (i != map_.end()) {
-          i->second.MatchedBackoff(1, input->Value().backoff * M_LN10);
-        }
+      for (; stream; ++stream) {
+        WordIndex word = *stream->begin();
+        out_.segment(previous, word - previous) = Vector::Constant(word - previous, unk);
+        out_(word) = stream->Value().prob * M_LN10;
+        //backoffs are used by JointOrderCallback.
         previous = word + 1;
       }
-      prob_.segment(previous, prob_.rows() - previous) = Vector::Constant(prob_.rows() - previous, unk);
+      out_.segment(previous, out_.rows() - previous) = Vector::Constant(out_.rows() - previous, unk);
     }
 
   private:
-    ContextMap &map_;
-    Matrix::ColXpr prob_;
-    std::size_t model_;
+    Matrix::ColXpr out_;
 };
 
-class MiddleLoader {
-  public:
-    explicit MiddleLoader(ContextMap &map)
-      : map_(map) {}
-
-    void Run(const util::stream::ChainPosition &position) {
-      NGramStream<ProbBackoff> input(position);
-      const std::size_t full_size = (uint8_t*)input->end() - (uint8_t*)input->begin();
-      const std::size_t context_size = full_size - sizeof(WordIndex);
-      ContextMap::iterator i;
-      for (; input; ++input) {
-        i = map_.find(util::MurmurHashNative(input->begin(), full_size));
-        if (i != map_.end()) {
-          i->second.MatchedBackoff(input->Order(), input->Value().backoff * M_LN10);
-        }
-        i = map_.find(util::MurmurHashNative(input->begin(), context_size));
-        if (i != map_.end()) {
-          i->second.MatchedContext(input->Order(), *(input->end() - 1), input->Value().prob * M_LN10);
-        }
-      }
-    }
-
-  private:
-    ContextMap &map_;
-};
-
-class HighestLoader {
-  public:
-    HighestLoader(ContextMap &map, uint8_t order)
-      : map_(map), order_(order) {}
-
-    void Run(const util::stream::ChainPosition &position) {
-      ContextMap::iterator i;
-      const std::size_t context_size = sizeof(WordIndex) * (order_ - 1);
-      for (ProxyStream<NGram<float> > input(position, NGram<float>(NULL, order_)); input; ++input) {
-        i = map_.find(util::MurmurHashNative(input->begin(), context_size));
-        if (i != map_.end()) {
-          i->second.MatchedContext(order_, *(input->end() - 1), input->Value() * M_LN10);
-        }
-      }
-    }
-
-  private:
-    ContextMap &map_;
-    const uint8_t order_;
-};
-
+// Read tuning data into an array of vocab ids.  The vocab ids are agreed with MergeVocab.
 class IdentifyTuning : public EnumerateVocab {
   public:
     IdentifyTuning(int tuning_file, std::vector<WordIndex> &out) : indices_(out) {
@@ -254,6 +282,7 @@ class IdentifyTuning : public EnumerateVocab {
       words_[util::MurmurHashNative("<s>", 3)].push_back(indices_.size() - 1);
     }
 
+    // Apply ids as they come out of MergeVocab if they match.
     void Add(WordIndex id, const StringPiece &str) {
       boost::unordered_map<uint64_t, std::vector<std::size_t> >::iterator i = words_.find(util::MurmurHashNative(str.data(), str.size()));
       if (i != words_.end()) {
@@ -270,85 +299,185 @@ class IdentifyTuning : public EnumerateVocab {
     }
 
   private:
+    // array of words in tuning data.
     std::vector<WordIndex> &indices_;
 
+    // map from hash(string) to offsets in indices_.
     boost::unordered_map<uint64_t, std::vector<std::size_t> > words_;
 };
 
 } // namespace
 
-Instance::Instance(std::size_t num_models) : ln_backoff(num_models), ln_correct(num_models), ln_extensions(0, num_models) {}
+// Store information about the first iteration.
+class ExtensionsFirstIteration {
+  public:
+    explicit ExtensionsFirstIteration(std::size_t instances, std::size_t models, std::size_t max_order, util::stream::Chain &extension_input, const util::stream::SortConfig &config) 
+      : backoffs_by_instance_(new std::vector<Matrix>(instances)), sort_(extension_input, config) {
+      // Initialize all the backoff matrices to zeros.
+      for (std::vector<Matrix>::iterator i = backoffs_by_instance_->begin(); i != backoffs_by_instance_->end(); ++i) {
+        *i = Matrix::Zero(models, max_order);
+      }
+    }
 
-WordIndex LoadInstances(int tuning_file, const std::vector<StringPiece> &model_names, util::FixedArray<Instance> &instances, Matrix &ln_unigrams) {
-  util::FixedArray<ModelBuffer> models(model_names.size());
-  std::vector<WordIndex> vocab_sizes;
-  vocab_sizes.reserve(model_names.size());
-  util::FixedArray<util::scoped_fd> vocab_files(model_names.size());
-  std::size_t max_order = 0;
-  for (std::vector<StringPiece>::const_iterator i = model_names.begin(); i != model_names.end(); ++i) {
-    models.push_back(*i);
-    vocab_sizes.push_back(models.back().Counts()[0]);
-    vocab_files.push_back(models.back().StealVocabFile());
-    max_order = std::max(max_order, models.back().Order());
-  }
-  UniversalVocab vocab(vocab_sizes);
-  std::vector<WordIndex> tuning_words;
-  WordIndex bos;
-  WordIndex combined_vocab_size;
+    Matrix &WriteBackoffs(std::size_t instance) {
+      return (*backoffs_by_instance_)[instance];
+    }
+
+    // Get the backoff all the way to unigram for a particular tuning instance and model.
+    Accum FullBackoff(std::size_t instance, std::size_t model) const {
+      return (*backoffs_by_instance_)[instance](model, 0);
+    }
+
+    void Merge(std::size_t lazy_memory) {
+      sort_.Merge(lazy_memory);
+      lazy_memory_ = lazy_memory;
+    }
+
+    void Output(util::stream::Chain &chain) {
+      sort_.Output(chain, lazy_memory_);
+      chain >> ApplyBackoffs(backoffs_by_instance_);
+    }
+
+  private:
+    class ApplyBackoffs {
+      public:
+        explicit ApplyBackoffs(boost::shared_ptr<std::vector<Matrix> > backoffs_by_instance)
+          : backoffs_by_instance_(backoffs_by_instance) {}
+
+        void Run(const util::stream::ChainPosition &position) {
+          // There should always be tuning instances.
+          assert(!by_instance_.empty());
+          const std::vector<Matrix> &backoffs = *backoffs_by_instance_;
+          uint8_t max_order = backoffs.front().cols();
+          for (util::stream::Stream stream(position); stream; ++stream) {
+            InitialExtension &ini = *reinterpret_cast<InitialExtension*>(stream.Get());
+            assert(ini.ext.order > 1); // If it's an extension, it should be higher than a unigram.
+            if (ini.order != max_order) {
+              ini.ext.ln_prob += backoffs[ini.ext.instance](ini.ext.model, ini.order - 1);
+            }
+          }
+        }
+
+      private:
+        boost::shared_ptr<std::vector<Matrix> > backoffs_by_instance_;
+    };
+
+    // Array of complete backoff matrices by instance.
+    // Each matrix is by model, then by order.
+    // Would have liked to use a tensor but it's not that well supported.
+    // This is a shared pointer so that ApplyBackoffs can run after this class is gone.
+    boost::shared_ptr<std::vector<Matrix> > backoffs_by_instance_;
+
+    // This sorts and stores all the InitialExtensions.
+    util::stream::Sort<InitialExtensionCompare> sort_;
+
+    std::size_t lazy_memory_;
+};
+
+Instances::Instances(int tune_file, const std::vector<StringPiece> &model_names, const InstancesConfig &config) : temp_prefix_(config.sort.temp_prefix) {
+  // All the memory from stack variables here should go away before merge sort of the instances.
   {
-    IdentifyTuning identify(tuning_file, tuning_words);
-    combined_vocab_size = MergeVocab(vocab_files, vocab, identify);
-    bos = identify.FinishGetBOS();
-  }
+    util::FixedArray<ModelBuffer> models(model_names.size());
 
-  instances.Init(tuning_words.size());
-  util::FixedArray<InstanceBuilder> builders(tuning_words.size());
-  std::vector<WordIndex> context;
-  context.push_back(bos);
-
-  // Populate the map from contexts to instance builders.
-  ContextMap cmap;
-  const WordIndex eos = tuning_words.back();
-  for (std::size_t i = 0; i < tuning_words.size(); ++i) {
-    instances.push_back(model_names.size());
-    builders.push_back(tuning_words[i], max_order);
-    for (std::size_t j = 0; j < context.size(); ++j) {
-      cmap[util::MurmurHashNative(&context[j], sizeof(WordIndex) * (context.size() - j))].Register(builders.back());
+    // Load tuning set and join vocabulary.
+    std::vector<WordIndex> vocab_sizes;
+    vocab_sizes.reserve(model_names.size());
+    util::FixedArray<util::scoped_fd> vocab_files(model_names.size());
+    std::size_t max_order = 0;
+    for (std::vector<StringPiece>::const_iterator i = model_names.begin(); i != model_names.end(); ++i) {
+      models.push_back(*i);
+      vocab_sizes.push_back(models.back().Counts()[0]);
+      vocab_files.push_back(models.back().StealVocabFile());
+      max_order = std::max(max_order, models.back().Order());
     }
-    // Prepare for next word.
-    if (tuning_words[i] == eos) {
-      context.clear();
-      context.push_back(bos);
-    } else {
-      if (context.size() == max_order) {
-        context.erase(context.begin());
+    UniversalVocab vocab(vocab_sizes);
+    std::vector<WordIndex> tuning_words;
+    WordIndex combined_vocab_size;
+    {
+      IdentifyTuning identify(tune_file, tuning_words);
+      combined_vocab_size = MergeVocab(vocab_files, vocab, identify);
+      bos_ = identify.FinishGetBOS();
+    }
+
+    // Setup the initial extensions storage: a chain going to a sort with a stream in the middle for writing.
+    util::stream::Chain extensions_chain(util::stream::ChainConfig(sizeof(InitialExtension), 2, config.extension_write_chain_mem));
+    util::stream::Stream extensions_write(extensions_chain.Add());
+    extensions_first_.reset(new ExtensionsFirstIteration(tuning_words.size(), model_names.size(), max_order, extensions_chain, config.sort));
+
+    // Populate the ContextMap from contexts to instances.
+    ContextMap cmap;
+    util::FixedArray<InstanceMatch> instances(tuning_words.size());
+    {
+      UTIL_THROW_IF2(tuning_words.empty(), "Empty tuning data");
+      const WordIndex eos = tuning_words.back();
+      std::vector<WordIndex> context;
+      context.push_back(bos_);
+      for (std::size_t i = 0; i < tuning_words.size(); ++i) {
+        instances.push_back(boost::ref(extensions_first_->WriteBackoffs(i)), tuning_words[i]);
+        for (std::size_t j = 0; j < context.size(); ++j) {
+          cmap[util::MurmurHashNative(&context[j], sizeof(WordIndex) * (context.size() - j))].Register(instances.back());
+        }
+        // Prepare for next word by starting a new sentence or shifting context.
+        if (tuning_words[i] == eos) {
+          context.clear();
+          context.push_back(bos_);
+        } else {
+          if (context.size() == max_order) {
+            context.erase(context.begin());
+          }
+          context.push_back(tuning_words[i]);
+        }
       }
-      context.push_back(tuning_words[i]);
     }
-  }
 
-  ln_unigrams.resize(combined_vocab_size, models.size());
+    neg_ln_correct_sum_.resize(models.size());
+    ln_unigrams_.resize(combined_vocab_size, models.size());
 
-  // Scan through input files.  Sadly not parallel due to an underlying hash table.
-  for (std::size_t m = 0; m < models.size(); ++m) {
-    for (std::size_t order = 1; order <= models[m].Order(); ++order) {
-      util::stream::Chain chain(util::stream::ChainConfig(sizeof(ProbBackoff) + order * sizeof(WordIndex), 2, 64 * 1048576));
-      models[m].Source(order - 1, chain);
-      chain >> Renumber(vocab.Mapping(m), order);
-      if (order == 1) {
-        chain >> UnigramLoader(cmap, ln_unigrams, m);
-      } else if (order < models[m].Order()) {
-        chain >> MiddleLoader(cmap);
-      } else {
-        chain >> HighestLoader(cmap, order);
+    // Go through each model.  Populate:
+    // ln_backoffs_
+    // neg_ln_correct_sum_
+    // ln_unigrams_
+    // The backoffs in extensions_first_
+    for (std::size_t m = 0; m < models.size(); ++m) {
+      util::stream::Chains chains(models[m].Order());
+      for (std::size_t i = 0; i < models[m].Order(); ++i) {
+        // TODO: stop wasting space for backoffs of highest order.
+        chains.push_back(util::stream::ChainConfig(NGram<ProbBackoff>::TotalSize(i + 1), 2, config.model_read_chain_mem));
       }
+      models[m].Source(chains);
+      for (std::size_t i = 0; i < models[m].Order(); ++i) {
+        chains[i] >> Renumber(vocab.Mapping(m), i + 1);
+      }
+
+      // Populate ln_unigrams_.
+      chains[0] >> ReadUnigrams(ln_unigrams_.col(m));
+
+      // Send extensions into extensions_first_ and give data to the instances about backoffs/extensions.
+      chains >> JointOrderCallback(m, models[m].Order() - 1, cmap, extensions_write, instances.begin());
+
+      chains >> util::stream::kRecycle;
+      chains.Wait(true);
+      neg_ln_correct_sum_(m) = 0.0;
+      for (InstanceMatch *i = instances.begin(); i != instances.end(); ++i) {
+        neg_ln_correct_sum_(m) -= i->FinishModel(m, ln_unigrams_(i->Correct(), m));
+        ln_backoffs_(i - instances.begin(), m) = extensions_first_->FullBackoff(i - instances.begin(), m);
+      }
+      ln_unigrams_(bos_, m) = 0; // Does not matter as long as it does not produce nans since tune_derivatives will overwrite the output.
     }
-    for (std::size_t instance = 0; instance < tuning_words.size(); ++instance) {
-      builders[instance].Dump(m, ln_unigrams, instances[instance]);
-    }
-    ln_unigrams(bos, m) = -99; // Does not matter as long as it does not produce nans since tune_derivatives sets this to zero.
   }
-  return bos;
+  extensions_first_->Merge(config.lazy_memory);
+}
+
+void Instances::ReadExtensions(util::stream::Chain &on) {
+  if (!extensions_first_.get()) {
+    // Lazy sort and save a sorted copy to disk.  TODO: cut down on record size by stripping out order information.
+    extensions_first_->Output(on);
+    extensions_first_.reset(); // Relevant data will continue to live in workers.
+    extensions_subsequent_.reset(new util::stream::FileBuffer(util::MakeTemp(temp_prefix_)));
+    on >> extensions_subsequent_->Sink();
+  } else {
+    on >> extensions_subsequent_->Source();
+  }
 }
 
 }} // namespaces
