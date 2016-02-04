@@ -468,6 +468,8 @@ Instances::Instances(int tune_file, const std::vector<StringPiece> &model_names,
   extensions_first_->Merge(config.lazy_memory);
 }
 
+Instances::~Instances() {}
+
 void Instances::ReadExtensions(util::stream::Chain &on) {
   if (!extensions_first_.get()) {
     // Lazy sort and save a sorted copy to disk.  TODO: cut down on record size by stripping out order information.

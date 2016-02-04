@@ -50,6 +50,9 @@ class Instances {
   public:
     Instances(int tune_file, const std::vector<StringPiece> &model_names, const InstancesConfig &config);
 
+    // For destruction of forward-declared classes.
+    ~Instances();
+
     // Full backoff from unigram for each model.
     typedef BackoffMatrix::ConstRowXpr FullBackoffs;
     FullBackoffs Backoffs(InstanceIndex instance) const {
