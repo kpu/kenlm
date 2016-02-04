@@ -190,55 +190,64 @@ struct ParallelTestRequest{
   Table * table_;
 };
 
-struct ParallelTestConstruct{
-  ParallelTestConstruct(boost::mutex &lock) : lock_(lock){}
-  boost::mutex &lock_;
-
-};
+double ThreadTime(){
+  struct rusage usage;
+  if(getrusage(RUSAGE_THREAD, &usage)){
+    return -1.0;
+  }
+  double user_time = static_cast<double>(usage.ru_utime.tv_sec) + (static_cast<double>(usage.ru_utime.tv_usec) / 1000000.0);
+  double sys_time = static_cast<double>(usage.ru_stime.tv_sec) + (static_cast<double>(usage.ru_stime.tv_usec) / 1000000.0);
+  return user_time + sys_time;
+}
 
 template<class Queue>
 struct ParallelTestHandler{
   typedef ParallelTestRequest<typename Queue::Table> Request;
-  ParallelTestHandler(const ParallelTestConstruct &construct) : lock_(construct.lock_){}
+  explicit ParallelTestHandler(boost::mutex &lock) : lock_(lock), totalTime_(0.0), nRequests_(0), nQueries_(0), error_(false), twiddle_(false){}
   void operator()(Request request){
+    if (error_) return;
     Queue queue(*request.table_);
-    struct rusage usage;
-    double start= 0.0;
-    double end = 0.0;
-    if(getrusage(RUSAGE_THREAD, &usage)){
-      std::cout << "Could not get start time";
+    double start = ThreadTime();
+    if(start < 0.0){
+      error_ = true;
       return;
-    }
-    else {
-      double user_time = static_cast<double>(usage.ru_utime.tv_sec) + (static_cast<double>(usage.ru_utime.tv_usec) / 1000000.0);
-      double sys_time = static_cast<double>(usage.ru_stime.tv_sec) + (static_cast<double>(usage.ru_stime.tv_usec) / 1000000.0);
-      start = user_time + sys_time;
     }
     for(const uint64_t *i = request.queries_begin_; i != request.queries_end_; ++i){
       queue.Add(*i);
     }
-    bool meaningless = queue.Drain();
-    if(getrusage(RUSAGE_THREAD, &usage)){
-      std::cout << "Could not get end time";
+    twiddle_ ^= queue.Drain();
+    double end = ThreadTime();
+    if(end < 0.0){
+      error_ = true;
       return;
     }
-    else {
-      double user_time = static_cast<double>(usage.ru_utime.tv_sec) + (static_cast<double>(usage.ru_utime.tv_usec) / 1000000.0);
-      double sys_time = static_cast<double>(usage.ru_stime.tv_sec) + (static_cast<double>(usage.ru_stime.tv_usec) / 1000000.0);
-      end = user_time + sys_time;
-    }
-    boost::unique_lock<boost::mutex> produce_lock(lock_);
-    std::cout << end - start << " ";
-    std::cerr << "Meaningless " << meaningless << std::endl;
+    totalTime_ += end - start;
+    nQueries_ += request.queries_end_ - request.queries_begin_;
+    ++nRequests_;
   }
-  boost::mutex &lock_;
+  virtual ~ParallelTestHandler() {
+    boost::unique_lock<boost::mutex> produce_lock(lock_);
+    if (error_){
+      std::cout << "Error ";
+    }
+    else {
+      std::cout << nRequests_ << ' ' << ' ' << nQueries_ << ' ' << totalTime_ << std::endl;
+    }
+    std::cerr << "Meaningless " << twiddle_ << std::endl;
+  }
+  private:
+    boost::mutex &lock_;
+    double totalTime_;
+    std::size_t nRequests_;
+    std::size_t nQueries_;
+    bool error_;
+    bool twiddle_;
 };
-//template<class Queue> boost::mutex ParallelTestHandler<Queue>::lock_;
 
 template<class Queue>
 void ParallelTest(URandom &rn, uint64_t entries,  const uint64_t *const queries_begin,
                   const uint64_t *const queries_end, bool ordinary_malloc, std::size_t num_threads,
-                  float multiplier = 1.5){
+                  std::size_t tasks_per_thread = 1, float multiplier = 1.5){
     std::size_t size = Size(entries, multiplier);
     scoped_memory backing;
     if (ordinary_malloc) {
@@ -253,11 +262,10 @@ void ParallelTest(URandom &rn, uint64_t entries,  const uint64_t *const queries_
       table.Insert(entry);
     }
     boost::mutex lock;
-    ParallelTestConstruct construct(lock);
     ParallelTestRequest<typename Queue::Table> poison(NULL, NULL, NULL);
     {
-      util::ThreadPool<ParallelTestHandler<Queue> > pool(num_threads, num_threads, construct, poison);
-      const uint64_t queries_per_thread =(static_cast<uint64_t>(queries_end-queries_begin)/num_threads);
+      util::ThreadPool<ParallelTestHandler<Queue> > pool(num_threads, num_threads, boost::ref(lock), poison);
+      const uint64_t queries_per_thread =(static_cast<uint64_t>(queries_end-queries_begin)/num_threads)/tasks_per_thread;
       for (const uint64_t *i = queries_begin; i + queries_per_thread <= queries_end; i += queries_per_thread){
         ParallelTestRequest<typename Queue::Table> request(i, i+queries_per_thread, &table);
         pool.Produce(request);
@@ -266,7 +274,7 @@ void ParallelTest(URandom &rn, uint64_t entries,  const uint64_t *const queries_
     std::cout << std::endl;
 }
 
-void ParallelTestRun(uint64_t lookups = 20000000, float multiplier = 1.5) {
+void ParallelTestRun(std::size_t tasks_per_thread = 1, uint64_t lookups = 20000000, float multiplier = 1.5) {
   URandom rn;
   util::scoped_memory queries;
   HugeMalloc(lookups * sizeof(uint64_t), true, queries);
@@ -278,14 +286,14 @@ void ParallelTestRun(uint64_t lookups = 20000000, float multiplier = 1.5) {
   for (uint64_t i = 4; Size(i / multiplier) < physical_mem_limit; i *= 4) {
     for(std::size_t num_threads = 1; num_threads <= 16; num_threads*=2){
       std::cout << static_cast<std::size_t>(i / multiplier) << ' ' << Size(i / multiplier) << ' ' << num_threads << ' ' << std::endl;
-      util::ParallelTest<Immediate<TableDiv> >(rn, i/multiplier, queries_begin, queries_begin + lookups, true, num_threads, multiplier);
-      util::ParallelTest<Immediate<Table> >(rn, i/multiplier, queries_begin, queries_begin + lookups, true, num_threads, multiplier);
-      util::ParallelTest<PrefetchQueue<Table, 4> >(rn, i/multiplier, queries_begin, queries_begin + lookups, true, num_threads, multiplier);
-      util::ParallelTest<Immediate<Table> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, multiplier);
-      util::ParallelTest<PrefetchQueue<Table, 2> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, multiplier);
-      util::ParallelTest<PrefetchQueue<Table, 4> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, multiplier);
-      util::ParallelTest<PrefetchQueue<Table, 8> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, multiplier);
-      util::ParallelTest<PrefetchQueue<Table, 16> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, multiplier);
+      util::ParallelTest<Immediate<TableDiv> >(rn, i/multiplier, queries_begin, queries_begin + lookups, true, num_threads, tasks_per_thread, multiplier);
+      util::ParallelTest<Immediate<Table> >(rn, i/multiplier, queries_begin, queries_begin + lookups, true, num_threads, tasks_per_thread, multiplier);
+      util::ParallelTest<PrefetchQueue<Table, 4> >(rn, i/multiplier, queries_begin, queries_begin + lookups, true, num_threads, tasks_per_thread, multiplier);
+      util::ParallelTest<Immediate<Table> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, tasks_per_thread, multiplier);
+      util::ParallelTest<PrefetchQueue<Table, 2> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, tasks_per_thread, multiplier);
+      util::ParallelTest<PrefetchQueue<Table, 4> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, tasks_per_thread, multiplier);
+      util::ParallelTest<PrefetchQueue<Table, 8> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, tasks_per_thread, multiplier);
+      util::ParallelTest<PrefetchQueue<Table, 16> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, tasks_per_thread, multiplier);
     }
   }
 }
@@ -297,6 +305,6 @@ int main() {
   //bool meaningless = false;
   std::cout << "#CPU time\n";
   //meaningless ^= util::TestRun();
-  util::ParallelTestRun();
+  util::ParallelTestRun(10);
   //std::cerr << "Meaningless: " << meaningless << '\n';
 }
