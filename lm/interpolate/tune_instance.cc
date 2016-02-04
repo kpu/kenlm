@@ -430,13 +430,14 @@ Instances::Instances(int tune_file, const std::vector<StringPiece> &model_names,
       }
     }
 
-    neg_ln_correct_sum_.resize(models.size());
-    ln_unigrams_.resize(combined_vocab_size, models.size());
 
     // Go through each model.  Populate:
     // ln_backoffs_
+    ln_backoffs_.resize(instances.size(), models.size());
     // neg_ln_correct_sum_
+    neg_ln_correct_sum_.resize(models.size());
     // ln_unigrams_
+    ln_unigrams_.resize(combined_vocab_size, models.size());
     // The backoffs in extensions_first_
     for (std::size_t m = 0; m < models.size(); ++m) {
       util::stream::Chains chains(models[m].Order());
