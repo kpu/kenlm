@@ -430,7 +430,6 @@ Instances::Instances(int tune_file, const std::vector<StringPiece> &model_names,
       }
     }
 
-
     // Go through each model.  Populate:
     // ln_backoffs_
     ln_backoffs_.resize(instances.size(), models.size());
@@ -465,6 +464,7 @@ Instances::Instances(int tune_file, const std::vector<StringPiece> &model_names,
       }
       ln_unigrams_(bos_, m) = 0; // Does not matter as long as it does not produce nans since tune_derivatives will overwrite the output.
     }
+    extensions_write.Poison();
   }
   extensions_first_->Merge(config.lazy_memory);
 }
