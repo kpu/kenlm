@@ -13,12 +13,6 @@
 
 namespace lm { namespace interpolate { namespace {
 
-Matrix::Index FindRow(const std::vector<WordIndex> &words, WordIndex word) {
-  std::vector<WordIndex>::const_iterator it = std::find(words.begin(), words.end(), word);
-  BOOST_REQUIRE(it != words.end());
-  return it - words.begin();
-}
-
 BOOST_AUTO_TEST_CASE(Toy) {
   util::scoped_fd test_input(util::MakeTemp("temporary"));
   {
@@ -56,9 +50,9 @@ BOOST_AUTO_TEST_CASE(Toy) {
   // <unk>
   BOOST_CHECK_CLOSE(-0.90309 * M_LN10, ln_unigrams(0, 0), 0.001);
   BOOST_CHECK_CLOSE(-1 * M_LN10, ln_unigrams(0, 1), 0.001);
-  // <s>
-  BOOST_CHECK_GT(-98.0, ln_unigrams(1, 0));
-  BOOST_CHECK_GT(-98.0, ln_unigrams(1, 1));
+  // <s> doesn't matter as long as it doesn't cause NaNs.
+  BOOST_CHECK(!isnan(ln_unigrams(1, 0)));
+  BOOST_CHECK(!isnan(ln_unigrams(1, 1)));
   // a
   BOOST_CHECK_CLOSE(-0.46943438 * M_LN10, ln_unigrams(2, 0), 0.001);
   BOOST_CHECK_CLOSE(-0.6146491 * M_LN10, ln_unigrams(2, 1), 0.001);
@@ -69,19 +63,20 @@ BOOST_AUTO_TEST_CASE(Toy) {
   BOOST_CHECK_CLOSE(-0.90309 * M_LN10, ln_unigrams(4, 0), 0.001); // <unk>
   BOOST_CHECK_CLOSE(-0.7659168 * M_LN10, ln_unigrams(4, 1), 0.001);
   // too lazy to do b.
-
-  /*
+  
   // Two instances:
   // <s> predicts c
   // <s> c predicts </s>
-  BOOST_REQUIRE_EQUAL(2, instances.size());
-  BOOST_CHECK_CLOSE(-0.30103 * M_LN10, instances[0].ln_backoff(0), 0.001);
-  BOOST_CHECK_CLOSE(-0.30103 * M_LN10, instances[0].ln_backoff(1), 0.001);
+  BOOST_REQUIRE_EQUAL(2, inst.NumInstances());
+  BOOST_CHECK_CLOSE(-0.30103 * M_LN10, inst.LNBackoffs(0)(0), 0.001);
+  BOOST_CHECK_CLOSE(-0.30103 * M_LN10, inst.LNBackoffs(0)(1), 0.001);
 
+  
   // Backoffs of <s> c
-  BOOST_CHECK_CLOSE(0.0, instances[1].ln_backoff(0), 0.001);
-  BOOST_CHECK_CLOSE((-0.30103 - 0.30103) * M_LN10, instances[1].ln_backoff(1), 0.001);
+  BOOST_CHECK_CLOSE(0.0, inst.LNBackoffs(1)(0), 0.001);
+  BOOST_CHECK_CLOSE((-0.30103 - 0.30103) * M_LN10, inst.LNBackoffs(1)(1), 0.001);
 
+  /*
   // Three extensions: a, b, c
   BOOST_REQUIRE_EQUAL(3, instances[0].ln_extensions.rows());
   BOOST_REQUIRE_EQUAL(3, instances[0].extension_words.size());
