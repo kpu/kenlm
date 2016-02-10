@@ -65,7 +65,8 @@ class Instances {
 
     const Matrix &LNUnigrams() const { return ln_unigrams_; }
 
-    // The chain shold be uninitialized coming in.
+    // Entry size to use to configure the chain (since in practice order is needed).
+    std::size_t ReadExtensionsEntrySize() const;
     void ReadExtensions(util::stream::Chain &chain);
 
     // Vocab id of the beginning of sentence.  Used to ignore it for normalization.

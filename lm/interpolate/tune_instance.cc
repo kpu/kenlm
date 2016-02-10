@@ -471,8 +471,13 @@ Instances::Instances(int tune_file, const std::vector<StringPiece> &model_names,
 
 Instances::~Instances() {}
 
+// TODO: size reduction by excluding order for subsequent passes.
+std::size_t Instances::ReadExtensionsEntrySize() const {
+  return sizeof(InitialExtension);
+}
+
 void Instances::ReadExtensions(util::stream::Chain &on) {
-  if (!extensions_first_.get()) {
+  if (extensions_first_.get()) {
     // Lazy sort and save a sorted copy to disk.  TODO: cut down on record size by stripping out order information.
     extensions_first_->Output(on);
     extensions_first_.reset(); // Relevant data will continue to live in workers.
