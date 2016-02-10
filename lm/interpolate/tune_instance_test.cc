@@ -1,7 +1,10 @@
 #include "lm/interpolate/tune_instance.hh"
 
-#include "util/file_stream.hh"
 #include "util/file.hh"
+#include "util/file_stream.hh"
+#include "util/stream/chain.hh"
+#include "util/stream/config.hh"
+#include "util/stream/typed_stream.hh"
 #include "util/string_piece.hh"
 
 #define BOOST_TEST_MODULE InstanceTest
@@ -75,6 +78,34 @@ BOOST_AUTO_TEST_CASE(Toy) {
   // Backoffs of <s> c
   BOOST_CHECK_CLOSE(0.0, inst.LNBackoffs(1)(0), 0.001);
   BOOST_CHECK_CLOSE((-0.30103 - 0.30103) * M_LN10, inst.LNBackoffs(1)(1), 0.001);
+
+  util::stream::Chain extensions(util::stream::ChainConfig(inst.ReadExtensionsEntrySize(), 2, 300));
+  inst.ReadExtensions(extensions);
+  std::cerr << "About to construct stream." << std::endl;
+  try {
+    util::stream::TypedStream<Extension> stream(extensions.Add());
+    std::cerr << "Constructed stream." << std::endl;
+    extensions >> util::stream::kRecycle;
+  std::cerr << "Added recycling." << std::endl;
+
+  // The extensions are
+  // <s> a
+  // <s> b
+  // <s> c
+  // c </s>
+
+  BOOST_REQUIRE(stream);
+  BOOST_REQUIRE(++stream);
+  BOOST_REQUIRE(++stream);
+  BOOST_REQUIRE(++stream);
+  BOOST_REQUIRE(++stream);
+  BOOST_REQUIRE(++stream);
+  BOOST_CHECK(!++stream);
+
+  } catch (const std::exception &e) {
+    std::cerr << "Fail on adding recycling." << std::endl;
+  }
+
 
   /*
   // Three extensions: a, b, c

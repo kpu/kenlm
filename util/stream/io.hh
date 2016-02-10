@@ -51,9 +51,9 @@ class WriteAndRecycle {
     int file_;
 };
 
-class PWriteAndRecycle {
+class PWrite {
   public:
-    explicit PWriteAndRecycle(int fd) : file_(fd) {}
+    explicit PWrite(int fd) : file_(fd) {}
     void Run(const ChainPosition &position);
   private:
     int file_;
@@ -65,9 +65,9 @@ class FileBuffer {
   public:
     explicit FileBuffer(int fd) : file_(fd) {}
 
-    PWriteAndRecycle Sink() const {
+    PWrite Sink() const {
       util::SeekOrThrow(file_.get(), 0);
-      return PWriteAndRecycle(file_.get());
+      return PWrite(file_.get());
     }
 
     PRead Source(bool discard = false) {

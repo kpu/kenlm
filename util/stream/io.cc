@@ -62,13 +62,11 @@ void WriteAndRecycle::Run(const ChainPosition &position) {
   }
 }
 
-void PWriteAndRecycle::Run(const ChainPosition &position) {
-  const std::size_t block_size = position.GetChain().BlockSize();
+void PWrite::Run(const ChainPosition &position) {
   uint64_t offset = 0;
   for (Link link(position); link; ++link) {
     ErsatzPWrite(file_, link->Get(), link->ValidSize(), offset);
     offset += link->ValidSize();
-    link->SetValidSize(block_size);
   }
   // Trim file to size.
   util::ResizeOrThrow(file_, offset);

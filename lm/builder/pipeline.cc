@@ -127,7 +127,7 @@ class Master {
     template <class Compare> void SetupSorts(Sorts<Compare> &sorts, bool exclude_unigrams) {
       sorts.Init(config_.order - exclude_unigrams);
       // Unigrams don't get sorted because their order is always the same.
-      if (exclude_unigrams) chains_[0] >> unigrams_.Sink();
+      if (exclude_unigrams) chains_[0] >> unigrams_.Sink() >> util::stream::kRecycle;
       for (std::size_t i = exclude_unigrams; i < config_.order; ++i) {
         sorts.push_back(chains_[i], config_.sort, Compare(i + 1));
       }
@@ -255,7 +255,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
   gammas.Init(config.order - 1);
   for (std::size_t i = 1; i < config.order; ++i) {
     gammas.push_back(util::MakeTemp(config.TempPrefix()));
-    gamma_chains[i] >> gammas[i - 1].Sink();
+    gamma_chains[i] >> gammas[i - 1].Sink() >> util::stream::kRecycle;
   }
   // Has to be done here due to gamma_chains scope.
   master.SetupSorts(primary, true);
