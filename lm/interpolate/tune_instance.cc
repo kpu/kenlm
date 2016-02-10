@@ -350,14 +350,12 @@ class ExtensionsFirstIteration {
           assert(!backoffs.empty());
           uint8_t max_order = backoffs.front().cols();
           for (util::stream::Stream stream(position); stream; ++stream) {
-            std::cerr << "ApplyBackoffs running" << std::endl;
             InitialExtension &ini = *reinterpret_cast<InitialExtension*>(stream.Get());
             assert(ini.order > 1); // If it's an extension, it should be higher than a unigram.
             if (ini.order != max_order) {
               ini.ext.ln_prob += backoffs[ini.ext.instance](ini.ext.model, ini.order - 1);
             }
           }
-          std::cerr << "ApplyBackoffs finished." << std::endl;
         }
 
       private:
