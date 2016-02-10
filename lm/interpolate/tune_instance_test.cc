@@ -18,9 +18,7 @@ namespace lm { namespace interpolate { namespace {
 
 BOOST_AUTO_TEST_CASE(Toy) {
   util::scoped_fd test_input(util::MakeTemp("temporary"));
-  {
-    util::FileStream(test_input.get()) << "c\n";
-  }
+  util::FileStream(test_input.get()) << "c\n";
 
   StringPiece dir("tune_instance_data/");
   if (boost::unit_test::framework::master_test_suite().argc == 2) {
@@ -50,22 +48,22 @@ BOOST_AUTO_TEST_CASE(Toy) {
   BOOST_CHECK_EQUAL(1, inst.BOS());
   const Matrix &ln_unigrams = inst.LNUnigrams();
   
-  // <unk>
+  // <unk>=0
   BOOST_CHECK_CLOSE(-0.90309 * M_LN10, ln_unigrams(0, 0), 0.001);
   BOOST_CHECK_CLOSE(-1 * M_LN10, ln_unigrams(0, 1), 0.001);
-  // <s> doesn't matter as long as it doesn't cause NaNs.
+  // <s>=1 doesn't matter as long as it doesn't cause NaNs.
   BOOST_CHECK(!isnan(ln_unigrams(1, 0)));
   BOOST_CHECK(!isnan(ln_unigrams(1, 1)));
-  // a
+  // a = 2
   BOOST_CHECK_CLOSE(-0.46943438 * M_LN10, ln_unigrams(2, 0), 0.001);
   BOOST_CHECK_CLOSE(-0.6146491 * M_LN10, ln_unigrams(2, 1), 0.001);
-  // </s>
+  // </s> = 3
   BOOST_CHECK_CLOSE(-0.5720968 * M_LN10, ln_unigrams(3, 0), 0.001);
   BOOST_CHECK_CLOSE(-0.6146491 * M_LN10, ln_unigrams(3, 1), 0.001);
-  // c
+  // c = 4
   BOOST_CHECK_CLOSE(-0.90309 * M_LN10, ln_unigrams(4, 0), 0.001); // <unk>
   BOOST_CHECK_CLOSE(-0.7659168 * M_LN10, ln_unigrams(4, 1), 0.001);
-  // too lazy to do b.
+  // too lazy to do b = 5.
   
   // Two instances:
   // <s> predicts c
@@ -81,50 +79,52 @@ BOOST_AUTO_TEST_CASE(Toy) {
 
   util::stream::Chain extensions(util::stream::ChainConfig(inst.ReadExtensionsEntrySize(), 2, 300));
   inst.ReadExtensions(extensions);
-  std::cerr << "About to construct stream." << std::endl;
-  try {
-    util::stream::TypedStream<Extension> stream(extensions.Add());
-    std::cerr << "Constructed stream." << std::endl;
-    extensions >> util::stream::kRecycle;
-  std::cerr << "Added recycling." << std::endl;
+  util::stream::TypedStream<Extension> stream(extensions.Add());
+  extensions >> util::stream::kRecycle;
 
-  // The extensions are
-  // <s> a
-  // <s> b
-  // <s> c
-  // c </s>
-
+  // The extensions are (in order of instance, vocab id, and model as they should be sorted):
+  // <s> a from both models 0 and 1 (so two instances)
+  // <s> c from model 1
+  // <s> b from model 0
+  // c </s> from model 1
+  // Magic probabilities come from querying the models directly.
+  
+  // <s> a from model 0
   BOOST_REQUIRE(stream);
+  BOOST_CHECK_EQUAL(0, stream->instance);
+  BOOST_CHECK_EQUAL(2 /* a */, stream->word);
+  BOOST_CHECK_EQUAL(0, stream->model);
+  BOOST_CHECK_CLOSE(-0.37712017 * M_LN10, stream->ln_prob, 0.001);
+
+  // <s> a from model 1
   BOOST_REQUIRE(++stream);
+  BOOST_CHECK_EQUAL(0, stream->instance);
+  BOOST_CHECK_EQUAL(2 /* a */, stream->word);
+  BOOST_CHECK_EQUAL(1, stream->model);
+  BOOST_CHECK_CLOSE(-0.4301247 * M_LN10, stream->ln_prob, 0.001);
+
+  // <s> c from model 1
   BOOST_REQUIRE(++stream);
+  BOOST_CHECK_EQUAL(0, stream->instance);
+  BOOST_CHECK_EQUAL(4 /* c */, stream->word);
+  BOOST_CHECK_EQUAL(1, stream->model);
+  BOOST_CHECK_CLOSE(-0.4740302 * M_LN10, stream->ln_prob, 0.001);
+
+  // <s> b from model 0
   BOOST_REQUIRE(++stream);
+  BOOST_CHECK_EQUAL(0, stream->instance);
+  BOOST_CHECK_EQUAL(5 /* b */, stream->word);
+  BOOST_CHECK_EQUAL(0, stream->model);
+  BOOST_CHECK_CLOSE(-0.41574955 * M_LN10, stream->ln_prob, 0.001);
+
+  // c </s> from model 1
   BOOST_REQUIRE(++stream);
-  BOOST_REQUIRE(++stream);
+  BOOST_CHECK_EQUAL(1, stream->instance);
+  BOOST_CHECK_EQUAL(3 /* </s> */, stream->word);
+  BOOST_CHECK_EQUAL(1, stream->model);
+  BOOST_CHECK_CLOSE(-0.09113217 * M_LN10, stream->ln_prob, 0.001);
+
   BOOST_CHECK(!++stream);
-
-  } catch (const std::exception &e) {
-    std::cerr << "Fail on adding recycling." << std::endl;
-  }
-
-
-  /*
-  // Three extensions: a, b, c
-  BOOST_REQUIRE_EQUAL(3, instances[0].ln_extensions.rows());
-  BOOST_REQUIRE_EQUAL(3, instances[0].extension_words.size());
-
-  // <s> a
-  BOOST_CHECK_CLOSE(-0.37712017 * M_LN10, instances[0].ln_extensions(FindRow(instances[0].extension_words, 2), 0), 0.001);
-  // <s> c
-  BOOST_CHECK_CLOSE((-0.90309 + -0.30103) * M_LN10, instances[0].ln_extensions(FindRow(instances[0].extension_words, 4), 0), 0.001);
-  BOOST_CHECK_CLOSE(-0.4740302 * M_LN10, instances[0].ln_extensions(FindRow(instances[0].extension_words, 4), 1), 0.001);
-
-  // <s> c </s>
-  BOOST_CHECK_CLOSE(-0.09113217 * M_LN10, instances[1].ln_extensions(FindRow(instances[1].extension_words, 3), 1), 0.001);
-
-  // p_0(c | <s>) = p_0(c)b_0(<s>) = 10^(-0.90309 + -0.30103)
-  BOOST_CHECK_CLOSE((-0.90309 + -0.30103) * M_LN10, instances[0].ln_correct(0), 0.001);
-  // p_1(c | <s>) = 10^-0.4740302
-  BOOST_CHECK_CLOSE(-0.4740302 * M_LN10, instances[0].ln_correct(1), 0.001);*/
 }
 
 }}} // namespaces
