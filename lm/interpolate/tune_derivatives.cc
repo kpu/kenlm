@@ -2,27 +2,19 @@
 
 namespace lm { namespace interpolate {
 
-ComputeDerivative::ComputeDerivative(const util::FixedArray<Instance> &instances, const Matrix &ln_unigrams, WordIndex bos)
-  : instances_(instances), ln_unigrams_(ln_unigrams), bos_(bos) {
-  neg_correct_summed_ = Vector::Zero(ln_unigrams.cols());
-  for (const Instance *i = instances.begin(); i != instances.end(); ++i) {
-    neg_correct_summed_ -= i->ln_correct;
-  }
-}
-
-Accum ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matrix &hessian) {
-  gradient = neg_correct_summed_;
+Accum Derivatives(const Instances &in, const Vector &weights, Vector &gradient, Matrix &hessian) {
+  gradient = in.CorrectGradientTerm();
   hessian = Matrix::Zero(weights.rows(), weights.rows());
 
   // TODO: loop instead to force low-memory evaluation
   // Compute p_I(x).
-  Vector interp_uni((ln_unigrams_ * weights).array().exp());
+  Vector interp_uni((in.LNUnigrams() * weights).array().exp());
   // Even -inf doesn't work for <s> because weights can be negative.  Manually set it to zero.
   interp_uni(bos_) = 0.0;
   Accum Z_epsilon = interp_uni.sum();
   interp_uni /= Z_epsilon;
   // unigram_cross(i) = \sum_{all x} p_I(x) ln p_i(x)
-  Vector unigram_cross(ln_unigrams_.transpose() * interp_uni);
+  Vector unigram_cross(in.LNUnigrams().transpose() * interp_uni);
 
   Accum sum_B_I = 0.0;
   Accum sum_ln_Z_context = 0.0;
@@ -57,7 +49,7 @@ Accum ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matr
       // Subtract values that should not have been charged.
       - sum_x_p_I * B_I * n->ln_backoff;
     for (std::vector<WordIndex>::const_iterator x = n->extension_words.begin(); x != n->extension_words.end(); ++x) {
-      full_cross.noalias() -= interp_uni(*x) * B_I * ln_unigrams_.row(*x);
+      full_cross.noalias() -= interp_uni(*x) * B_I * in.LNUnigrams().row(*x);
     }
 
     gradient += full_cross;
@@ -77,13 +69,13 @@ Accum ComputeDerivative::Iteration(const Vector &weights, Vector &gradient, Matr
         // Replacement terms.
         weighted_extensions(x) / Z_context * n->ln_extensions.row(x).transpose() * n->ln_extensions.row(x)
         // Presumed unigrams.  TODO: individual terms with backoffs pulled out?  Maybe faster?
-        - interp_uni(universal_x) * B_I * (ln_unigrams_.row(universal_x).transpose() + n->ln_backoff) * (ln_unigrams_.row(universal_x) + n->ln_backoff.transpose());
+        - interp_uni(universal_x) * B_I * (in.LNUnigrams().row(universal_x).transpose() + n->ln_backoff) * (in.LNUnigrams().row(universal_x) + n->ln_backoff.transpose());
     }
   }
 
   for (Matrix::Index x = 0; x < interp_uni.rows(); ++x) {
     // \sum_{contexts} B_I(context) \sum_x p_I(x) log p_i(x) log p_j(x)
-    hessian.noalias() += sum_B_I * interp_uni(x) * ln_unigrams_.row(x).transpose() * ln_unigrams_.row(x);
+    hessian.noalias() += sum_B_I * interp_uni(x) * in.LNUnigrams().row(x).transpose() * in.LNUnigrams().row(x);
   }
   return exp((neg_correct_summed_.dot(weights) + sum_ln_Z_context) / static_cast<double>(instances_.size()));
 }
