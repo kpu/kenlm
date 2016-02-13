@@ -237,6 +237,11 @@ void FilePiece::Shift() {
   }
 }
 
+void FilePiece::UpdateProgress() {
+  if (!fallback_to_read_)
+    progress_.Set(position_ - data_.begin() + mapped_offset_);
+}
+
 void FilePiece::MMapShift(uint64_t desired_begin) {
   // Use mmap.
   uint64_t ignore = desired_begin % page_;
