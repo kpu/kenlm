@@ -6,6 +6,7 @@
 #include "util/file.hh"
 #include "util/mmap.hh"
 #include "util/read_compressed.hh"
+#include "util/spaces.hh"
 #include "util/string_piece.hh"
 
 #include <cstddef>
@@ -21,8 +22,6 @@ class ParseNumberException : public Exception {
     explicit ParseNumberException(StringPiece value) throw();
     ~ParseNumberException() throw() {}
 };
-
-extern const bool kSpaces[256];
 
 // Memory backing the returned StringPiece may vanish on the next call.
 class FilePiece {
@@ -124,6 +123,9 @@ class FilePiece {
     }
 
     const std::string &FileName() const { return file_name_; }
+
+    // Force a progress update.
+    void UpdateProgress();
 
   private:
     void InitializeNoRead(const char *name, std::size_t min_buffer);

@@ -57,11 +57,6 @@ Chain &Chain::operator>>(const WriteAndRecycle &writer) {
   return *this;
 }
 
-Chain &Chain::operator>>(const PWriteAndRecycle &writer) {
-  threads_.push_back(new Thread(Complete(), writer));
-  return *this;
-}
-
 void Chain::Wait(bool release_memory) {
   if (queues_.empty()) {
     assert(threads_.empty());

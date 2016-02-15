@@ -55,15 +55,18 @@ class Instances {
 
     // Full backoff from unigram for each model.
     typedef BackoffMatrix::ConstRowXpr FullBackoffs;
-    FullBackoffs Backoffs(InstanceIndex instance) const {
+    FullBackoffs LNBackoffs(InstanceIndex instance) const {
       return ln_backoffs_.row(instance);
     }
+
+    std::size_t NumInstances() const { return ln_backoffs_.rows(); }
 
     const Vector &CorrectGradientTerm() const { return neg_ln_correct_sum_; }
 
     const Matrix &LNUnigrams() const { return ln_unigrams_; }
 
-    // The chain shold be uninitialized coming in.
+    // Entry size to use to configure the chain (since in practice order is needed).
+    std::size_t ReadExtensionsEntrySize() const;
     void ReadExtensions(util::stream::Chain &chain);
 
     // Vocab id of the beginning of sentence.  Used to ignore it for normalization.

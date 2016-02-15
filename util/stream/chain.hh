@@ -74,11 +74,11 @@ class Thread {
      * This method is called automatically by this class's @ref Thread() "constructor".
      */
     template <class Position, class Worker> void operator()(const Position &position, Worker &worker) {
-//      try {
+      try {
         worker.Run(position);
-//      } catch (const std::exception &e) {
-//        UnhandledException(e);
-//      }
+      } catch (const std::exception &e) {
+        UnhandledException(e);
+      }
     }
 
   private:
@@ -103,7 +103,6 @@ class Recycler {
 
 extern const Recycler kRecycle;
 class WriteAndRecycle;
-class PWriteAndRecycle;
 
 /**
  * Represents a sequence of workers, through which @ref Block "blocks" can pass.
@@ -217,7 +216,6 @@ class Chain {
      * and runs that worker in a new Thread owned by this chain.
      */
     Chain &operator>>(const WriteAndRecycle &writer);
-    Chain &operator>>(const PWriteAndRecycle &writer);
 
     // Chains are reusable.  Call Wait to wait for everything to finish and free memory.
     void Wait(bool release_memory = true);
