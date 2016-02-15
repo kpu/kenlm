@@ -200,10 +200,25 @@ double ThreadTime(){
   return user_time + sys_time;
 }
 
+template <class TableT>
+struct ParallelTestConstruct{
+  ParallelTestConstruct(boost::mutex& lock, const uint64_t* const burn_begin, const uint64_t* const burn_end, TableT* table) : lock_(lock), burn_begin_(burn_begin), burn_end_(burn_end), table_(table){}
+  boost::mutex& lock_;
+  const uint64_t* const burn_begin_;
+  const uint64_t* const burn_end_;
+  TableT* table_;
+};
+
 template<class Queue>
 struct ParallelTestHandler{
   typedef ParallelTestRequest<typename Queue::Table> Request;
-  explicit ParallelTestHandler(boost::mutex &lock) : lock_(lock), totalTime_(0.0), nRequests_(0), nQueries_(0), error_(false), twiddle_(false){}
+  explicit ParallelTestHandler(const ParallelTestConstruct<typename Queue::Table>& construct) : lock_(construct.lock_), totalTime_(0.0), nRequests_(0), nQueries_(0), error_(false), twiddle_(false){
+    //perform initial burn
+    for(const uint64_t* i = construct.burn_begin_; i < construct.burn_end_; i++){
+      typename Queue::Table::ConstIterator it;
+      twiddle_ ^= construct.table_->Find(*i, it);
+    }
+  }
   void operator()(Request request){
     if (error_) return;
     Queue queue(*request.table_);
@@ -245,55 +260,50 @@ struct ParallelTestHandler{
 };
 
 template<class Queue>
-void ParallelTest(URandom &rn, uint64_t entries,  const uint64_t *const queries_begin,
-                  const uint64_t *const queries_end, bool ordinary_malloc, std::size_t num_threads,
-                  std::size_t tasks_per_thread = 1, float multiplier = 1.5){
-    std::size_t size = Size(entries, multiplier);
-    scoped_memory backing;
-    if (ordinary_malloc) {
-      backing.reset(util::CallocOrThrow(size), size, scoped_memory::MALLOC_ALLOCATED);
-    } else {
-      util::HugeMalloc(size, true, backing);
-    }
-    typename Queue::Table table(backing.get(), size);
-    for (uint64_t i = 0; i < entries; ++i) {
-      Entry entry;
-      entry.key = rn.Get();
-      table.Insert(entry);
-    }
+void ParallelTest(typename Queue::Table* table, const uint64_t *const queries_begin,
+                  const uint64_t *const queries_end, std::size_t num_threads,
+                  std::size_t tasks_per_thread, std::size_t burn){
     boost::mutex lock;
+    ParallelTestConstruct<typename Queue::Table> construct(lock, queries_begin, queries_begin + burn, table);
     ParallelTestRequest<typename Queue::Table> poison(NULL, NULL, NULL);
     {
-      util::ThreadPool<ParallelTestHandler<Queue> > pool(num_threads, num_threads, boost::ref(lock), poison);
-      const uint64_t queries_per_thread =(static_cast<uint64_t>(queries_end-queries_begin)/num_threads)/tasks_per_thread;
-      for (const uint64_t *i = queries_begin; i + queries_per_thread <= queries_end; i += queries_per_thread){
-        ParallelTestRequest<typename Queue::Table> request(i, i+queries_per_thread, &table);
+      util::ThreadPool<ParallelTestHandler<Queue> > pool(num_threads, num_threads, construct, poison);
+      const uint64_t queries_per_thread =(static_cast<uint64_t>(queries_end-queries_begin-burn)/num_threads)/tasks_per_thread;
+      for (const uint64_t *i = queries_begin+burn; i + queries_per_thread <= queries_end; i += queries_per_thread){
+        ParallelTestRequest<typename Queue::Table> request(i, i+queries_per_thread, table);
         pool.Produce(request);
       }
     } // pool gets deallocated and all jobs finish
     std::cout << std::endl;
 }
 
-void ParallelTestRun(std::size_t tasks_per_thread = 1, uint64_t lookups = 20000000, float multiplier = 1.5) {
+void ParallelTestRun(std::size_t tasks_per_thread = 1, std::size_t burn = 4000, uint64_t lookups = 20000000, float multiplier = 1.5) {
   URandom rn;
   util::scoped_memory queries;
-  HugeMalloc(lookups * sizeof(uint64_t), true, queries);
-  rn.Batch(static_cast<uint64_t*>(queries.get()), static_cast<uint64_t*>(queries.get()) + lookups);
+  HugeMalloc((lookups + burn)* sizeof(uint64_t), true, queries);
+  rn.Batch(static_cast<uint64_t*>(queries.get()), static_cast<uint64_t*>(queries.get()) + lookups + burn);
   const uint64_t *const queries_begin = static_cast<const uint64_t*>(queries.get());
+  const uint64_t *const queries_end = queries_begin + lookups + burn;
   typedef util::ProbingHashTable<Entry, util::IdentityHash, std::equal_to<Entry::Key>, Power2Mod> Table;
-  typedef util::ProbingHashTable<Entry, util::IdentityHash, std::equal_to<Entry::Key>, DivMod> TableDiv;
   uint64_t physical_mem_limit = util::GuessPhysicalMemory() / 2;
-  for (uint64_t i = 4; Size(i / multiplier) < physical_mem_limit; i *= 4) {
+  for (uint64_t i = 4; Size(i / multiplier, multiplier) < physical_mem_limit; i *= 4) {
+    std::size_t entries = static_cast<std::size_t>(i / multiplier);
+    std::size_t size = Size(i/multiplier, multiplier);
+    scoped_memory backing;
+    util::HugeMalloc(size, true, backing);
+    Table table(backing.get(), size);
+    for (uint64_t j = 0; j < entries; ++j) {
+      Entry entry;
+      entry.key = rn.Get();
+      table.Insert(entry);
+    }
     for(std::size_t num_threads = 1; num_threads <= 16; num_threads*=2){
-      std::cout << static_cast<std::size_t>(i / multiplier) << ' ' << Size(i / multiplier) << ' ' << num_threads << ' ' << std::endl;
-      util::ParallelTest<Immediate<TableDiv> >(rn, i/multiplier, queries_begin, queries_begin + lookups, true, num_threads, tasks_per_thread, multiplier);
-      util::ParallelTest<Immediate<Table> >(rn, i/multiplier, queries_begin, queries_begin + lookups, true, num_threads, tasks_per_thread, multiplier);
-      util::ParallelTest<PrefetchQueue<Table, 4> >(rn, i/multiplier, queries_begin, queries_begin + lookups, true, num_threads, tasks_per_thread, multiplier);
-      util::ParallelTest<Immediate<Table> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, tasks_per_thread, multiplier);
-      util::ParallelTest<PrefetchQueue<Table, 2> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, tasks_per_thread, multiplier);
-      util::ParallelTest<PrefetchQueue<Table, 4> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, tasks_per_thread, multiplier);
-      util::ParallelTest<PrefetchQueue<Table, 8> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, tasks_per_thread, multiplier);
-      util::ParallelTest<PrefetchQueue<Table, 16> >(rn, i/multiplier, queries_begin, queries_begin + lookups, false, num_threads, tasks_per_thread, multiplier);
+      std::cout << entries << ' ' << size << ' ' << num_threads << ' ' << std::endl;
+      util::ParallelTest<Immediate<Table> >(&table, queries_begin, queries_end, num_threads, tasks_per_thread, burn);
+      util::ParallelTest<PrefetchQueue<Table, 2> >(&table, queries_begin, queries_end, num_threads, tasks_per_thread, burn);
+      util::ParallelTest<PrefetchQueue<Table, 4> >(&table, queries_begin, queries_end, num_threads, tasks_per_thread, burn);
+      util::ParallelTest<PrefetchQueue<Table, 8> >(&table, queries_begin, queries_end, num_threads, tasks_per_thread, burn);
+      util::ParallelTest<PrefetchQueue<Table, 16> >(&table, queries_begin, queries_end, num_threads, tasks_per_thread, burn);
     }
   }
 }
@@ -305,6 +315,6 @@ int main() {
   //bool meaningless = false;
   std::cout << "#CPU time\n";
   //meaningless ^= util::TestRun();
-  util::ParallelTestRun(10);
+  util::ParallelTestRun(10, 4000);
   //std::cerr << "Meaningless: " << meaningless << '\n';
 }
