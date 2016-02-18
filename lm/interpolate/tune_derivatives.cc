@@ -1,12 +1,16 @@
 #include "lm/interpolate/tune_derivatives.hh"
 
+#include "lm/interpolate/tune_instance.hh"
+#include "util/stream/chain.hh"
+#include "util/stream/typed_stream.hh"
+
 namespace lm { namespace interpolate {
 
-Accum Derivatives(const Instances &in, const Vector &weights, Vector &gradient, Matrix &hessian) {
+Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix &hessian) {
   gradient = in.CorrectGradientTerm();
   hessian = Matrix::Zero(weights.rows(), weights.rows());
 
-  // TODO: loop instead to force low-memory evaluation
+  // TODO: loop instead to force low-memory evaluation?
   // Compute p_I(x).
   Vector interp_uni((in.LNUnigrams() * weights).array().exp());
   // Even -inf doesn't work for <s> because weights can be negative.  Manually set it to zero.
@@ -23,9 +27,14 @@ Accum Derivatives(const Instances &in, const Vector &weights, Vector &gradient, 
   Matrix convolve;
   Vector full_cross;
 
-  for (const Instance *n = instances_.begin(); n != instances_.end(); ++n) {
-    Accum ln_weighted_backoffs = n->ln_backoff.dot(weights);
-    Accum weighted_backoffs = exp(ln_weighted_backoffs);
+  // TODO make configurable memory size.
+  // TODO make use of this.
+  util::stream::Chain chain(util::stream::ChainConfig(in.ReadExtensionsEntrySize(), 2, 64 << 20));
+  in.ReadExtensions(chain);
+  util::stream::TypedStream<Extension> extensions(chain);
+
+  for (InstanceIndex n = 0; n < in.NumInstances(); ++n) {
+    Accum weighted_backoffs = exp(in.LNBackoffs(n).dot(weights));
 
     // Compute \sum_{x: model does not backoff to unigram} p_I(x)
     Accum sum_x_p_I = 0.0;
@@ -34,31 +43,31 @@ Accum Derivatives(const Instances &in, const Vector &weights, Vector &gradient, 
     }
     weighted_extensions = (n->ln_extensions * weights).array().exp();
     Accum Z_context = Z_epsilon * weighted_backoffs * (1.0 - sum_x_p_I) + weighted_extensions.sum();
-    sum_ln_Z_context += log(Z_context);
+    sum_ln_Z_context += log(Z_context); // not used for rest of loop
 
     Accum B_I = Z_epsilon / Z_context * weighted_backoffs;
-    sum_B_I += B_I;
+    sum_B_I += B_I; // not used for rest of loop
 
     // This is the gradient term for this instance except for -log p_i(w_n | w_1^{n-1}) which was accounted for as part of neg_correct_sum_.
     // full_cross(i) is \sum_{all x} p_I(x | context) log p_i(x | context)
     full_cross =
       // Uncorrected term
-      B_I * (n->ln_backoff + unigram_cross)
+      B_I * (in.LNBackoffs(n) + unigram_cross)
       // Correction term: add correct values
       + n->ln_extensions.transpose() * weighted_extensions / Z_context
       // Subtract values that should not have been charged.
-      - sum_x_p_I * B_I * n->ln_backoff;
+      - sum_x_p_I * B_I * in.LNBackoffs(n);
     for (std::vector<WordIndex>::const_iterator x = n->extension_words.begin(); x != n->extension_words.end(); ++x) {
       full_cross.noalias() -= interp_uni(*x) * B_I * in.LNUnigrams().row(*x);
     }
 
     gradient += full_cross;
 
-    convolve = unigram_cross * n->ln_backoff.transpose();
+    convolve = unigram_cross * in.LNBackoffs(n).transpose();
     // There's one missing term here, which is independent of context and done at the end.
     hessian.noalias() +=
       // First term of Hessian, assuming all models back off to unigram.
-      B_I * (convolve + convolve.transpose() + n->ln_backoff * n->ln_backoff.transpose())
+      B_I * (convolve + convolve.transpose() + in.LNBackoffs(n) * in.LNBackoffs(n).transpose())
       // Second term of Hessian, with correct full probabilities.
       - full_cross * full_cross.transpose();
 
@@ -69,7 +78,7 @@ Accum Derivatives(const Instances &in, const Vector &weights, Vector &gradient, 
         // Replacement terms.
         weighted_extensions(x) / Z_context * n->ln_extensions.row(x).transpose() * n->ln_extensions.row(x)
         // Presumed unigrams.  TODO: individual terms with backoffs pulled out?  Maybe faster?
-        - interp_uni(universal_x) * B_I * (in.LNUnigrams().row(universal_x).transpose() + n->ln_backoff) * (in.LNUnigrams().row(universal_x) + n->ln_backoff.transpose());
+        - interp_uni(universal_x) * B_I * (in.LNUnigrams().row(universal_x).transpose() + in.LNBackoffs(n)) * (in.LNUnigrams().row(universal_x) + in.LNBackoffs(n).transpose());
     }
   }
 

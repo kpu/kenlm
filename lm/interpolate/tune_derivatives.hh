@@ -11,7 +11,7 @@ namespace lm { namespace interpolate {
 class Instances;
 
 // Given tuning instances and model weights, computes the objective function (log probability), gradient, and Hessian.
-Accum Derivatives(const Instances &instances, const Vector &weights, Vector &gradient, Matrix &hessian);
+Accum Derivatives(Instances &instances /* Doesn't modify but ReadExtensions is lazy */, const Vector &weights, Vector &gradient, Matrix &hessian);
 
 }} // namespaces
 

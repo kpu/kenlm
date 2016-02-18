@@ -59,7 +59,7 @@ class Instances {
       return ln_backoffs_.row(instance);
     }
 
-    std::size_t NumInstances() const { return ln_backoffs_.rows(); }
+    InstanceIndex NumInstances() const { return ln_backoffs_.rows(); }
 
     const Vector &CorrectGradientTerm() const { return neg_ln_correct_sum_; }
 
