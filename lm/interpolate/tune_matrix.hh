@@ -8,8 +8,8 @@
 
 namespace lm { namespace interpolate {
  
-typedef Eigen::MatrixXd Matrix;
-typedef Eigen::VectorXd Vector;
+typedef Eigen::MatrixXf Matrix;
+typedef Eigen::VectorXf Vector;
 
 typedef Matrix::Scalar Accum;
 

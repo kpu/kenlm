@@ -45,7 +45,7 @@ struct InstancesConfig {
 
 class Instances {
   private:
-    typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BackoffMatrix;
+    typedef Eigen::Matrix<Accum, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> BackoffMatrix;
 
   public:
     Instances(int tune_file, const std::vector<StringPiece> &model_names, const InstancesConfig &config);
