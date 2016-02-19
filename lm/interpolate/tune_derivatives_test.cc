@@ -1,6 +1,6 @@
 #include "lm/interpolate/tune_derivatives.hh"
 
-#include "lm/interpolate/tune_instance.hh"
+#include "lm/interpolate/tune_instances.hh"
 
 #include "util/stream/config.hh"
 #include "util/stream/chain.hh"

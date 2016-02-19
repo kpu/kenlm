@@ -15,7 +15,7 @@
  * (tune_derivatives.hh) takes a stream of extensions ordered by tuning
  * instance, the word v, and the model the extension came from.
  */
-#include "lm/interpolate/tune_instance.hh"
+#include "lm/interpolate/tune_instances.hh"
 
 #include "lm/common/compare.hh"
 #include "lm/common/joint_order.hh"

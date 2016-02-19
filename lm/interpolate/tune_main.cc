@@ -1,5 +1,5 @@
 #include "lm/interpolate/tune_derivatives.hh"
-#include "lm/interpolate/tune_instance.hh"
+#include "lm/interpolate/tune_instances.hh"
 #include "util/file.hh"
 
 #pragma GCC diagnostic push

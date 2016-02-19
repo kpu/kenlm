@@ -1,4 +1,4 @@
-#include "lm/interpolate/tune_instance.hh"
+#include "lm/interpolate/tune_instances.hh"
 
 #include "util/file.hh"
 #include "util/file_stream.hh"
@@ -20,7 +20,7 @@ BOOST_AUTO_TEST_CASE(Toy) {
   util::scoped_fd test_input(util::MakeTemp("temporary"));
   util::FileStream(test_input.get()) << "c\n";
 
-  StringPiece dir("tune_instance_data/");
+  StringPiece dir("tune_instances_data/");
   if (boost::unit_test::framework::master_test_suite().argc == 2) {
     StringPiece zero_file(boost::unit_test::framework::master_test_suite().argv[1]);
     BOOST_REQUIRE(zero_file.size() > strlen("toy0.1"));

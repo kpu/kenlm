@@ -11,7 +11,7 @@ set(KENLM_INTERPOLATE_SOURCE
     pipeline.cc
     split_worker.cc
     tune_derivatives.cc
-    tune_instance.cc
+    tune_instances.cc
     universal_vocab.cc)
 
 add_library(kenlm_interpolate OBJECT ${KENLM_INTERPOLATE_SOURCE})
@@ -45,10 +45,10 @@ if(BUILD_TESTING)
              DEPENDS ${KENLM_INTERPOLATE_DEPENDS}
              LIBRARIES ${Boost_LIBRARIES} pthread)
 
-    # tune_instance_test needs an extra command line parameter
-    KenLMAddTest(TEST tune_instance_test
+    # tune_instances_test needs an extra command line parameter
+    KenLMAddTest(TEST tune_instances_test
                  DEPENDS ${KENLM_INTERPOLATE_DEPENDS}
                  LIBRARIES ${Boost_LIBRARIES} pthread
                  TEST_ARGS
-                 ${CMAKE_CURRENT_SOURCE_DIR}/tune_instance_data/toy0.1)
+                 ${CMAKE_CURRENT_SOURCE_DIR}/tune_instances_data/toy0.1)
 endif()
