@@ -488,4 +488,7 @@ void Instances::ReadExtensions(util::stream::Chain &on) {
   }
 }
 
+// Back door.
+Instances::Instances() {}
+
 }} // namespaces

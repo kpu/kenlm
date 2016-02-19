@@ -73,6 +73,10 @@ class Instances {
     WordIndex BOS() const { return bos_; }
 
   private:
+    // Allow the derivatives test to get access.
+    friend class MockInstances;
+    Instances();
+
     // backoffs_(instance, model) is the backoff all the way to unigrams.
     BackoffMatrix ln_backoffs_;
     

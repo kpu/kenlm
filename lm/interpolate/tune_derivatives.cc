@@ -30,6 +30,8 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
   Matrix convolve;
   Vector full_cross;
   Matrix hessian_missing_Z_context;
+  // Backed off ln p_i(x)B_i(context)
+  Vector ln_p_i_backed;
   // Full ln p_i(x | context)
   Vector ln_p_i_full;
 
@@ -42,7 +44,7 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
 
   for (InstanceIndex n = 0; n < in.NumInstances(); ++n) {
     assert(extensions);
-    Accum weighted_backoffs = exp(in.LNBackoffs(n) * weights);
+    Accum weighted_backoffs = exp(in.LNBackoffs(n).dot(weights));
 
     // Compute \sum_{x: model does not back off to unigram} p_I(x)
     Accum sum_x_p_I = 0.0;
@@ -52,14 +54,20 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
     // This should be divided by Z_context then added to the Hessian.
     hessian_missing_Z_context = Matrix::Zero(weights.rows(), weights.rows());
 
+    full_cross = Vector::Zero(weights.rows());
+
     while (extensions && extensions->instance == n) {
       const WordIndex word = extensions->word;
       sum_x_p_I += interp_uni(word);
+
+      ln_p_i_backed = in.LNUnigrams().row(word) + in.LNBackoffs(n);
+
       // Calculate ln_p_i_full(i) = ln p_i(word | context) by filling in unigrams then overwriting with extensions.
-      ln_p_i_full = in.LNUnigrams().row(word).array() * in.LNBackoffs(n).array();
+      ln_p_i_full = ln_p_i_backed;
       for (; extensions && extensions->word == word && extensions->instance == n; ++extensions) {
         ln_p_i_full(extensions->model) = extensions->ln_prob;
       }
+
       // This is the weighted product of probabilities.  In other words, p_I(word | context) * Z(context) = exp(\sum_i w_i * p_i(word | context)).
       Accum weighted = exp(ln_p_i_full.dot(weights));
       unnormalized_sum_x_p_I_full += weighted;
@@ -67,14 +75,14 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
       // These aren't normalized by Z_context (happens later)
       full_cross.noalias() +=
         weighted * ln_p_i_full
-        - interp_uni(word) * Z_epsilon * weighted_backoffs /* we'll divide by Z_context later to form B_I */ * in.LNUnigrams().row(word);
+        - interp_uni(word) * Z_epsilon * weighted_backoffs /* we'll divide by Z_context later to form B_I */ * in.LNUnigrams().row(word).transpose();
 
       // This will get multiplied by Z_context then added to the Hessian.
       hessian_missing_Z_context.noalias() +=
         // Replacement terms.
         weighted * ln_p_i_full * ln_p_i_full.transpose()
-        // Presumed unigrams.  TODO: individual terms with backoffs pulled out?  Maybe faster?
-        - interp_uni(word) * Z_epsilon * weighted_backoffs * (in.LNUnigrams().row(word).transpose() + in.LNBackoffs(n)) * (in.LNUnigrams().row(word) + in.LNBackoffs(n).transpose());
+        // Presumed unigrams.  Z_epsilon * weighted_backoffs will turn into B_I once all of this is divided by Z_context.
+        - interp_uni(word) * Z_epsilon * weighted_backoffs * ln_p_i_backed * ln_p_i_backed.transpose();
     }
 
     Accum Z_context = 
@@ -90,16 +98,16 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
     full_cross /= Z_context;
     full_cross +=
       // Uncorrected term
-      B_I * (in.LNBackoffs(n) + unigram_cross)
+      B_I * (in.LNBackoffs(n).transpose() + unigram_cross)
       // Subtract values that should not have been charged.
-      - sum_x_p_I * B_I * in.LNBackoffs(n);
+      - sum_x_p_I * B_I * in.LNBackoffs(n).transpose();
     gradient += full_cross;
 
-    convolve = unigram_cross * in.LNBackoffs(n).transpose();
+    convolve = unigram_cross * in.LNBackoffs(n);
     // There's one missing term here, which is independent of context and done at the end.
     hessian.noalias() +=
       // First term of Hessian, assuming all models back off to unigram.
-      B_I * (convolve + convolve.transpose() + in.LNBackoffs(n) * in.LNBackoffs(n).transpose())
+      B_I * (convolve + convolve.transpose() + in.LNBackoffs(n).transpose() * in.LNBackoffs(n))
       // Error in the first term, correcting from unigram to full probabilities.
       + hessian_missing_Z_context / Z_context
       // Second term of Hessian, with correct full probabilities.
