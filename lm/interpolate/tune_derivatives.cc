@@ -36,12 +36,12 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
   Vector ln_p_i_full;
 
   // TODO make configurable memory size.
-  // TODO make use of this.
   util::stream::Chain chain(util::stream::ChainConfig(in.ReadExtensionsEntrySize(), 2, 64 << 20));
   in.ReadExtensions(chain);
   util::stream::TypedStream<Extension> extensions(chain.Add());
   chain >> util::stream::kRecycle;
 
+  // Loop over instances (words in the tuning data).
   for (InstanceIndex n = 0; n < in.NumInstances(); ++n) {
     assert(extensions);
     Accum weighted_backoffs = exp(in.LNBackoffs(n).dot(weights));
@@ -56,6 +56,7 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
 
     full_cross = Vector::Zero(weights.rows());
 
+    // Loop over words within an instance for which extension exists.  An extension happens when any model matches more than a unigram in the tuning instance.
     while (extensions && extensions->instance == n) {
       const WordIndex word = extensions->word;
       sum_x_p_I += interp_uni(word);
@@ -64,6 +65,7 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
 
       // Calculate ln_p_i_full(i) = ln p_i(word | context) by filling in unigrams then overwriting with extensions.
       ln_p_i_full = ln_p_i_backed;
+      // Loop over all models that have an extension for the same word namely p_i(word | context) matches at least a bigram.
       for (; extensions && extensions->word == word && extensions->instance == n; ++extensions) {
         ln_p_i_full(extensions->model) = extensions->ln_prob;
       }
