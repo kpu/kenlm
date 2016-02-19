@@ -81,15 +81,15 @@ BOOST_AUTO_TEST_CASE(Small) {
   Extension ext;
 
   ext.instance = 0;
-  ext.word = 2;
-  ext.model = 0;
-  ext.ln_prob = model_0_word_2;
-  mock.AddExtension(ext);
-
-  ext.instance = 0;
   ext.word = 1;
   ext.model = 1;
   ext.ln_prob = model_1_word_1;
+  mock.AddExtension(ext);
+
+  ext.instance = 0;
+  ext.word = 2;
+  ext.model = 0;
+  ext.ln_prob = model_0_word_2;
   mock.AddExtension(ext);
 
   mock.DoneExtending();
