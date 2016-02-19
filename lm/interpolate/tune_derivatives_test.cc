@@ -83,13 +83,13 @@ BOOST_AUTO_TEST_CASE(Small) {
   ext.instance = 0;
   ext.word = 1;
   ext.model = 1;
-  ext.ln_prob = model_1_word_1;
+  ext.ln_prob = log(model_1_word_1);
   mock.AddExtension(ext);
 
   ext.instance = 0;
   ext.word = 2;
   ext.model = 0;
-  ext.ln_prob = model_0_word_2;
+  ext.ln_prob = log(model_0_word_2);
   mock.AddExtension(ext);
 
   mock.DoneExtending();
@@ -99,7 +99,8 @@ BOOST_AUTO_TEST_CASE(Small) {
 
   Vector gradient(2);
   Matrix hessian(2,2);
-  Accum perplexity = Derivatives(mock, weights, gradient, hessian);
+  Derivatives(mock, weights, gradient, hessian);
+  // TODO: check perplexity value coming out.
 
   // p_I(x | context)
   Vector p_I(3);
