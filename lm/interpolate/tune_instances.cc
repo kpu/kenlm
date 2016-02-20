@@ -486,6 +486,7 @@ void Instances::ReadExtensions(util::stream::Chain &on) {
     extensions_subsequent_.reset(new util::stream::FileBuffer(util::MakeTemp(temp_prefix_)));
     on >> extensions_subsequent_->Sink();
   } else {
+    on.SetProgressTarget(extensions_subsequent_->Size());
     on >> extensions_subsequent_->Source();
   }
 }
