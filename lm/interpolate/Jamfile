@@ -15,11 +15,13 @@ obj tune_instances_test.o : tune_instances_test.cc ..//kenlm /top//boost_unit_te
 run tune_instances_test.o tune_instances.o interp ..//kenlm ../common//common ../../util/stream//stream /top//boost_unit_test_framework : : tune_instances_data/toy0.1 ;
 fakelib tuning : tune_instances.o tune_derivatives.cc tune_weights.cc interp ..//kenlm : <include>$(with-eigen) ;
 unit-test tune_derivatives_test : tune_derivatives_test.cc tuning /top//boost_unit_test_framework : <include>$(with-eigen) ;
-exe tune : tune_main.cc tuning /top//boost_program_options : <include>$(with-eigen) ;
-explicit tune_instances.o tune_instances_test.o tune_instances_test tuning tune_derivatives_test tune ;
-alias all_tuning : : [ check-target-builds tune_have_eigen_init_parallel.o "Eigen has Eigen::initParallel() required for log-linear tuning" : <source>tune_instances_test <source>tune <source>tune_derivatives_test ] ;
 
-exe interpolate : interpolate_main.cc interp /top//boost_program_options ;
+#Given weights, interpolation doesn't require Eigen.  But it's pretty useless without that and this is also the main to tune weights.
+exe interpolate : interpolate_main.cc tuning interp /top//boost_program_options : <include>$(with-eigen) ;
+explicit tune_instances.o tune_instances_test.o tune_instances_test tuning tune_derivatives_test tune interpolate ;
+
+alias all_eigen : : [ check-target-builds tune_have_eigen_init_parallel.o "Eigen has Eigen::initParallel() required for log-linear tuning" : <source>tune_instances_test <source>interpolate <source>tune_derivatives_test ] ;
+
 exe streaming_example : ../builder//builder interp streaming_example_main.cc /top//boost_program_options ;
 
 unit-test normalize_test : interp normalize_test.cc /top//boost_unit_test_framework ;

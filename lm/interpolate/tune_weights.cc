@@ -13,9 +13,9 @@
 #include <iostream>
 
 namespace lm { namespace interpolate {
-void TuneWeights(int tune_file, const std::vector<StringPiece> &model_names, const InstancesConfig &config, Vector &weights) {
+void TuneWeights(int tune_file, const std::vector<StringPiece> &model_names, const InstancesConfig &config, std::vector<float> &weights_out) {
   Instances instances(tune_file, model_names, config);
-  weights = Vector::Constant(model_names.size(), 1.0 / model_names.size());
+  Vector weights = Vector::Constant(model_names.size(), 1.0 / model_names.size());
   Vector gradient;
   Matrix hessian;
   for (std::size_t iteration = 0; iteration < 10 /*TODO fancy stopping criteria */; ++iteration) {
@@ -28,5 +28,6 @@ void TuneWeights(int tune_file, const std::vector<StringPiece> &model_names, con
     // TODO: 1.0 step size was too big and it kept getting unstable.  More math.
     weights -= 0.7 * hessian.inverse() * gradient;
   }
+  weights_out.assign(weights.data(), weights.data() + weights.size());
 }
 }} // namespaces
