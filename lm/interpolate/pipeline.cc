@@ -31,6 +31,8 @@ void SetupInputs(std::size_t buffer_size, const UniversalVocab &vocab, util::Fix
       config.entry_size = sizeof(WordIndex) * (j + 1) + sizeof(float) * 2; // TODO do not include wasteful backoff for highest.
       chains.back().push_back(config);
     }
+    if (i == models.size() - 1)
+      chains.back().back().ActivateProgress();
     models[i].Source(chains.back());
     for (std::size_t j = 0; j < models[i].Order() - exclude_highest; ++j) {
       chains[i][j] >> Renumber(vocab.Mapping(i), j + 1);
@@ -90,7 +92,10 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
   for (std::size_t i = 0; i < max_order; ++i) {
     merged_probs.push_back(util::stream::ChainConfig(PartialProbGamma::TotalSize(info, i + 1), 2, config.BufferSize())); // TODO: not buffer_size
   }
-  MergeProbabilities(info, models_by_order, merged_probs);
+  merged_probs >> MergeProbabilities(info, models_by_order);
+  for (util::stream::Chains *i = input_chains.begin(); i != input_chains.end(); ++i) {
+    *i >> util::stream::kRecycle;
+  }
   std::vector<uint64_t> counts(max_order);
   for (std::size_t i = 0; i < max_order; ++i) {
     merged_probs[i] >> util::stream::CountRecords(&counts[i]);

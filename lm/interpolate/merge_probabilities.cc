@@ -265,21 +265,16 @@ void HandleNGrams(NGramHandlers &handlers, util::stream::Streams &outputs) {
     outputs[i].Poison();
   }
 }
-}
+} // namespace
 
-void MergeProbabilities(
-    const InterpolateInfo &info,
-    util::FixedArray<util::stream::ChainPositions> &models_by_order,
-    util::stream::Chains &output_chains) {
-  NGramHandlers handlers(output_chains.size());
-  for (std::size_t i = 0; i < output_chains.size(); ++i) {
-    handlers.push_back(i + 1, info, models_by_order);
+void MergeProbabilities::Run(const util::stream::ChainPositions &output_pos) {
+  NGramHandlers handlers(output_pos.size());
+  for (std::size_t i = 0; i < output_pos.size(); ++i) {
+    handlers.push_back(i + 1, info_, models_by_order_);
   }
 
-  util::stream::ChainPositions output_pos(output_chains);
   util::stream::Streams outputs(output_pos);
-
   HandleNGrams(handlers, outputs);
 }
-}
-}
+
+}} // namespaces

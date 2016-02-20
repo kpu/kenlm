@@ -32,14 +32,21 @@ BoundedSequenceEncoding MakeEncoder(const InterpolateInfo &info, uint8_t order);
  * these streams is terminated with a record whose ngram-id is all
  * maximum-integers for simplicity in implementation here.
  *
- * @param models An array of length N (max_i N_i) containing at
+ * @param model_by_order An array of length N (max_i N_i) containing at
  *  the ChainPositions for the streams for order (i + 1).
- * @param output_chains The output chains for each order (of length K)
+ * The Rus attached to output chains for each order (of length K)
  */
-void MergeProbabilities(
-    const InterpolateInfo &info,
-    util::FixedArray<util::stream::ChainPositions> &models_by_order,
-    util::stream::Chains &output_chains);
+class MergeProbabilities {
+  public:
+    MergeProbabilities(const InterpolateInfo &info, util::FixedArray<util::stream::ChainPositions> &models_by_order)
+      : info_(info), models_by_order_(models_by_order) {}
+
+    void Run(const util::stream::ChainPositions &outputs);
+
+  private:
+    const InterpolateInfo &info_;
+    util::FixedArray<util::stream::ChainPositions> &models_by_order_;
+};
 
 /**
  * This class represents the output payload for this pass, which consists
