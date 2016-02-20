@@ -7,6 +7,9 @@ local with-eigen = [ option.get "with-eigen" : "/usr/include/eigen3" : "/usr/inc
 obj tune_have_eigen.o : tune_have_eigen.cc : <include>$(with-eigen) ;
 explicit tune_have_eigen.o ;
 
+obj tune_have_eigen_init_parallel.o : tune_have_eigen_init_parallel.cc : <include>$(with-eigen) [ check-target-builds tune_have_eigen.o "Eigen in $(with-eigen)" ] ;
+explicit tune_have_eigen_init_parallel.o ;
+
 obj tune_instances.o : tune_instances.cc interp ..//kenlm : <include>$(with-eigen) ;
 obj tune_instances_test.o : tune_instances_test.cc ..//kenlm /top//boost_unit_test_framework : <include>$(with-eigen) ;
 run tune_instances_test.o tune_instances.o interp ..//kenlm ../common//common ../../util/stream//stream /top//boost_unit_test_framework : : tune_instances_data/toy0.1 ;
@@ -14,7 +17,7 @@ fakelib tuning : tune_instances.o tune_derivatives.cc interp ..//kenlm : <includ
 unit-test tune_derivatives_test : tune_derivatives_test.cc tuning /top//boost_unit_test_framework : <include>$(with-eigen) ;
 exe tune : tune_main.cc tuning /top//boost_program_options : <include>$(with-eigen) ;
 explicit tune_instances.o tune_instances_test.o tune_instances_test tuning tune_derivatives_test tune ;
-alias all_tuning : : [ check-target-builds tune_have_eigen.o "Eigen in $(with-eigen)" : <source>tune_instances_test <source>tune <source>tune_derivatives_test ] ;
+alias all_tuning : : [ check-target-builds tune_have_eigen_init_parallel.o "Eigen in $(with-eigen) with Eigen::initParallel() support" : <source>tune_instances_test <source>tune <source>tune_derivatives_test ] ;
 
 exe interpolate : interpolate_main.cc interp /top//boost_program_options ;
 exe streaming_example : ../builder//builder interp streaming_example_main.cc /top//boost_program_options ;
