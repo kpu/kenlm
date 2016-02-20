@@ -36,15 +36,17 @@ class SizedInnerIterator {
     void *Data() { return ptr_; }
     std::size_t EntrySize() const { return size_; }
 
-    friend void swap(SizedInnerIterator &first, SizedInnerIterator &second) {
-      std::swap(first.ptr_, second.ptr_);
-      std::swap(first.size_, second.size_);
-    }
+    friend void swap(SizedInnerIterator &first, SizedInnerIterator &second);
 
   private:
     uint8_t *ptr_;
     std::size_t size_;
 };
+
+inline void swap(SizedInnerIterator &first, SizedInnerIterator &second) {
+  std::swap(first.ptr_, second.ptr_);
+  std::swap(first.size_, second.size_);
+}
 
 class SizedProxy {
   public:
@@ -69,12 +71,7 @@ class SizedProxy {
     const void *Data() const { return inner_.Data(); }
     void *Data() { return inner_.Data(); }
 
-    friend void swap(SizedProxy first, SizedProxy second) {
-      std::swap_ranges(
-          static_cast<char*>(first.inner_.Data()),
-          static_cast<char*>(first.inner_.Data()) + first.inner_.EntrySize(),
-          static_cast<char*>(second.inner_.Data()));
-    }
+    friend void swap(SizedProxy first, SizedProxy second);
 
   private:
     friend class util::ProxyIterator<SizedProxy>;
@@ -87,6 +84,13 @@ class SizedProxy {
     const InnerIterator &Inner() const { return inner_; }
     InnerIterator inner_;
 };
+
+inline void swap(SizedProxy first, SizedProxy second) {
+  std::swap_ranges(
+      static_cast<char*>(first.inner_.Data()),
+      static_cast<char*>(first.inner_.Data()) + first.inner_.EntrySize(),
+      static_cast<char*>(second.inner_.Data()));
+}
 
 typedef ProxyIterator<SizedProxy> SizedIterator;
 
@@ -117,4 +121,11 @@ template <class Delegate, class Proxy = SizedProxy> class SizedCompare : public 
 };
 
 } // namespace util
+
+// Dirty hack because g++ 4.6 at least wants to do a bunch of std::string operations.
+namespace std {
+inline void iter_swap(util::SizedIterator first, util::SizedIterator second) {
+  util::swap(*first, *second);
+}
+} // namespace std
 #endif // UTIL_SIZED_ITERATOR_H
