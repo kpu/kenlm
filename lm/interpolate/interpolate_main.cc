@@ -37,13 +37,14 @@ int main(int argc, char *argv[]) {
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, options), vm);
   if (argc == 1 || vm["help"].as<bool>()) {
-		std::cerr << "Interpolate multiple models\n\n" << options << std::endl;
+		std::cerr << "Interpolate multiple models\n" << options << std::endl;
     return 1;
   }
   po::notify(vm);
   instances_config.sort = pipe_config.sort;
-  instances_config.lazy_memory = instances_config.sort.total_memory;
   instances_config.model_read_chain_mem = instances_config.sort.buffer_size;
+  instances_config.extension_write_chain_mem = instances_config.sort.total_memory;
+  instances_config.lazy_memory = instances_config.sort.total_memory;
 
   if (pipe_config.lambdas.empty() && tuning_file.empty()) {
     std::cerr << "Provide a tuning file with -t xor weights with -w." << std::endl;
