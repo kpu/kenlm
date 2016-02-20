@@ -4,6 +4,7 @@
 #include "util/file.hh"
 
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas" // Older gcc doesn't have "-Wunused-local-typedefs" and complains.
 #pragma GCC diagnostic ignored "-Wunused-local-typedefs"
 #include <Eigen/Dense>
 #pragma GCC diagnostic pop
