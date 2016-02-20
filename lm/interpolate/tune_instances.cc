@@ -439,11 +439,13 @@ Instances::Instances(int tune_file, const std::vector<StringPiece> &model_names,
     ln_unigrams_.resize(combined_vocab_size, models.size());
     // The backoffs in extensions_first_
     for (std::size_t m = 0; m < models.size(); ++m) {
+      std::cerr << "Processing model " << m << '/' << models.size() << ": " << model_names[m] << std::endl;
       util::stream::Chains chains(models[m].Order());
       for (std::size_t i = 0; i < models[m].Order(); ++i) {
         // TODO: stop wasting space for backoffs of highest order.
         chains.push_back(util::stream::ChainConfig(NGram<ProbBackoff>::TotalSize(i + 1), 2, config.model_read_chain_mem));
       }
+      chains.back().ActivateProgress();
       models[m].Source(chains);
       for (std::size_t i = 0; i < models[m].Order(); ++i) {
         chains[i] >> Renumber(vocab.Mapping(m), i + 1);

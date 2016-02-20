@@ -37,6 +37,7 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
 
   // TODO make configurable memory size.
   util::stream::Chain chain(util::stream::ChainConfig(in.ReadExtensionsEntrySize(), 2, 64 << 20));
+  chain.ActivateProgress();
   in.ReadExtensions(chain);
   util::stream::TypedStream<Extension> extensions(chain.Add());
   chain >> util::stream::kRecycle;
