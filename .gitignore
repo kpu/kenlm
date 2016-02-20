@@ -24,6 +24,7 @@ jam-files/engine/bootstrap/
 doc/
 ._*
 include/
+prefix-include/
 windows/Win32
 windows/x64
 windows/*.user
