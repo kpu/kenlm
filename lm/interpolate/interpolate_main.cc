@@ -15,13 +15,19 @@ int main(int argc, char *argv[]) {
   namespace po = boost::program_options;
   po::options_description options("Log-linear interpolation options");
   options.add_options()
+    ("help,h", po::bool_switch(), "Show this help message")
     ("lambda,w", po::value<std::vector<float> >(&config.lambdas)->multitoken()->required(), "Interpolation weights")
     ("model,m", po::value<std::vector<std::string> >(&input_models)->multitoken()->required(), "Models to interpolate")
     ("temp_prefix,T", po::value<std::string>(&config.sort.temp_prefix)->default_value("/tmp/lm"), "Temporary file prefix")
     ("memory,S", lm::SizeOption(config.sort.total_memory, util::GuessPhysicalMemory() ? "50%" : "1G"), "Sorting memory")
     ("sort_block", lm::SizeOption(config.sort.buffer_size, "64M"), "Block size");
   po::variables_map vm;
+
   po::store(po::parse_command_line(argc, argv, options), vm);
+  if (argc == 1 || vm["help"].as<bool>()) {
+		std::cerr << "Interpolate multiple models\n\n" << options << std::endl;
+    return 1;
+  }
   po::notify(vm);
 
   if (config.lambdas.size() != input_models.size()) {
