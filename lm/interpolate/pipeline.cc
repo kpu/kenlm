@@ -93,16 +93,20 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
     merged_probs.push_back(util::stream::ChainConfig(PartialProbGamma::TotalSize(info, i + 1), 2, config.BufferSize())); // TODO: not buffer_size
   }
   merged_probs >> MergeProbabilities(info, models_by_order);
-  for (util::stream::Chains *i = input_chains.begin(); i != input_chains.end(); ++i) {
-    *i >> util::stream::kRecycle;
-  }
   std::vector<uint64_t> counts(max_order);
   for (std::size_t i = 0; i < max_order; ++i) {
     merged_probs[i] >> util::stream::CountRecords(&counts[i]);
   }
+  for (util::stream::Chains *i = input_chains.begin(); i != input_chains.end(); ++i) {
+    *i >> util::stream::kRecycle;
+  }
 
   // Pass 2: normalize.
   ApplySort<ContextOrder>(config.sort, merged_probs);
+  for (util::stream::Chains *i = input_chains.begin(); i != input_chains.end(); ++i) {
+    i->Wait(true);
+  }
+
   std::cerr << "Normalizing" << std::endl;
   SetupInputs(config.BufferSize(), vocab, models, true, input_chains, models_by_order);
   util::stream::Chains probabilities(max_order), backoffs(max_order - 1);
@@ -121,24 +125,33 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
     backoffs.push_back(util::stream::ChainConfig(sizeof(float), 2, config.BufferSize()));
   }
   Normalize(info, models_by_order, merged_probs, probabilities, backoffs);
-
   util::FixedArray<util::stream::FileBuffer> backoff_buffers(backoffs.size());
   for (std::size_t i = 0; i < max_order - 1; ++i) {
     backoff_buffers.push_back(util::MakeTemp(config.sort.temp_prefix));
-    backoffs[i] >> backoff_buffers.back().Sink();
+    backoffs[i] >> backoff_buffers.back().Sink() >> util::stream::kRecycle;
   }
+  for (util::stream::Chains *i = input_chains.begin(); i != input_chains.end(); ++i) {
+    *i >> util::stream::kRecycle;
+  }
+  merged_probs >> util::stream::kRecycle;
 
   // Pass 3: backoffs in the right place.
   ApplySort<SuffixOrder>(config.sort, probabilities);
+  for (util::stream::Chains *i = input_chains.begin(); i != input_chains.end(); ++i) {
+    i->Wait(true);
+  }
+
   // TODO destroy universal vocab to save RAM.
   // TODO these should be freed before merge sort happens in the above function.
   backoffs.Wait(true);
   merged_probs.Wait(true);
   std::cerr << "Reunifying backoffs" << std::endl;
-
   util::stream::ChainPositions prob_pos(max_order - 1);
   util::stream::Chains combined(max_order - 1);
   for (std::size_t i = 0; i < max_order - 1; ++i) {
+    if (i == max_order - 2)
+      backoffs[i].ActivateProgress();
+    backoffs[i].SetProgressTarget(backoff_buffers[i].Size());
     backoffs[i] >> backoff_buffers[i].Source(true);
     prob_pos.push_back(probabilities[i].Add());
     combined.push_back(util::stream::ChainConfig(NGram<ProbBackoff>::TotalSize(i + 1), 2, config.BufferSize()));
