@@ -18,6 +18,7 @@
 #include <vector>
 
 int main(int argc, char *argv[]) {
+  Eigen::initParallel();
   lm::interpolate::Config pipe_config;
   lm::interpolate::InstancesConfig instances_config;
   std::vector<std::string> input_models;
