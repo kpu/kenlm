@@ -13,7 +13,7 @@ explicit tune_have_eigen_init_parallel.o ;
 obj tune_instances.o : tune_instances.cc interp ..//kenlm : <include>$(with-eigen) ;
 obj tune_instances_test.o : tune_instances_test.cc ..//kenlm /top//boost_unit_test_framework : <include>$(with-eigen) ;
 run tune_instances_test.o tune_instances.o interp ..//kenlm ../common//common ../../util/stream//stream /top//boost_unit_test_framework : : tune_instances_data/toy0.1 ;
-fakelib tuning : tune_instances.o tune_derivatives.cc interp ..//kenlm : <include>$(with-eigen) ;
+fakelib tuning : tune_instances.o tune_derivatives.cc tune_weights.cc interp ..//kenlm : <include>$(with-eigen) ;
 unit-test tune_derivatives_test : tune_derivatives_test.cc tuning /top//boost_unit_test_framework : <include>$(with-eigen) ;
 exe tune : tune_main.cc tuning /top//boost_program_options : <include>$(with-eigen) ;
 explicit tune_instances.o tune_instances_test.o tune_instances_test tuning tune_derivatives_test tune ;

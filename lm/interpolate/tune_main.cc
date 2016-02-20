@@ -1,44 +1,22 @@
 #include "lm/common/size_option.hh"
-#include "lm/interpolate/tune_derivatives.hh"
 #include "lm/interpolate/tune_instances.hh"
+#include "lm/interpolate/tune_loop.hh"
 #include "util/file.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas" // Older gcc doesn't have "-Wunused-local-typedefs" and complains.
 #pragma GCC diagnostic ignored "-Wunused-local-typedefs"
-#include <Eigen/Dense>
+#include <Eigen/Core>
 #pragma GCC diagnostic pop
+
 #include <boost/program_options.hpp>
 
-#include <cmath>
 #include <iostream>
-
-namespace lm { namespace interpolate {
-void TuneWeights(int tune_file, const std::vector<StringPiece> &model_names, const InstancesConfig &config, Vector &weights) {
-  Instances instances(tune_file, model_names, config);
-  weights = Vector::Constant(model_names.size(), 1.0 / model_names.size());
-  Vector gradient;
-  Matrix hessian;
-  for (std::size_t iteration = 0; iteration < 10 /*TODO fancy stopping criteria */; ++iteration) {
-    std::cerr << "Iteration " << iteration << ": weights =";
-    for (Vector::Index i = 0; i < weights.rows(); ++i) {
-      std::cerr << ' ' << weights(i);
-    }
-    std::cerr << std::endl;
-    std::cerr  << "Perplexity = " <<
-      Derivatives(instances, weights, gradient, hessian)
-      << std::endl;
-    // TODO: 1.0 step size was too big and it kept getting unstable.  More math.
-    weights -= 0.7 * hessian.inverse() * gradient;
-  }
-}
-}} // namespaces
 
 int main(int argc, char *argv[]) {
   Eigen::initParallel();
   namespace po = boost::program_options;
   lm::interpolate::InstancesConfig config;
-  // TODO help
   po::options_description options("Tuning options");
   std::string tuning_file;
   std::vector<std::string> input_models;
