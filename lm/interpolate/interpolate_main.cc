@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
   po::options_description options("Log-linear interpolation options");
   options.add_options()
     ("help,h", po::bool_switch(), "Show this help message")
-    ("model,m", po::value<std::vector<std::string> >(&input_models)->multitoken()->required(), "Models to interpolate")
+    ("model,m", po::value<std::vector<std::string> >(&input_models)->multitoken()->required(), "Models to interpolate, which must be in KenLM intermediate format.  The intermediate format can be generated using the --intermediate argument to lmplz.")
     ("lambda,w", po::value<std::vector<float> >(&pipe_config.lambdas)->multitoken(), "Interpolation weights")
     ("tuning,t", po::value<std::string>(&tuning_file), "File to tune on: a text file with one sentence per line")
     ("just_tune", po::bool_switch(), "Tune and print weights then quit")
