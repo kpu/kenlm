@@ -154,10 +154,7 @@ class BackoffMessages {
     void FinishedAdding() {
       Resize(current_ - (uint8_t*)backing_.get());
       // Sort requests in same order as files.
-      std::sort(
-          util::SizedIterator(util::SizedProxy(backing_.get(), entry_size_)),
-          util::SizedIterator(util::SizedProxy(current_, entry_size_)),
-          util::SizedCompare<EntryCompare>(EntryCompare((entry_size_ - sizeof(ProbPointer)) / sizeof(WordIndex))));
+      util::SizedSort(backing_.get(), current_, entry_size_, EntryCompare((entry_size_ - sizeof(ProbPointer)) / sizeof(WordIndex)));
       current_ = (uint8_t*)backing_.get();
     }
 

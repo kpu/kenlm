@@ -366,21 +366,14 @@ template <class Compare> class BlockSorter {
         // Record the size of each block in a separate file.
         offsets_->Append(link->ValidSize());
         void *end = static_cast<uint8_t*>(link->Get()) + link->ValidSize();
-#if defined(_WIN32) || defined(_WIN64)
-        std::stable_sort
-#else
-        std::sort
-#endif
-          (SizedIt(link->Get(), entry_size),
-           SizedIt(end, entry_size),
-           compare_);
+        SizedSort(link->Get(), end, entry_size, compare_);
       }
       offsets_->FinishedAppending();
     }
 
   private:
     Offsets *offsets_;
-    SizedCompare<Compare> compare_;
+    Compare compare_;
 };
 
 class BadSortConfig : public Exception {

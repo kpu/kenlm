@@ -5,12 +5,18 @@
 
 namespace util { namespace {
 
-BOOST_AUTO_TEST_CASE(swap_works) {
-  char str[2] = { 0, 1 };
-  SizedProxy first(str, 1), second(str + 1, 1);
-  swap(first, second);
-  BOOST_CHECK_EQUAL(1, str[0]);
-  BOOST_CHECK_EQUAL(0, str[1]);
+struct CompareChar {
+  bool operator()(const void *first, const void *second) const {
+    return *static_cast<const char*>(first) < *static_cast<const char*>(second);
+  }
+};
+
+BOOST_AUTO_TEST_CASE(sort) {
+  char items[3] = {1, 2, 0};
+  SizedSort(items, items + 3, 1, CompareChar());
+  BOOST_CHECK_EQUAL(0, items[0]);
+  BOOST_CHECK_EQUAL(1, items[1]);
+  BOOST_CHECK_EQUAL(2, items[2]);
 }
 
 }} // namespace anonymous util

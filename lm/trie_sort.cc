@@ -8,6 +8,7 @@
 #include "lm/word_index.hh"
 #include "util/file_piece.hh"
 #include "util/mmap.hh"
+#include "util/pool.hh"
 #include "util/proxy_iterator.hh"
 #include "util/sized_iterator.hh"
 
@@ -32,10 +33,10 @@ class PartialViewProxy {
   public:
     PartialViewProxy() : attention_size_(0), inner_() {}
 
-    PartialViewProxy(void *ptr, std::size_t block_size, std::size_t attention_size) : attention_size_(attention_size), inner_(ptr, block_size) {}
+    PartialViewProxy(void *ptr, std::size_t block_size, util::FreePool &pool) : attention_size_(pool.ElementSize()), inner_(ptr, block_size), pool_(&pool) {}
 
-    operator std::string() const {
-      return std::string(reinterpret_cast<const char*>(inner_.Data()), attention_size_);
+    operator util::ValueBlock() const {
+      return util::ValueBlock(inner_.Data(), *pool_);
     }
 
     PartialViewProxy &operator=(const PartialViewProxy &from) {
@@ -43,8 +44,8 @@ class PartialViewProxy {
       return *this;
     }
 
-    PartialViewProxy &operator=(const std::string &from) {
-      memcpy(inner_.Data(), from.data(), attention_size_);
+    PartialViewProxy &operator=(const util::ValueBlock &from) {
+      memcpy(inner_.Data(), from.Data(), attention_size_);
       return *this;
     }
 
@@ -58,7 +59,7 @@ class PartialViewProxy {
   private:
     friend class util::ProxyIterator<PartialViewProxy>;
 
-    typedef std::string value_type;
+    typedef util::ValueBlock value_type;
 
     const std::size_t attention_size_;
 
@@ -66,6 +67,8 @@ class PartialViewProxy {
     InnerIterator &Inner() { return inner_; }
     const InnerIterator &Inner() const { return inner_; }
     InnerIterator inner_;
+
+    util::FreePool *pool_;
 };
 
 typedef util::ProxyIterator<PartialViewProxy> PartialIter;
@@ -78,9 +81,11 @@ FILE *DiskFlush(const void *mem_begin, const void *mem_end, const std::string &t
 
 FILE *WriteContextFile(uint8_t *begin, uint8_t *end, const std::string &temp_prefix, std::size_t entry_size, unsigned char order) {
   const size_t context_size = sizeof(WordIndex) * (order - 1);
+
+  util::FreePool pool(context_size);
   // Sort just the contexts using the same memory.
-  PartialIter context_begin(PartialViewProxy(begin + sizeof(WordIndex), entry_size, context_size));
-  PartialIter context_end(PartialViewProxy(end + sizeof(WordIndex), entry_size, context_size));
+  PartialIter context_begin(PartialViewProxy(begin + sizeof(WordIndex), entry_size, pool));
+  PartialIter context_end(PartialViewProxy(end + sizeof(WordIndex), entry_size, pool));
 
 #if defined(_WIN32) || defined(_WIN64)
   std::stable_sort
@@ -265,14 +270,7 @@ void SortedFiles::ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vo
       }
     }
     // Sort full records by full n-gram.
-    util::SizedProxy proxy_begin(begin, entry_size), proxy_end(out_end, entry_size);
-    // parallel_sort uses too much RAM.  TODO: figure out why windows sort doesn't like my proxies.
-#if defined(_WIN32) || defined(_WIN64)
-    std::stable_sort
-#else
-    std::sort
-#endif
-        (NGramIter(proxy_begin), NGramIter(proxy_end), util::SizedCompare<EntryCompare>(EntryCompare(order)));
+    util::SizedSort(begin, out_end, entry_size, EntryCompare(order));
     files.push_back(DiskFlush(begin, out_end, file_prefix));
     contexts.push_back(WriteContextFile(begin, out_end, file_prefix, entry_size, order));
 

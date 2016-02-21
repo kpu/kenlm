@@ -1,6 +1,7 @@
 #ifndef UTIL_SIZED_ITERATOR_H
 #define UTIL_SIZED_ITERATOR_H
 
+#include "util/pool.hh"
 #include "util/proxy_iterator.hh"
 
 #include <algorithm>
@@ -9,6 +10,8 @@
 
 #include <stdint.h>
 #include <cstring>
+
+#include <stdlib.h>
 
 namespace util {
 
@@ -44,18 +47,44 @@ class SizedInnerIterator {
 };
 
 inline void swap(SizedInnerIterator &first, SizedInnerIterator &second) {
-  std::swap(first.ptr_, second.ptr_);
-  std::swap(first.size_, second.size_);
+  using std::swap;
+  swap(first.ptr_, second.ptr_);
+  swap(first.size_, second.size_);
 }
+
+class ValueBlock {
+  public:
+    explicit ValueBlock(const void *from, FreePool &pool)
+      : ptr_(std::memcpy(pool.Allocate(), from, pool.ElementSize())),
+        pool_(pool) {}
+
+    ValueBlock(const ValueBlock &from)
+      : ptr_(std::memcpy(from.pool_.Allocate(), from.ptr_, from.pool_.ElementSize())),
+        pool_(from.pool_) {}
+
+    ValueBlock &operator=(const ValueBlock &from) {
+      std::memcpy(ptr_, from.ptr_, pool_.ElementSize());
+      return *this;
+    }
+
+    ~ValueBlock() { pool_.Free(ptr_); }
+
+    const void *Data() const { return ptr_; }
+    void *Data() { return ptr_; }
+
+  private:
+    void *ptr_;
+    FreePool &pool_;
+};
 
 class SizedProxy {
   public:
     SizedProxy() {}
 
-    SizedProxy(void *ptr, std::size_t size) : inner_(ptr, size) {}
+    SizedProxy(void *ptr, FreePool &pool) : inner_(ptr, pool.ElementSize()), pool_(&pool) {}
 
-    operator std::string() const {
-      return std::string(reinterpret_cast<const char*>(inner_.Data()), inner_.EntrySize());
+    operator ValueBlock() const {
+      return ValueBlock(inner_.Data(), *pool_);
     }
 
     SizedProxy &operator=(const SizedProxy &from) {
@@ -63,8 +92,8 @@ class SizedProxy {
       return *this;
     }
 
-    SizedProxy &operator=(const std::string &from) {
-      memcpy(inner_.Data(), from.data(), inner_.EntrySize());
+    SizedProxy &operator=(const ValueBlock &from) {
+      memcpy(inner_.Data(), from.Data(), inner_.EntrySize());
       return *this;
     }
 
@@ -76,13 +105,16 @@ class SizedProxy {
   private:
     friend class util::ProxyIterator<SizedProxy>;
 
-    typedef std::string value_type;
+    typedef ValueBlock value_type;
 
     typedef SizedInnerIterator InnerIterator;
 
     InnerIterator &Inner() { return inner_; }
     const InnerIterator &Inner() const { return inner_; }
+
     InnerIterator inner_;
+
+    FreePool *pool_;
 };
 
 inline void swap(SizedProxy first, SizedProxy second) {
@@ -94,8 +126,6 @@ inline void swap(SizedProxy first, SizedProxy second) {
 
 typedef ProxyIterator<SizedProxy> SizedIterator;
 
-inline SizedIterator SizedIt(void *ptr, std::size_t size) { return SizedIterator(SizedProxy(ptr, size)); }
-
 // Useful wrapper for a comparison function i.e. sort.
 template <class Delegate, class Proxy = SizedProxy> class SizedCompare : public std::binary_function<const Proxy &, const Proxy &, bool> {
   public:
@@ -104,14 +134,14 @@ template <class Delegate, class Proxy = SizedProxy> class SizedCompare : public 
     bool operator()(const Proxy &first, const Proxy &second) const {
       return delegate_(first.Data(), second.Data());
     }
-    bool operator()(const Proxy &first, const std::string &second) const {
-      return delegate_(first.Data(), second.data());
+    bool operator()(const Proxy &first, const ValueBlock &second) const {
+      return delegate_(first.Data(), second.Data());
     }
-    bool operator()(const std::string &first, const Proxy &second) const {
-      return delegate_(first.data(), second.Data());
+    bool operator()(const ValueBlock &first, const Proxy &second) const {
+      return delegate_(first.Data(), second.Data());
     }
-    bool operator()(const std::string &first, const std::string &second) const {
-      return delegate_(first.data(), second.data());
+    bool operator()(const ValueBlock &first, const ValueBlock &second) const {
+      return delegate_(first.Data(), second.Data());
     }
 
     const Delegate &GetDelegate() const { return delegate_; }
@@ -120,9 +150,29 @@ template <class Delegate, class Proxy = SizedProxy> class SizedCompare : public 
     const Delegate delegate_;
 };
 
+template <class Compare> void SizedSort(void *start, void *end, std::size_t element_size, const Compare &compare) {
+  // Recent g++ versions create a temporary value_type then compare with it.
+  // Problem is that value_type in this case needs to be a runtime-sized array.
+  // Previously I had std::string serve this role.  However, there were a lot
+  // of string new and delete calls.
+  //
+  // The temporary value is on the stack, so there will typically only be one
+  // at a time.  But we can't guarantee that.  So here is a pool optimized for
+  // the case where one element is allocated at any given time.  It can
+  // allocate more, should the underlying C++ sort code change.
+  FreePool pool(element_size);
+  // TODO is this necessary anymore?
+#if defined(_WIN32) || defined(_WIN64)
+  std::stable_sort
+#else
+  std::sort
+#endif
+    (SizedIterator(SizedProxy(start, pool)), SizedIterator(SizedProxy(end, pool)), SizedCompare<Compare>(compare));
+}
+
 } // namespace util
 
-// Dirty hack because g++ 4.6 at least wants to do a bunch of std::string operations.
+// Dirty hack because g++ 4.6 at least wants to do a bunch of copy operations.
 namespace std {
 inline void iter_swap(util::SizedIterator first, util::SizedIterator second) {
   util::swap(*first, *second);
