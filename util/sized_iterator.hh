@@ -150,24 +150,58 @@ template <class Delegate, class Proxy = SizedProxy> class SizedCompare : public 
     const Delegate delegate_;
 };
 
+template <unsigned Size> class JustPOD {
+  unsigned char data[Size];
+};
+
+template <class Delegate, unsigned Size> class JustPODDelegate : std::binary_function<const JustPOD<Size> &, const JustPOD<Size> &, bool> {
+  public:
+    explicit JustPODDelegate(const Delegate &compare) : delegate_(compare) {}
+    bool operator()(const JustPOD<Size> &first, const JustPOD<Size> &second) const {
+      return delegate_(&first, &second);
+    }
+  private:
+    Delegate delegate_;
+};
+
+#define UTIL_SORT_SPECIALIZE(Size) \
+  case Size: \
+    std::sort(static_cast<JustPOD<Size>*>(start), static_cast<JustPOD<Size>*>(end), JustPODDelegate<Compare, Size>(compare)); \
+    break;
+
 template <class Compare> void SizedSort(void *start, void *end, std::size_t element_size, const Compare &compare) {
-  // Recent g++ versions create a temporary value_type then compare with it.
-  // Problem is that value_type in this case needs to be a runtime-sized array.
-  // Previously I had std::string serve this role.  However, there were a lot
-  // of string new and delete calls.
-  //
-  // The temporary value is on the stack, so there will typically only be one
-  // at a time.  But we can't guarantee that.  So here is a pool optimized for
-  // the case where one element is allocated at any given time.  It can
-  // allocate more, should the underlying C++ sort code change.
-  FreePool pool(element_size);
-  // TODO is this necessary anymore?
-#if defined(_WIN32) || defined(_WIN64)
-  std::stable_sort
-#else
-  std::sort
+  switch (element_size) {
+    // Benchmarking sort found it's about 2x faster with an explicitly sized type.  So here goes :-(.
+    UTIL_SORT_SPECIALIZE(4);
+    UTIL_SORT_SPECIALIZE(8);
+    UTIL_SORT_SPECIALIZE(12);
+    UTIL_SORT_SPECIALIZE(16);
+    UTIL_SORT_SPECIALIZE(17); // This is used by interpolation.
+    UTIL_SORT_SPECIALIZE(20);
+    UTIL_SORT_SPECIALIZE(24);
+    UTIL_SORT_SPECIALIZE(28);
+    UTIL_SORT_SPECIALIZE(32);
+    default:
+      // Recent g++ versions create a temporary value_type then compare with it.
+      // Problem is that value_type in this case needs to be a runtime-sized array.
+      // Previously I had std::string serve this role.  However, there were a lot
+      // of string new and delete calls.
+      //
+      // The temporary value is on the stack, so there will typically only be one
+      // at a time.  But we can't guarantee that.  So here is a pool optimized for
+      // the case where one element is allocated at any given time.  It can
+      // allocate more, should the underlying C++ sort code change.
+      {
+        FreePool pool(element_size);
+        // TODO is this necessary anymore?
+  #if defined(_WIN32) || defined(_WIN64)
+        std::stable_sort
+  #else
+        std::sort
 #endif
-    (SizedIterator(SizedProxy(start, pool)), SizedIterator(SizedProxy(end, pool)), SizedCompare<Compare>(compare));
+          (SizedIterator(SizedProxy(start, pool)), SizedIterator(SizedProxy(end, pool)), SizedCompare<Compare>(compare));
+    }
+  }
 }
 
 } // namespace util
