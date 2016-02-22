@@ -1,5 +1,4 @@
-from distutils.core import setup
-from distutils.extension import Extension
+from setuptools import setup, Extension
 import glob
 import platform
 import os
@@ -44,5 +43,6 @@ ext_modules = [
 
 setup(
     name='kenlm',
-    ext_modules=ext_modules
+    ext_modules=ext_modules,
+    include_package_data=True,
 )
