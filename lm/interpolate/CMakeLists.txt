@@ -1,6 +1,6 @@
-find_package(Eigen3 3.1.0)
+find_package(Eigen3)
 
-if(EIGEN3_FOUND)
+if(EIGEN3_FOUND AND 3.1.0 VERSION_LESS ${EIGEN3_VERSION})
   include_directories(${EIGEN3_INCLUDE_DIR})
   
   set(KENLM_INTERPOLATE_SOURCE
@@ -47,4 +47,14 @@ if(EIGEN3_FOUND)
                    TEST_ARGS
                    ${CMAKE_CURRENT_SOURCE_DIR}/tune_instances_data/toy0.1)
   endif()
+else()
+  if (EIGEN3_FOUND)
+    message(WARNING "Not building interpolation. You have an old version of Eigen3, ${EIGEN3_VERSION}, which has a race condition: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=466.  Please install Eigen 3.1.0 or above.")
+  else()
+    message(WARNING "Not building interpolation. Eigen3 was not found.")
+  endif()
+  message(STATUS "To install Eigen3 in your home directory, copy paste this:\n"
+      "export EIGEN3_ROOT=$HOME/eigen-eigen-07105f7124f9\n"
+      "(cd $HOME; wget -O - https://bitbucket.org/eigen/eigen/get/3.2.8.tar.bz2 |tar xj)\n"
+      "rm CMakeCache.txt\n")
 endif()
