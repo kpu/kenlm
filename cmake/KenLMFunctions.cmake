@@ -46,7 +46,9 @@ function(KenLMAddTest)
                  ${KenLMAddTest_DEPENDS})
 
   # Require the following compile flag
-  set_target_properties(${KenLMAddTest_TEST} PROPERTIES COMPILE_FLAGS -DBOOST_TEST_DYN_LINK)
+  set_target_properties(${KenLMAddTest_TEST} PROPERTIES
+                        COMPILE_FLAGS -DBOOST_TEST_DYN_LINK
+                        RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/tests)
 
   target_link_libraries(${KenLMAddTest_TEST} ${KenLMAddTest_LIBRARIES} ${TIMER_LINK})
 
