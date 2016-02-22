@@ -28,15 +28,8 @@ set(KENLM_BUILDER_SOURCE
 #
 add_library(kenlm_builder ${KENLM_BUILDER_SOURCE})
 
-
-# Compile the executable, linking against the requisite dependent object files
-add_executable(lmplz lmplz_main.cc)
-
-# Link the executable against boost
-target_link_libraries(lmplz kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} pthread)
-
-# Group executables together
-set_target_properties(lmplz PROPERTIES FOLDER executables)
+AddExes(EXES lmplz
+        LIBRARIES kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} pthread)
 
 if(BUILD_TESTING)
 

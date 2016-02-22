@@ -2,6 +2,12 @@
 
 include(CMakeParseArguments)
 
+if (UNIX AND NOT APPLE)
+  set(TIMER_LINK rt)
+else()
+  set(TIMER_LINK)
+endif()
+
 # Adds a bunch of executables to the build, each depending on the specified
 # dependent object files and linking against the specified libraries
 function(AddExes)
@@ -15,9 +21,7 @@ function(AddExes)
     add_executable(${exe} ${exe}_main.cc ${AddExes_DEPENDS})
 
     # Link the executable against the supplied libraries
-    if(AddExes_LIBRARIES)
-      target_link_libraries(${exe} ${AddExes_LIBRARIES})
-    endif()
+    target_link_libraries(${exe} ${AddExes_LIBRARIES} ${TIMER_LINK})
 
     # Group executables together
     set_target_properties(${exe} PROPERTIES FOLDER executables)
@@ -44,9 +48,7 @@ function(KenLMAddTest)
   # Require the following compile flag
   set_target_properties(${KenLMAddTest_TEST} PROPERTIES COMPILE_FLAGS -DBOOST_TEST_DYN_LINK)
 
-  if(KenLMAddTest_LIBRARIES)
-    target_link_libraries(${KenLMAddTest_TEST} ${KenLMAddTest_LIBRARIES})
-  endif()
+  target_link_libraries(${KenLMAddTest_TEST} ${KenLMAddTest_LIBRARIES} ${TIMER_LINK})
 
   set(test_params "")
   if(KenLMAddTest_TEST_ARGS)

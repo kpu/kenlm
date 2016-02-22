@@ -50,6 +50,7 @@ set(EXE_LIST
   query
   fragment
   build_binary
+  kenlm_benchmark
 )
 
 set(LM_LIBS kenlm kenlm_util ${Boost_LIBRARIES} pthread)

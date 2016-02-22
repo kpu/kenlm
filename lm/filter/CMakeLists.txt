@@ -25,26 +25,6 @@ set(KENLM_FILTER_SOURCE
 #
 add_library(kenlm_filter ${KENLM_FILTER_SOURCE})
 
-
-# Explicitly list the executable files to be compiled
-set(EXE_LIST
-  filter
-  phrase_table_vocab
-)
-
-
-# Iterate through the executable list   
-foreach(exe ${EXE_LIST})
-
-  # Compile the executable, linking against the requisite dependent object files
-	add_executable(${exe} ${exe}_main.cc)
-
-  # Link the executable against boost
-  target_link_libraries(${exe} kenlm_filter kenlm kenlm_util ${Boost_LIBRARIES} pthread)
-
-  # Group executables together
-  set_target_properties(${exe} PROPERTIES FOLDER executables)
-
-# End for loop
-endforeach(exe)
+AddExes(EXES filter phrase_table_vocab
+        LIBRARIES kenlm_filter kenlm kenlm_util ${Boost_LIBRARIES} pthread)
 
