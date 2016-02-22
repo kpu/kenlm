@@ -42,6 +42,9 @@
 
 namespace lm { namespace interpolate {
 
+// gcc 4.6 complains about uninitialized when sort code is generated for a 4-byte POD.  But that sort code is never used.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuninitialized"
 bool Extension::operator<(const Extension &other) const {
   if (instance != other.instance)
     return instance < other.instance;
@@ -51,6 +54,7 @@ bool Extension::operator<(const Extension &other) const {
     return model < other.model;
   return false;
 }
+#pragma GCC diagnostic pop
 
 namespace {
 
