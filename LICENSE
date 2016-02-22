@@ -5,10 +5,9 @@ details.
 util/getopt.* is getopt for Windows
 util/murmur_hash.cc
 util/string_piece.hh and util/string_piece.cc
-util/double-conversion/LICENSE covers util/double-conversion except Jamfile
+util/double-conversion/LICENSE covers util/double-conversion except the build files
 util/file.cc contains a modified implementation of mkstemp under the LGPL
 util/integer_to_string.* is BSD
-jam-files/LICENSE_1_0.txt covers jam-files except Jamroot
 
 For the rest:
 

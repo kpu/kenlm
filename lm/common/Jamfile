@@ -1,2 +1,0 @@
-fakelib common : [ glob *.cc : *test.cc *main.cc ]
-  ../../util//kenutil ../../util/stream//stream ../../util/double-conversion//double-conversion ..//kenlm /top//boost_program_options ;

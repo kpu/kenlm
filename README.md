@@ -7,7 +7,7 @@ I do development in master on https://github.com/kpu/kenlm/.  Normally, it works
 The website http://kheafield.com/code/kenlm/ has more documentation.  If you're a decoder developer, please download the latest version from there instead of copying from another decoder.  
 
 ## Compiling
-See BUILDING. 
+Use cmake, see [BUILDING](BUILDING) for more detail.
 
 ## Compiling with your own build system
 If you want to compile with your own build system (Makefile etc) or to use as a library, there are a number of macros you can set on the g++ command line or in util/have.hh .  

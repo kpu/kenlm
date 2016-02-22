@@ -1,7 +1,0 @@
-fakelib lm_filter : phrase.cc vocab.cc arpa_io.cc ../../util//kenutil : <threading>multi:<library>/top//boost_thread ;
-
-obj main : filter_main.cc : <threading>single:<define>NTHREAD <include>../.. ;
-
-exe filter : main lm_filter ../../util//kenutil ..//kenlm : <threading>multi:<library>/top//boost_thread ;
-
-exe phrase_table_vocab : phrase_table_vocab_main.cc ../../util//kenutil ;

@@ -31,3 +31,9 @@ windows/*.user
 windows/*.sdf
 windows/*.opensdf
 windows/*.suo
+Makefile
+CTestTestfile.cmake
+cmake_install.cmake
+CMakeFiles
+CMakeCache.txt
+DartConfiguration.tcl

@@ -1,7 +1,0 @@
-fakelib stream : [ glob *.cc : *_test.cc ] ..//kenutil /top//boost_thread : : : <library>/top//boost_thread ;
-
-import testing ;
-unit-test io_test : io_test.cc stream /top//boost_unit_test_framework ;
-unit-test stream_test : stream_test.cc stream /top//boost_unit_test_framework ;
-unit-test rewindable_stream_test : rewindable_stream_test.cc stream /top//boost_unit_test_framework ;
-unit-test sort_test : sort_test.cc stream /top//boost_unit_test_framework ;
