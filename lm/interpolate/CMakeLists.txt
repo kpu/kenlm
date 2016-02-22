@@ -1,6 +1,6 @@
 find_package(Eigen3 3.1.0)
 
-if(Eigen3_FOUND)
+if(EIGEN3_FOUND)
   include_directories(${EIGEN3_INCLUDE_DIR})
   
   set(KENLM_INTERPOLATE_SOURCE
