@@ -1,15 +1,3 @@
-cmake_minimum_required(VERSION 2.8.8)
-#
-# The KenLM cmake files make use of add_library(... OBJECTS ...)
-# 
-# This syntax allows grouping of source files when compiling
-# (effectively creating "fake" libraries based on source subdirs).
-# 
-# This syntax was only added in cmake version 2.8.8
-#
-# see http://www.cmake.org/Wiki/CMake/Tutorials/Object_Library
-
-
 # This CMake file was created by Lane Schwartz <dowobeha@gmail.com>
 
 # Explicitly list the source files for this subdirectory
@@ -38,14 +26,14 @@ set(KENLM_BUILDER_SOURCE
 # Given add_library(foo OBJECT ${my_foo_sources}),
 # refer to these objects as $<TARGET_OBJECTS:foo>
 #
-add_library(kenlm_builder OBJECT ${KENLM_BUILDER_SOURCE})
+add_library(kenlm_builder ${KENLM_BUILDER_SOURCE})
 
 
 # Compile the executable, linking against the requisite dependent object files
-add_executable(lmplz lmplz_main.cc $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_common> $<TARGET_OBJECTS:kenlm_builder> $<TARGET_OBJECTS:kenlm_util>)
+add_executable(lmplz lmplz_main.cc)
 
 # Link the executable against boost
-target_link_libraries(lmplz ${Boost_LIBRARIES} pthread)
+target_link_libraries(lmplz kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} pthread)
 
 # Group executables together
 set_target_properties(lmplz PROPERTIES FOLDER executables)
@@ -59,9 +47,5 @@ if(BUILD_TESTING)
   )
 
   AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}
-           DEPENDS $<TARGET_OBJECTS:kenlm>
-                   $<TARGET_OBJECTS:kenlm_common>
-                   $<TARGET_OBJECTS:kenlm_util>
-                   $<TARGET_OBJECTS:kenlm_builder>
-           LIBRARIES ${Boost_LIBRARIES} pthread)
+           LIBRARIES kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} pthread)
 endif()

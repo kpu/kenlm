@@ -17,21 +17,17 @@ if(EIGEN3_FOUND)
       tune_weights.cc
       universal_vocab.cc)
   
-  add_library(kenlm_interpolate OBJECT ${KENLM_INTERPOLATE_SOURCE})
+  add_library(kenlm_interpolate ${KENLM_INTERPOLATE_SOURCE})
   
   set(KENLM_INTERPOLATE_EXES
       interpolate
       streaming_example)
   
-  set(KENLM_INTERPOLATE_DEPENDS
-      $<TARGET_OBJECTS:kenlm>
-      $<TARGET_OBJECTS:kenlm_util>
-      $<TARGET_OBJECTS:kenlm_common>
-      $<TARGET_OBJECTS:kenlm_interpolate>)
+    set(KENLM_INTERPOLATE_LIBS
+      kenlm_interpolate kenlm kenlm_util ${Boost_LIBRARIES} pthread)
   
   AddExes(EXES ${KENLM_INTERPOLATE_EXES}
-          DEPENDS ${KENLM_INTERPOLATE_DEPENDS}
-          LIBRARIES ${Boost_LIBRARIES} pthread)
+          LIBRARIES ${KENLM_INTERPOLATE_LIBS})
   
   if(BUILD_TESTING)
       set(KENLM_INTERPOLATE_TESTS
@@ -42,13 +38,12 @@ if(EIGEN3_FOUND)
           tune_derivatives_test)
   
       AddTests(TESTS ${KENLM_INTERPOLATE_TESTS}
-               DEPENDS ${KENLM_INTERPOLATE_DEPENDS}
-               LIBRARIES ${Boost_LIBRARIES} pthread)
+               LIBRARIES ${KENLM_INTERPOLATE_LIBS} pthread)
   
       # tune_instances_test needs an extra command line parameter
       KenLMAddTest(TEST tune_instances_test
                    DEPENDS ${KENLM_INTERPOLATE_DEPENDS}
-                   LIBRARIES ${Boost_LIBRARIES} pthread
+                   LIBRARIES ${KENLM_INTERPOLATE_LIBS}
                    TEST_ARGS
                    ${CMAKE_CURRENT_SOURCE_DIR}/tune_instances_data/toy0.1)
   endif()

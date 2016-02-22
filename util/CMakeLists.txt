@@ -1,15 +1,3 @@
-cmake_minimum_required(VERSION 2.8.8)
-#
-# The KenLM cmake files make use of add_library(... OBJECTS ...)
-# 
-# This syntax allows grouping of source files when compiling
-# (effectively creating "fake" libraries based on source subdirs).
-# 
-# This syntax was only added in cmake version 2.8.8
-#
-# see http://www.cmake.org/Wiki/CMake/Tutorials/Object_Library
-
-
 # This CMake file was created by Lane Schwartz <dowobeha@gmail.com>
 
 
@@ -52,7 +40,7 @@ add_subdirectory(stream)
 # Given add_library(foo OBJECT ${my_foo_sources}),
 # refer to these objects as $<TARGET_OBJECTS:foo>
 #
-add_library(kenlm_util OBJECT ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
+add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
 
 
 
@@ -71,12 +59,10 @@ if(BUILD_TESTING)
   )
 
   AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}
-           DEPENDS $<TARGET_OBJECTS:kenlm_util>
-           LIBRARIES ${Boost_LIBRARIES} pthread)
+           LIBRARIES kenlm_util ${Boost_LIBRARIES} pthread)
 
   # file_piece_test requires an extra command line parameter
   KenLMAddTest(TEST file_piece_test
-               DEPENDS $<TARGET_OBJECTS:kenlm_util>
-               LIBRARIES ${Boost_LIBRARIES} pthread
+               LIBRARIES kenlm_util ${Boost_LIBRARIES} pthread
                TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/file_piece.cc)
 endif()

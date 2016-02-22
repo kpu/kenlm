@@ -1,15 +1,4 @@
-cmake_minimum_required(VERSION 2.8.8)
-#
-# The KenLM cmake files make use of add_library(... OBJECTS ...)
-# 
-# This syntax allows grouping of source files when compiling
-# (effectively creating "fake" libraries based on source subdirs).
-# 
-# This syntax was only added in cmake version 2.8.8
-#
-# see http://www.cmake.org/Wiki/CMake/Tutorials/Object_Library
-
-
+cmake_minimum_required(VERSION 2.6)
 # This CMake file was created by Lane Schwartz <dowobeha@gmail.com>
 
 
@@ -48,8 +37,6 @@ include_directories(
   ${PROJECT_SOURCE_DIR} 
   ${Boost_INCLUDE_DIRS}
 )
-
-option(BUILD_INTERPOLATE "Build language model interpolation code" OFF)
 
 # Process subdirectories
 add_subdirectory(util)

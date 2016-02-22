@@ -1,15 +1,3 @@
-cmake_minimum_required(VERSION 2.8.8)
-#
-# The KenLM cmake files make use of add_library(... OBJECTS ...)
-# 
-# This syntax allows grouping of source files when compiling
-# (effectively creating "fake" libraries based on source subdirs).
-# 
-# This syntax was only added in cmake version 2.8.8
-#
-# see http://www.cmake.org/Wiki/CMake/Tutorials/Object_Library
-
-
 # This CMake file was created by Lane Schwartz <dowobeha@gmail.com>
 
 
@@ -24,7 +12,7 @@ add_definitions(-DKENLM_MAX_ORDER=${KENLM_MAX_ORDER})
 #    that should be included in the kenlm library,
 #        (this excludes any unit test files)
 #    you should add them to the following list:
-set(KENLM_SOURCE 
+set(KENLM_LM_SOURCE 
 	bhiksha.cc
 	binary_format.cc
 	config.cc
@@ -48,11 +36,12 @@ set(KENLM_SOURCE
 # Given add_library(foo OBJECT ${my_foo_sources}),
 # refer to these objects as $<TARGET_OBJECTS:foo>
 #
-add_library(kenlm OBJECT ${KENLM_SOURCE})
+add_subdirectory(common)
+
+add_library(kenlm ${KENLM_LM_SOURCE} ${KENLM_LM_COMMON_SOURCE})
 
 # This directory has children that need to be processed
 add_subdirectory(builder)
-add_subdirectory(common)
 add_subdirectory(filter)
 add_subdirectory(interpolate)
 
@@ -63,27 +52,21 @@ set(EXE_LIST
   build_binary
 )
 
-AddExes(EXES ${EXE_LIST}
-        DEPENDS $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util>
-        LIBRARIES ${Boost_LIBRARIES} pthread)
+set(LM_LIBS kenlm kenlm_util ${Boost_LIBRARIES} pthread)
 
-# Conditionally build the interpolation code
-if(BUILD_INTERPOLATE)
-  add_subdirectory(interpolate)
-endif()
+AddExes(EXES ${EXE_LIST}
+        LIBRARIES ${LM_LIBS})
 
 if(BUILD_TESTING)
 
   set(KENLM_BOOST_TESTS_LIST left_test partial_test)
   AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}
-           DEPENDS $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util>
-           LIBRARIES ${Boost_LIBRARIES} pthread
+           LIBRARIES ${LM_LIBS}
            TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/test.arpa)
 
   # model_test requires an extra command line parameter
   KenLMAddTest(TEST model_test
-               DEPENDS $<TARGET_OBJECTS:kenlm> $<TARGET_OBJECTS:kenlm_util>
-               LIBRARIES ${Boost_LIBRARIES} pthread
+               LIBRARIES ${LM_LIBS}
                TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/test.arpa
                          ${CMAKE_CURRENT_SOURCE_DIR}/test_nounk.arpa)
 endif()
