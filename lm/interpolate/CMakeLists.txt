@@ -1,52 +1,55 @@
-find_package(Eigen3 3.1.0 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIR})
+find_package(Eigen3 3.1.0)
 
-set(KENLM_INTERPOLATE_SOURCE
-    backoff_reunification.cc
-    bounded_sequence_encoding.cc
-    enumerate_global_vocab.cc
-    merge_probabilities.cc
-    merge_vocab.cc
-    normalize.cc
-    pipeline.cc
-    split_worker.cc
-    tune_derivatives.cc
-    tune_instances.cc
-    tune_weights.cc
-    universal_vocab.cc)
-
-add_library(kenlm_interpolate OBJECT ${KENLM_INTERPOLATE_SOURCE})
-
-set(KENLM_INTERPOLATE_EXES
-    interpolate
-    streaming_example)
-
-set(KENLM_INTERPOLATE_DEPENDS
-    $<TARGET_OBJECTS:kenlm>
-    $<TARGET_OBJECTS:kenlm_util>
-    $<TARGET_OBJECTS:kenlm_common>
-    $<TARGET_OBJECTS:kenlm_interpolate>)
-
-AddExes(EXES ${KENLM_INTERPOLATE_EXES}
-        DEPENDS ${KENLM_INTERPOLATE_DEPENDS}
-        LIBRARIES ${Boost_LIBRARIES} pthread)
-
-if(BUILD_TESTING)
-    set(KENLM_INTERPOLATE_TESTS
-        backoff_reunification_test
-        bounded_sequence_encoding_test
-        merge_vocab_test
-        normalize_test
-        tune_derivatives_test)
-
-    AddTests(TESTS ${KENLM_INTERPOLATE_TESTS}
-             DEPENDS ${KENLM_INTERPOLATE_DEPENDS}
-             LIBRARIES ${Boost_LIBRARIES} pthread)
-
-    # tune_instances_test needs an extra command line parameter
-    KenLMAddTest(TEST tune_instances_test
-                 DEPENDS ${KENLM_INTERPOLATE_DEPENDS}
-                 LIBRARIES ${Boost_LIBRARIES} pthread
-                 TEST_ARGS
-                 ${CMAKE_CURRENT_SOURCE_DIR}/tune_instances_data/toy0.1)
+if(Eigen3_FOUND)
+  include_directories(${EIGEN3_INCLUDE_DIR})
+  
+  set(KENLM_INTERPOLATE_SOURCE
+      backoff_reunification.cc
+      bounded_sequence_encoding.cc
+      enumerate_global_vocab.cc
+      merge_probabilities.cc
+      merge_vocab.cc
+      normalize.cc
+      pipeline.cc
+      split_worker.cc
+      tune_derivatives.cc
+      tune_instances.cc
+      tune_weights.cc
+      universal_vocab.cc)
+  
+  add_library(kenlm_interpolate OBJECT ${KENLM_INTERPOLATE_SOURCE})
+  
+  set(KENLM_INTERPOLATE_EXES
+      interpolate
+      streaming_example)
+  
+  set(KENLM_INTERPOLATE_DEPENDS
+      $<TARGET_OBJECTS:kenlm>
+      $<TARGET_OBJECTS:kenlm_util>
+      $<TARGET_OBJECTS:kenlm_common>
+      $<TARGET_OBJECTS:kenlm_interpolate>)
+  
+  AddExes(EXES ${KENLM_INTERPOLATE_EXES}
+          DEPENDS ${KENLM_INTERPOLATE_DEPENDS}
+          LIBRARIES ${Boost_LIBRARIES} pthread)
+  
+  if(BUILD_TESTING)
+      set(KENLM_INTERPOLATE_TESTS
+          backoff_reunification_test
+          bounded_sequence_encoding_test
+          merge_vocab_test
+          normalize_test
+          tune_derivatives_test)
+  
+      AddTests(TESTS ${KENLM_INTERPOLATE_TESTS}
+               DEPENDS ${KENLM_INTERPOLATE_DEPENDS}
+               LIBRARIES ${Boost_LIBRARIES} pthread)
+  
+      # tune_instances_test needs an extra command line parameter
+      KenLMAddTest(TEST tune_instances_test
+                   DEPENDS ${KENLM_INTERPOLATE_DEPENDS}
+                   LIBRARIES ${Boost_LIBRARIES} pthread
+                   TEST_ARGS
+                   ${CMAKE_CURRENT_SOURCE_DIR}/tune_instances_data/toy0.1)
+  endif()
 endif()
