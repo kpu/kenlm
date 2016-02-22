@@ -8,6 +8,12 @@ The website http://kheafield.com/code/kenlm/ has more documentation.  If you're 
 
 ## Compiling
 Use cmake, see [BUILDING](BUILDING) for more detail.
+```bash
+mkdir -p build
+cd build
+cmake ..
+make -j 4
+```
 
 ## Compiling with your own build system
 If you want to compile with your own build system (Makefile etc) or to use as a library, there are a number of macros you can set on the g++ command line or in util/have.hh .  
