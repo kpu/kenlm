@@ -67,7 +67,7 @@ Hideo Okuma and Tomoyuki Yoshimura from NICT contributed ports to ARM and MinGW.
 ## Decoder developers
 - I recommend copying the code and distributing it with your decoder.  However, please send improvements upstream.  
 
-- Omit the lm/filter directory if you do not want the language model filter.  Only that and tests depend on Boost.  
+- It's possible to compile the query-only code without Boost, but useful things like estimating models require Boost.
 
 - Select the macros you want, listed in the previous section.  
 
