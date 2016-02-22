@@ -42,7 +42,8 @@ add_subdirectory(stream)
 #
 add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
 
-
+AddExes(EXES probing_hash_table_benchmark
+        LIBRARIES kenlm_util ${Boost_LIBRARIES} pthread)
 
 # Only compile and run unit tests if tests should be run
 if(BUILD_TESTING)
