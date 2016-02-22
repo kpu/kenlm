@@ -165,8 +165,6 @@ class BackoffManager {
     // Indexed by order then just all the matching models.
     util::FixedArray<util::FixedArray<BackoffQueueEntry*> > entered_;
 
-    std::size_t order_;
-
     BackoffMatrix matrix_;
 
     std::vector<util::stream::Stream*> skip_write_;

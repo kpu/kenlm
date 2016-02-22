@@ -52,9 +52,7 @@ class PartialViewProxy {
     const void *Data() const { return inner_.Data(); }
     void *Data() { return inner_.Data(); }
 
-    friend void swap(PartialViewProxy first, PartialViewProxy second) {
-      std::swap_ranges(reinterpret_cast<char*>(first.Data()), reinterpret_cast<char*>(first.Data()) + first.attention_size_, reinterpret_cast<char*>(second.Data()));
-    }
+    friend void swap(PartialViewProxy first, PartialViewProxy second);
 
   private:
     friend class util::ProxyIterator<PartialViewProxy>;
@@ -70,6 +68,17 @@ class PartialViewProxy {
 
     util::FreePool *pool_;
 };
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
+#endif
+void swap(PartialViewProxy first, PartialViewProxy second) {
+  std::swap_ranges(reinterpret_cast<char*>(first.Data()), reinterpret_cast<char*>(first.Data()) + first.attention_size_, reinterpret_cast<char*>(second.Data()));
+}
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 typedef util::ProxyIterator<PartialViewProxy> PartialIter;
 

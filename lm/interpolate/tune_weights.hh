@@ -6,7 +6,7 @@
 #include <vector>
 
 namespace lm { namespace interpolate {
-class InstancesConfig;
+struct InstancesConfig;
 
 // Run a tuning loop, producing weights as output.
 void TuneWeights(int tune_file, const std::vector<StringPiece> &model_names, const InstancesConfig &config, std::vector<float> &weights);
