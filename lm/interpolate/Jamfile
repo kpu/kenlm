@@ -4,21 +4,25 @@ import testing ;
 
 local with-eigen = [ option.get "with-eigen" : "/usr/include/eigen3" : "/usr/include/eigen3" ] ;
 
-obj tune_have_eigen.o : tune_have_eigen.cc : <include>$(with-eigen) ;
+path-constant EIGEN-LOG : bin/eigen.log ;
+update-if-changed $(EIGEN-LOG) $(with-eigen) ;
+depend-eigen = <include>$(with-eigen) <dependency>$(EIGEN-LOG) ;
+
+obj tune_have_eigen.o : tune_have_eigen.cc : $(depend-eigen) ;
 explicit tune_have_eigen.o ;
 
-obj tune_have_eigen_init_parallel.o : tune_have_eigen_init_parallel.cc : <include>$(with-eigen) [ check-target-builds tune_have_eigen.o "Eigen in $(with-eigen)" ] ;
+obj tune_have_eigen_init_parallel.o : tune_have_eigen_init_parallel.cc : $(depend-eigen) [ check-target-builds tune_have_eigen.o "Eigen in $(with-eigen)" ] ;
 explicit tune_have_eigen_init_parallel.o ;
 
-obj tune_instances.o : tune_instances.cc interp ..//kenlm : <include>$(with-eigen) ;
-obj tune_instances_test.o : tune_instances_test.cc ..//kenlm /top//boost_unit_test_framework : <include>$(with-eigen) ;
+obj tune_instances.o : tune_instances.cc interp ..//kenlm : $(depend-eigen) ;
+obj tune_instances_test.o : tune_instances_test.cc ..//kenlm /top//boost_unit_test_framework : $(depend-eigen) ;
 run tune_instances_test.o tune_instances.o interp ..//kenlm ../common//common ../../util/stream//stream /top//boost_unit_test_framework : : tune_instances_data/toy0.1 ;
-fakelib tuning : tune_instances.o tune_derivatives.cc tune_weights.cc interp ..//kenlm : <include>$(with-eigen) ;
-unit-test tune_derivatives_test : tune_derivatives_test.cc tuning /top//boost_unit_test_framework : <include>$(with-eigen) ;
+fakelib tuning : tune_instances.o tune_derivatives.cc tune_weights.cc interp ..//kenlm : $(depend-eigen) ;
+unit-test tune_derivatives_test : tune_derivatives_test.cc tuning /top//boost_unit_test_framework : $(depend-eigen) ;
 
 #Given weights, interpolation doesn't require Eigen.  But it's pretty useless without that and this is also the main to tune weights.
-exe interpolate : interpolate_main.cc tuning interp /top//boost_program_options : <include>$(with-eigen) ;
-explicit tune_instances.o tune_instances_test.o tune_instances_test tuning tune_derivatives_test tune interpolate ;
+exe interpolate : interpolate_main.cc tuning interp /top//boost_program_options : $(depend-eigen) ;
+explicit tune_derivatives.o tune_weights.o tune_instances.o tune_instances_test.o tune_instances_test tuning tune_derivatives_test tune interpolate ;
 
 alias all_eigen : : [ check-target-builds tune_have_eigen_init_parallel.o "Eigen has Eigen::initParallel() required for log-linear tuning" : <source>tune_instances_test <source>interpolate <source>tune_derivatives_test ] ;
 
