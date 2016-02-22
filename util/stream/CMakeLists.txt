@@ -31,6 +31,7 @@ if(BUILD_TESTING)
     io_test
     sort_test
     stream_test
+    rewindable_stream_test
   )
 
   AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}

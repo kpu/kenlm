@@ -35,10 +35,6 @@ add_subdirectory(double-conversion)
 add_subdirectory(stream)
 
 # Group these objects together for later use. 
-#
-# Given add_library(foo OBJECT ${my_foo_sources}),
-# refer to these objects as $<TARGET_OBJECTS:foo>
-#
 add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
 
 AddExes(EXES probing_hash_table_benchmark
@@ -46,15 +42,17 @@ AddExes(EXES probing_hash_table_benchmark
 
 # Only compile and run unit tests if tests should be run
 if(BUILD_TESTING)
-
-  # Explicitly list the Boost test files to be compiled
   set(KENLM_BOOST_TESTS_LIST
     bit_packing_test
+    integer_to_string_test
     joint_sort_test
     multi_intersection_test
+    pcqueue_test
     probing_hash_table_test
     read_compressed_test
+    sized_iterator_test
     sorted_uniform_test
+    string_stream_test
     tokenize_piece_test
   )
 

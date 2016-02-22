@@ -30,22 +30,21 @@ if(EIGEN3_FOUND AND 3.1.0 VERSION_LESS ${EIGEN3_VERSION})
           LIBRARIES ${KENLM_INTERPOLATE_LIBS})
   
   if(BUILD_TESTING)
-      set(KENLM_INTERPOLATE_TESTS
-          backoff_reunification_test
-          bounded_sequence_encoding_test
-          merge_vocab_test
-          normalize_test
-          tune_derivatives_test)
-  
-      AddTests(TESTS ${KENLM_INTERPOLATE_TESTS}
+      AddTests(TESTS backoff_reunification_test bounded_sequence_encoding_test normalize_test tune_derivatives_test
                LIBRARIES ${KENLM_INTERPOLATE_LIBS} pthread)
   
       # tune_instances_test needs an extra command line parameter
       KenLMAddTest(TEST tune_instances_test
-                   DEPENDS ${KENLM_INTERPOLATE_DEPENDS}
                    LIBRARIES ${KENLM_INTERPOLATE_LIBS}
-                   TEST_ARGS
-                   ${CMAKE_CURRENT_SOURCE_DIR}/tune_instances_data/toy0.1)
+                   TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/tune_instances_data/toy0.1)
+
+      foreach(test_file test1 test2 test3 test_bad_order test_no_unk)
+        set(KENLM_MERGE_TESTS_PATH ${KENLM_MERGE_TESTS_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/merge_test/${test_file})
+      endforeach(test_file)
+      
+      KenLMAddTest(TEST merge_vocab_test
+                   LIBRARIES ${KENLM_INTERPOLATE_LIBS}
+                   TEST_ARGS ${KENLM_MERGE_TESTS_PATH})
   endif()
 else()
   if (EIGEN3_FOUND)

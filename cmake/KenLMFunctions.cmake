@@ -74,8 +74,7 @@ function(AddTests)
   cmake_parse_arguments(AddTests "" "" "${multiValueArgs}" ${ARGN})
 
   # Iterate through the Boost tests list
-  foreach(test ${KENLM_BOOST_TESTS_LIST})
-
+  foreach(test ${AddTests_TESTS})
     KenLMAddTest(TEST ${test}
                  DEPENDS ${AddTests_DEPENDS}
                  LIBRARIES ${AddTests_LIBRARIES}
