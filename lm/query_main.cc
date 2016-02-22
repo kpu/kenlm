@@ -15,7 +15,12 @@ void Usage(const char *name) {
     "-n: Do not wrap the input in <s> and </s>.\n"
     "-v summary|sentence|word: Level of verbosity\n"
     "-l lazy|populate|read|parallel: Load lazily, with populate, or malloc+read\n"
-    "The default loading method is populate on Linux and read on others.\n";
+    "The default loading method is populate on Linux and read on others.\n\n"
+    "Each word in the output is formatted as:\n"
+    "  word=vocab_id ngram_length log10(p(word|context))\n"
+    "where ngram_length is the length of n-gram matched.  A vocab_id of 0 indicates\n"
+    "indicates the unknown word. Sentence-level output includes log10 probability of\n"
+    "the sentence and OOV count.\n";
   exit(1);
 }
 
