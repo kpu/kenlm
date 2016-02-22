@@ -1,6 +1,0 @@
-with-eigen = [ option.get "with-eigen" ] ;
-if ! $(with-eigen) && ! [ test_flags "" : "#include <Eigen/Dense>\nint main() {}" ] {
-  with-eigen = "/usr/include/eigen3" ;
-}
-with-eigen = <include>$(with-eigen) ;
-fakelib neural : ..//kenlm wordvecs.cc : $(with-eigen) : : <cxxflags>-fopenmp <linkflags>-fopenmp $(with-eigen) ;
