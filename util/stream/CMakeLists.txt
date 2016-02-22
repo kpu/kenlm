@@ -28,6 +28,7 @@ cmake_minimum_required(VERSION 2.8.8)
 #
 set(KENLM_UTIL_STREAM_SOURCE 
 		${CMAKE_CURRENT_SOURCE_DIR}/chain.cc
+		${CMAKE_CURRENT_SOURCE_DIR}/count_records.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/io.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/line_input.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/multi_progress.cc

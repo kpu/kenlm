@@ -54,8 +54,7 @@ add_library(kenlm OBJECT ${KENLM_SOURCE})
 add_subdirectory(builder)
 add_subdirectory(common)
 add_subdirectory(filter)
-
-
+add_subdirectory(interpolate)
 
 # Explicitly list the executable files to be compiled
 set(EXE_LIST

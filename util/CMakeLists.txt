@@ -37,6 +37,7 @@ set(KENLM_UTIL_SOURCE
 		pool.cc 
 		read_compressed.cc 
 		scoped.cc 
+    spaces.cc
 		string_piece.cc 
 		usage.cc
 	)

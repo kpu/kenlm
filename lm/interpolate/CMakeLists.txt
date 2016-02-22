@@ -12,16 +12,14 @@ set(KENLM_INTERPOLATE_SOURCE
     split_worker.cc
     tune_derivatives.cc
     tune_instances.cc
+    tune_weights.cc
     universal_vocab.cc)
 
 add_library(kenlm_interpolate OBJECT ${KENLM_INTERPOLATE_SOURCE})
 
 set(KENLM_INTERPOLATE_EXES
     interpolate
-    perf_enum_gv
-    streaming_example
-    train_params
-    tune)
+    streaming_example)
 
 set(KENLM_INTERPOLATE_DEPENDS
     $<TARGET_OBJECTS:kenlm>
