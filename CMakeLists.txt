@@ -11,6 +11,8 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 # Compile all libraries into lib/
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
+set(CMAKE_BUILD_TYPE Release)
+
 # Tell cmake that we want unit tests to be compiled
 include(CTest)
 enable_testing()
