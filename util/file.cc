@@ -158,7 +158,7 @@ std::size_t PartialRead(int fd, void *to, std::size_t amount) {
     DWORD ret;
     HANDLE file_handle = reinterpret_cast<HANDLE>(_get_osfhandle(fd));
     DWORD larger_size = static_cast<DWORD>(std::min<std::size_t>(kMaxDWORD, amount));
-    DWORD smaller_size = 28672; // Received reports that 31346 worked but higher values did not. This rounds down to the nearest multiple of 4096, the page size. 
+    DWORD smaller_size = 28672; // Received reports that 31346 worked but higher values did not. This rounds down to the nearest multiple of 4096, the page size.
     if (!ReadFile(file_handle, to, larger_size, &ret, NULL))
     {
         DWORD last_error = GetLastError();

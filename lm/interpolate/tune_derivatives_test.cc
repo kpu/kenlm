@@ -47,7 +47,7 @@ namespace {
 
 BOOST_AUTO_TEST_CASE(Small) {
   MockInstances mock;
-  
+
   {
     // Three vocabulary words plus <s>, two models.
     Matrix unigrams(4, 2);

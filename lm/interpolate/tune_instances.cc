@@ -2,7 +2,7 @@
  * instance is an n-gram in the tuning file.  To tune towards these, we want
  * the correct probability p_i(w_n | w_1^{n-1}) from each model as well as
  * all the denominators p_i(v | w_1^{n-1}) that appear in normalization.
- * 
+ *
  * In other words, we filter the models to only those n-grams whose context
  * appears in the tuning data.  This can be divided into two categories:
  * - All unigrams.  This goes into Instances::ln_unigrams_
@@ -11,7 +11,7 @@
  *   w_1^{n-1}v since that is what will be used for the probability.
  * Because there is a large number of extensions (we tried keeping them in RAM
  * and ran out), the streaming framework is used to keep track of extensions
- * and sort them so they can be streamed in.  Downstream code 
+ * and sort them so they can be streamed in.  Downstream code
  * (tune_derivatives.hh) takes a stream of extensions ordered by tuning
  * instance, the word v, and the model the extension came from.
  */
@@ -186,7 +186,7 @@ class JointOrderCallback {
         std::size_t full_order_minus_1,
         ContextMap &contexts,
         util::stream::Stream &out,
-        const InstanceMatch *base_instance) 
+        const InstanceMatch *base_instance)
       : full_order_minus_1_(full_order_minus_1),
         contexts_(contexts),
         out_(out),
@@ -231,13 +231,13 @@ class JointOrderCallback {
     // Mapping is constant but values are being manipulated to tell them about
     // n-grams.
     ContextMap &contexts_;
-    
+
     // Reused variable.  model is set correctly.
     InitialExtension ext_;
 
     util::stream::Stream &out_;
-    
-    const InstanceMatch *const base_instance_;    
+
+    const InstanceMatch *const base_instance_;
 };
 
 // This populates the ln_unigrams_ matrix.  It can (and should for efficiency)
@@ -247,7 +247,7 @@ class ReadUnigrams {
     explicit ReadUnigrams(Matrix::ColXpr out) : out_(out) {}
 
     // Read renumbered unigrams, fill with <unk> otherwise.
-    void Run(const util::stream::ChainPosition &position) { 
+    void Run(const util::stream::ChainPosition &position) {
       NGramStream<ProbBackoff> stream(position);
       assert(stream);
       Accum unk = stream->Value().prob * M_LN10;
@@ -315,7 +315,7 @@ class IdentifyTuning : public EnumerateVocab {
 // Store information about the first iteration.
 class ExtensionsFirstIteration {
   public:
-    explicit ExtensionsFirstIteration(std::size_t instances, std::size_t models, std::size_t max_order, util::stream::Chain &extension_input, const util::stream::SortConfig &config) 
+    explicit ExtensionsFirstIteration(std::size_t instances, std::size_t models, std::size_t max_order, util::stream::Chain &extension_input, const util::stream::SortConfig &config)
       : backoffs_by_instance_(new std::vector<Matrix>(instances)), sort_(extension_input, config) {
       // Initialize all the backoff matrices to zeros.
       for (std::vector<Matrix>::iterator i = backoffs_by_instance_->begin(); i != backoffs_by_instance_->end(); ++i) {

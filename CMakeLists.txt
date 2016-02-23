@@ -25,7 +25,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 # We need boost
 find_package(Boost 1.36.0 REQUIRED COMPONENTS
-  program_options 
+  program_options
   system
   thread
   unit_test_framework
@@ -36,7 +36,7 @@ find_package(Boost 1.36.0 REQUIRED COMPONENTS
 
 # Define where include files live
 include_directories(
-  ${PROJECT_SOURCE_DIR} 
+  ${PROJECT_SOURCE_DIR}
   ${Boost_INCLUDE_DIRS}
 )
 

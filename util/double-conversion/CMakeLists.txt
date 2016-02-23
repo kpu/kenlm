@@ -14,7 +14,7 @@
 #    when this variable is referenced by CMake files in the parent directory,
 #    we prefix all files with ${CMAKE_CURRENT_SOURCE_DIR}.
 #
-set(KENLM_UTIL_DOUBLECONVERSION_SOURCE 
+set(KENLM_UTIL_DOUBLECONVERSION_SOURCE
 		${CMAKE_CURRENT_SOURCE_DIR}/bignum-dtoa.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/bignum.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/cached-powers.cc

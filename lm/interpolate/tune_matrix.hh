@@ -8,7 +8,7 @@
 #pragma GCC diagnostic pop
 
 namespace lm { namespace interpolate {
- 
+
 typedef Eigen::MatrixXf Matrix;
 typedef Eigen::VectorXf Vector;
 

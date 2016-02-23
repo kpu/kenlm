@@ -88,7 +88,7 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
         - interp_uni(word) * Z_epsilon * weighted_backoffs * ln_p_i_backed * ln_p_i_backed.transpose();
     }
 
-    Accum Z_context = 
+    Accum Z_context =
       weighted_backoffs * Z_epsilon * (1.0 - sum_x_p_I) // Back off and unnormalize the unigrams for which there is no extension.
       + unnormalized_sum_x_p_I_full; // Add the extensions.
     sum_ln_Z_context += log(Z_context);

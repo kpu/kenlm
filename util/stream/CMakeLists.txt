@@ -14,7 +14,7 @@
 #    when this variable is referenced by CMake files in the parent directory,
 #    we prefix all files with ${CMAKE_CURRENT_SOURCE_DIR}.
 #
-set(KENLM_UTIL_STREAM_SOURCE 
+set(KENLM_UTIL_STREAM_SOURCE
 		${CMAKE_CURRENT_SOURCE_DIR}/chain.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/count_records.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/io.cc

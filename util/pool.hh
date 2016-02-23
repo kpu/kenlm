@@ -36,7 +36,7 @@ class Pool {
         void *new_base = More(new_total);
         std::memcpy(new_base, base, new_total - additional);
         base = new_base;
-      } 
+      }
     }
 
     void FreeAll();

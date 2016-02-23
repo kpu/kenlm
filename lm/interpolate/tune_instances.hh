@@ -79,7 +79,7 @@ class Instances {
 
     // backoffs_(instance, model) is the backoff all the way to unigrams.
     BackoffMatrix ln_backoffs_;
-    
+
     // neg_correct_sum_(model) = -\sum_{instances} ln p_{model}(correct(instance) | context(instance)).
     // This appears as a term in the gradient.
     Vector neg_ln_correct_sum_;

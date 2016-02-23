@@ -12,7 +12,7 @@ add_definitions(-DKENLM_MAX_ORDER=${KENLM_MAX_ORDER})
 #    that should be included in the kenlm library,
 #        (this excludes any unit test files)
 #    you should add them to the following list:
-set(KENLM_LM_SOURCE 
+set(KENLM_LM_SOURCE
 	bhiksha.cc
 	binary_format.cc
 	config.cc
@@ -31,7 +31,7 @@ set(KENLM_LM_SOURCE
 )
 
 
-# Group these objects together for later use. 
+# Group these objects together for later use.
 #
 # Given add_library(foo OBJECT ${my_foo_sources}),
 # refer to these objects as $<TARGET_OBJECTS:foo>

@@ -11,22 +11,22 @@
 # Because we do not set PARENT_SCOPE in the following definition,
 #    CMake files in the parent directory won't be able to access this variable.
 #
-set(KENLM_UTIL_SOURCE 
-		bit_packing.cc 
-		ersatz_progress.cc 
-		exception.cc 
-		file.cc 
-		file_piece.cc 
+set(KENLM_UTIL_SOURCE
+		bit_packing.cc
+		ersatz_progress.cc
+		exception.cc
+		file.cc
+		file_piece.cc
 		float_to_string.cc
 		integer_to_string.cc
-		mmap.cc 
-		murmur_hash.cc 
+		mmap.cc
+		murmur_hash.cc
 		parallel_read.cc
-		pool.cc 
-		read_compressed.cc 
-		scoped.cc 
+		pool.cc
+		read_compressed.cc
+		scoped.cc
     spaces.cc
-		string_piece.cc 
+		string_piece.cc
 		usage.cc
 	)
 
@@ -34,7 +34,7 @@ set(KENLM_UTIL_SOURCE
 add_subdirectory(double-conversion)
 add_subdirectory(stream)
 
-# Group these objects together for later use. 
+# Group these objects together for later use.
 add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
 
 AddExes(EXES probing_hash_table_benchmark

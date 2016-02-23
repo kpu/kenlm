@@ -11,7 +11,7 @@
 #    in case this variable is referenced by CMake files in the parent directory,
 #    we prefix all files with ${CMAKE_CURRENT_SOURCE_DIR}.
 #
-set(KENLM_BUILDER_SOURCE 
+set(KENLM_BUILDER_SOURCE
 		${CMAKE_CURRENT_SOURCE_DIR}/adjust_counts.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/corpus_count.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/initial_probabilities.cc
@@ -21,7 +21,7 @@ set(KENLM_BUILDER_SOURCE
 	)
 
 
-# Group these objects together for later use. 
+# Group these objects together for later use.
 #
 # Given add_library(foo OBJECT ${my_foo_sources}),
 # refer to these objects as $<TARGET_OBJECTS:foo>

@@ -11,14 +11,14 @@
 #    in case this variable is referenced by CMake files in the parent directory,
 #    we prefix all files with ${CMAKE_CURRENT_SOURCE_DIR}.
 #
-set(KENLM_FILTER_SOURCE 
+set(KENLM_FILTER_SOURCE
 		${CMAKE_CURRENT_SOURCE_DIR}/arpa_io.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/phrase.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/vocab.cc
 	)
 
 
-# Group these objects together for later use. 
+# Group these objects together for later use.
 #
 # Given add_library(foo OBJECT ${my_foo_sources}),
 # refer to these objects as $<TARGET_OBJECTS:foo>

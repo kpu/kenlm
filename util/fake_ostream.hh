@@ -14,13 +14,13 @@ namespace util {
 
 /* Like std::ostream but without being incredibly slow.
  * Supports most of the built-in types except for long double.
- * 
+ *
  * The FakeOStream class is intended to be inherited from.  The inherting class
  * should provide:
  * public:
  *   Derived &flush();
  *   Derived &write(const void *data, std::size_t length);
- * 
+ *
  * private: or protected:
  *   friend class FakeOStream;
  *   char *Ensure(std::size_t amount);
@@ -29,7 +29,7 @@ namespace util {
  * The Ensure function makes enough space for an in-place write and returns
  * where to write.  The AdvanceTo function happens after the write, saying how
  * much was actually written.
- * 
+ *
  * Precondition:
  * amount <= kToStringMaxBytes for in-place writes.
  */

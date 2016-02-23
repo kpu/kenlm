@@ -17,7 +17,7 @@ const char kMetadataHeader[] = "KenLM intermediate binary file";
 ModelBuffer::ModelBuffer(StringPiece file_base, bool keep_buffer, bool output_q)
   : file_base_(file_base.data(), file_base.size()), keep_buffer_(keep_buffer), output_q_(output_q),
     vocab_file_(keep_buffer ? util::CreateOrThrow((file_base_ + ".vocab").c_str()) : util::MakeTemp(file_base_)) {}
-  
+
 ModelBuffer::ModelBuffer(StringPiece file_base)
   : file_base_(file_base.data(), file_base.size()), keep_buffer_(false) {
   const std::string full_name = file_base_ + ".kenlm_intermediate";

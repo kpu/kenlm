@@ -45,7 +45,7 @@ bool IsEntirelyWhiteSpace(const StringPiece &line) {
   return true;
 }
 
-ARPAOutput::ARPAOutput(const char *name, size_t buffer_size) 
+ARPAOutput::ARPAOutput(const char *name, size_t buffer_size)
   : file_backing_(util::CreateOrThrow(name)), file_(file_backing_.get(), buffer_size) {}
 
 void ARPAOutput::ReserveForCounts(std::streampos reserve) {
