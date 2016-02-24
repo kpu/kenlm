@@ -1,5 +1,8 @@
 #define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS 64
+#if defined(__linux__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE // for fallocate.
+#endif // __linux__
 
 #include "util/file.hh"
 
@@ -11,7 +14,6 @@
 #include <iostream>
 #include <limits>
 #include <sstream>
-
 
 #include <cassert>
 #include <cerrno>
@@ -131,6 +133,14 @@ void ResizeOrThrow(int fd, uint64_t to) {
 #endif
     (fd, to);
   UTIL_THROW_IF_ARG(ret, FDException, (fd), "while resizing to " << to << " bytes");
+}
+
+void HolePunch(int fd, uint64_t offset, uint64_t size) {
+#ifdef __linux__
+  UTIL_THROW_IF_ARG(-1 == fallocate(fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, offset, size), FDException, (fd), "in punching a hole at " << offset << " for " << size << " bytes.");
+#else
+  UTIL_THROW(UnsupportedOSException, "fallocate is linux only for fd " << fd);
+#endif // __linux__
 }
 
 namespace {
