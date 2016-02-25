@@ -136,11 +136,11 @@ void ResizeOrThrow(int fd, uint64_t to) {
 }
 
 void HolePunch(int fd, uint64_t offset, uint64_t size) {
-#ifdef __linux__
+#if defined(__linux__) && defined(FALLOC_FL_PUNCH_HOLE) && defined(FALLOC_FL_KEEP_SIZE)
   UTIL_THROW_IF_ARG(-1 == fallocate(fd, FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE, offset, size), FDException, (fd), "in punching a hole at " << offset << " for " << size << " bytes.");
 #else
-  UTIL_THROW(UnsupportedOSException, "fallocate is linux only for fd " << fd);
-#endif // __linux__
+  UTIL_THROW(UnsupportedOSException, "fallocate hole punching requires Linux and glibc >= 2.18");
+#endif
 }
 
 namespace {
