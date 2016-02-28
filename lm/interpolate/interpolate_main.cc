@@ -76,7 +76,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (pipe_config.lambdas.size() != input_models.size()) {
-    std::cerr << "Number of models " << input_models.size() << " should match the number of weights" << pipe_config.lambdas.size() << "." << std::endl;
+    std::cerr << "Number of models (" << input_models.size() << ") should match the number of weights (" << pipe_config.lambdas.size() << ")." << std::endl;
     return 1;
   }
 
