@@ -1,9 +1,27 @@
 cmake_minimum_required(VERSION 2.6)
 # This CMake file was created by Lane Schwartz <dowobeha@gmail.com>
 
-
 # Define a single cmake project
 project(kenlm)
+
+option(FORCE_STATIC "Build static executables" OFF)
+if (FORCE_STATIC)
+  #presumably overkill, is there a better way?
+  #http://cmake.3232098.n2.nabble.com/Howto-compile-static-executable-td5580269.html
+  set(Boost_USE_STATIC_LIBS ON)
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+  set_property(GLOBAL PROPERTY LINK_SEARCH_START_STATIC ON)
+  set_property(GLOBAL PROPERTY LINK_SEARCH_END_STATIC ON)
+  set(BUILD_SHARED_LIBRARIES OFF)
+  set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
+  #Annoyingly the exectuables say "File not found" unless these are set
+  set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)
+  set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
+  set(CMAKE_SHARED_LIBRARY_C_FLAGS)
+  set(CMAKE_SHARED_LIBRARY_CXX_FLAGS)
+  set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)
+  set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS)
+endif ()
 
 # Compile all executables into bin/
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
@@ -30,8 +48,6 @@ find_package(Boost 1.36.0 REQUIRED COMPONENTS
   thread
   unit_test_framework
 )
-
-
 
 
 # Define where include files live
