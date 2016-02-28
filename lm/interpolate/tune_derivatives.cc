@@ -14,14 +14,13 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
   hessian = Matrix::Zero(weights.rows(), weights.rows());
 
   // TODO: loop instead to force low-memory evaluation?
-  // Compute p_I(x).
-  Vector interp_uni((in.LNUnigrams() * weights).array().exp());
+  // Compute p_I(x)*Z_{\epsilon} i.e. the unnormalized probabilities
+  Vector weighted_uni((in.LNUnigrams() * weights).array().exp());
   // Even -inf doesn't work for <s> because weights can be negative.  Manually set it to zero.
-  interp_uni(in.BOS()) = 0.0;
-  Accum Z_epsilon = interp_uni.sum();
-  interp_uni /= Z_epsilon;
+  weighted_uni(in.BOS()) = 0.0;
+  Accum Z_epsilon = weighted_uni.sum();
   // unigram_cross(i) = \sum_{all x} p_I(x) ln p_i(x)
-  Vector unigram_cross(in.LNUnigrams().transpose() * interp_uni);
+  Vector unigram_cross(in.LNUnigrams().transpose() * weighted_uni / Z_epsilon);
 
   Accum sum_B_I = 0.0;
   Accum sum_ln_Z_context = 0.0;
@@ -47,8 +46,8 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
     assert(extensions);
     Accum weighted_backoffs = exp(in.LNBackoffs(n).dot(weights));
 
-    // Compute \sum_{x: model does not back off to unigram} p_I(x)
-    Accum sum_x_p_I = 0.0;
+    // Compute \sum_{x: model does not back off to unigram} p_I(x)Z(epsilon)
+    Accum unnormalized_sum_x_p_I = 0.0;
     // Compute \sum_{x: model does not back off to unigram} p_I(x | context)Z(context)
     Accum unnormalized_sum_x_p_I_full = 0.0;
 
@@ -60,7 +59,7 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
     // Loop over words within an instance for which extension exists.  An extension happens when any model matches more than a unigram in the tuning instance.
     while (extensions && extensions->instance == n) {
       const WordIndex word = extensions->word;
-      sum_x_p_I += interp_uni(word);
+      unnormalized_sum_x_p_I += weighted_uni(word);
 
       ln_p_i_backed = in.LNUnigrams().row(word) + in.LNBackoffs(n);
 
@@ -78,18 +77,18 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
       // These aren't normalized by Z_context (happens later)
       full_cross.noalias() +=
         weighted * ln_p_i_full
-        - interp_uni(word) * Z_epsilon * weighted_backoffs /* we'll divide by Z_context later to form B_I */ * in.LNUnigrams().row(word).transpose();
+        - weighted_uni(word) * weighted_backoffs /* we'll divide by Z_context later to form B_I */ * in.LNUnigrams().row(word).transpose();
 
       // This will get multiplied by Z_context then added to the Hessian.
       hessian_missing_Z_context.noalias() +=
         // Replacement terms.
         weighted * ln_p_i_full * ln_p_i_full.transpose()
         // Presumed unigrams.  Z_epsilon * weighted_backoffs will turn into B_I once all of this is divided by Z_context.
-        - interp_uni(word) * Z_epsilon * weighted_backoffs * ln_p_i_backed * ln_p_i_backed.transpose();
+        - weighted_uni(word) * weighted_backoffs * ln_p_i_backed * ln_p_i_backed.transpose();
     }
 
     Accum Z_context =
-      weighted_backoffs * Z_epsilon * (1.0 - sum_x_p_I) // Back off and unnormalize the unigrams for which there is no extension.
+      weighted_backoffs * (Z_epsilon - unnormalized_sum_x_p_I) // Back off and unnormalize the unigrams for which there is no extension.
       + unnormalized_sum_x_p_I_full; // Add the extensions.
     sum_ln_Z_context += log(Z_context);
     Accum B_I = Z_epsilon / Z_context * weighted_backoffs;
@@ -103,7 +102,7 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
       // Uncorrected term
       B_I * (in.LNBackoffs(n).transpose() + unigram_cross)
       // Subtract values that should not have been charged.
-      - sum_x_p_I * B_I * in.LNBackoffs(n).transpose();
+      - unnormalized_sum_x_p_I / Z_epsilon * B_I * in.LNBackoffs(n).transpose();
     gradient += full_cross;
 
     convolve = unigram_cross * in.LNBackoffs(n);
@@ -117,10 +116,10 @@ Accum Derivatives(Instances &in, const Vector &weights, Vector &gradient, Matrix
       - full_cross * full_cross.transpose();
   }
 
-  for (Matrix::Index x = 0; x < interp_uni.rows(); ++x) {
+  for (Matrix::Index x = 0; x < weighted_uni.rows(); ++x) {
     // \sum_{contexts} B_I(context) \sum_x p_I(x) log p_i(x) log p_j(x)
     // TODO can this be optimized?  It's summing over the entire vocab which should be a matrix operation.
-    hessian.noalias() += sum_B_I * interp_uni(x) * in.LNUnigrams().row(x).transpose() * in.LNUnigrams().row(x);
+    hessian.noalias() += sum_B_I * weighted_uni(x) / Z_epsilon * in.LNUnigrams().row(x).transpose() * in.LNUnigrams().row(x);
   }
   return exp((in.CorrectGradientTerm().dot(weights) + sum_ln_Z_context) / static_cast<double>(in.NumInstances()));
 }
