@@ -1,6 +1,3 @@
-# This CMake file was created by Lane Schwartz <dowobeha@gmail.com>
-
-
 # Explicitly list the source files for this subdirectory
 #
 # If you add any source files to this subdirectory
@@ -30,15 +27,48 @@ set(KENLM_UTIL_SOURCE
 		usage.cc
 	)
 
+set(READ_COMPRESSED_FLAGS)
+set(READ_COMPRESSED_LIBS)
+find_package(ZLIB)
+if (ZLIB_FOUND)
+  set(READ_COMPRESSED_FLAGS "${READ_COMPRESSED_FLAGS} -DHAVE_ZLIB")
+  set(READ_COMPRESSED_LIBS ${READ_COMPRESSED_LIBS} ${ZLIB_LIBRARIES})
+  include_directories(${ZLIB_INCLUDE_DIRECTORIES})
+endif()
+
+find_package(BZip2)
+if (BZIP2_FOUND)
+  set(READ_COMPRESSED_FLAGS "${READ_COMPRESSED_FLAGS} -DHAVE_BZLIB")
+  set(READ_COMPRESSED_LIBS ${READ_COMPRESSED_LIBS} ${BZIP2_LIBRARIES})
+  include_directories(${BZIP2_INCLUDE_DIRECTORIES})
+endif()
+
+find_package(LibLZMA)
+if (LIBLZMA_FOUND)
+  set(READ_COMPRESSED_FLAGS "${READ_COMPRESSED_FLAGS} -DHAVE_XZLIB")
+  set(READ_COMPRESSED_LIBS ${READ_COMPRESSED_LIBS} ${LIBLZMA_LIBRARIES})
+  include_directories(${LIBLZMA_INCLUDE_DIRECTORIES})
+endif()
+set_source_files_properties(read_compressed.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
+set_source_files_properties(read_compressed_test.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
+set_source_files_properties(file_piece_test.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
+
 # This directory has children that need to be processed
 add_subdirectory(double-conversion)
 add_subdirectory(stream)
 
+if (UNIX AND NOT APPLE)
+  set(TIMER_LINK rt)
+else()
+  set(TIMER_LINK)
+endif()
+
 # Group these objects together for later use.
 add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
+target_link_libraries(kenlm_util ${Boost_LIBRARIES} ${READ_COMPRESSED_LIBS} pthread ${TIMER_LINK})
 
 AddExes(EXES probing_hash_table_benchmark
-        LIBRARIES kenlm_util ${Boost_LIBRARIES} pthread ${TIMER_LINK})
+        LIBRARIES kenlm_util ${Boost_LIBRARIES} pthread)
 
 # Only compile and run unit tests if tests should be run
 if(BUILD_TESTING)

@@ -2,12 +2,6 @@
 
 include(CMakeParseArguments)
 
-if (UNIX AND NOT APPLE)
-  set(TIMER_LINK rt)
-else()
-  set(TIMER_LINK)
-endif()
-
 # Adds a bunch of executables to the build, each depending on the specified
 # dependent object files and linking against the specified libraries
 function(AddExes)
@@ -21,7 +15,7 @@ function(AddExes)
     add_executable(${exe} ${exe}_main.cc ${AddExes_DEPENDS})
 
     # Link the executable against the supplied libraries
-    target_link_libraries(${exe} ${AddExes_LIBRARIES} ${TIMER_LINK})
+    target_link_libraries(${exe} ${AddExes_LIBRARIES})
 
     # Group executables together
     set_target_properties(${exe} PROPERTIES FOLDER executables)
