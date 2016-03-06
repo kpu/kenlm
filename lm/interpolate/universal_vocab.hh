@@ -23,6 +23,12 @@ public:
     return &*model_index_map_[model].begin();
   }
 
+  WordIndex SlowConvertToModel(std::size_t model, WordIndex index) const {
+    std::vector<WordIndex>::const_iterator i = lower_bound(model_index_map_[model].begin(), model_index_map_[model].end(), index);
+    if (i == model_index_map_[model].end() || *i != index) return 0;
+    return i - model_index_map_[model].begin();
+  }
+
   void InsertUniversalIdx(std::size_t model_num, WordIndex word_index,
       WordIndex universal_word_index) {
     model_index_map_[model_num][word_index] = universal_word_index;

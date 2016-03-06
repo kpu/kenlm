@@ -386,12 +386,12 @@ Instances::Instances(int tune_file, const std::vector<StringPiece> &model_names,
     // Load tuning set and join vocabulary.
     std::vector<WordIndex> vocab_sizes;
     vocab_sizes.reserve(model_names.size());
-    util::FixedArray<util::scoped_fd> vocab_files(model_names.size());
+    util::FixedArray<int> vocab_files(model_names.size());
     std::size_t max_order = 0;
     for (std::vector<StringPiece>::const_iterator i = model_names.begin(); i != model_names.end(); ++i) {
       models.push_back(*i);
       vocab_sizes.push_back(models.back().Counts()[0]);
-      vocab_files.push_back(models.back().StealVocabFile());
+      vocab_files.push_back(models.back().VocabFile());
       max_order = std::max(max_order, models.back().Order());
     }
     UniversalVocab vocab(vocab_sizes);

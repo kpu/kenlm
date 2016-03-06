@@ -68,11 +68,11 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
 
   util::scoped_fd vocab_null(util::MakeTemp(config.sort.temp_prefix));
   std::size_t max_order = 0;
-  util::FixedArray<util::scoped_fd> vocab_files(models.size());
+  util::FixedArray<int> vocab_files(models.size());
   for (ModelBuffer *i = models.begin(); i != models.end(); ++i) {
     info.orders.push_back(i->Order());
     vocab_sizes.push_back(i->Counts()[0]);
-    vocab_files.push_back(util::DupOrThrow(i->VocabFile()));
+    vocab_files.push_back(i->VocabFile());
     max_order = std::max(max_order, i->Order());
   }
   UniversalVocab vocab(vocab_sizes);
@@ -80,7 +80,6 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
     ngram::ImmediateWriteWordsWrapper writer(NULL, vocab_null.get(), 0);
     MergeVocab(vocab_files, vocab, writer);
   }
-  vocab_files.clear();
 
   std::cerr << "Merging probabilities." << std::endl;
   // Pass 1: merge probabilities

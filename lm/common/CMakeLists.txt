@@ -17,3 +17,9 @@ set(KENLM_LM_COMMON_SOURCE
 		${CMAKE_CURRENT_SOURCE_DIR}/renumber.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/size_option.cc
   PARENT_SCOPE)
+
+if(BUILD_TESTING)
+  KenLMAddTest(TEST model_buffer_test
+               LIBRARIES kenlm
+               TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/test_data)
+endif()

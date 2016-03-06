@@ -44,7 +44,7 @@ if(EIGEN3_FOUND AND 3.1.0 VERSION_LESS ${EIGEN3_VERSION})
       # tune_instances_test needs an extra command line parameter
       KenLMAddTest(TEST tune_instances_test
                    LIBRARIES ${KENLM_INTERPOLATE_LIBS}
-                   TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/tune_instances_data/toy0.1)
+                   TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/../common/test_data/toy0.1)
 
       foreach(test_file test1 test2 test3 test_bad_order test_no_unk)
         set(KENLM_MERGE_TESTS_PATH ${KENLM_MERGE_TESTS_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/merge_test/${test_file})

@@ -43,7 +43,7 @@ VocabFileReader::VocabFileReader(const int fd, const size_t model_num, uint64_t 
   current_index_(0),
   eof_(false),
   model_num_(model_num),
-  file_piece_(fd) {
+  file_piece_(util::DupOrThrow(fd)) {
   word_ = file_piece_.ReadLine('\0');
   UTIL_THROW_IF(word_ != "<unk>",
                 FormatLoadException,
@@ -91,12 +91,12 @@ class Readers : public util::FixedArray<VocabFileReader> {
 
 } // namespace
 
-WordIndex MergeVocab(util::FixedArray<util::scoped_fd> &files, UniversalVocab &vocab, EnumerateVocab &enumerate) {
+WordIndex MergeVocab(util::FixedArray<int> &files, UniversalVocab &vocab, EnumerateVocab &enumerate) {
   typedef std::priority_queue<VocabFileReader*, std::vector<VocabFileReader*>, CompareFiles> HeapType;
   HeapType heap;
   Readers readers(files.size());
   for (size_t i = 0; i < files.size(); ++i) {
-    readers.push_back(files[i].release(), i);
+    readers.push_back(files[i], i);
     heap.push(&readers.back());
     // initialize first index to 0 for <unk>
     vocab.InsertUniversalIdx(i, 0, 0);

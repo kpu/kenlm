@@ -13,10 +13,10 @@ namespace interpolate {
 
 class UniversalVocab;
 
-// Takes ownership of vocab_files.
 // The combined vocabulary is enumerated with enumerate.
 // Returns the size of the combined vocabulary.
-WordIndex MergeVocab(util::FixedArray<util::scoped_fd> &vocab_files, UniversalVocab &vocab, EnumerateVocab &enumerate);
+// Does not take ownership of vocab_files.
+WordIndex MergeVocab(util::FixedArray<int> &vocab_files, UniversalVocab &vocab, EnumerateVocab &enumerate);
 
 }} // namespaces
 

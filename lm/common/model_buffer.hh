@@ -4,9 +4,10 @@
 /* Format with separate files in suffix order.  Each file contains
  * n-grams of the same order.
  */
-
+#include "lm/word_index.hh"
 #include "util/file.hh"
 #include "util/fixed_array.hh"
+#include "util/string_piece.hh"
 
 #include <string>
 #include <vector>
@@ -17,6 +18,8 @@ class Chain;
 }} // namespaces
 
 namespace lm {
+
+namespace ngram { class State; }
 
 class ModelBuffer {
   public:
@@ -44,9 +47,17 @@ class ModelBuffer {
     }
 
     int VocabFile() const { return vocab_file_.get(); }
-    int StealVocabFile() { return vocab_file_.release(); }
+
+    int RawFile(std::size_t order_minus_1) const {
+      return files_[order_minus_1].get();
+    }
 
     bool Keep() const { return keep_buffer_; }
+
+    // Slowly execute a language model query with binary search.
+    // This is used by interpolation to gather tuning probabilities rather than
+    // scanning the files.
+    float SlowQuery(const ngram::State &context, WordIndex word, ngram::State &out);
 
   private:
     const std::string file_base_;

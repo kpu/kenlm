@@ -39,6 +39,7 @@ set(KENLM_LM_SOURCE
 add_subdirectory(common)
 
 add_library(kenlm ${KENLM_LM_SOURCE} ${KENLM_LM_COMMON_SOURCE})
+target_link_libraries(kenlm kenlm_util ${Boost_LIBRARIES} pthread)
 
 # This directory has children that need to be processed
 add_subdirectory(builder)

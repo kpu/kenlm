@@ -50,10 +50,10 @@ class DoNothingEnumerate : public EnumerateVocab {
 BOOST_AUTO_TEST_CASE(MergeVocabTest) {
   TestFiles files;
 
-  util::FixedArray<util::scoped_fd> used_files(3);
-  used_files.push_back(files.test[0].release());
-  used_files.push_back(files.test[1].release());
-  used_files.push_back(files.test[2].release());
+  util::FixedArray<int> used_files(3);
+  used_files.push_back(files.test[0].get());
+  used_files.push_back(files.test[1].get());
+  used_files.push_back(files.test[2].get());
 
   std::vector<lm::WordIndex> model_max_idx;
   model_max_idx.push_back(10);
@@ -96,8 +96,8 @@ BOOST_AUTO_TEST_CASE(MergeVocabTest) {
 
 BOOST_AUTO_TEST_CASE(MergeVocabNoUnkTest) {
   TestFiles files;
-  util::FixedArray<util::scoped_fd> used_files(1);
-  used_files.push_back(files.no_unk.release());
+  util::FixedArray<int> used_files(1);
+  used_files.push_back(files.no_unk.get());
 
   std::vector<lm::WordIndex> model_max_idx;
   model_max_idx.push_back(10);
@@ -110,9 +110,9 @@ BOOST_AUTO_TEST_CASE(MergeVocabNoUnkTest) {
 BOOST_AUTO_TEST_CASE(MergeVocabWrongOrderTest) {
   TestFiles files;
 
-  util::FixedArray<util::scoped_fd> used_files(2);
-  used_files.push_back(files.test[0].release());
-  used_files.push_back(files.bad_order.release());
+  util::FixedArray<int> used_files(2);
+  used_files.push_back(files.test[0].get());
+  used_files.push_back(files.bad_order.get());
 
   std::vector<lm::WordIndex> model_max_idx;
   model_max_idx.push_back(10);

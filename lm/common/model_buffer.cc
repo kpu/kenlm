@@ -1,4 +1,8 @@
 #include "lm/common/model_buffer.hh"
+
+#include "lm/common/compare.hh"
+#include "lm/state.hh"
+#include "lm/weights.hh"
 #include "util/exception.hh"
 #include "util/file_stream.hh"
 #include "util/file.hh"
@@ -7,6 +11,8 @@
 #include "util/stream/multi_stream.hh"
 
 #include <boost/lexical_cast.hpp>
+
+#include <numeric>
 
 namespace lm {
 
@@ -87,6 +93,52 @@ void ModelBuffer::Source(util::stream::Chains &chains) {
 
 void ModelBuffer::Source(std::size_t order_minus_1, util::stream::Chain &chain) {
   chain >> util::stream::PRead(files_[order_minus_1].get());
+}
+
+float ModelBuffer::SlowQuery(const ngram::State &context, WordIndex word, ngram::State &out) {
+  // Lookup unigram.
+  ProbBackoff value;
+  util::ErsatzPRead(RawFile(0), &value, sizeof(value), word * (sizeof(WordIndex) + sizeof(value)) + sizeof(WordIndex));
+  out.backoff[0] = value.backoff;
+  out.words[0] = word;
+  out.length = 1;
+
+  std::vector<WordIndex> buffer(context.length + 1), query(context.length + 1);
+  std::reverse_copy(context.words, context.words + context.length, query.begin());
+  query[context.length] = word;
+
+  for (std::size_t order = 2; order <= query.size() && order <= context.length + 1; ++order) {
+    SuffixOrder less(order);
+    const WordIndex *key = &*query.end() - order;
+    int file = RawFile(order - 1);
+    std::size_t length = order * sizeof(WordIndex) + sizeof(ProbBackoff);
+    // TODO: cache file size?
+    uint64_t begin = 0, end = util::SizeOrThrow(file) / length;
+    while (true) {
+      if (end <= begin) {
+        // Did not find for order.
+        return std::accumulate(context.backoff + out.length - 1, context.backoff + context.length, value.prob);
+      }
+      uint64_t test = begin + (end - begin) / 2;
+      util::ErsatzPRead(file, &*buffer.begin(), sizeof(WordIndex) * order, test * length);
+
+      if (less(&*buffer.begin(), key)) {
+        begin = test + 1;
+      } else if (less(key, &*buffer.begin())) {
+        end = test;
+      } else {
+        // Found it.
+        util::ErsatzPRead(file, &value, sizeof(value), test * length + sizeof(WordIndex) * order);
+        if (order != Order()) {
+          out.length = order;
+          out.backoff[order - 1] = value.backoff;
+          out.words[order - 1] = *key;
+        }
+        break;
+      }
+    }
+  }
+  return value.prob;
 }
 
 } // namespace
