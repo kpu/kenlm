@@ -6,7 +6,6 @@ if(EIGEN3_FOUND AND 3.1.0 VERSION_LESS ${EIGEN3_VERSION})
   set(KENLM_INTERPOLATE_SOURCE
       backoff_reunification.cc
       bounded_sequence_encoding.cc
-      enumerate_global_vocab.cc
       merge_probabilities.cc
       merge_vocab.cc
       normalize.cc
