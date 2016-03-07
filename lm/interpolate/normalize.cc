@@ -288,7 +288,6 @@ class Recurse {
       assert(!input_);
       prob_out_.Poison();
       backoff_out_.Poison();
-      backoffs_.Finish();
       if (higher_.get())
         higher_->Finish();
     }
@@ -361,6 +360,7 @@ class Thread {
       }
       if (max_order > 1) {
         higher_order->ExtendContext(NGramHeader(NULL, 0), log_z);
+        backoffs.Finish();
         higher_order->Finish();
       }
     }
