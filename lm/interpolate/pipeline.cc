@@ -43,12 +43,13 @@ void SetupInputs(std::size_t buffer_size, const UniversalVocab &vocab, util::Fix
   }
 }
 
-template <class SortOrder> void ApplySort(const util::stream::SortConfig &config, util::stream::Chains &chains) {
-  util::stream::Sorts<SortOrder> sorts(chains.size());
+template <class Compare> void SinkSort(const util::stream::SortConfig &config, util::stream::Chains &chains, util::stream::Sorts<Compare> &sorts) {
   for (std::size_t i = 0; i < chains.size(); ++i) {
-    sorts.push_back(chains[i], config, SortOrder(i + 1));
+    sorts.push_back(chains[i], config, Compare(i + 1));
   }
-  chains.Wait(true);
+}
+
+template <class Compare> void SourceSort(util::stream::Chains &chains, util::stream::Sorts<Compare> &sorts) {
   // TODO memory management
   for (std::size_t i = 0; i < sorts.size(); ++i) {
     sorts[i].Merge(sorts[i].DefaultLazy());
@@ -56,7 +57,7 @@ template <class SortOrder> void ApplySort(const util::stream::SortConfig &config
   for (std::size_t i = 0; i < sorts.size(); ++i) {
     sorts[i].Output(chains[i], sorts[i].DefaultLazy());
   }
-};
+}
 
 } // namespace
 
@@ -75,17 +76,17 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
     vocab_files.push_back(i->VocabFile());
     max_order = std::max(max_order, i->Order());
   }
-  UniversalVocab vocab(vocab_sizes);
+  util::scoped_ptr<UniversalVocab> vocab(new UniversalVocab(vocab_sizes));
   {
     ngram::ImmediateWriteWordsWrapper writer(NULL, vocab_null.get(), 0);
-    MergeVocab(vocab_files, vocab, writer);
+    MergeVocab(vocab_files, *vocab, writer);
   }
 
   std::cerr << "Merging probabilities." << std::endl;
   // Pass 1: merge probabilities
   util::FixedArray<util::stream::Chains> input_chains(models.size());
   util::FixedArray<util::stream::ChainPositions> models_by_order(models.size());
-  SetupInputs(config.BufferSize(), vocab, models, false, input_chains, models_by_order);
+  SetupInputs(config.BufferSize(), *vocab, models, false, input_chains, models_by_order);
 
   util::stream::Chains merged_probs(max_order);
   for (std::size_t i = 0; i < max_order; ++i) {
@@ -101,13 +102,18 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
   }
 
   // Pass 2: normalize.
-  ApplySort<ContextOrder>(config.sort, merged_probs);
-  for (util::stream::Chains *i = input_chains.begin(); i != input_chains.end(); ++i) {
-    i->Wait(true);
+  {
+    util::stream::Sorts<ContextOrder> sorts(merged_probs.size());
+    SinkSort(config.sort, merged_probs, sorts);
+    merged_probs.Wait(true);
+    for (util::stream::Chains *i = input_chains.begin(); i != input_chains.end(); ++i) {
+      i->Wait(true);
+    }
+    SourceSort(merged_probs, sorts);
   }
 
   std::cerr << "Normalizing" << std::endl;
-  SetupInputs(config.BufferSize(), vocab, models, true, input_chains, models_by_order);
+  SetupInputs(config.BufferSize(), *vocab, models, true, input_chains, models_by_order);
   util::stream::Chains probabilities(max_order), backoffs(max_order - 1);
   std::size_t block_count = 2;
   for (std::size_t i = 0; i < max_order; ++i) {
@@ -135,15 +141,20 @@ void Pipeline(util::FixedArray<ModelBuffer> &models, const Config &config, int w
   merged_probs >> util::stream::kRecycle;
 
   // Pass 3: backoffs in the right place.
-  ApplySort<SuffixOrder>(config.sort, probabilities);
-  for (util::stream::Chains *i = input_chains.begin(); i != input_chains.end(); ++i) {
-    i->Wait(true);
+  {
+    util::stream::Sorts<SuffixOrder> sorts(probabilities.size());
+    SinkSort(config.sort, probabilities, sorts);
+    probabilities.Wait(true);
+    for (util::stream::Chains *i = input_chains.begin(); i != input_chains.end(); ++i) {
+      i->Wait(true);
+    }
+    backoffs.Wait(true);
+    merged_probs.Wait(true);
+    // destroy universal vocab to save RAM.
+    vocab.reset();
+    SourceSort(probabilities, sorts);
   }
 
-  // TODO destroy universal vocab to save RAM.
-  // TODO these should be freed before merge sort happens in the above function.
-  backoffs.Wait(true);
-  merged_probs.Wait(true);
   std::cerr << "Reunifying backoffs" << std::endl;
   util::stream::ChainPositions prob_pos(max_order - 1);
   util::stream::Chains combined(max_order - 1);
