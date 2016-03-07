@@ -288,6 +288,7 @@ class Recurse {
       assert(!input_);
       prob_out_.Poison();
       backoff_out_.Poison();
+      backoffs_.Finish();
       if (higher_.get())
         higher_->Finish();
     }
