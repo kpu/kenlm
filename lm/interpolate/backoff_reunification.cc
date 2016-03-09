@@ -4,6 +4,7 @@
 #include "lm/common/ngram.hh"
 #include "lm/common/compare.hh"
 
+#include <algorithm>
 #include <cassert>
 
 namespace lm {
@@ -25,7 +26,7 @@ public:
     util::stream::Stream boff_input(boff_pos_);
     for (; prob_input && boff_input; ++prob_input, ++boff_input, ++stream) {
       std::copy(prob_input->begin(), prob_input->end(), stream->begin());
-      stream->Value().prob = prob_input->Value();
+      stream->Value().prob = std::min(0.0f, prob_input->Value());
       stream->Value().backoff = *reinterpret_cast<float *>(boff_input.Get());
     }
     UTIL_THROW_IF2(prob_input || boff_input,
