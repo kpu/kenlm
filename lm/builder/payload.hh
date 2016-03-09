@@ -23,15 +23,15 @@ union BuildingPayload {
   }
 
   void Mark() {
-    count |= (1ul << (sizeof(count) * 8 - 1));
+    count |= (1ULL << (sizeof(count) * 8 - 1));
   }
 
   void Unmark() {
-    count &= ~(1ul << (sizeof(count) * 8 - 1));
+    count &= ~(1ULL << (sizeof(count) * 8 - 1));
   }
 
   uint64_t UnmarkedCount() const {
-    return count & ~(1ul << (sizeof(count) * 8 - 1));
+    return count & ~(1ULL << (sizeof(count) * 8 - 1));
   }
 
   uint64_t CutoffCount() const {
