@@ -146,6 +146,9 @@ void NormalizeTempPrefix(std::string &base);
 int MakeTemp(const StringPiece &prefix);
 std::FILE *FMakeTemp(const StringPiece &prefix);
 
+// Where should we put temporary files?  Handles all the windows/POSIX defaults fun.
+std::string DefaultTempDirectory();
+
 // dup an fd.
 int DupOrThrow(int fd);
 

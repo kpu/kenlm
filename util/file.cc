@@ -525,6 +525,29 @@ std::FILE *FMakeTemp(const StringPiece &base) {
   return FDOpenOrThrow(file);
 }
 
+std::string DefaultTempDirectory() {
+#if defined(_WIN32) || defined(_WIN64)
+  char dir_buffer[1000];
+  if (GetTempPath(1000, dir_buffer) == 0)
+    throw std::runtime_error("Could not read temporary directory.");
+  return std::string(dir_buffer);
+#else
+  // POSIX says to try these environment variables, in this order:
+  const char *const vars[] = {"TMPDIR", "TMP", "TEMPDIR", "TEMP", 0};
+  for (int i=0; vars[i]; ++i) {
+#ifdef _GNU_SOURCE
+    const char *val = secure_getenv(vars[i]);
+#else
+    const char *val = getenv(vars[i]);
+#endif
+    // Environment variable is set and nonempty.  Use it.
+    if (val && *val) return val;
+  }
+  // No environment variables set.  Default to /tmp.
+  return "/tmp";
+#endif
+}
+
 int DupOrThrow(int fd) {
   int ret = dup(fd);
   UTIL_THROW_IF_ARG(ret == -1, FDException, (fd), "in duplicating the file descriptor");
