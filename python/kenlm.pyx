@@ -70,11 +70,9 @@ cdef class State:
     def __hash__(self):
         return _kenlm.hash_value(self._c_state)
 
-
-cdef class LanguageModel:
+cdef class Model:
     """
-    This is not a strict wrapper, the interface is more pythonic.
-    It loads models and queries full sentences.
+    This is closer to a wrapper around lm::ngram::Model.
     """
 
     cdef _kenlm.Model* model
@@ -145,47 +143,7 @@ cdef class LanguageModel:
             ret = self.model.BaseFullScore(&state,
                 self.vocab.EndSentence(), &out_state)
             yield (ret.prob, ret.ngram_length, False)
-    
-    def __contains__(self, word):
-        cdef bytes w = as_str(word)
-        return (self.vocab.Index(w) != 0)
 
-    def __repr__(self):
-        return '<LanguageModel from {0}>'.format(os.path.basename(self.path))
-
-    def __reduce__(self):
-        return (_kenlm.LanguageModel, (self.path,))
-
-cdef class Model:
-    """
-    This is closer to a wrapper around lm::ngram::Model.
-    """
-
-    cdef _kenlm.Model* model
-    cdef public bytes path
-    cdef _kenlm.const_Vocabulary* vocab
-
-    def __init__(self, path):
-        """
-        Load the language model.
-
-        :param path: path to an arpa file or a kenlm binary file.
-        """
-        self.path = os.path.abspath(as_str(path))
-        try:
-            self.model = _kenlm.LoadVirtual(self.path)
-        except RuntimeError as exception:
-            exception_message = str(exception).replace('\n', ' ')
-            raise IOError('Cannot read model \'{}\' ({})'.format(path, exception_message))\
-                    from exception
-        self.vocab = &self.model.BaseVocabulary()
-
-    def __dealloc__(self):
-        del self.model
-
-    property order:
-        def __get__(self):
-            return self.model.Order()
 
     def BeginSentenceWrite(self, State state):
         """Change the given state to a BOS state."""
@@ -229,3 +187,5 @@ cdef class Model:
     def __reduce__(self):
         return (_kenlm.LanguageModel, (self.path,))
 
+class LanguageModel(Model):
+    """Backwards compatability stub.  Use Model."""

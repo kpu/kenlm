@@ -94,9 +94,8 @@ pip install https://github.com/kpu/kenlm/archive/master.zip
 ### Basic Usage
 ```python
 import kenlm
-model = kenlm.LanguageModel('lm/test.arpa')
-sentence = 'this is a sentence .'
-print(model.score(sentence))
+model = kenlm.Model('lm/test.arpa')
+print(model.score('this is a sentence .', bos = True, eos = True))
 ```
 
 ---
