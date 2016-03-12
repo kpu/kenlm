@@ -2,7 +2,7 @@ import os
 import kenlm
 
 LM = os.path.join(os.path.dirname(__file__), '..', 'lm', 'test.arpa')
-model = kenlm.LanguageModel(LM)
+model = kenlm.Model(LM)
 print('{0}-gram model'.format(model.order))
 
 sentence = 'language modeling is fun .'
