@@ -97,6 +97,7 @@ import kenlm
 model = kenlm.Model('lm/test.arpa')
 print(model.score('this is a sentence .', bos = True, eos = True))
 ```
+See [python/example.py](python/example.py) and [python/kenlm.pyx](python/kenlm.pyx) for more, including stateful APIs.  
 
 ---
 
