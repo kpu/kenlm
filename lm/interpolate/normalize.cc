@@ -20,16 +20,6 @@
 namespace lm { namespace interpolate {
 namespace {
 
-struct SuffixLexicographicLess : public std::binary_function<NGramHeader, NGramHeader, bool> {
-  bool operator()(const NGramHeader first, const NGramHeader second) const {
-    for (const WordIndex *f = first.end() - 1, *s = second.end() - 1; f >= first.begin() && s >= second.begin(); --f, --s) {
-      if (*f < *s) return true;
-      if (*f > *s) return false;
-    }
-    return first.size() < second.size();
-  }
-};
-
 class BackoffQueueEntry {
   public:
     BackoffQueueEntry(float &entry, const util::stream::ChainPosition &position)
