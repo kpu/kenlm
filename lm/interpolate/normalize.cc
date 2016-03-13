@@ -49,7 +49,7 @@ class BackoffQueueEntry {
 
 struct PtrGreater : public std::binary_function<const BackoffQueueEntry *, const BackoffQueueEntry *, bool> {
   bool operator()(const BackoffQueueEntry *first, const BackoffQueueEntry *second) const {
-    return SuffixLexicographicLess()(**second, **first);
+    return SuffixLexicographicLess<NGramHeader>()(**second, **first);
   }
 };
 
@@ -102,7 +102,7 @@ class BackoffManager {
       for (std::size_t i = to.Order() - 1; i < entered_.size(); ++i) {
         assert(entered_[i].empty());
       }
-      SuffixLexicographicLess less;
+      SuffixLexicographicLess<NGramHeader> less;
       while (!queue_.empty() && less(**queue_.top(), to))
         SkipRecord();
       while (TopMatches(to)) {

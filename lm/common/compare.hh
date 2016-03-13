@@ -170,8 +170,8 @@ class PrefixOrder : public Comparator<PrefixOrder> {
     static const unsigned kMatchOffset = 0;
 };
 
-struct SuffixLexicographicLess : public std::binary_function<const NGramHeader, const NGramHeader, bool> {
-  bool operator()(const NGramHeader first, const NGramHeader second) const {
+template <class Range> struct SuffixLexicographicLess : public std::binary_function<const Range, const Range, bool> {
+  bool operator()(const Range first, const Range second) const {
     for (const WordIndex *f = first.end() - 1, *s = second.end() - 1; f >= first.begin() && s >= second.begin(); --f, --s) {
       if (*f < *s) return true;
       if (*f > *s) return false;
