@@ -95,7 +95,7 @@ void ModelBuffer::Source(std::size_t order_minus_1, util::stream::Chain &chain) 
   chain >> util::stream::PRead(files_[order_minus_1].get());
 }
 
-float ModelBuffer::SlowQuery(const ngram::State &context, WordIndex word, ngram::State &out) {
+float ModelBuffer::SlowQuery(const ngram::State &context, WordIndex word, ngram::State &out) const {
   // Lookup unigram.
   ProbBackoff value;
   util::ErsatzPRead(RawFile(0), &value, sizeof(value), word * (sizeof(WordIndex) + sizeof(value)) + sizeof(WordIndex));

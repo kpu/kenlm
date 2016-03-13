@@ -57,7 +57,7 @@ class ModelBuffer {
     // Slowly execute a language model query with binary search.
     // This is used by interpolation to gather tuning probabilities rather than
     // scanning the files.
-    float SlowQuery(const ngram::State &context, WordIndex word, ngram::State &out);
+    float SlowQuery(const ngram::State &context, WordIndex word, ngram::State &out) const;
 
   private:
     const std::string file_base_;
