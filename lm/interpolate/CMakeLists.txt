@@ -7,7 +7,6 @@ if(EIGEN3_FOUND)
     set(KENLM_INTERPOLATE_SOURCE
         backoff_reunification.cc
         bounded_sequence_encoding.cc
-        enumerate_global_vocab.cc
         merge_probabilities.cc
         merge_vocab.cc
         normalize.cc
