@@ -25,21 +25,21 @@ struct Grams {
 
 template <>
 const Gram<1> Grams<1>::grams[]
-    = {{{0}, 0.1f, 0.1f}, {{1}, 0.4f, 0.2f}, {{2}, 0.5f, 0.1f}};
+    = {{{0}, -0.1f, -0.1f}, {{1}, -0.4f, -0.2f}, {{2}, -0.5f, -0.1f}};
 
 template <>
-const Gram<2> Grams<2>::grams[] = {{{0, 0}, 0.05f, 0.05f},
-                                   {{1, 0}, 0.05f, 0.02f},
-                                   {{1, 1}, 0.2f, 0.04f},
-                                   {{2, 2}, 0.2f, 0.01f}};
+const Gram<2> Grams<2>::grams[] = {{{0, 0}, -0.05f, -0.05f},
+                                   {{1, 0}, -0.05f, -0.02f},
+                                   {{1, 1}, -0.2f, -0.04f},
+                                   {{2, 2}, -0.2f, -0.01f}};
 
 template <>
-const Gram<3> Grams<3>::grams[] = {{{0, 0, 0}, 0.001f, 0.005f},
-                                   {{1, 0, 0}, 0.001f, 0.002f},
-                                   {{2, 0, 0}, 0.001f, 0.003f},
-                                   {{0, 1, 0}, 0.1f, 0.008f},
-                                   {{1, 1, 0}, 0.1f, 0.09f},
-                                   {{1, 1, 1}, 0.2f, 0.08f}};
+const Gram<3> Grams<3>::grams[] = {{{0, 0, 0}, -0.001f, -0.005f},
+                                   {{1, 0, 0}, -0.001f, -0.002f},
+                                   {{2, 0, 0}, -0.001f, -0.003f},
+                                   {{0, 1, 0}, -0.1f, -0.008f},
+                                   {{1, 1, 0}, -0.1f, -0.09f},
+                                   {{1, 1, 1}, -0.2f, -0.08f}};
 
 template <uint8_t N>
 class WriteInput {
@@ -83,25 +83,24 @@ public:
       for (WordIndex *idx = stream->begin(); idx != stream->end(); ++idx)
         ss << "(" << *idx << ")";
 
-      UTIL_THROW_IF2(
-          !std::equal(stream->begin(), stream->end(), Grams<N>::grams[i].ids),
-          "Mismatched id in CheckOutput<" << (int)N << ">: " << ss.str());
+        BOOST_CHECK(std::equal(stream->begin(), stream->end(), Grams<N>::grams[i].ids));
+            //"Mismatched id in CheckOutput<" << (int)N << ">: " << ss.str();
 
-      UTIL_THROW_IF2(stream->Value().prob != Grams<N>::grams[i].prob,
-                     "Mismatched probability in CheckOutput<"
+        BOOST_CHECK_EQUAL(stream->Value().prob, Grams<N>::grams[i].prob);
+/*                     "Mismatched probability in CheckOutput<"
                          << (int)N << ">, got " << stream->Value().prob
-                         << ", expected " << Grams<N>::grams[i].prob);
+                         << ", expected " << Grams<N>::grams[i].prob;*/
 
-      UTIL_THROW_IF2(stream->Value().backoff != Grams<N>::grams[i].boff,
-                     "Mismatched backoff in CheckOutput<"
+        BOOST_CHECK_EQUAL(stream->Value().backoff, Grams<N>::grams[i].boff);
+/*                     "Mismatched backoff in CheckOutput<"
                          << (int)N << ">, got " << stream->Value().backoff
-                         << ", expected " << Grams<N>::grams[i].boff);
+                         << ", expected " << Grams<N>::grams[i].boff);*/
     }
-    UTIL_THROW_IF2(i != sizeof(Grams<N>::grams) / sizeof(Gram<N>),
-                   "Did not get correct number of "
+    BOOST_CHECK_EQUAL(i , sizeof(Grams<N>::grams) / sizeof(Gram<N>));
+/*                   "Did not get correct number of "
                        << (int)N << "-grams: expected "
                        << sizeof(Grams<N>::grams) / sizeof(Gram<N>)
-                       << ", got " << i);
+                       << ", got " << i;*/
   }
 };
 }
