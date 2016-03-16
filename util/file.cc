@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <iostream>
 #include <limits>
+#include <stdexcept>
 #include <sstream>
 
 #include <cassert>
