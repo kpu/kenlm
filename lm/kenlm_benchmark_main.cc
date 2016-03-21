@@ -63,7 +63,9 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, int 
   double after = util::CPUTime();
   std::cerr << "Probability sum is " << total << std::endl;
   std::cout << "Queries: " << completed << std::endl;
-  std::cout << "CPU_excluding_load: " << (after - loaded) << "\nCPU_per_query: " << ((after - loaded) / static_cast<double>(completed)) << std::endl;
+  double cpu_per_entry = ((after - loaded) / static_cast<double>(completed));
+  std::cout << "CPU_excluding_load: " << (after - loaded) << "\nCPU_per_query: " << cpu_per_entry << std::endl;
+  std::cout << "Throughput: " << (int)(1.0/cpu_per_entry) << std::endl;
   std::cout << "RSSMax: " << util::RSSMax() << std::endl;
 }
 
