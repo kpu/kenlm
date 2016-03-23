@@ -29,7 +29,6 @@
 #include <windows.h>
 #include <io.h>
 #else
-#include <features.h>
 #include <unistd.h>
 #endif
 
