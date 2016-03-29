@@ -43,6 +43,12 @@ class LineIterator {
       return backing_ == other.backing_;
     }
 
+    bool operator!=(const LineIterator &other) const {
+      return backing_ != other.backing_;
+    }
+
+    operator bool() const { return backing_ != NULL; }
+
     StringPiece operator*() const { return line_; }
     const StringPiece *operator->() const { return &line_; }
 
