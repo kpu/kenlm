@@ -1,6 +1,8 @@
 import os
 cimport _kenlm
 
+from enum import IntEnum
+
 cdef bytes as_str(data):
     if isinstance(data, bytes):
         return data
@@ -70,24 +72,48 @@ cdef class State:
     def __hash__(self):
         return _kenlm.hash_value(self._c_state)
 
+class LoadMethod(IntEnum):
+    LAZY = _kenlm.LAZY
+    POPULATE_OR_LAZY = _kenlm.POPULATE_OR_LAZY
+    POPULATE_OR_READ = _kenlm.POPULATE_OR_READ
+    READ = _kenlm.READ
+    PARALLEL_READ = _kenlm.PARALLEL_READ
+
+cdef class Config:
+    """
+    Wrapper around lm::ngram::Config.
+    Pass this to Model's constructor to set the load_method.
+    """
+    cdef _kenlm.Config _c_config
+
+    def __init__(self):
+        self._c_config = _kenlm.Config()
+
+    property load_method:
+        def __get__(self):
+            return LoadMethod(self._c_config.load_method)
+        def __set__(self, to):
+            self._c_config.load_method = to.value
+
 cdef class Model:
     """
-    This is closer to a wrapper around lm::ngram::Model.
+    Wrapper around lm::ngram::Model.
     """
 
     cdef _kenlm.Model* model
     cdef public bytes path
     cdef _kenlm.const_Vocabulary* vocab
 
-    def __init__(self, path):
+    def __init__(self, path, Config config = Config()):
         """
         Load the language model.
 
         :param path: path to an arpa file or a kenlm binary file.
+        :param config: configuration options (see lm/config.hh for documentation)
         """
         self.path = os.path.abspath(as_str(path))
         try:
-            self.model = _kenlm.LoadVirtual(self.path)
+            self.model = _kenlm.LoadVirtual(self.path, config._c_config)
         except RuntimeError as exception:
             exception_message = str(exception).replace('\n', ' ')
             raise IOError('Cannot read model \'{}\' ({})'.format(path, exception_message))\

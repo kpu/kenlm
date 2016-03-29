@@ -29,5 +29,22 @@ cdef extern from "lm/virtual_interface.hh" namespace "lm::base":
         float BaseScore(void *in_state, WordIndex new_word, void *out_state)
         FullScoreReturn BaseFullScore(void *in_state, WordIndex new_word, void *out_state)
 
+cdef extern from "util/mmap.hh" namespace "util":
+    cdef enum LoadMethod:
+        LAZY
+        POPULATE_OR_LAZY
+        POPULATE_OR_READ
+        READ
+        PARALLEL_READ
+
+cdef extern from "lm/config.hh" namespace "lm::ngram":
+    cdef cppclass Config:
+        Config()
+        float probing_multiplier
+        LoadMethod load_method
+
 cdef extern from "lm/model.hh" namespace "lm::ngram":
+    cdef Model *LoadVirtual(char *, Config &config) except +
+    #default constructor
     cdef Model *LoadVirtual(char *) except +
+

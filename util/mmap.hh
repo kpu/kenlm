@@ -127,7 +127,7 @@ void HugeMalloc(std::size_t size, bool zeroed, scoped_memory &to);
 // this.
 void HugeRealloc(std::size_t size, bool new_zeroed, scoped_memory &mem);
 
-typedef enum {
+enum LoadMethod {
   // mmap with no prepopulate
   LAZY,
   // On linux, pass MAP_POPULATE to mmap.
@@ -138,7 +138,7 @@ typedef enum {
   READ,
   // malloc and read in parallel (recommended for Lustre)
   PARALLEL_READ,
-} LoadMethod;
+};
 
 void MapRead(LoadMethod method, int fd, uint64_t offset, std::size_t size, scoped_memory &out);
 
