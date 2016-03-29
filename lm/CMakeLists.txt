@@ -1,11 +1,3 @@
-# This CMake file was created by Lane Schwartz <dowobeha@gmail.com>
-
-
-set(KENLM_MAX_ORDER 6 CACHE STRING "Maximum supported ngram order")
-
-add_definitions(-DKENLM_MAX_ORDER=${KENLM_MAX_ORDER})
-
-
 # Explicitly list the source files for this subdirectory
 #
 # If you add any source files to this subdirectory
@@ -40,6 +32,9 @@ add_subdirectory(common)
 
 add_library(kenlm ${KENLM_LM_SOURCE} ${KENLM_LM_COMMON_SOURCE})
 target_link_libraries(kenlm kenlm_util ${Boost_LIBRARIES} pthread)
+
+set(KENLM_MAX_ORDER 6 CACHE STRING "Maximum supported ngram order")
+target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=${KENLM_MAX_ORDER})
 
 # This directory has children that need to be processed
 add_subdirectory(builder)
