@@ -23,6 +23,34 @@ class ParseNumberException : public Exception {
     ~ParseNumberException() throw() {}
 };
 
+class FilePiece;
+
+// Input Iterator over lines.  This allows
+//   for (StringPiece l : FilePiece("file"))
+// in C++11.
+// NB: not multipass.
+class LineIterator {
+  public:
+    LineIterator() : backing_(NULL) {}
+
+    explicit LineIterator(FilePiece &f) : backing_(&f) {
+      ++*this;
+    }
+
+    LineIterator &operator++();
+
+    bool operator==(const LineIterator &other) const {
+      return backing_ == other.backing_;
+    }
+
+    StringPiece operator*() const { return line_; }
+    const StringPiece *operator->() const { return &line_; }
+
+  private:
+    FilePiece *backing_;
+    StringPiece line_;
+};
+
 // Memory backing the returned StringPiece may vanish on the next call.
 class FilePiece {
   public:
@@ -39,6 +67,14 @@ class FilePiece {
     explicit FilePiece(std::istream &stream, const char *name = NULL, std::size_t min_buffer = 1048576);
 
     ~FilePiece();
+
+    LineIterator begin() {
+      return LineIterator(*this);
+    }
+
+    LineIterator end() {
+      return LineIterator();
+    }
 
     char get() {
       if (position_ == position_end_) {
