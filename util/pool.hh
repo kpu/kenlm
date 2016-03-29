@@ -30,7 +30,7 @@ class Pool {
       return ret;
     }
 
-    /** Extend (or contract) the most recent allocation.  
+    /** Extend (or contract) the most recent allocation.
      * @param base The base pointer of the allocation. This must must have been
      *   returned by the MOST RECENT call to Allocate or Continue.
      * @param additional Change in the size.
