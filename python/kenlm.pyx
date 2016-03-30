@@ -1,8 +1,6 @@
 import os
 cimport _kenlm
 
-from enum import IntEnum
-
 cdef bytes as_str(data):
     if isinstance(data, bytes):
         return data
@@ -72,7 +70,7 @@ cdef class State:
     def __hash__(self):
         return _kenlm.hash_value(self._c_state)
 
-class LoadMethod(IntEnum):
+class LoadMethod:
     LAZY = _kenlm.LAZY
     POPULATE_OR_LAZY = _kenlm.POPULATE_OR_LAZY
     POPULATE_OR_READ = _kenlm.POPULATE_OR_READ
@@ -91,9 +89,9 @@ cdef class Config:
 
     property load_method:
         def __get__(self):
-            return LoadMethod(self._c_config.load_method)
+            return self._c_config.load_method
         def __set__(self, to):
-            self._c_config.load_method = to.value
+            self._c_config.load_method = to
 
 cdef class Model:
     """
