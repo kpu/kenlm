@@ -138,6 +138,11 @@ double WallTime() {
 double CPUTime() {
 #if defined(_WIN32) || defined(_WIN64)
   return 0.0;
+#elif defined(__MACH__) || defined(__FreeBSD__) || defined(__APPLE__)
+  struct rusage usage;
+  if (getrusage(RUSAGE_SELF, &usage))
+    return 0.0;
+  return DoubleSec(usage.ru_utime) + DoubleSec(usage.ru_stime);
 #else
   struct timespec usage;
   UTIL_THROW_IF(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &usage), ErrnoException, "clock_gettime failed?!"); 
