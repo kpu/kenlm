@@ -9,11 +9,26 @@ if (FORCE_STATIC)
   #presumably overkill, is there a better way?
   #http://cmake.3232098.n2.nabble.com/Howto-compile-static-executable-td5580269.html
   set(Boost_USE_STATIC_LIBS ON)
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
   set_property(GLOBAL PROPERTY LINK_SEARCH_START_STATIC ON)
   set_property(GLOBAL PROPERTY LINK_SEARCH_END_STATIC ON)
   set(BUILD_SHARED_LIBRARIES OFF)
-  set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
+  if (MSVC)
+	set(flag_vars
+	  CMAKE_CXX_FLAGS CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS_RELEASE
+	  CMAKE_CXX_FLAGS_MINSIZEREL CMAKE_CXX_FLAGS_RELWITHDEBINFO
+	  CMAKE_C_FLAGS CMAKE_C_FLAGS_DEBUG CMAKE_C_FLAGS_RELEASE
+	  CMAKE_C_FLAGS_MINSIZEREL CMAKE_C_FLAGS_RELWITHDEBINFO)
+	  foreach(flag_var ${flag_vars})
+	    if(${flag_var} MATCHES "/MD")
+	      string(REGEX REPLACE "/MD" "/MT" ${flag_var} "${${flag_var}}")
+	    endif(${flag_var} MATCHES "/MD")
+	  endforeach(flag_var)
+  else (MSVC)
+    if (NOT CMAKE_C_COMPILER_ID MATCHES "*Clang")
+      set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
+    endif ()
+  set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+  endif ()
   #Annoyingly the exectuables say "File not found" unless these are set
   set(CMAKE_EXE_LINK_DYNAMIC_C_FLAGS)
   set(CMAKE_EXE_LINK_DYNAMIC_CXX_FLAGS)
@@ -40,6 +55,11 @@ enable_testing()
 # Add our CMake helper functions
 include(cmake/KenLMFunctions.cmake)
 
+if(MSVC)
+  set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} /w34716")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /w34716")
+endif()
+
 # And our helper modules
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
@@ -49,8 +69,9 @@ find_package(Boost 1.36.0 REQUIRED COMPONENTS
   system
   thread
   unit_test_framework
+  date_time
+  chrono
 )
-
 
 # Define where include files live
 include_directories(

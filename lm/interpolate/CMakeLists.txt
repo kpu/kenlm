@@ -30,9 +30,13 @@ if(EIGEN3_FOUND)
     set(KENLM_INTERPOLATE_EXES
         interpolate
         streaming_example)
+		
+	if (NOT MSVC)
+	  set(THREADS pthread)
+	endif()
   
       set(KENLM_INTERPOLATE_LIBS
-        kenlm_interpolate kenlm kenlm_util ${Boost_LIBRARIES} pthread)
+        kenlm_interpolate kenlm kenlm_util ${Boost_LIBRARIES} ${THREADS})
   
     AddExes(EXES ${KENLM_INTERPOLATE_EXES}
             LIBRARIES ${KENLM_INTERPOLATE_LIBS})

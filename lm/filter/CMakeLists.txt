@@ -17,7 +17,6 @@ set(KENLM_FILTER_SOURCE
 		${CMAKE_CURRENT_SOURCE_DIR}/vocab.cc
 	)
 
-
 # Group these objects together for later use.
 #
 # Given add_library(foo OBJECT ${my_foo_sources}),
@@ -25,6 +24,10 @@ set(KENLM_FILTER_SOURCE
 #
 add_library(kenlm_filter ${KENLM_FILTER_SOURCE})
 
+if (NOT MSVC)
+	set(THREADS pthread)
+endif()
+
 AddExes(EXES filter phrase_table_vocab
-        LIBRARIES kenlm_filter kenlm kenlm_util ${Boost_LIBRARIES} pthread)
+        LIBRARIES kenlm_filter kenlm kenlm_util ${Boost_LIBRARIES} ${THREADS})
 
