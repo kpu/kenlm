@@ -28,8 +28,12 @@ set(KENLM_BUILDER_SOURCE
 #
 add_library(kenlm_builder ${KENLM_BUILDER_SOURCE})
 
+if (NOT MSVC)
+	set(THREADS pthread)
+endif()
+
 AddExes(EXES lmplz
-        LIBRARIES kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} pthread)
+        LIBRARIES kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} ${THREADS})
 
 if(BUILD_TESTING)
 
@@ -40,5 +44,5 @@ if(BUILD_TESTING)
   )
 
   AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}
-           LIBRARIES kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} pthread)
+           LIBRARIES kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} ${THREADS})
 endif()
