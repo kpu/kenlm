@@ -82,7 +82,8 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, cons
   const std::size_t kInQueue = 3;
   std::size_t total_queue = config.threads + kInQueue;
   Width buf[config.buf_per_thread * total_queue];
-  double loaded;
+  double loaded_cpu;
+  double loaded_wall;
   uint64_t queries = 0;
   {
     util::RecyclingThreadPool<Worker<Model, Width> > pool(total_queue, config.threads, Worker<Model, Width>(model, total), boost::iterator_range<Width *>((Width*)0, (Width*)0));
@@ -91,8 +92,9 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, cons
       pool.PopulateRecycling(boost::iterator_range<Width *>(buf + i * config.buf_per_thread, buf + i * config.buf_per_thread));
     }
 
-    loaded = util::CPUTime();
-    std::cout << "CPU_to_load: " << loaded << std::endl;
+    loaded_cpu = util::CPUTime();
+    loaded_wall = util::WallTime();
+    std::cout << "To Load, CPU: " << loaded_cpu << " Wall: " << loaded_wall << std::endl;
     boost::iterator_range<Width *> overhang((Width*)0, (Width*)0);
     while (true) {
       boost::iterator_range<Width *> buf = pool.Consume();
@@ -113,13 +115,16 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, cons
     }
   } // Drain pool.
 
-  double after = util::CPUTime();
-  std::cerr << "Probability sum is " << total << std::endl;
-  std::cout << "Queries: " << queries << std::endl;
-  double cpu_per_entry = ((after - loaded) / static_cast<double>(queries));
-  std::cout << "CPU_excluding_load: " << (after - loaded) << "\nCPU_per_query: " << cpu_per_entry << std::endl;
-  std::cout << "Throughput (queries/s): " << (1.0/cpu_per_entry) << std::endl;
-  std::cout << "RSSMax: " << util::RSSMax() << std::endl;
+  double after_cpu = util::CPUTime();
+  double after_wall = util::WallTime();
+  std::cerr << "Probability sum: " << total << '\n';
+  std::cout << "Queries: " << queries << '\n';
+  std::cout << "Excluding load, CPU: " << (after_cpu - loaded_cpu) << " Wall: " << (after_wall - loaded_wall) << '\n';
+  double cpu_per_entry = ((after_cpu - loaded_cpu) / static_cast<double>(queries));
+  double wall_per_entry = ((after_wall - loaded_wall) / static_cast<double>(queries));
+  std::cout << "Seconds per query excluding load, CPU: " << cpu_per_entry << " Wall: " << wall_per_entry << '\n';
+  std::cout << "Queries per second excluding load, CPU: " << (1.0/cpu_per_entry) << " Wall: " << (1.0/wall_per_entry) << '\n';
+  std::cout << "RSSMax: " << util::RSSMax() << '\n';
 }
 
 template <class Model, class Width> void DispatchFunction(const Model &model, const Config &config) {
