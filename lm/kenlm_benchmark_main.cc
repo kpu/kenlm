@@ -76,6 +76,7 @@ struct Config {
 };
 
 template <class Model, class Width> void QueryFromBytes(const Model &model, const Config &config) {
+  std::cout << "Threads: " << config.threads << std::endl;
   const Width kEOS = model.GetVocabulary().EndSentence();
   double total = 0.0;
   // Number of items to have in queue in addition to everything in flight.
