@@ -105,7 +105,7 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, cons
       Width *read_end = buf.begin() + overhang.size() + got / sizeof(Width);
       Width *last_eos;
       for (last_eos = read_end - 1; ; --last_eos) {
-        UTIL_THROW_IF2(last_eos <= buf.begin(), "Encountered a sentence longer than the buffer size.  Rerun with increased buffer size. TODO: adaptable buffer");
+        UTIL_THROW_IF2(last_eos <= buf.begin(), "Encountered a sentence longer than the buffer size of " << config.buf_per_thread << " words.  Rerun with increased buffer size. TODO: adaptable buffer");
         if (*last_eos == kEOS) break;
       }
       buf = boost::iterator_range<Width*>(buf.begin(), last_eos + 1);
@@ -196,7 +196,7 @@ int main(int argc, char *argv[]) {
       ("help,h", po::bool_switch(), "Show help message")
       ("model,m", po::value<std::string>(&model)->required(), "Model to query or convert vocab ids")
       ("threads,t", po::value<std::size_t>(&config.threads)->default_value(boost::thread::hardware_concurrency()), "Threads to use (querying only; TODO vocab conversion)")
-      ("buffer,b", po::value<std::size_t>(&config.buf_per_thread)->default_value(16384), "Number of words to buffer per task.")
+      ("buffer,b", po::value<std::size_t>(&config.buf_per_thread)->default_value(4096), "Number of words to buffer per task.")
       ("vocab,v", po::bool_switch(), "Convert strings to vocab ids")
       ("query,q", po::bool_switch(), "Query from vocab ids");
     po::variables_map vm;
