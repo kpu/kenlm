@@ -8,6 +8,8 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/program_options.hpp>
 
+#include <iostream>
+
 #include <stdint.h>
 
 namespace {
@@ -76,7 +78,8 @@ struct Config {
 };
 
 template <class Model, class Width> void QueryFromBytes(const Model &model, const Config &config) {
-  std::cout << "Threads: " << config.threads << std::endl;
+  util::FileStream out(1);
+  out << "Threads: " << config.threads << '\n';
   const Width kEOS = model.GetVocabulary().EndSentence();
   double total = 0.0;
   // Number of items to have in queue in addition to everything in flight.
@@ -95,7 +98,7 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, cons
 
     loaded_cpu = util::CPUTime();
     loaded_wall = util::WallTime();
-    std::cout << "To Load, CPU: " << loaded_cpu << " Wall: " << loaded_wall << std::endl;
+    out << "To Load, CPU: " << loaded_cpu << " Wall: " << loaded_wall << '\n';
     boost::iterator_range<Width *> overhang((Width*)0, (Width*)0);
     while (true) {
       boost::iterator_range<Width *> buf = pool.Consume();
@@ -118,14 +121,14 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, cons
 
   double after_cpu = util::CPUTime();
   double after_wall = util::WallTime();
-  std::cerr << "Probability sum: " << total << '\n';
-  std::cout << "Queries: " << queries << '\n';
-  std::cout << "Excluding load, CPU: " << (after_cpu - loaded_cpu) << " Wall: " << (after_wall - loaded_wall) << '\n';
+  util::FileStream(2, 70) << "Probability sum: " << total << '\n';
+  out << "Queries: " << queries << '\n';
+  out << "Excluding load, CPU: " << (after_cpu - loaded_cpu) << " Wall: " << (after_wall - loaded_wall) << '\n';
   double cpu_per_entry = ((after_cpu - loaded_cpu) / static_cast<double>(queries));
   double wall_per_entry = ((after_wall - loaded_wall) / static_cast<double>(queries));
-  std::cout << "Seconds per query excluding load, CPU: " << cpu_per_entry << " Wall: " << wall_per_entry << '\n';
-  std::cout << "Queries per second excluding load, CPU: " << (1.0/cpu_per_entry) << " Wall: " << (1.0/wall_per_entry) << '\n';
-  std::cout << "RSSMax: " << util::RSSMax() << '\n';
+  out << "Seconds per query excluding load, CPU: " << cpu_per_entry << " Wall: " << wall_per_entry << '\n';
+  out << "Queries per second excluding load, CPU: " << (1.0/cpu_per_entry) << " Wall: " << (1.0/wall_per_entry) << '\n';
+  out << "RSSMax: " << util::RSSMax() << '\n';
 }
 
 template <class Model, class Width> void DispatchFunction(const Model &model, const Config &config) {
@@ -139,7 +142,6 @@ template <class Model, class Width> void DispatchFunction(const Model &model, co
 template <class Model> void DispatchWidth(const char *file, const Config &config) {
   lm::ngram::Config model_config;
   model_config.load_method = util::READ;
-  std::cerr << "Using load_method = READ." << std::endl;
   Model model(file, model_config);
   uint64_t bound = model.GetVocabulary().Bound();
   if (bound <= 256) {
