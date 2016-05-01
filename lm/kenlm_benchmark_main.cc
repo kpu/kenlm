@@ -81,7 +81,7 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, cons
   // Number of items to have in queue in addition to everything in flight.
   const std::size_t kInQueue = 3;
   std::size_t total_queue = config.threads + kInQueue;
-  Width buf[config.buf_per_thread * total_queue];
+  std::vector<Width> backing(config.buf_per_thread * total_queue);
   double loaded_cpu;
   double loaded_wall;
   uint64_t queries = 0;
@@ -89,7 +89,7 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, cons
     util::RecyclingThreadPool<Worker<Model, Width> > pool(total_queue, config.threads, Worker<Model, Width>(model, total), boost::iterator_range<Width *>((Width*)0, (Width*)0));
 
     for (std::size_t i = 0; i < total_queue; ++i) {
-      pool.PopulateRecycling(boost::iterator_range<Width *>(buf + i * config.buf_per_thread, buf + i * config.buf_per_thread));
+      pool.PopulateRecycling(boost::iterator_range<Width *>(&backing[i * config.buf_per_thread], &backing[i * config.buf_per_thread]));
     }
 
     loaded_cpu = util::CPUTime();
@@ -99,7 +99,7 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, cons
     while (true) {
       boost::iterator_range<Width *> buf = pool.Consume();
       std::memmove(buf.begin(), overhang.begin(), overhang.size() * sizeof(Width));
-      std::size_t got = util::ReadOrEOF(config.fd_in, buf.begin() + overhang.size(), config.buf_per_thread - overhang.size() * sizeof(Width));
+      std::size_t got = util::ReadOrEOF(config.fd_in, buf.begin() + overhang.size(), (config.buf_per_thread - overhang.size()) * sizeof(Width));
       if (!got && overhang.empty()) break;
       UTIL_THROW_IF2(got % sizeof(Width), "File size not a multiple of vocab id size " << sizeof(Width));
       Width *read_end = buf.begin() + overhang.size() + got / sizeof(Width);
