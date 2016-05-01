@@ -96,8 +96,8 @@ template <class Model, class Width> void QueryFromBytes(const Model &model, cons
     boost::iterator_range<Width *> overhang((Width*)0, (Width*)0);
     while (true) {
       boost::iterator_range<Width *> buf = pool.Consume();
-      std::memmove(buf.begin(), overhang.begin(), overhang.size());
-      std::size_t got = util::ReadOrEOF(config.fd_in, buf.begin() + overhang.size(), config.buf_per_thread - overhang.size());
+      std::memmove(buf.begin(), overhang.begin(), overhang.size() * sizeof(Width));
+      std::size_t got = util::ReadOrEOF(config.fd_in, buf.begin() + overhang.size(), config.buf_per_thread - overhang.size() * sizeof(Width));
       if (!got && overhang.empty()) break;
       UTIL_THROW_IF2(got % sizeof(Width), "File size not a multiple of vocab id size " << sizeof(Width));
       Width *read_end = buf.begin() + overhang.size() + got / sizeof(Width);
