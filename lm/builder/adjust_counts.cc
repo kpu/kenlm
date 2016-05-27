@@ -1,7 +1,6 @@
 #include "lm/builder/adjust_counts.hh"
 #include "lm/common/ngram_stream.hh"
 #include "lm/builder/payload.hh"
-#include "util/stream/timer.hh"
 
 #include <algorithm>
 #include <iostream>
@@ -217,8 +216,6 @@ class CollapseStream {
 } // namespace
 
 void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
-  UTIL_TIMER("(%w s) Adjusted counts\n");
-
   const std::size_t order = positions.size();
   StatCollector stats(order, counts_, counts_pruned_, discounts_);
   if (order == 1) {
