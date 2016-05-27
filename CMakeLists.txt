@@ -69,8 +69,6 @@ find_package(Boost 1.36.0 REQUIRED COMPONENTS
   system
   thread
   unit_test_framework
-  date_time
-  chrono
 )
 
 # Define where include files live
