@@ -12,7 +12,6 @@
 #include "util/probing_hash_table.hh"
 #include "util/scoped.hh"
 #include "util/stream/chain.hh"
-#include "util/stream/timer.hh"
 #include "util/tokenize_piece.hh"
 
 #include <functional>
