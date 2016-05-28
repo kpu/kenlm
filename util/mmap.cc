@@ -243,7 +243,9 @@ void HugeRealloc(std::size_t to, bool zero_new, scoped_memory &mem) {
     mem.reset();
     return;
   }
+#ifdef __linux__
   std::size_t from_size = mem.size();
+#endif // __linux__
   switch (mem.source()) {
     case scoped_memory::NONE_ALLOCATED:
       HugeMalloc(to, zero_new, mem);
