@@ -528,7 +528,9 @@ std::string DefaultTempDirectory() {
   char dir_buffer[1000];
   if (GetTempPath(1000, dir_buffer) == 0)
     throw std::runtime_error("Could not read temporary directory.");
-  return std::string(dir_buffer);
+  std::string ret(dir_buffer);
+  NormalizeTempPrefix(ret);
+  return ret;
 #else
   // POSIX says to try these environment variables, in this order:
   const char *const vars[] = {"TMPDIR", "TMP", "TEMPDIR", "TEMP", 0};
@@ -545,10 +547,14 @@ std::string DefaultTempDirectory() {
 #endif
       (vars[i]);
     // Environment variable is set and nonempty.  Use it.
-    if (val && *val) return val;
+    if (val && *val) {
+      std::string ret(val);
+      NormalizeTempPrefix(ret);
+      return ret;
+    }
   }
   // No environment variables set.  Default to /tmp.
-  return "/tmp";
+  return "/tmp/";
 #endif
 }
 
