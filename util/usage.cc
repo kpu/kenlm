@@ -41,6 +41,8 @@ typedef WINBOOL (WINAPI *PFN_MS_EX) (lMEMORYSTATUSEX*);
 #if defined(__MACH__) || defined(__FreeBSD__) || defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/sysctl.h>
+#include <mach/task.h>
+#include <mach/mach.h>
 #endif
 
 namespace util {
@@ -138,9 +140,45 @@ double WallTime() {
 double CPUTime() {
 #if defined(_WIN32) || defined(_WIN64)
   return 0.0;
+#elif defined(__MACH__) || defined(__FreeBSD__) || defined(__APPLE__)
+  struct rusage usage;
+  UTIL_THROW_IF(getrusage(RUSAGE_SELF, &usage), ErrnoException, "getrusage failed");
+  return DoubleSec(usage.ru_utime) + DoubleSec(usage.ru_stime);
 #else
   struct timespec usage;
   UTIL_THROW_IF(clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &usage), ErrnoException, "clock_gettime failed?!"); 
+  return DoubleSec(usage);
+#endif
+}
+
+double ThreadTime() {
+#if defined(_WIN32) || defined(_WIN64)
+  // Output parameters for querying thread CPU usage:
+  FILETIME sys_time, user_time;
+  // Unused, but apparently need to be passed:
+  FILETIME c_time, e_time;
+
+  HANDLE this_thread = GetCurrentThread();
+  UTIL_THROW_IF(!GetThreadTimes(this_thread, &c_time, &e_time, &sys_time, &user_time), WindowsException, "GetThreadTime");
+  // Convert LPFILETIME to 64-bit number, and from there to double.
+  ULARGE_INTEGER sys_ticks, user_ticks;
+  sys_ticks.LowPart = sys_time.dwLowDateTime;
+  sys_ticks.HighPart = sys_time.dwHighDateTime;
+  user_ticks.LowPart = user_time.dwLowDateTime;
+  user_ticks.HighPart = user_time.dwHighDateTime;
+  const double ticks = double(sys_ticks.QuadPart + user_ticks.QuadPart);
+  // GetThreadTimes() reports in units of 100 nanoseconds, i.e. ten-millionths
+  // of a second.
+  return ticks / (10 * 1000 * 1000);
+#elif defined(__MACH__) || defined(__FreeBSD__) || defined(__APPLE__)
+  struct task_basic_info t_info;
+  mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;  
+  task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count);
+  
+  return 0.0;
+#else
+  struct timespec usage;
+  UTIL_THROW_IF(clock_gettime(CLOCK_THREAD_CPUTIME_ID, &usage), ErrnoException, "clock_gettime failed?!"); 
   return DoubleSec(usage);
 #endif
 }

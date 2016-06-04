@@ -9,8 +9,11 @@ namespace util {
 // Time in seconds since process started.  Zero on unsupported platforms.
 double WallTime();
 
-// User + system time.
+// User + system time, process-wide.
 double CPUTime();
+
+// User + system time, thread-specific.
+double ThreadTime();
 
 // Resident usage in bytes.
 uint64_t RSSMax();

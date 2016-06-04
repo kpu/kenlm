@@ -22,7 +22,6 @@
 #include "util/stream/config.hh"
 #include "util/stream/io.hh"
 #include "util/stream/stream.hh"
-#include "util/stream/timer.hh"
 
 #include "util/file.hh"
 #include "util/fixed_array.hh"

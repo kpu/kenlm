@@ -33,21 +33,21 @@ find_package(ZLIB)
 if (ZLIB_FOUND)
   set(READ_COMPRESSED_FLAGS "${READ_COMPRESSED_FLAGS} -DHAVE_ZLIB")
   set(READ_COMPRESSED_LIBS ${READ_COMPRESSED_LIBS} ${ZLIB_LIBRARIES})
-  include_directories(${ZLIB_INCLUDE_DIRECTORIES})
+  include_directories(${ZLIB_INCLUDE_DIR})
 endif()
 
 find_package(BZip2)
 if (BZIP2_FOUND)
   set(READ_COMPRESSED_FLAGS "${READ_COMPRESSED_FLAGS} -DHAVE_BZLIB")
   set(READ_COMPRESSED_LIBS ${READ_COMPRESSED_LIBS} ${BZIP2_LIBRARIES})
-  include_directories(${BZIP2_INCLUDE_DIRECTORIES})
+  include_directories(${BZIP2_INCLUDE_DIR})
 endif()
 
 find_package(LibLZMA)
 if (LIBLZMA_FOUND)
   set(READ_COMPRESSED_FLAGS "${READ_COMPRESSED_FLAGS} -DHAVE_XZLIB")
   set(READ_COMPRESSED_LIBS ${READ_COMPRESSED_LIBS} ${LIBLZMA_LIBRARIES})
-  include_directories(${LIBLZMA_INCLUDE_DIRECTORIES})
+  include_directories(${LIBLZMA_INCLUDE_DIRS})
 endif()
 set_source_files_properties(read_compressed.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
 set_source_files_properties(read_compressed_test.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
@@ -63,12 +63,16 @@ else()
   set(TIMER_LINK)
 endif()
 
+if (NOT MSVC)
+	set(THREADS pthread)
+endif()
+
 # Group these objects together for later use.
 add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
-target_link_libraries(kenlm_util ${Boost_LIBRARIES} ${READ_COMPRESSED_LIBS} pthread ${TIMER_LINK})
+target_link_libraries(kenlm_util ${Boost_LIBRARIES} ${READ_COMPRESSED_LIBS} ${THREADS} ${TIMER_LINK})
 
 AddExes(EXES probing_hash_table_benchmark
-        LIBRARIES kenlm_util ${Boost_LIBRARIES} pthread)
+        LIBRARIES kenlm_util ${Boost_LIBRARIES} ${THREADS})
 
 # Only compile and run unit tests if tests should be run
 if(BUILD_TESTING)
@@ -87,10 +91,10 @@ if(BUILD_TESTING)
   )
 
   AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}
-           LIBRARIES kenlm_util ${Boost_LIBRARIES} pthread)
+           LIBRARIES kenlm_util ${Boost_LIBRARIES} ${THREADS})
 
   # file_piece_test requires an extra command line parameter
   KenLMAddTest(TEST file_piece_test
-               LIBRARIES kenlm_util ${Boost_LIBRARIES} pthread
+               LIBRARIES kenlm_util ${Boost_LIBRARIES} ${THREADS}
                TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/file_piece.cc)
 endif()

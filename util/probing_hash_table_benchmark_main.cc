@@ -196,39 +196,6 @@ struct ParallelTestRequest{
   Table * table_;
 };
 
-// Report CPU time used by this thread so far, in seconds.
-double ThreadTime(){
-#ifdef WIN32
-  // Output parameters for querying thread CPU usage:
-  FILETIME sys_time, user_time;
-  // Unused, but apparently need to be passed:
-  FILETIME c_time, e_time;
-
-  HANDLE this_thread = GetCurrentThread();
-  if (!GetThreadTimes(this_thread, &c_time, &e_time, &sys_time, &user_time)){
-    return -1.0;
-  }
-  // Convert LPFILETIME to 64-bit number, and from there to double.
-  ULARGE_INTEGER sys_ticks, user_ticks;
-  sys_ticks.LowPart = sys_time.dwLowDateTime;
-  sys_ticks.HighPart = sys_time.dwHighDateTime;
-  user_ticks.LowPart = user_time.dwLowDateTime;
-  user_ticks.HighPart = user_time.dwHighDateTime;
-  const double ticks = double(sys_ticks.QuadPart + user_ticks.QuadPart);
-  // GetThreadTimes() reports in units of 100 nanoseconds, i.e. ten-millionths
-  // of a second.
-  return ticks / (10 * 1000 * 1000);
-#else
-  struct rusage usage;
-  if(getrusage(RUSAGE_THREAD, &usage)){
-    return -1.0;
-  }
-  double user_time = static_cast<double>(usage.ru_utime.tv_sec) + (static_cast<double>(usage.ru_utime.tv_usec) / 1000000.0);
-  double sys_time = static_cast<double>(usage.ru_stime.tv_sec) + (static_cast<double>(usage.ru_stime.tv_usec) / 1000000.0);
-  return user_time + sys_time;
-#endif
-}
-
 template <class TableT>
 struct ParallelTestConstruct{
   ParallelTestConstruct(boost::mutex& lock, const uint64_t* const burn_begin, const uint64_t* const burn_end, TableT* table) : lock_(lock), burn_begin_(burn_begin), burn_end_(burn_end), table_(table){}

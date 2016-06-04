@@ -34,6 +34,7 @@ ParseNumberException::ParseNumberException(StringPiece value) throw() {
 LineIterator &LineIterator::operator++() {
   if (!backing_->ReadLineOrEOF(line_))
     backing_ = NULL;
+  return *this;
 }
 
 FilePiece::FilePiece(const char *name, std::ostream *show_progress, std::size_t min_buffer) :
