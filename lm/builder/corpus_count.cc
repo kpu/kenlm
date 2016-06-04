@@ -191,22 +191,21 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
   uint64_t count = 0;
   bool delimiters[256];
   util::BoolCharacter::Build("\0\t\n\r ", delimiters);
-  try {
-    while(true) {
-      StringPiece line(from_.ReadLine());
-      writer.StartSentence();
-      for (util::TokenIter<util::BoolCharacter, true> w(line, delimiters); w; ++w) {
-        WordIndex word = vocab.FindOrInsert(*w);
-        if (word <= 2) {
-          ComplainDisallowed(*w, disallowed_symbol_action_);
-          continue;
-        }
-        writer.Append(word);
-        ++count;
+  StringPiece w;
+  while(true) {
+    writer.StartSentence();
+    while (from_.ReadWordSameLine(w, delimiters)) {
+      WordIndex word = vocab.FindOrInsert(w);
+      if (word <= 2) {
+        ComplainDisallowed(w, disallowed_symbol_action_);
+        continue;
       }
-      writer.Append(end_sentence);
+      writer.Append(word);
+      ++count;
     }
-  } catch (const util::EndOfFileException &e) {}
+    if (!from_.ReadLineOrEOF(w)) break;
+    writer.Append(end_sentence);
+  }
   token_count_ = count;
   type_count_ = vocab.Size();
 
