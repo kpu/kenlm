@@ -20,6 +20,12 @@ class scoped_fd {
 
     ~scoped_fd();
 
+#if __cplusplus >= 201103L
+    scoped_fd(scoped_fd &&from) noexcept : fd_(from.fd_) {
+      from.fd_ = -1;
+    }
+#endif
+
     void reset(int to = -1) {
       scoped_fd other(fd_);
       fd_ = to;
@@ -34,6 +40,8 @@ class scoped_fd {
       fd_ = -1;
       return ret;
     }
+
+    operator bool() const { return fd_ != -1; }
 
   private:
     int fd_;
