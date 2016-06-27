@@ -126,6 +126,44 @@ cdef class Model:
             return self.model.Order()
 
     def score(self, sentence, bos = True, eos = True):
+        """
+        Return the log10 probability of a string.  By default, the string is
+        treated as a sentence.  
+          return log10 p(sentence </s> | <s>)
+
+        If you do not want to condition on the beginning of sentence, pass
+          bos = False
+        Never include <s> as part of the string.  That would be predicting the
+        beginning of sentence.  Language models are only supposed to condition
+        on it as context.
+
+        Similarly, the end of sentence token </s> can be omitted with
+          eos = False
+        Since language models explicitly predict </s>, it can be part of the
+        string.
+
+        Examples:
+
+        #Good: returns log10 p(this is a sentence . </s> | <s>)
+        model.score("this is a sentence .")
+        #Good: same as the above but more explicit
+        model.score("this is a sentence .", bos = True, eos = True)
+
+        #Bad: never include <s>
+        model.score("<s> this is a sentence")
+        #Bad: never include <s>, even if bos = False.
+        model.score("<s> this is a sentence", bos = False)
+
+        #Good: returns log10 p(a fragment)
+        model.score("a fragment", bos = False, eos = False)
+
+        #Good: returns log10 p(a fragment </s>)
+        model.score("a fragment", bos = False, eos = True)
+
+        #Ok, but bad practice: returns log10 p(a fragment </s>)
+        #Unlike <s>, the end of sentence token </s> can appear explicitly.
+        model.score("a fragment </s>", bos = False, eos = False)
+        """
         cdef list words = as_str(sentence).split()
         cdef _kenlm.State state
         if bos:
