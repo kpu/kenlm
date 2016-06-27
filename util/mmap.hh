@@ -23,8 +23,10 @@ class scoped_mmap {
 
     void *get() const { return data_; }
 
-    const uint8_t *begin() const { return reinterpret_cast<uint8_t*>(data_); }
-    const uint8_t *end() const { return reinterpret_cast<uint8_t*>(data_) + size_; }
+    const char *begin() const { return reinterpret_cast<char*>(data_); }
+    char *begin() { return reinterpret_cast<char*>(data_); }
+    const char *end() const { return reinterpret_cast<char*>(data_) + size_; }
+    char *end() { return reinterpret_cast<char*>(data_) + size_; }
     std::size_t size() const { return size_; }
 
     void reset(void *data, std::size_t size) {
@@ -61,7 +63,7 @@ class scoped_memory {
       MMAP_ROUND_UP_ALLOCATED, // The size was rounded up to a multiple of page size.  Do the same before munmap.
       MMAP_ALLOCATED, // munmap
       MALLOC_ALLOCATED, // free
-      NONE_ALLOCATED // nothing here!
+      NONE_ALLOCATED // nothing to free (though there can be something here if it's owned by somebody else).
     } Alloc;
 
     scoped_memory(void *data, std::size_t size, Alloc source)
@@ -72,11 +74,21 @@ class scoped_memory {
     // Calls HugeMalloc
     scoped_memory(std::size_t to, bool zero_new);
 
+#if __cplusplus >= 201103L
+    scoped_memory(scoped_memory &&from) noexcept
+      : data_(from.data_), size_(from.size_), source_(from.source_) {
+      from.steal();
+    }
+#endif
+
     ~scoped_memory() { reset(); }
 
     void *get() const { return data_; }
+
     const char *begin() const { return reinterpret_cast<char*>(data_); }
+    char *begin() { return reinterpret_cast<char*>(data_); }
     const char *end() const { return reinterpret_cast<char*>(data_) + size_; }
+    char *end() { return reinterpret_cast<char*>(data_) + size_; }
     std::size_t size() const { return size_; }
 
     Alloc source() const { return source_; }
