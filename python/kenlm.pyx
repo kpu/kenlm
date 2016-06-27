@@ -178,6 +178,14 @@ cdef class Model:
         if eos:
             total += self.model.BaseScore(&state, self.vocab.EndSentence(), &out_state)
         return total
+
+    def perplexity(self, sentence):
+        """
+        Compute perplexity of a sentence.
+        @param sentence One full sentence to score.  Do not include <s> or </s>.
+        """
+        words = len(to_str(sentence).split()) + 1 # For </s>
+        return 10.0**(-self.score(sentence) / words)
     
     def full_scores(self, sentence, bos = True, eos = True):
         """
