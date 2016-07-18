@@ -17,7 +17,7 @@ namespace util {
 
 class FileStream : public FakeOStream<FileStream> {
   public:
-    FileStream(int out = -1, std::size_t buffer_size = 8192)
+    explicit FileStream(int out = -1, std::size_t buffer_size = 8192)
       : buf_(util::MallocOrThrow(std::max<std::size_t>(buffer_size, kToStringMaxBytes))),
         current_(static_cast<char*>(buf_.get())),
         end_(current_ + std::max<std::size_t>(buffer_size, kToStringMaxBytes)),
