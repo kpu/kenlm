@@ -23,6 +23,13 @@ class FileStream : public FakeOStream<FileStream> {
         end_(current_ + std::max<std::size_t>(buffer_size, kToStringMaxBytes)),
         fd_(out) {}
 
+#if __cplusplus >= 201103L
+    FileStream(FileStream &&from) noexcept : buf_(std::move(from.buf_)), current_(from.current_), end_(from.end_), fd_(from.fd_) {
+      from.end_ = reinterpret_cast<char*>(from.buf_.get());
+      from.current_ = from.end_;
+    }
+#endif
+
     ~FileStream() {
       flush();
     }
