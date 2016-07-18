@@ -41,6 +41,8 @@ BOOST_AUTO_TEST_CASE(Toy) {
   config.sort.buffer_size = 100;
   config.sort.total_memory = 1024;
 
+  util::SeekOrThrow(test_input.get(), 0);
+
   Instances inst(test_input.release(), model_names, config);
 
   BOOST_CHECK_EQUAL(1, inst.BOS());
