@@ -33,6 +33,7 @@ BOOST_AUTO_TEST_CASE(Short) {
   // little more loin </s> bar </s> </s>
 
   util::WriteOrThrow(input_file.get(), input, sizeof(input) - 1);
+  util::SeekOrThrow(input_file.get(), 0);
   util::FilePiece input_piece(input_file.release(), "temp file");
 
   util::stream::ChainConfig config;
