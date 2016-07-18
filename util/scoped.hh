@@ -53,9 +53,15 @@ template <class T, class Closer> class scoped_base {
   protected:
     T *p_;
 
+#if __cplusplus >= 201103L
+  public:
+    scoped_base(const scoped_base &) = delete;
+    scoped_base &operator=(const scoped_base &) = delete;
+#else
   private:
     scoped_base(const scoped_base &);
     scoped_base &operator=(const scoped_base &);
+#endif
 };
 
 template <class T, class Closer> class scoped : public scoped_base<T, Closer> {
