@@ -53,6 +53,24 @@ BOOST_AUTO_TEST_CASE(MMapReadLine) {
   BOOST_CHECK_THROW(test.get(), EndOfFileException);
 }
 
+/* mmap with seek beforehand */
+BOOST_AUTO_TEST_CASE(MMapSeek) {
+  std::fstream ref(FileLocation().c_str(), std::ios::in);
+  ref.seekg(10);
+  scoped_fd file(util::OpenReadOrThrow(FileLocation().c_str()));
+  SeekOrThrow(file.get(), 10);
+  FilePiece test(file.release());
+  std::string ref_line;
+  while (getline(ref, ref_line)) {
+    StringPiece test_line(test.ReadLine());
+    // I submitted a bug report to ICU: http://bugs.icu-project.org/trac/ticket/7924
+    if (!test_line.empty() || !ref_line.empty()) {
+      BOOST_CHECK_EQUAL(ref_line, test_line);
+    }
+  }
+  BOOST_CHECK_THROW(test.get(), EndOfFileException);
+}
+
 #if !defined(_WIN32) && !defined(_WIN64) && !defined(__APPLE__)
 /* Apple isn't happy with the popen, fileno, dup.  And I don't want to
  * reimplement popen.  This is an issue with the test.

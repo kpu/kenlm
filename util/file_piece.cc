@@ -129,15 +129,24 @@ void FilePiece::InitializeNoRead(const char *name, std::size_t min_buffer) {
 
 void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::size_t min_buffer) {
   InitializeNoRead(name, min_buffer);
+  uint64_t current_offset;
+  bool valid_current_offset;
+  try {
+    current_offset = AdvanceOrThrow(file_, 0);
+    valid_current_offset = true;
+  } catch (const FDException &) {
+    current_offset = 0;
+    valid_current_offset = false;
+  }
 
-  if (total_size_ == kBadSize) {
-    // So the assertion passes.
-    fallback_to_read_ = false;
+  // So the assertion in TransitionToRead passes
+  fallback_to_read_ = false;
+  if (total_size_ == kBadSize || !valid_current_offset) {
     if (show_progress)
       *show_progress << "File " << name << " isn't normal.  Using slower read() instead of mmap().  No progress bar." << std::endl;
     TransitionToRead();
   } else {
-    fallback_to_read_ = false;
+    mapped_offset_ = current_offset;
   }
   Shift();
   // gzip detect.
