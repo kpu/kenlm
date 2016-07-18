@@ -328,32 +328,36 @@ typedef CheckOffT<sizeof(off_t)>::True IgnoredType;
 #endif
 
 // Can't we all just get along?
-void InternalSeek(int fd, int64_t off, int whence) {
-  if (
+uint64_t InternalSeek(int fd, int64_t off, int whence) {
 #if defined __MINGW32__
-    // Does this handle 64-bit?
-    (off_t)-1 == lseek(fd, off, whence)
+  // Does this handle 64-bit?
+  typedef off_t Offset;
+  Offset ret = lseek(fd, off, whence);
 #elif defined(_WIN32) || defined(_WIN64)
-    (__int64)-1 == _lseeki64(fd, off, whence)
+  typedef __int64 Offset;
+  Offset ret = _lseeki64(fd, off, whence);
 #elif defined(OS_ANDROID)
-    (off64_t)-1 == lseek64(fd, off, whence)
+  typedef off64_t Offset;
+  Offset ret = lseek64(fd, off, whence);
 #else
-    (off_t)-1 == lseek(fd, off, whence)
+  typedef off_t Offset;
+  Offset ret = lseek(fd, off, whence);
 #endif
-  ) UTIL_THROW_ARG(FDException, (fd), "while seeking to " << off << " whence " << whence);
+  UTIL_THROW_IF_ARG((Offset)-1 == ret, FDException, (fd), "while seeking to " << off << " whence " << whence);
+  return (uint64_t)ret;
 }
 } // namespace
 
-void SeekOrThrow(int fd, uint64_t off) {
-  InternalSeek(fd, off, SEEK_SET);
+uint64_t SeekOrThrow(int fd, uint64_t off) {
+  return InternalSeek(fd, off, SEEK_SET);
 }
 
-void AdvanceOrThrow(int fd, int64_t off) {
-  InternalSeek(fd, off, SEEK_CUR);
+uint64_t AdvanceOrThrow(int fd, int64_t off) {
+  return InternalSeek(fd, off, SEEK_CUR);
 }
 
-void SeekEnd(int fd) {
-  InternalSeek(fd, 0, SEEK_END);
+uint64_t SeekEnd(int fd) {
+  return InternalSeek(fd, 0, SEEK_END);
 }
 
 std::FILE *FDOpenOrThrow(scoped_fd &file) {
