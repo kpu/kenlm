@@ -78,6 +78,7 @@ BOOST_AUTO_TEST_CASE(MergeVocabTest) {
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(1, 3), 4);
   BOOST_CHECK_EQUAL(universal_vocab.GetUniversalIdx(2, 3), 10);
 
+  util::SeekOrThrow(combined.get(), 0);
   util::FilePiece f(combined.release());
   BOOST_CHECK_EQUAL("<unk>", f.ReadLine('\0'));
   BOOST_CHECK_EQUAL("a", f.ReadLine('\0'));
