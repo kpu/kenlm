@@ -38,23 +38,15 @@ BZException::~BZException() throw() {}
 XZException::XZException() throw() {}
 XZException::~XZException() throw() {}
 
-class ReadBase {
-  public:
-    virtual ~ReadBase() {}
+void ReadBase::ReplaceThis(ReadBase *with, ReadCompressed &thunk) {
+  thunk.internal_.reset(with);
+}
 
-    virtual std::size_t Read(void *to, std::size_t amount, ReadCompressed &thunk) = 0;
+ReadBase *ReadBase::Current(ReadCompressed &thunk) { return thunk.internal_.get(); }
 
-  protected:
-    static void ReplaceThis(ReadBase *with, ReadCompressed &thunk) {
-      thunk.internal_.reset(with);
-    }
-
-    ReadBase *Current(ReadCompressed &thunk) { return thunk.internal_.get(); }
-
-    static uint64_t &ReadCount(ReadCompressed &thunk) {
-      return thunk.raw_amount_;
-    }
-};
+uint64_t &ReadBase::ReadCount(ReadCompressed &thunk) {
+  return thunk.raw_amount_;
+}
 
 namespace {
 
@@ -416,8 +408,6 @@ ReadCompressed::ReadCompressed(std::istream &in) {
 }
 
 ReadCompressed::ReadCompressed() {}
-
-ReadCompressed::~ReadCompressed() {}
 
 void ReadCompressed::Reset(int fd) {
   raw_amount_ = 0;

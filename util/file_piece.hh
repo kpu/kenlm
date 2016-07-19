@@ -73,8 +73,6 @@ class FilePiece {
      */
     explicit FilePiece(std::istream &stream, const char *name = NULL, std::size_t min_buffer = 1048576);
 
-    ~FilePiece() {}
-
     LineIterator begin() {
       return LineIterator(*this);
     }

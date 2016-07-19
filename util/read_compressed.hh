@@ -33,7 +33,21 @@ class XZException : public CompressedException {
     ~XZException() throw();
 };
 
-class ReadBase;
+class ReadCompressed;
+
+class ReadBase {
+  public:
+    virtual ~ReadBase() {}
+
+    virtual std::size_t Read(void *to, std::size_t amount, ReadCompressed &thunk) = 0;
+
+  protected:
+    static void ReplaceThis(ReadBase *with, ReadCompressed &thunk);
+
+    ReadBase *Current(ReadCompressed &thunk);
+
+    static uint64_t &ReadCount(ReadCompressed &thunk);
+};
 
 class ReadCompressed {
   public:
@@ -50,8 +64,6 @@ class ReadCompressed {
 
     // Must call Reset later.
     ReadCompressed();
-
-    ~ReadCompressed();
 
     // Takes ownership of fd.
     void Reset(int fd);
