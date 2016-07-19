@@ -27,7 +27,7 @@
 
 namespace util {
 
-const uint64_t kPageSize = SizePage();
+namespace { const uint64_t kPageSize = SizePage(); }
 
 ParseNumberException::ParseNumberException(StringPiece value) throw() {
   *this << "Could not parse \"" << value << "\" into a ";

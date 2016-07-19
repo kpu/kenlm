@@ -20,6 +20,13 @@ class ErsatzProgress {
     // Null means no output.  The null value is useful for passing along the ostream pointer from another caller.
     explicit ErsatzProgress(uint64_t complete, std::ostream *to = &std::cerr, const std::string &message = "");
 
+#if __cplusplus >= 201103L
+    ErsatzProgress(ErsatzProgress &&from) noexcept : current_(from.current_), next_(from.next_), complete_(from.complete_), stones_written_(from.stones_written_), out_(from.out_) {
+      from.out_ = nullptr;
+      from.next_ = (uint64_t)-1;
+    }
+#endif
+
     ~ErsatzProgress();
 
     ErsatzProgress &operator++() {
