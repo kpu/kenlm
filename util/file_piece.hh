@@ -73,7 +73,7 @@ class FilePiece {
      */
     explicit FilePiece(std::istream &stream, const char *name = NULL, std::size_t min_buffer = 1048576);
 
-    ~FilePiece();
+    ~FilePiece() {}
 
     LineIterator begin() {
       return LineIterator(*this);
@@ -197,7 +197,6 @@ class FilePiece {
 
     scoped_fd file_;
     const uint64_t total_size_;
-    const uint64_t page_;
 
     std::size_t default_map_size_;
     uint64_t mapped_offset_;
