@@ -32,7 +32,6 @@ const uint64_t kUnknownHash = detail::HashForVocab("<unk>", 5);
 // Sadly some LMs have <UNK>.
 const uint64_t kUnknownCapHash = detail::HashForVocab("<UNK>", 5);
 
-// TODO: replace with FilePiece.
 void ReadWords(int fd, EnumerateVocab *enumerate, WordIndex expected_count, uint64_t offset) {
   util::SeekOrThrow(fd, offset);
   // Check that we're at the right place by reading <unk> which is always first.
@@ -45,29 +44,11 @@ void ReadWords(int fd, EnumerateVocab *enumerate, WordIndex expected_count, uint
   if (!enumerate) return;
   enumerate->Add(0, "<unk>");
 
-  // Read all the words after unk.
-  const std::size_t kInitialRead = 16384;
-  std::string buf;
-  buf.reserve(kInitialRead + 100);
-  buf.resize(kInitialRead);
   WordIndex index = 1; // Read <unk> already.
-  while (true) {
-    std::size_t got = util::ReadOrEOF(fd, &buf[0], kInitialRead);
-    if (got == 0) break;
-    buf.resize(got);
-    while (buf[buf.size() - 1]) {
-      char next_char;
-      util::ReadOrThrow(fd, &next_char, 1);
-      buf.push_back(next_char);
-    }
-    // Ok now we have null terminated strings.
-    for (const char *i = buf.data(); i != buf.data() + buf.size();) {
-      std::size_t length = strlen(i);
-      enumerate->Add(index++, StringPiece(i, length));
-      i += length + 1 /* null byte */;
-    }
+  util::FilePiece in(util::DupOrThrow(fd));
+  for (util::LineIterator w(in, '\0'); w; ++w, ++index) {
+    enumerate->Add(index, *w);
   }
-
   UTIL_THROW_IF(expected_count != index, FormatLoadException, "The binary file has the wrong number of words at the end.  This could be caused by a truncated binary file.");
 }
 
