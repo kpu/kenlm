@@ -73,10 +73,6 @@ class ReadCompressed {
     scoped_ptr<ReadBase> internal_;
 
     uint64_t raw_amount_;
-
-    // No copying.
-    ReadCompressed(const ReadCompressed &);
-    void operator=(const ReadCompressed &);
 };
 
 } // namespace util
