@@ -32,7 +32,7 @@ ParseNumberException::ParseNumberException(StringPiece value) throw() {
 }
 
 LineIterator &LineIterator::operator++() {
-  if (!backing_->ReadLineOrEOF(line_))
+  if (!backing_->ReadLineOrEOF(line_, delim_))
     backing_ = NULL;
   return *this;
 }

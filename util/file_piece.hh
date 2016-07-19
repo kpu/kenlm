@@ -33,7 +33,7 @@ class LineIterator {
   public:
     LineIterator() : backing_(NULL) {}
 
-    explicit LineIterator(FilePiece &f) : backing_(&f) {
+    explicit LineIterator(FilePiece &f, char delim = '\n') : backing_(&f), delim_(delim) {
       ++*this;
     }
 
@@ -55,6 +55,7 @@ class LineIterator {
   private:
     FilePiece *backing_;
     StringPiece line_;
+    char delim_;
 };
 
 // Memory backing the returned StringPiece may vanish on the next call.
