@@ -79,6 +79,7 @@ int main(int argc, char *argv[]) {
     using namespace lm::ngram;
     ModelType model_type;
     if (RecognizeBinary(file, model_type)) {
+      std::cerr << "This binary file contains " << lm::ngram::kModelNames[model_type] << "." << std::endl;
       switch(model_type) {
         case PROBING:
           Query<lm::ngram::ProbingModel>(file, config, sentence_context, printer);
