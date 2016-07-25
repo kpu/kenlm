@@ -64,7 +64,7 @@ Wall GetWall() {
 typedef struct timespec Wall;
 Wall GetWall() {
   Wall ret;
-  clock_gettime(CLOCK_MONOTONIC, &ret);
+  UTIL_THROW_IF(-1 == clock_gettime(CLOCK_MONOTONIC, &ret), ErrnoException, "Could not get wall time");
   return ret;
 }
 #endif
