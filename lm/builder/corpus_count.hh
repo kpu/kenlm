@@ -30,13 +30,16 @@ class CorpusCount {
 
     // token_count: out.
     // type_count aka vocabulary size.  Initialize to an estimate.  It is set to the exact value.
-    CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count, WordIndex &type_count, std::vector<bool> &prune_words, const std::string& prune_vocab_filename, std::size_t entries_per_block, WarningAction disallowed_symbol);
+    CorpusCount(util::FilePiece &from, int vocab_write, bool dynamic_vocab, uint64_t &token_count, WordIndex &type_count, std::vector<bool> &prune_words, const std::string& prune_vocab_filename, std::size_t entries_per_block, WarningAction disallowed_symbol);
 
     void Run(const util::stream::ChainPosition &position);
 
   private:
+    template <class Vocab> void RunWithVocab(const util::stream::ChainPosition &position, Vocab &vocab);
+
     util::FilePiece &from_;
     int vocab_write_;
+    bool dynamic_vocab_;
     uint64_t &token_count_;
     WordIndex &type_count_;
     std::vector<bool>& prune_words_;

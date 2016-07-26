@@ -240,7 +240,7 @@ template <class NewWordAction = NoOpUniqueWords> class GrowableVocab {
       return Lookup::MemUsage(content > 2 ? content : 2);
     }
 
-    // Does not take ownership of write_wordi
+    // Does not take ownership of new_word_construct
     template <class NewWordConstruct> GrowableVocab(WordIndex initial_size, const NewWordConstruct &new_word_construct = NewWordAction())
       : lookup_(initial_size), new_word_(new_word_construct) {
       FindOrInsert("<unk>"); // Force 0
@@ -264,6 +264,10 @@ template <class NewWordAction = NoOpUniqueWords> class GrowableVocab {
     }
 
     WordIndex Size() const { return lookup_.Size(); }
+
+    bool IsSpecial(WordIndex word) const {
+      return word <= 2;
+    }
 
   private:
     typedef util::AutoProbing<ProbingVocabularyEntry, util::IdentityHash> Lookup;

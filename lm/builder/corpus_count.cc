@@ -158,8 +158,8 @@ std::size_t CorpusCount::VocabUsage(std::size_t vocab_estimate) {
   return ngram::GrowableVocab<ngram::WriteUniqueWords>::MemUsage(vocab_estimate);
 }
 
-CorpusCount::CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token_count, WordIndex &type_count, std::vector<bool> &prune_words, const std::string& prune_vocab_filename, std::size_t entries_per_block, WarningAction disallowed_symbol)
-  : from_(from), vocab_write_(vocab_write), token_count_(token_count), type_count_(type_count),
+CorpusCount::CorpusCount(util::FilePiece &from, int vocab_write, bool dynamic_vocab, uint64_t &token_count, WordIndex &type_count, std::vector<bool> &prune_words, const std::string& prune_vocab_filename, std::size_t entries_per_block, WarningAction disallowed_symbol)
+  : from_(from), vocab_write_(vocab_write), dynamic_vocab_(dynamic_vocab), token_count_(token_count), type_count_(type_count),
     prune_words_(prune_words), prune_vocab_filename_(prune_vocab_filename),
     dedupe_mem_size_(Dedupe::Size(entries_per_block, kProbingMultiplier)),
     dedupe_mem_(util::MallocOrThrow(dedupe_mem_size_)),
@@ -167,22 +167,72 @@ CorpusCount::CorpusCount(util::FilePiece &from, int vocab_write, uint64_t &token
 }
 
 namespace {
-  void ComplainDisallowed(StringPiece word, WarningAction &action) {
-    switch (action) {
-      case SILENT:
-        return;
-      case COMPLAIN:
-        std::cerr << "Warning: " << word << " appears in the input.  All instances of <s>, </s>, and <unk> will be interpreted as whitespace." << std::endl;
-        action = SILENT;
-        return;
-      case THROW_UP:
-        UTIL_THROW(FormatLoadException, "Special word " << word << " is not allowed in the corpus.  I plan to support models containing <unk> in the future.  Pass --skip_symbols to convert these symbols to whitespace.");
-    }
+void ComplainDisallowed(StringPiece word, WarningAction &action) {
+  switch (action) {
+    case SILENT:
+      return;
+    case COMPLAIN:
+      std::cerr << "Warning: " << word << " appears in the input.  All instances of <s>, </s>, and <unk> will be interpreted as whitespace." << std::endl;
+      action = SILENT;
+      return;
+    case THROW_UP:
+      UTIL_THROW(FormatLoadException, "Special word " << word << " is not allowed in the corpus.  I plan to support models containing <unk> in the future.  Pass --skip_symbols to convert these symbols to whitespace.");
   }
+}
+
+// Vocab ids are given in a precompiled hash table.
+class VocabGiven {
+  public:
+    explicit VocabGiven(int fd) {
+      util::MapRead(util::POPULATE_OR_READ, fd, 0, util::CheckOverflow(util::SizeOrThrow(fd)), table_backing_);
+      // Leave space for header with size.
+      table_ = Table(static_cast<char*>(table_backing_.get()) + sizeof(uint64_t), table_backing_.size() - sizeof(uint64_t));
+      bos_ = FindOrInsert("<s>");
+      eos_ = FindOrInsert("</s>");
+    }
+
+    WordIndex FindOrInsert(const StringPiece &word) const {
+      Table::ConstIterator it;
+      if (table_.Find(util::MurmurHash64A(word.data(), word.size()), it)) {
+        return it->value;
+      } else {
+        return 0; // <unk>.
+      }
+    }
+
+    WordIndex Index(const StringPiece &word) const {
+      return FindOrInsert(word);
+    }
+
+    WordIndex Size() const {
+      return *static_cast<const uint64_t*>(table_backing_.get());
+    }
+
+    bool IsSpecial(WordIndex word) const {
+      return word == 0 || word == bos_ || word == eos_;
+    }
+
+  private:
+    util::scoped_memory table_backing_;
+
+    typedef util::ProbingHashTable<ngram::ProbingVocabularyEntry, util::IdentityHash> Table;
+    Table table_;
+
+    WordIndex bos_, eos_;
+};
 } // namespace
 
 void CorpusCount::Run(const util::stream::ChainPosition &position) {
-  ngram::GrowableVocab<ngram::WriteUniqueWords> vocab(type_count_, vocab_write_);
+  if (dynamic_vocab_) {
+    ngram::GrowableVocab<ngram::WriteUniqueWords> vocab(type_count_, vocab_write_);
+    RunWithVocab(position, vocab);
+  } else {
+    VocabGiven vocab(vocab_write_);
+    RunWithVocab(position, vocab);
+  }
+}
+
+template <class Vocab> void CorpusCount::RunWithVocab(const util::stream::ChainPosition &position, Vocab &vocab) {
   token_count_ = 0;
   type_count_ = 0;
   const WordIndex end_sentence = vocab.FindOrInsert("</s>");
@@ -195,7 +245,7 @@ void CorpusCount::Run(const util::stream::ChainPosition &position) {
     writer.StartSentence();
     while (from_.ReadWordSameLine(w, delimiters)) {
       WordIndex word = vocab.FindOrInsert(w);
-      if (word <= 2) {
+      if (UTIL_UNLIKELY(vocab.IsSpecial(word))) {
         ComplainDisallowed(w, disallowed_symbol_action_);
         continue;
       }
