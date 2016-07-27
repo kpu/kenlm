@@ -132,7 +132,7 @@ void FilePiece::Initialize(const char *name, std::ostream *show_progress, std::s
   uint64_t current_offset;
   bool valid_current_offset;
   try {
-    current_offset = AdvanceOrThrow(file_, 0);
+    current_offset = AdvanceOrThrow(file_.get(), 0);
     valid_current_offset = true;
   } catch (const FDException &) {
     current_offset = 0;
