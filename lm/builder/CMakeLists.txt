@@ -34,6 +34,8 @@ endif()
 
 AddExes(EXES lmplz
         LIBRARIES kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} ${THREADS})
+AddExes(EXES count_ngrams
+        LIBRARIES kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} ${THREADS})
 
 if(BUILD_TESTING)
 
