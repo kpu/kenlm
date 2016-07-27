@@ -41,8 +41,6 @@ class scoped_fd {
       return ret;
     }
 
-    operator bool() const { return fd_ != -1; }
-
   private:
     int fd_;
 
