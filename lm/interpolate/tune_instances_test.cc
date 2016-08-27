@@ -12,6 +12,8 @@
 
 #include <vector>
 
+#include <math.h>
+
 namespace lm { namespace interpolate { namespace {
 
 BOOST_AUTO_TEST_CASE(Toy) {
