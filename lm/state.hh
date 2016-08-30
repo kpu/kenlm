@@ -55,9 +55,8 @@ inline uint64_t hash_value(const State &state, uint64_t seed = 0) {
 
 struct Left {
   bool operator==(const Left &other) const {
-    return
-      length == other.length &&
-      (!length || (pointers[length - 1] == other.pointers[length - 1] && full == other.full));
+    return length == other.length && full == other.full &&
+           !memcmp(pointers, other.pointers, sizeof(uint64_t) * length);
   }
 
   int Compare(const Left &other) const {
