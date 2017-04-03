@@ -387,7 +387,10 @@ template <class Doing> void RecursiveInsert(const unsigned char total_order, con
     grams.pop();
     unsigned char order = top.end - top.begin;
     if (order == 1) {
-      blank.Visit(&unigram, 1, doing.UnigramProb(unigram));
+      if (unigram < unigram_count)
+        blank.Visit(&unigram, 1, doing.UnigramProb(unigram));
+      else
+        blank.Visit(&unigram, 1, 0);
       doing.Unigram(unigram);
       progress.Set(unigram);
       if (++unigram < unigram_count) grams.push(top);
