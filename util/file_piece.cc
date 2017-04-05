@@ -23,8 +23,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <math.h>
-
 namespace util {
 
 namespace { const uint64_t kPageSize = SizePage(); }
@@ -179,14 +177,14 @@ const char *ParseNumber(StringPiece str, float &out) {
   out = kConverter.StringToFloat(str.data(), str.size(), &count);
   // std::isnan is C++11, not C++98
   using namespace std;
-  UTIL_THROW_IF_ARG(isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "float");
+  UTIL_THROW_IF_ARG(std::isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "float");
   return str.data() + count;
 }
 const char *ParseNumber(StringPiece str, double &out) {
   int count;
   out = kConverter.StringToDouble(str.data(), str.size(), &count);
   using namespace std;
-  UTIL_THROW_IF_ARG(isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "double");
+  UTIL_THROW_IF_ARG(std::isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "double");
   return str.data() + count;
 }
 const char *ParseNumber(StringPiece str, long int &out) {
