@@ -23,7 +23,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#if defined(_WIN32) || defined(_WIN64)
 #include <math.h>
+#endif
 
 namespace util {
 
@@ -174,19 +176,25 @@ StringPiece FirstToken(StringPiece str) {
   return StringPiece(str.data(), i - str.data());
 }
 
+// std::isnan is technically C++11 not C++98.  But in practice this is a problem for visual studio.
+template <class T> inline int CrossPlatformIsNaN(T value) {
+#if defined(_WIN32) || defined(_WIN64)
+  return isnan(value);
+#else
+  return std::isnan(value);
+#endif
+}
+
 const char *ParseNumber(StringPiece str, float &out) {
   int count;
   out = kConverter.StringToFloat(str.data(), str.size(), &count);
-  // std::isnan is C++11, not C++98
-  using namespace std;
-  UTIL_THROW_IF_ARG(isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "float");
+  UTIL_THROW_IF_ARG(CrossPlatformIsNaN(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "float");
   return str.data() + count;
 }
 const char *ParseNumber(StringPiece str, double &out) {
   int count;
   out = kConverter.StringToDouble(str.data(), str.size(), &count);
-  using namespace std;
-  UTIL_THROW_IF_ARG(isnan(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "double");
+  UTIL_THROW_IF_ARG(CrossPlatformIsNaN(out) && str != "NaN" && str != "nan", ParseNumberException, (FirstToken(str)), "double");
   return str.data() + count;
 }
 const char *ParseNumber(StringPiece str, long int &out) {
