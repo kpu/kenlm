@@ -11,6 +11,7 @@
 #include <unistd.h>
 #endif
 
+#include <algorithm>
 #include <cassert>
 #include <cerrno>
 #include <cmath>
