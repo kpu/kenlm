@@ -24,7 +24,7 @@ class FileStream : public FakeOStream<FileStream> {
         fd_(out) {}
 
 #if __cplusplus >= 201103L
-    FileStream(FileStream &&from) noexcept : buf_(std::move(from.buf_)), current_(from.current_), end_(from.end_), fd_(from.fd_) {
+    FileStream(FileStream &&from) noexcept : buf_(from.buf_.release()), current_(from.current_), end_(from.end_), fd_(from.fd_) {
       from.end_ = reinterpret_cast<char*>(from.buf_.get());
       from.current_ = from.end_;
     }
