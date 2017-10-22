@@ -255,7 +255,7 @@ cdef class Model:
         return '<Model from {0}>'.format(os.path.basename(self.path))
 
     def __reduce__(self):
-        return (_kenlm.LanguageModel, (self.path,))
+        return (Model, (self.path,))
 
 class LanguageModel(Model):
     """Backwards compatability stub.  Use Model."""
