@@ -34,7 +34,7 @@ if compile_test('lzma.h', 'lzma'):
 
 ext_modules = [
     Extension(name='kenlm',
-        sources=FILES + ['python/kenlm.cpp'],
+        sources=FILES + ['python/kenlm.pyx'],
         language='C++', 
         include_dirs=['.'],
         libraries=LIBS, 
@@ -45,4 +45,5 @@ setup(
     name='kenlm',
     ext_modules=ext_modules,
     include_package_data=True,
+    version='0.0.1'
 )
