@@ -8,6 +8,16 @@ cdef bytes as_str(data):
         return data.encode('utf8')
     raise TypeError('Cannot convert %s to string' % type(data))
 
+def compute_ngram(
+        path_text_file, path_arpa_file,
+        order=3, interpolate_ngrams=True,
+        skip_symbols=False):
+    cdef _kenlm.scoped_fd _in
+    cdef _kenlm.scoped_fd _out
+    _in.reset(_kenlm.OpenReadOrThrow(path_text_file))
+    _out.reset(_kenlm.CreateOrThrow(path_arpa_file))
+    print('POUET')
+
 cdef class FullScoreReturn:
     """
     Wrapper around FullScoreReturn.

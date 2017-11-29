@@ -37,6 +37,14 @@ cdef extern from "util/mmap.hh" namespace "util":
         READ
         PARALLEL_READ
 
+cdef extern from "util/file.hh" namespace "util":
+    cdef cppclass scoped_fd:
+        scoped_fd()
+        void reset(int)
+
+    int OpenReadOrThrow(const char *);
+    int CreateOrThrow(const char *);
+
 cdef extern from "lm/config.hh" namespace "lm::ngram":
     cdef cppclass Config:
         Config()
