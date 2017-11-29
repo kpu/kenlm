@@ -37,14 +37,6 @@ cdef extern from "util/mmap.hh" namespace "util":
         READ
         PARALLEL_READ
 
-cdef extern from "util/file.hh" namespace "util":
-    cdef cppclass scoped_fd:
-        scoped_fd()
-        void reset(int)
-
-    int OpenReadOrThrow(const char *);
-    int CreateOrThrow(const char *);
-
 cdef extern from "lm/config.hh" namespace "lm::ngram":
     cdef cppclass Config:
         Config()
@@ -56,3 +48,23 @@ cdef extern from "lm/model.hh" namespace "lm::ngram":
     #default constructor
     cdef Model *LoadVirtual(char *) except +
 
+cdef extern from "util/file.hh" namespace "util":
+    cdef cppclass scoped_fd:
+        scoped_fd() except +
+        scoped_fd(int) except +
+        void reset(int) except +
+        int release() except +
+
+    int OpenReadOrThrow(const char *) except +
+    int CreateOrThrow(const char *) except +
+
+# cdef extern from "lm/builder/pipeline.hh" namespace "lm::builder":
+#     cdef cppclass PipelineConfig:
+
+
+cdef extern from "lm/builder/output.hh" namespace "lm::builder":
+    cdef cppclass Output:
+        Output(char*, bool, bool) except +
+
+    cdef cppclass PrintHook:
+        PrintHook(int, bool) except +

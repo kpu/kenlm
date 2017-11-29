@@ -8,6 +8,30 @@ cdef bytes as_str(data):
         return data.encode('utf8')
     raise TypeError('Cannot convert %s to string' % type(data))
 
+cdef class Output:
+    """
+    Wrapper around lm::builder::Output.
+    """
+    cdef _kenlm.Output* _c_output
+
+    def __cinit__(self, file_base, keep_buffer, output_q):
+        self._c_output = new _kenlm.Output(file_base, keep_buffer, output_q)
+
+    def __dealloc__(self):
+        del self._c_output
+
+cdef class PrintHook:
+    """
+    Wrapper around lm::builder::Printhook
+    """
+    cdef _kenlm.PrintHook* _c_printhook
+
+    def __cinit__(self, write_fd, verbose_header):
+        self._c_printhook = new _kenlm.PrintHook(write_fd, verbose_header)
+
+    def __dealloc__(self):
+        del self._c_printhook
+
 def compute_ngram(
         path_text_file, path_arpa_file,
         order=3, interpolate_ngrams=True,
@@ -16,6 +40,11 @@ def compute_ngram(
     cdef _kenlm.scoped_fd _out
     _in.reset(_kenlm.OpenReadOrThrow(path_text_file))
     _out.reset(_kenlm.CreateOrThrow(path_arpa_file))
+
+    a = Output('temp_lol.txt', False, False)
+
+    printhook = PrintHook(_out.release(), False)
+    
     print('POUET')
 
 cdef class FullScoreReturn:
