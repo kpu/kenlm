@@ -540,6 +540,7 @@ static CYTHON_INLINE float __PYX_NAN() {
 #include "new"
 #include "stdexcept"
 #include "typeinfo"
+#include <vector>
 #include "lm/word_index.hh"
 #include "lm/return.hh"
 #include "lm/state.hh"
@@ -549,6 +550,10 @@ static CYTHON_INLINE float __PYX_NAN() {
 #include "lm/model.hh"
 #include "util/file.hh"
 #include "util/stream/config.hh"
+#include "lm/builder/initial_probabilities.hh"
+#include "lm/lm_exception.hh"
+#include "lm/builder/discount.hh"
+#include "lm/builder/adjust_counts.hh"
 #include "lm/builder/output.hh"
 #include "lm/builder/pipeline.hh"
 #ifdef _OPENMP
@@ -1182,9 +1187,6 @@ static void __Pyx_CppExn2PyErr() {
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value);
 
-static PyObject* __pyx_convert__to_py_struct__util_3a__3a_stream_3a__3a_SortConfig(struct util::stream::SortConfig s);
-static PyObject* __pyx_convert__to_py_struct__util_3a__3a_stream_3a__3a_ChainConfig(struct util::stream::ChainConfig s);
-static PyObject* __pyx_convert__to_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig(struct lm::builder::PipelineConfig s);
 /* Print.proto */
 static int __Pyx_Print(PyObject*, PyObject *, int);
 #if CYTHON_COMPILING_IN_PYPY || PY_MAJOR_VERSION >= 3
@@ -1312,6 +1314,8 @@ static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
 /* Module declarations from 'libcpp.string' */
 
+/* Module declarations from 'libcpp.vector' */
+
 /* Module declarations from '_kenlm' */
 
 /* Module declarations from 'kenlm' */
@@ -1323,16 +1327,7 @@ static PyTypeObject *__pyx_ptype_5kenlm_Config = 0;
 static PyTypeObject *__pyx_ptype_5kenlm_Model = 0;
 static PyTypeObject *__pyx_ptype_5kenlm___pyx_scope_struct__full_scores = 0;
 static PyObject *__pyx_f_5kenlm_as_str(PyObject *); /*proto*/
-static PyObject *__pyx_f_5kenlm_Pipeline(PyObject *, PyObject *, struct __pyx_obj_5kenlm_Output *); /*proto*/
-static std::string __pyx_convert_string_from_py_std__in_string(PyObject *); /*proto*/
-static struct util::stream::SortConfig __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig(PyObject *); /*proto*/
-static struct util::stream::ChainConfig __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_ChainConfig(PyObject *); /*proto*/
-static struct lm::builder::PipelineConfig __pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig(PyObject *); /*proto*/
-static CYTHON_INLINE PyObject *__pyx_convert_PyObject_string_to_py_std__in_string(std::string const &); /*proto*/
-static CYTHON_INLINE PyObject *__pyx_convert_PyUnicode_string_to_py_std__in_string(std::string const &); /*proto*/
-static CYTHON_INLINE PyObject *__pyx_convert_PyStr_string_to_py_std__in_string(std::string const &); /*proto*/
-static CYTHON_INLINE PyObject *__pyx_convert_PyBytes_string_to_py_std__in_string(std::string const &); /*proto*/
-static CYTHON_INLINE PyObject *__pyx_convert_PyByteArray_string_to_py_std__in_string(std::string const &); /*proto*/
+static PyObject *__pyx_f_5kenlm_Pipeline(struct lm::builder::PipelineConfig, PyObject *, struct __pyx_obj_5kenlm_Output *); /*proto*/
 #define __Pyx_MODULE_NAME "kenlm"
 extern int __pyx_module_is_main_kenlm;
 int __pyx_module_is_main_kenlm = 0;
@@ -1341,8 +1336,6 @@ int __pyx_module_is_main_kenlm = 0;
 static PyObject *__pyx_builtin_TypeError;
 static PyObject *__pyx_builtin_RuntimeError;
 static PyObject *__pyx_builtin_IOError;
-static PyObject *__pyx_builtin_KeyError;
-static PyObject *__pyx_builtin_ValueError;
 static const char __pyx_k_in[] = "_in";
 static const char __pyx_k_os[] = "os";
 static const char __pyx_k_Add[] = "Add";
@@ -1362,7 +1355,6 @@ static const char __pyx_k_main[] = "__main__";
 static const char __pyx_k_name[] = "__name__";
 static const char __pyx_k_path[] = "path";
 static const char __pyx_k_send[] = "send";
-static const char __pyx_k_sort[] = "sort";
 static const char __pyx_k_test[] = "__test__";
 static const char __pyx_k_utf8[] = "utf8";
 static const char __pyx_k_word[] = "word";
@@ -1387,7 +1379,6 @@ static const char __pyx_k_IOError[] = "IOError";
 static const char __pyx_k_abspath[] = "abspath";
 static const char __pyx_k_prepare[] = "__prepare__";
 static const char __pyx_k_replace[] = "replace";
-static const char __pyx_k_KeyError[] = "KeyError";
 static const char __pyx_k_basename[] = "basename";
 static const char __pyx_k_getstate[] = "__getstate__";
 static const char __pyx_k_in_state[] = "in_state";
@@ -1404,25 +1395,16 @@ static const char __pyx_k_metaclass[] = "__metaclass__";
 static const char __pyx_k_out_state[] = "out_state";
 static const char __pyx_k_reduce_ex[] = "__reduce_ex__";
 static const char __pyx_k_LoadMethod[] = "LoadMethod";
-static const char __pyx_k_ValueError[] = "ValueError";
-static const char __pyx_k_entry_size[] = "entry_size";
-static const char __pyx_k_block_count[] = "block_count";
-static const char __pyx_k_buffer_size[] = "buffer_size";
 static const char __pyx_k_full_scores[] = "full_scores";
 static const char __pyx_k_keep_buffer[] = "keep_buffer";
-static const char __pyx_k_prune_vocab[] = "prune_vocab";
-static const char __pyx_k_temp_prefix[] = "temp_prefix";
 static const char __pyx_k_Model_from_0[] = "<Model from {0}>";
 static const char __pyx_k_RuntimeError[] = "RuntimeError";
 static const char __pyx_k_ngram_length[] = "ngram_length";
 static const char __pyx_k_skip_symbols[] = "skip_symbols";
 static const char __pyx_k_temp_lol_txt[] = "temp_lol.txt";
-static const char __pyx_k_total_memory[] = "total_memory";
 static const char __pyx_k_LanguageModel[] = "LanguageModel";
 static const char __pyx_k_PARALLEL_READ[] = "PARALLEL_READ";
 static const char __pyx_k_compute_ngram[] = "compute_ngram";
-static const char __pyx_k_minimum_block[] = "minimum_block";
-static const char __pyx_k_read_backoffs[] = "read_backoffs";
 static const char __pyx_k_reduce_cython[] = "__reduce_cython__";
 static const char __pyx_k_path_arpa_file[] = "path_arpa_file";
 static const char __pyx_k_path_text_file[] = "path_text_file";
@@ -1435,48 +1417,22 @@ static const char __pyx_k_Cannot_read_model[] = "Cannot read model '{}' ({})";
 static const char __pyx_k_Model_full_scores[] = "Model.full_scores";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
 static const char __pyx_k_interpolate_ngrams[] = "interpolate_ngrams";
-static const char __pyx_k_renumber_vocabulary[] = "renumber_vocabulary";
 static const char __pyx_k_Cannot_convert_s_to_string[] = "Cannot convert %s to string";
 static const char __pyx_k_Backwards_compatability_stub_Use[] = "Backwards compatability stub.  Use Model.";
-static const char __pyx_k_No_value_specified_for_struct_at[] = "No value specified for struct attribute 'temp_prefix'";
 static const char __pyx_k_no_default___reduce___due_to_non[] = "no default __reduce__ due to non-trivial __cinit__";
 static const char __pyx_k_self__c_config_cannot_be_convert[] = "self._c_config cannot be converted to a Python object for pickling";
 static const char __pyx_k_self__c_state_cannot_be_converte[] = "self._c_state cannot be converted to a Python object for pickling";
-static const char __pyx_k_No_value_specified_for_struct_at_2[] = "No value specified for struct attribute 'buffer_size'";
-static const char __pyx_k_No_value_specified_for_struct_at_3[] = "No value specified for struct attribute 'total_memory'";
-static const char __pyx_k_No_value_specified_for_struct_at_4[] = "No value specified for struct attribute 'entry_size'";
-static const char __pyx_k_No_value_specified_for_struct_at_5[] = "No value specified for struct attribute 'block_count'";
-static const char __pyx_k_No_value_specified_for_struct_at_6[] = "No value specified for struct attribute 'order'";
-static const char __pyx_k_No_value_specified_for_struct_at_7[] = "No value specified for struct attribute 'sort'";
-static const char __pyx_k_No_value_specified_for_struct_at_8[] = "No value specified for struct attribute 'read_backoffs'";
-static const char __pyx_k_No_value_specified_for_struct_at_9[] = "No value specified for struct attribute 'minimum_block'";
-static const char __pyx_k_No_value_specified_for_struct_at_10[] = "No value specified for struct attribute 'prune_vocab'";
-static const char __pyx_k_No_value_specified_for_struct_at_11[] = "No value specified for struct attribute 'renumber_vocabulary'";
-static const char __pyx_k_No_value_specified_for_struct_at_12[] = "No value specified for struct attribute 'output_q'";
 static PyObject *__pyx_kp_s_0_1_2_3;
 static PyObject *__pyx_n_s_Add;
 static PyObject *__pyx_kp_s_Backwards_compatability_stub_Use;
 static PyObject *__pyx_kp_s_Cannot_convert_s_to_string;
 static PyObject *__pyx_kp_s_Cannot_read_model;
 static PyObject *__pyx_n_s_IOError;
-static PyObject *__pyx_n_s_KeyError;
 static PyObject *__pyx_n_s_LAZY;
 static PyObject *__pyx_n_s_LanguageModel;
 static PyObject *__pyx_n_s_LoadMethod;
 static PyObject *__pyx_kp_s_Model_from_0;
 static PyObject *__pyx_n_s_Model_full_scores;
-static PyObject *__pyx_kp_s_No_value_specified_for_struct_at;
-static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_10;
-static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_11;
-static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_12;
-static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_2;
-static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_3;
-static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_4;
-static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_5;
-static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_6;
-static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_7;
-static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_8;
-static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_9;
 static PyObject *__pyx_n_s_PARALLEL_READ;
 static PyObject *__pyx_n_s_POPULATE_OR_LAZY;
 static PyObject *__pyx_n_s_POPULATE_OR_READ;
@@ -1484,15 +1440,12 @@ static PyObject *__pyx_n_s_POUET;
 static PyObject *__pyx_n_s_READ;
 static PyObject *__pyx_n_s_RuntimeError;
 static PyObject *__pyx_n_s_TypeError;
-static PyObject *__pyx_n_s_ValueError;
 static PyObject *__pyx_kp_s__14;
 static PyObject *__pyx_kp_s__15;
 static PyObject *__pyx_n_s_abspath;
 static PyObject *__pyx_n_s_args;
 static PyObject *__pyx_n_s_basename;
-static PyObject *__pyx_n_s_block_count;
 static PyObject *__pyx_n_s_bos;
-static PyObject *__pyx_n_s_buffer_size;
 static PyObject *__pyx_n_s_class;
 static PyObject *__pyx_n_s_cline_in_traceback;
 static PyObject *__pyx_n_s_close;
@@ -1501,7 +1454,6 @@ static PyObject *__pyx_n_s_config;
 static PyObject *__pyx_n_s_doc;
 static PyObject *__pyx_n_s_encode;
 static PyObject *__pyx_n_s_end;
-static PyObject *__pyx_n_s_entry_size;
 static PyObject *__pyx_n_s_eos;
 static PyObject *__pyx_n_s_file;
 static PyObject *__pyx_n_s_file_base;
@@ -1517,7 +1469,6 @@ static PyObject *__pyx_n_s_kenlm;
 static PyObject *__pyx_n_s_log_prob;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_metaclass;
-static PyObject *__pyx_n_s_minimum_block;
 static PyObject *__pyx_n_s_module;
 static PyObject *__pyx_n_s_name;
 static PyObject *__pyx_n_s_ngram_length;
@@ -1535,14 +1486,11 @@ static PyObject *__pyx_n_s_path_text_file;
 static PyObject *__pyx_n_s_pipeline;
 static PyObject *__pyx_n_s_prepare;
 static PyObject *__pyx_n_s_print;
-static PyObject *__pyx_n_s_prune_vocab;
 static PyObject *__pyx_kp_s_python_kenlm_pyx;
 static PyObject *__pyx_n_s_qualname;
-static PyObject *__pyx_n_s_read_backoffs;
 static PyObject *__pyx_n_s_reduce;
 static PyObject *__pyx_n_s_reduce_cython;
 static PyObject *__pyx_n_s_reduce_ex;
-static PyObject *__pyx_n_s_renumber_vocabulary;
 static PyObject *__pyx_n_s_replace;
 static PyObject *__pyx_n_s_score;
 static PyObject *__pyx_kp_s_self__c_config_cannot_be_convert;
@@ -1552,13 +1500,10 @@ static PyObject *__pyx_n_s_sentence;
 static PyObject *__pyx_n_s_setstate;
 static PyObject *__pyx_n_s_setstate_cython;
 static PyObject *__pyx_n_s_skip_symbols;
-static PyObject *__pyx_n_s_sort;
 static PyObject *__pyx_n_s_split;
 static PyObject *__pyx_kp_s_temp_lol_txt;
-static PyObject *__pyx_n_s_temp_prefix;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_n_s_throw;
-static PyObject *__pyx_n_s_total_memory;
 static PyObject *__pyx_n_s_utf8;
 static PyObject *__pyx_n_s_verbose_header;
 static PyObject *__pyx_n_s_word;
@@ -1629,21 +1574,7 @@ static PyObject *__pyx_tuple__11;
 static PyObject *__pyx_tuple__12;
 static PyObject *__pyx_tuple__16;
 static PyObject *__pyx_tuple__17;
-static PyObject *__pyx_tuple__18;
-static PyObject *__pyx_tuple__19;
-static PyObject *__pyx_tuple__20;
-static PyObject *__pyx_tuple__21;
-static PyObject *__pyx_tuple__22;
-static PyObject *__pyx_tuple__23;
-static PyObject *__pyx_tuple__24;
-static PyObject *__pyx_tuple__25;
-static PyObject *__pyx_tuple__26;
-static PyObject *__pyx_tuple__27;
-static PyObject *__pyx_tuple__28;
-static PyObject *__pyx_tuple__29;
-static PyObject *__pyx_tuple__30;
-static PyObject *__pyx_tuple__31;
-static PyObject *__pyx_codeobj__32;
+static PyObject *__pyx_codeobj__18;
 
 /* "kenlm.pyx":4
  * cimport _kenlm
@@ -2303,7 +2234,7 @@ static void __pyx_pf_5kenlm_9PrintHook_2__dealloc__(struct __pyx_obj_5kenlm_Prin
  *     def __dealloc__(self):
  *         del self._c_printhook             # <<<<<<<<<<<<<<
  * 
- * cdef Pipeline(pipeline, __in, Output output):
+ * cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):
  */
   delete __pyx_v_self->_c_printhook;
 
@@ -2429,33 +2360,36 @@ static PyObject *__pyx_pf_5kenlm_9PrintHook_6__setstate_cython__(CYTHON_UNUSED s
 /* "kenlm.pyx":38
  *         del self._c_printhook
  * 
- * cdef Pipeline(pipeline, __in, Output output):             # <<<<<<<<<<<<<<
+ * cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):             # <<<<<<<<<<<<<<
  *     _kenlm.Pipeline(pipeline, __in, output._c_output[0])
  * 
  */
 
-static PyObject *__pyx_f_5kenlm_Pipeline(PyObject *__pyx_v_pipeline, PyObject *__pyx_v___in, struct __pyx_obj_5kenlm_Output *__pyx_v_output) {
+static PyObject *__pyx_f_5kenlm_Pipeline(struct lm::builder::PipelineConfig __pyx_v_pipeline, PyObject *__pyx_v___in, struct __pyx_obj_5kenlm_Output *__pyx_v_output) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
-  struct lm::builder::PipelineConfig __pyx_t_1;
-  int __pyx_t_2;
+  int __pyx_t_1;
   __Pyx_RefNannySetupContext("Pipeline", 0);
 
   /* "kenlm.pyx":39
  * 
- * cdef Pipeline(pipeline, __in, Output output):
+ * cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):
  *     _kenlm.Pipeline(pipeline, __in, output._c_output[0])             # <<<<<<<<<<<<<<
  * 
  * def compute_ngram(
  */
-  __pyx_t_1 = __pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig(__pyx_v_pipeline); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 39, __pyx_L1_error)
-  __pyx_t_2 = __Pyx_PyInt_As_int(__pyx_v___in); if (unlikely((__pyx_t_2 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 39, __pyx_L1_error)
-  lm::builder::Pipeline(__pyx_t_1, __pyx_t_2, (__pyx_v_output->_c_output[0]));
+  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v___in); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 39, __pyx_L1_error)
+  try {
+    lm::builder::Pipeline(__pyx_v_pipeline, __pyx_t_1, (__pyx_v_output->_c_output[0]));
+  } catch(...) {
+    __Pyx_CppExn2PyErr();
+    __PYX_ERR(0, 39, __pyx_L1_error)
+  }
 
   /* "kenlm.pyx":38
  *         del self._c_printhook
  * 
- * cdef Pipeline(pipeline, __in, Output output):             # <<<<<<<<<<<<<<
+ * cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):             # <<<<<<<<<<<<<<
  *     _kenlm.Pipeline(pipeline, __in, output._c_output[0])
  * 
  */
@@ -2748,7 +2682,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  *     cdef _kenlm.PipelineConfig pipeline
  *     pipeline.order = order             # <<<<<<<<<<<<<<
  *     pipeline.minimum_block = 8192
- *     pipeline.sort.total_memory = 1073741824
+ *     pipeline.sort.total_memory = 107374182400
  */
   __pyx_t_2 = __Pyx_PyInt_As_int(__pyx_v_order); if (unlikely((__pyx_t_2 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 55, __pyx_L1_error)
   __pyx_v_pipeline.order = __pyx_t_2;
@@ -2757,7 +2691,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  *     cdef _kenlm.PipelineConfig pipeline
  *     pipeline.order = order
  *     pipeline.minimum_block = 8192             # <<<<<<<<<<<<<<
- *     pipeline.sort.total_memory = 1073741824
+ *     pipeline.sort.total_memory = 107374182400
  *     pipeline.sort.buffer_size = 67108864
  */
   __pyx_v_pipeline.minimum_block = 0x2000;
@@ -2765,15 +2699,15 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   /* "kenlm.pyx":57
  *     pipeline.order = order
  *     pipeline.minimum_block = 8192
- *     pipeline.sort.total_memory = 1073741824             # <<<<<<<<<<<<<<
+ *     pipeline.sort.total_memory = 107374182400             # <<<<<<<<<<<<<<
  *     pipeline.sort.buffer_size = 67108864
  *     pipeline.block_count = 2
  */
-  __pyx_v_pipeline.sort.total_memory = 0x40000000;
+  __pyx_v_pipeline.sort.total_memory = 0x1900000000;
 
   /* "kenlm.pyx":58
  *     pipeline.minimum_block = 8192
- *     pipeline.sort.total_memory = 1073741824
+ *     pipeline.sort.total_memory = 107374182400
  *     pipeline.sort.buffer_size = 67108864             # <<<<<<<<<<<<<<
  *     pipeline.block_count = 2
  *     pipeline.read_backoffs.total_memory = 32768;
@@ -2781,7 +2715,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   __pyx_v_pipeline.sort.buffer_size = 0x4000000;
 
   /* "kenlm.pyx":59
- *     pipeline.sort.total_memory = 1073741824
+ *     pipeline.sort.total_memory = 107374182400
  *     pipeline.sort.buffer_size = 67108864
  *     pipeline.block_count = 2             # <<<<<<<<<<<<<<
  *     pipeline.read_backoffs.total_memory = 32768;
@@ -2814,21 +2748,18 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  * 
  *     print('POUET')
  */
-  __pyx_t_3 = __pyx_convert__to_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig(__pyx_v_pipeline); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 64, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
   try {
     __pyx_t_2 = __pyx_v__in.release();
   } catch(...) {
     __Pyx_CppExn2PyErr();
     __PYX_ERR(0, 64, __pyx_L1_error)
   }
-  __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 64, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 64, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_4 = __pyx_f_5kenlm_Pipeline(__pyx_v_pipeline, __pyx_t_3, __pyx_v_output); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 64, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_7 = __pyx_f_5kenlm_Pipeline(__pyx_t_3, __pyx_t_4, __pyx_v_output); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 64, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
   /* "kenlm.pyx":66
  *     Pipeline(pipeline, _in.release(), output)
@@ -6372,1957 +6303,6 @@ static int __pyx_pf_5kenlm_5Model_4path_4__del__(struct __pyx_obj_5kenlm_Model *
   return __pyx_r;
 }
 
-/* "string.from_py":13
- * 
- * @cname("__pyx_convert_string_from_py_std__in_string")
- * cdef string __pyx_convert_string_from_py_std__in_string(object o) except *:             # <<<<<<<<<<<<<<
- *     cdef Py_ssize_t length
- *     cdef const char* data = __Pyx_PyObject_AsStringAndSize(o, &length)
- */
-
-static std::string __pyx_convert_string_from_py_std__in_string(PyObject *__pyx_v_o) {
-  Py_ssize_t __pyx_v_length;
-  char const *__pyx_v_data;
-  std::string __pyx_r;
-  __Pyx_RefNannyDeclarations
-  char const *__pyx_t_1;
-  __Pyx_RefNannySetupContext("__pyx_convert_string_from_py_std__in_string", 0);
-
-  /* "string.from_py":15
- * cdef string __pyx_convert_string_from_py_std__in_string(object o) except *:
- *     cdef Py_ssize_t length
- *     cdef const char* data = __Pyx_PyObject_AsStringAndSize(o, &length)             # <<<<<<<<<<<<<<
- *     return string(data, length)
- * 
- */
-  __pyx_t_1 = __Pyx_PyObject_AsStringAndSize(__pyx_v_o, (&__pyx_v_length)); if (unlikely(__pyx_t_1 == ((char const *)NULL))) __PYX_ERR(1, 15, __pyx_L1_error)
-  __pyx_v_data = __pyx_t_1;
-
-  /* "string.from_py":16
- *     cdef Py_ssize_t length
- *     cdef const char* data = __Pyx_PyObject_AsStringAndSize(o, &length)
- *     return string(data, length)             # <<<<<<<<<<<<<<
- * 
- * 
- */
-  __pyx_r = std::string(__pyx_v_data, __pyx_v_length);
-  goto __pyx_L0;
-
-  /* "string.from_py":13
- * 
- * @cname("__pyx_convert_string_from_py_std__in_string")
- * cdef string __pyx_convert_string_from_py_std__in_string(object o) except *:             # <<<<<<<<<<<<<<
- *     cdef Py_ssize_t length
- *     cdef const char* data = __Pyx_PyObject_AsStringAndSize(o, &length)
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_AddTraceback("string.from_py.__pyx_convert_string_from_py_std__in_string", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __Pyx_pretend_to_initialize(&__pyx_r);
-  __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "FromPyStructUtility":11
- * 
- * @cname("__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig")
- * cdef struct_type __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig(obj) except *:             # <<<<<<<<<<<<<<
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):
- */
-
-static struct util::stream::SortConfig __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig(PyObject *__pyx_v_obj) {
-  struct util::stream::SortConfig __pyx_v_result;
-  PyObject *__pyx_v_value = NULL;
-  struct util::stream::SortConfig __pyx_r;
-  __Pyx_RefNannyDeclarations
-  int __pyx_t_1;
-  PyObject *__pyx_t_2 = NULL;
-  PyObject *__pyx_t_3 = NULL;
-  PyObject *__pyx_t_4 = NULL;
-  PyObject *__pyx_t_5 = NULL;
-  int __pyx_t_6;
-  PyObject *__pyx_t_7 = NULL;
-  PyObject *__pyx_t_8 = NULL;
-  PyObject *__pyx_t_9 = NULL;
-  std::string __pyx_t_10;
-  __Pyx_RefNannySetupContext("__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig", 0);
-
-  /* "FromPyStructUtility":13
- * cdef struct_type __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig(obj) except *:
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- */
-  __pyx_t_1 = ((!(PyMapping_Check(__pyx_v_obj) != 0)) != 0);
-  if (__pyx_t_1) {
-
-    /* "FromPyStructUtility":14
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)             # <<<<<<<<<<<<<<
- * 
- *     try:
- */
-    __pyx_t_2 = PyErr_Format(__pyx_builtin_TypeError, ((char const *)"Expected %.16s, got %.200s"), ((char *)"a mapping"), Py_TYPE(__pyx_v_obj)->tp_name); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 14, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-    /* "FromPyStructUtility":13
- * cdef struct_type __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig(obj) except *:
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- */
-  }
-
-  /* "FromPyStructUtility":16
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['temp_prefix']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_5);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":17
- * 
- *     try:
- *         value = obj['temp_prefix']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'temp_prefix'")
- */
-      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_temp_prefix); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 17, __pyx_L4_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __pyx_v_value = __pyx_t_2;
-      __pyx_t_2 = 0;
-
-      /* "FromPyStructUtility":16
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['temp_prefix']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    goto __pyx_L9_try_end;
-    __pyx_L4_error:;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-    /* "FromPyStructUtility":18
- *     try:
- *         value = obj['temp_prefix']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'temp_prefix'")
- *     result.temp_prefix = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(1, 18, __pyx_L6_except_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_8);
-
-      /* "FromPyStructUtility":19
- *         value = obj['temp_prefix']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'temp_prefix'")             # <<<<<<<<<<<<<<
- *     result.temp_prefix = value
- *     try:
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__17, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 19, __pyx_L6_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 19, __pyx_L6_except_error)
-    }
-    goto __pyx_L6_except_error;
-    __pyx_L6_except_error:;
-
-    /* "FromPyStructUtility":16
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['temp_prefix']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
-    goto __pyx_L1_error;
-    __pyx_L9_try_end:;
-  }
-
-  /* "FromPyStructUtility":20
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'temp_prefix'")
- *     result.temp_prefix = value             # <<<<<<<<<<<<<<
- *     try:
- *         value = obj['buffer_size']
- */
-  __pyx_t_10 = __pyx_convert_string_from_py_std__in_string(__pyx_v_value); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 20, __pyx_L1_error)
-  __pyx_v_result.temp_prefix = __pyx_t_10;
-
-  /* "FromPyStructUtility":21
- *         raise ValueError("No value specified for struct attribute 'temp_prefix'")
- *     result.temp_prefix = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['buffer_size']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_3);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":22
- *     result.temp_prefix = value
- *     try:
- *         value = obj['buffer_size']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'buffer_size'")
- */
-      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_buffer_size); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 22, __pyx_L12_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
-      __pyx_t_8 = 0;
-
-      /* "FromPyStructUtility":21
- *         raise ValueError("No value specified for struct attribute 'temp_prefix'")
- *     result.temp_prefix = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['buffer_size']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    goto __pyx_L17_try_end;
-    __pyx_L12_error:;
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-
-    /* "FromPyStructUtility":23
- *     try:
- *         value = obj['buffer_size']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'buffer_size'")
- *     result.buffer_size = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) __PYX_ERR(1, 23, __pyx_L14_except_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_2);
-
-      /* "FromPyStructUtility":24
- *         value = obj['buffer_size']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'buffer_size'")             # <<<<<<<<<<<<<<
- *     result.buffer_size = value
- *     try:
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__18, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 24, __pyx_L14_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 24, __pyx_L14_except_error)
-    }
-    goto __pyx_L14_except_error;
-    __pyx_L14_except_error:;
-
-    /* "FromPyStructUtility":21
- *         raise ValueError("No value specified for struct attribute 'temp_prefix'")
- *     result.temp_prefix = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['buffer_size']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
-    goto __pyx_L1_error;
-    __pyx_L17_try_end:;
-  }
-
-  /* "FromPyStructUtility":25
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'buffer_size'")
- *     result.buffer_size = value             # <<<<<<<<<<<<<<
- *     try:
- *         value = obj['total_memory']
- */
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 25, __pyx_L1_error)
-  __pyx_v_result.buffer_size = __pyx_t_6;
-
-  /* "FromPyStructUtility":26
- *         raise ValueError("No value specified for struct attribute 'buffer_size'")
- *     result.buffer_size = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['total_memory']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_5);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":27
- *     result.buffer_size = value
- *     try:
- *         value = obj['total_memory']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'total_memory'")
- */
-      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_total_memory); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 27, __pyx_L20_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
-      __pyx_t_2 = 0;
-
-      /* "FromPyStructUtility":26
- *         raise ValueError("No value specified for struct attribute 'buffer_size'")
- *     result.buffer_size = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['total_memory']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    goto __pyx_L25_try_end;
-    __pyx_L20_error:;
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-    /* "FromPyStructUtility":28
- *     try:
- *         value = obj['total_memory']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'total_memory'")
- *     result.total_memory = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(1, 28, __pyx_L22_except_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_8);
-
-      /* "FromPyStructUtility":29
- *         value = obj['total_memory']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'total_memory'")             # <<<<<<<<<<<<<<
- *     result.total_memory = value
- *     return result
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__19, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 29, __pyx_L22_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 29, __pyx_L22_except_error)
-    }
-    goto __pyx_L22_except_error;
-    __pyx_L22_except_error:;
-
-    /* "FromPyStructUtility":26
- *         raise ValueError("No value specified for struct attribute 'buffer_size'")
- *     result.buffer_size = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['total_memory']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
-    goto __pyx_L1_error;
-    __pyx_L25_try_end:;
-  }
-
-  /* "FromPyStructUtility":30
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'total_memory'")
- *     result.total_memory = value             # <<<<<<<<<<<<<<
- *     return result
- * 
- */
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 30, __pyx_L1_error)
-  __pyx_v_result.total_memory = __pyx_t_6;
-
-  /* "FromPyStructUtility":31
- *         raise ValueError("No value specified for struct attribute 'total_memory'")
- *     result.total_memory = value
- *     return result             # <<<<<<<<<<<<<<
- * 
- * 
- */
-  __pyx_r = __pyx_v_result;
-  goto __pyx_L0;
-
-  /* "FromPyStructUtility":11
- * 
- * @cname("__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig")
- * cdef struct_type __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig(obj) except *:             # <<<<<<<<<<<<<<
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __Pyx_pretend_to_initialize(&__pyx_r);
-  __pyx_L0:;
-  __Pyx_XDECREF(__pyx_v_value);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static struct util::stream::ChainConfig __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_ChainConfig(PyObject *__pyx_v_obj) {
-  struct util::stream::ChainConfig __pyx_v_result;
-  PyObject *__pyx_v_value = NULL;
-  struct util::stream::ChainConfig __pyx_r;
-  __Pyx_RefNannyDeclarations
-  int __pyx_t_1;
-  PyObject *__pyx_t_2 = NULL;
-  PyObject *__pyx_t_3 = NULL;
-  PyObject *__pyx_t_4 = NULL;
-  PyObject *__pyx_t_5 = NULL;
-  int __pyx_t_6;
-  PyObject *__pyx_t_7 = NULL;
-  PyObject *__pyx_t_8 = NULL;
-  PyObject *__pyx_t_9 = NULL;
-  __Pyx_RefNannySetupContext("__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_ChainConfig", 0);
-
-  /* "FromPyStructUtility":13
- * cdef struct_type __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_ChainConfig(obj) except *:
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- */
-  __pyx_t_1 = ((!(PyMapping_Check(__pyx_v_obj) != 0)) != 0);
-  if (__pyx_t_1) {
-
-    /* "FromPyStructUtility":14
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)             # <<<<<<<<<<<<<<
- * 
- *     try:
- */
-    __pyx_t_2 = PyErr_Format(__pyx_builtin_TypeError, ((char const *)"Expected %.16s, got %.200s"), ((char *)"a mapping"), Py_TYPE(__pyx_v_obj)->tp_name); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 14, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-    /* "FromPyStructUtility":13
- * cdef struct_type __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_ChainConfig(obj) except *:
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- */
-  }
-
-  /* "FromPyStructUtility":16
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['entry_size']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_5);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":17
- * 
- *     try:
- *         value = obj['entry_size']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'entry_size'")
- */
-      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_entry_size); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 17, __pyx_L4_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __pyx_v_value = __pyx_t_2;
-      __pyx_t_2 = 0;
-
-      /* "FromPyStructUtility":16
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['entry_size']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    goto __pyx_L9_try_end;
-    __pyx_L4_error:;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-    /* "FromPyStructUtility":18
- *     try:
- *         value = obj['entry_size']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'entry_size'")
- *     result.entry_size = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_ChainConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(1, 18, __pyx_L6_except_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_8);
-
-      /* "FromPyStructUtility":19
- *         value = obj['entry_size']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'entry_size'")             # <<<<<<<<<<<<<<
- *     result.entry_size = value
- *     try:
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__20, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 19, __pyx_L6_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 19, __pyx_L6_except_error)
-    }
-    goto __pyx_L6_except_error;
-    __pyx_L6_except_error:;
-
-    /* "FromPyStructUtility":16
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['entry_size']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
-    goto __pyx_L1_error;
-    __pyx_L9_try_end:;
-  }
-
-  /* "FromPyStructUtility":20
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'entry_size'")
- *     result.entry_size = value             # <<<<<<<<<<<<<<
- *     try:
- *         value = obj['block_count']
- */
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 20, __pyx_L1_error)
-  __pyx_v_result.entry_size = __pyx_t_6;
-
-  /* "FromPyStructUtility":21
- *         raise ValueError("No value specified for struct attribute 'entry_size'")
- *     result.entry_size = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['block_count']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_3);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":22
- *     result.entry_size = value
- *     try:
- *         value = obj['block_count']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'block_count'")
- */
-      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_block_count); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 22, __pyx_L12_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
-      __pyx_t_8 = 0;
-
-      /* "FromPyStructUtility":21
- *         raise ValueError("No value specified for struct attribute 'entry_size'")
- *     result.entry_size = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['block_count']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    goto __pyx_L17_try_end;
-    __pyx_L12_error:;
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-
-    /* "FromPyStructUtility":23
- *     try:
- *         value = obj['block_count']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'block_count'")
- *     result.block_count = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_ChainConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) __PYX_ERR(1, 23, __pyx_L14_except_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_2);
-
-      /* "FromPyStructUtility":24
- *         value = obj['block_count']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'block_count'")             # <<<<<<<<<<<<<<
- *     result.block_count = value
- *     try:
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__21, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 24, __pyx_L14_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 24, __pyx_L14_except_error)
-    }
-    goto __pyx_L14_except_error;
-    __pyx_L14_except_error:;
-
-    /* "FromPyStructUtility":21
- *         raise ValueError("No value specified for struct attribute 'entry_size'")
- *     result.entry_size = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['block_count']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
-    goto __pyx_L1_error;
-    __pyx_L17_try_end:;
-  }
-
-  /* "FromPyStructUtility":25
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'block_count'")
- *     result.block_count = value             # <<<<<<<<<<<<<<
- *     try:
- *         value = obj['total_memory']
- */
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 25, __pyx_L1_error)
-  __pyx_v_result.block_count = __pyx_t_6;
-
-  /* "FromPyStructUtility":26
- *         raise ValueError("No value specified for struct attribute 'block_count'")
- *     result.block_count = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['total_memory']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_5);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":27
- *     result.block_count = value
- *     try:
- *         value = obj['total_memory']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'total_memory'")
- */
-      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_total_memory); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 27, __pyx_L20_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
-      __pyx_t_2 = 0;
-
-      /* "FromPyStructUtility":26
- *         raise ValueError("No value specified for struct attribute 'block_count'")
- *     result.block_count = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['total_memory']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    goto __pyx_L25_try_end;
-    __pyx_L20_error:;
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-    /* "FromPyStructUtility":28
- *     try:
- *         value = obj['total_memory']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'total_memory'")
- *     result.total_memory = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_ChainConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(1, 28, __pyx_L22_except_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_8);
-
-      /* "FromPyStructUtility":29
- *         value = obj['total_memory']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'total_memory'")             # <<<<<<<<<<<<<<
- *     result.total_memory = value
- *     return result
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__22, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 29, __pyx_L22_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 29, __pyx_L22_except_error)
-    }
-    goto __pyx_L22_except_error;
-    __pyx_L22_except_error:;
-
-    /* "FromPyStructUtility":26
- *         raise ValueError("No value specified for struct attribute 'block_count'")
- *     result.block_count = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['total_memory']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
-    goto __pyx_L1_error;
-    __pyx_L25_try_end:;
-  }
-
-  /* "FromPyStructUtility":30
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'total_memory'")
- *     result.total_memory = value             # <<<<<<<<<<<<<<
- *     return result
- * 
- */
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 30, __pyx_L1_error)
-  __pyx_v_result.total_memory = __pyx_t_6;
-
-  /* "FromPyStructUtility":31
- *         raise ValueError("No value specified for struct attribute 'total_memory'")
- *     result.total_memory = value
- *     return result             # <<<<<<<<<<<<<<
- * 
- * 
- */
-  __pyx_r = __pyx_v_result;
-  goto __pyx_L0;
-
-  /* "FromPyStructUtility":11
- * 
- * @cname("__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_ChainConfig")
- * cdef struct_type __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_ChainConfig(obj) except *:             # <<<<<<<<<<<<<<
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_ChainConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __Pyx_pretend_to_initialize(&__pyx_r);
-  __pyx_L0:;
-  __Pyx_XDECREF(__pyx_v_value);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static struct lm::builder::PipelineConfig __pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig(PyObject *__pyx_v_obj) {
-  struct lm::builder::PipelineConfig __pyx_v_result;
-  PyObject *__pyx_v_value = NULL;
-  struct lm::builder::PipelineConfig __pyx_r;
-  __Pyx_RefNannyDeclarations
-  int __pyx_t_1;
-  PyObject *__pyx_t_2 = NULL;
-  PyObject *__pyx_t_3 = NULL;
-  PyObject *__pyx_t_4 = NULL;
-  PyObject *__pyx_t_5 = NULL;
-  int __pyx_t_6;
-  PyObject *__pyx_t_7 = NULL;
-  PyObject *__pyx_t_8 = NULL;
-  PyObject *__pyx_t_9 = NULL;
-  struct util::stream::SortConfig __pyx_t_10;
-  struct util::stream::ChainConfig __pyx_t_11;
-  __Pyx_RefNannySetupContext("__pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig", 0);
-
-  /* "FromPyStructUtility":13
- * cdef struct_type __pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig(obj) except *:
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- */
-  __pyx_t_1 = ((!(PyMapping_Check(__pyx_v_obj) != 0)) != 0);
-  if (__pyx_t_1) {
-
-    /* "FromPyStructUtility":14
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)             # <<<<<<<<<<<<<<
- * 
- *     try:
- */
-    __pyx_t_2 = PyErr_Format(__pyx_builtin_TypeError, ((char const *)"Expected %.16s, got %.200s"), ((char *)"a mapping"), Py_TYPE(__pyx_v_obj)->tp_name); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 14, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-    /* "FromPyStructUtility":13
- * cdef struct_type __pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig(obj) except *:
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- */
-  }
-
-  /* "FromPyStructUtility":16
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['order']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_5);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":17
- * 
- *     try:
- *         value = obj['order']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'order'")
- */
-      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_order); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 17, __pyx_L4_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __pyx_v_value = __pyx_t_2;
-      __pyx_t_2 = 0;
-
-      /* "FromPyStructUtility":16
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['order']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    goto __pyx_L9_try_end;
-    __pyx_L4_error:;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-    /* "FromPyStructUtility":18
- *     try:
- *         value = obj['order']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'order'")
- *     result.order = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(1, 18, __pyx_L6_except_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_8);
-
-      /* "FromPyStructUtility":19
- *         value = obj['order']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'order'")             # <<<<<<<<<<<<<<
- *     result.order = value
- *     try:
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__23, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 19, __pyx_L6_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 19, __pyx_L6_except_error)
-    }
-    goto __pyx_L6_except_error;
-    __pyx_L6_except_error:;
-
-    /* "FromPyStructUtility":16
- *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
- * 
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['order']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
-    goto __pyx_L1_error;
-    __pyx_L9_try_end:;
-  }
-
-  /* "FromPyStructUtility":20
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'order'")
- *     result.order = value             # <<<<<<<<<<<<<<
- *     try:
- *         value = obj['sort']
- */
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 20, __pyx_L1_error)
-  __pyx_v_result.order = __pyx_t_6;
-
-  /* "FromPyStructUtility":21
- *         raise ValueError("No value specified for struct attribute 'order'")
- *     result.order = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['sort']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_3);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":22
- *     result.order = value
- *     try:
- *         value = obj['sort']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'sort'")
- */
-      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_sort); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 22, __pyx_L12_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
-      __pyx_t_8 = 0;
-
-      /* "FromPyStructUtility":21
- *         raise ValueError("No value specified for struct attribute 'order'")
- *     result.order = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['sort']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    goto __pyx_L17_try_end;
-    __pyx_L12_error:;
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-
-    /* "FromPyStructUtility":23
- *     try:
- *         value = obj['sort']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'sort'")
- *     result.sort = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) __PYX_ERR(1, 23, __pyx_L14_except_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_2);
-
-      /* "FromPyStructUtility":24
- *         value = obj['sort']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'sort'")             # <<<<<<<<<<<<<<
- *     result.sort = value
- *     try:
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__24, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 24, __pyx_L14_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 24, __pyx_L14_except_error)
-    }
-    goto __pyx_L14_except_error;
-    __pyx_L14_except_error:;
-
-    /* "FromPyStructUtility":21
- *         raise ValueError("No value specified for struct attribute 'order'")
- *     result.order = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['sort']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
-    goto __pyx_L1_error;
-    __pyx_L17_try_end:;
-  }
-
-  /* "FromPyStructUtility":25
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'sort'")
- *     result.sort = value             # <<<<<<<<<<<<<<
- *     try:
- *         value = obj['read_backoffs']
- */
-  __pyx_t_10 = __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_SortConfig(__pyx_v_value); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 25, __pyx_L1_error)
-  __pyx_v_result.sort = __pyx_t_10;
-
-  /* "FromPyStructUtility":26
- *         raise ValueError("No value specified for struct attribute 'sort'")
- *     result.sort = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['read_backoffs']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_5);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":27
- *     result.sort = value
- *     try:
- *         value = obj['read_backoffs']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'read_backoffs'")
- */
-      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_read_backoffs); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 27, __pyx_L20_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
-      __pyx_t_2 = 0;
-
-      /* "FromPyStructUtility":26
- *         raise ValueError("No value specified for struct attribute 'sort'")
- *     result.sort = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['read_backoffs']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    goto __pyx_L25_try_end;
-    __pyx_L20_error:;
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-    /* "FromPyStructUtility":28
- *     try:
- *         value = obj['read_backoffs']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'read_backoffs'")
- *     result.read_backoffs = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(1, 28, __pyx_L22_except_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_8);
-
-      /* "FromPyStructUtility":29
- *         value = obj['read_backoffs']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'read_backoffs'")             # <<<<<<<<<<<<<<
- *     result.read_backoffs = value
- *     try:
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__25, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 29, __pyx_L22_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 29, __pyx_L22_except_error)
-    }
-    goto __pyx_L22_except_error;
-    __pyx_L22_except_error:;
-
-    /* "FromPyStructUtility":26
- *         raise ValueError("No value specified for struct attribute 'sort'")
- *     result.sort = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['read_backoffs']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
-    goto __pyx_L1_error;
-    __pyx_L25_try_end:;
-  }
-
-  /* "FromPyStructUtility":30
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'read_backoffs'")
- *     result.read_backoffs = value             # <<<<<<<<<<<<<<
- *     try:
- *         value = obj['minimum_block']
- */
-  __pyx_t_11 = __pyx_convert__from_py_struct__util_3a__3a_stream_3a__3a_ChainConfig(__pyx_v_value); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 30, __pyx_L1_error)
-  __pyx_v_result.read_backoffs = __pyx_t_11;
-
-  /* "FromPyStructUtility":31
- *         raise ValueError("No value specified for struct attribute 'read_backoffs'")
- *     result.read_backoffs = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['minimum_block']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_3);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":32
- *     result.read_backoffs = value
- *     try:
- *         value = obj['minimum_block']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'minimum_block'")
- */
-      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_minimum_block); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 32, __pyx_L28_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
-      __pyx_t_8 = 0;
-
-      /* "FromPyStructUtility":31
- *         raise ValueError("No value specified for struct attribute 'read_backoffs'")
- *     result.read_backoffs = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['minimum_block']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    goto __pyx_L33_try_end;
-    __pyx_L28_error:;
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-
-    /* "FromPyStructUtility":33
- *     try:
- *         value = obj['minimum_block']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'minimum_block'")
- *     result.minimum_block = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) __PYX_ERR(1, 33, __pyx_L30_except_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_2);
-
-      /* "FromPyStructUtility":34
- *         value = obj['minimum_block']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'minimum_block'")             # <<<<<<<<<<<<<<
- *     result.minimum_block = value
- *     try:
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__26, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 34, __pyx_L30_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 34, __pyx_L30_except_error)
-    }
-    goto __pyx_L30_except_error;
-    __pyx_L30_except_error:;
-
-    /* "FromPyStructUtility":31
- *         raise ValueError("No value specified for struct attribute 'read_backoffs'")
- *     result.read_backoffs = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['minimum_block']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
-    goto __pyx_L1_error;
-    __pyx_L33_try_end:;
-  }
-
-  /* "FromPyStructUtility":35
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'minimum_block'")
- *     result.minimum_block = value             # <<<<<<<<<<<<<<
- *     try:
- *         value = obj['block_count']
- */
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 35, __pyx_L1_error)
-  __pyx_v_result.minimum_block = __pyx_t_6;
-
-  /* "FromPyStructUtility":36
- *         raise ValueError("No value specified for struct attribute 'minimum_block'")
- *     result.minimum_block = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['block_count']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_5);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":37
- *     result.minimum_block = value
- *     try:
- *         value = obj['block_count']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'block_count'")
- */
-      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_block_count); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 37, __pyx_L36_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
-      __pyx_t_2 = 0;
-
-      /* "FromPyStructUtility":36
- *         raise ValueError("No value specified for struct attribute 'minimum_block'")
- *     result.minimum_block = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['block_count']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    goto __pyx_L41_try_end;
-    __pyx_L36_error:;
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-    /* "FromPyStructUtility":38
- *     try:
- *         value = obj['block_count']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'block_count'")
- *     result.block_count = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(1, 38, __pyx_L38_except_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_8);
-
-      /* "FromPyStructUtility":39
- *         value = obj['block_count']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'block_count'")             # <<<<<<<<<<<<<<
- *     result.block_count = value
- *     try:
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__27, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 39, __pyx_L38_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 39, __pyx_L38_except_error)
-    }
-    goto __pyx_L38_except_error;
-    __pyx_L38_except_error:;
-
-    /* "FromPyStructUtility":36
- *         raise ValueError("No value specified for struct attribute 'minimum_block'")
- *     result.minimum_block = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['block_count']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
-    goto __pyx_L1_error;
-    __pyx_L41_try_end:;
-  }
-
-  /* "FromPyStructUtility":40
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'block_count'")
- *     result.block_count = value             # <<<<<<<<<<<<<<
- *     try:
- *         value = obj['prune_vocab']
- */
-  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 40, __pyx_L1_error)
-  __pyx_v_result.block_count = __pyx_t_6;
-
-  /* "FromPyStructUtility":41
- *         raise ValueError("No value specified for struct attribute 'block_count'")
- *     result.block_count = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['prune_vocab']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_3);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":42
- *     result.block_count = value
- *     try:
- *         value = obj['prune_vocab']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'prune_vocab'")
- */
-      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_prune_vocab); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 42, __pyx_L44_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
-      __pyx_t_8 = 0;
-
-      /* "FromPyStructUtility":41
- *         raise ValueError("No value specified for struct attribute 'block_count'")
- *     result.block_count = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['prune_vocab']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    goto __pyx_L49_try_end;
-    __pyx_L44_error:;
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-
-    /* "FromPyStructUtility":43
- *     try:
- *         value = obj['prune_vocab']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'prune_vocab'")
- *     result.prune_vocab = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) __PYX_ERR(1, 43, __pyx_L46_except_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_2);
-
-      /* "FromPyStructUtility":44
- *         value = obj['prune_vocab']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'prune_vocab'")             # <<<<<<<<<<<<<<
- *     result.prune_vocab = value
- *     try:
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__28, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 44, __pyx_L46_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 44, __pyx_L46_except_error)
-    }
-    goto __pyx_L46_except_error;
-    __pyx_L46_except_error:;
-
-    /* "FromPyStructUtility":41
- *         raise ValueError("No value specified for struct attribute 'block_count'")
- *     result.block_count = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['prune_vocab']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
-    goto __pyx_L1_error;
-    __pyx_L49_try_end:;
-  }
-
-  /* "FromPyStructUtility":45
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'prune_vocab'")
- *     result.prune_vocab = value             # <<<<<<<<<<<<<<
- *     try:
- *         value = obj['renumber_vocabulary']
- */
-  __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_v_value); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 45, __pyx_L1_error)
-  __pyx_v_result.prune_vocab = __pyx_t_1;
-
-  /* "FromPyStructUtility":46
- *         raise ValueError("No value specified for struct attribute 'prune_vocab'")
- *     result.prune_vocab = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['renumber_vocabulary']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_5);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":47
- *     result.prune_vocab = value
- *     try:
- *         value = obj['renumber_vocabulary']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'renumber_vocabulary'")
- */
-      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_renumber_vocabulary); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 47, __pyx_L52_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
-      __pyx_t_2 = 0;
-
-      /* "FromPyStructUtility":46
- *         raise ValueError("No value specified for struct attribute 'prune_vocab'")
- *     result.prune_vocab = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['renumber_vocabulary']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    goto __pyx_L57_try_end;
-    __pyx_L52_error:;
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-    /* "FromPyStructUtility":48
- *     try:
- *         value = obj['renumber_vocabulary']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'renumber_vocabulary'")
- *     result.renumber_vocabulary = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(1, 48, __pyx_L54_except_error)
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_8);
-
-      /* "FromPyStructUtility":49
- *         value = obj['renumber_vocabulary']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'renumber_vocabulary'")             # <<<<<<<<<<<<<<
- *     result.renumber_vocabulary = value
- *     try:
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__29, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 49, __pyx_L54_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 49, __pyx_L54_except_error)
-    }
-    goto __pyx_L54_except_error;
-    __pyx_L54_except_error:;
-
-    /* "FromPyStructUtility":46
- *         raise ValueError("No value specified for struct attribute 'prune_vocab'")
- *     result.prune_vocab = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['renumber_vocabulary']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
-    goto __pyx_L1_error;
-    __pyx_L57_try_end:;
-  }
-
-  /* "FromPyStructUtility":50
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'renumber_vocabulary'")
- *     result.renumber_vocabulary = value             # <<<<<<<<<<<<<<
- *     try:
- *         value = obj['output_q']
- */
-  __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_v_value); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 50, __pyx_L1_error)
-  __pyx_v_result.renumber_vocabulary = __pyx_t_1;
-
-  /* "FromPyStructUtility":51
- *         raise ValueError("No value specified for struct attribute 'renumber_vocabulary'")
- *     result.renumber_vocabulary = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['output_q']
- *     except KeyError:
- */
-  {
-    __Pyx_PyThreadState_declare
-    __Pyx_PyThreadState_assign
-    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
-    __Pyx_XGOTREF(__pyx_t_5);
-    __Pyx_XGOTREF(__pyx_t_4);
-    __Pyx_XGOTREF(__pyx_t_3);
-    /*try:*/ {
-
-      /* "FromPyStructUtility":52
- *     result.renumber_vocabulary = value
- *     try:
- *         value = obj['output_q']             # <<<<<<<<<<<<<<
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'output_q'")
- */
-      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_output_q); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 52, __pyx_L60_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
-      __pyx_t_8 = 0;
-
-      /* "FromPyStructUtility":51
- *         raise ValueError("No value specified for struct attribute 'renumber_vocabulary'")
- *     result.renumber_vocabulary = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['output_q']
- *     except KeyError:
- */
-    }
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    goto __pyx_L65_try_end;
-    __pyx_L60_error:;
-    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-
-    /* "FromPyStructUtility":53
- *     try:
- *         value = obj['output_q']
- *     except KeyError:             # <<<<<<<<<<<<<<
- *         raise ValueError("No value specified for struct attribute 'output_q'")
- *     result.output_q = value
- */
-    __pyx_t_6 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
-    if (__pyx_t_6) {
-      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) __PYX_ERR(1, 53, __pyx_L62_except_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GOTREF(__pyx_t_2);
-
-      /* "FromPyStructUtility":54
- *         value = obj['output_q']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'output_q'")             # <<<<<<<<<<<<<<
- *     result.output_q = value
- *     return result
- */
-      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__30, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 54, __pyx_L62_except_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(1, 54, __pyx_L62_except_error)
-    }
-    goto __pyx_L62_except_error;
-    __pyx_L62_except_error:;
-
-    /* "FromPyStructUtility":51
- *         raise ValueError("No value specified for struct attribute 'renumber_vocabulary'")
- *     result.renumber_vocabulary = value
- *     try:             # <<<<<<<<<<<<<<
- *         value = obj['output_q']
- *     except KeyError:
- */
-    __Pyx_XGIVEREF(__pyx_t_5);
-    __Pyx_XGIVEREF(__pyx_t_4);
-    __Pyx_XGIVEREF(__pyx_t_3);
-    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
-    goto __pyx_L1_error;
-    __pyx_L65_try_end:;
-  }
-
-  /* "FromPyStructUtility":55
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'output_q'")
- *     result.output_q = value             # <<<<<<<<<<<<<<
- *     return result
- * 
- */
-  __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_v_value); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(1, 55, __pyx_L1_error)
-  __pyx_v_result.output_q = __pyx_t_1;
-
-  /* "FromPyStructUtility":56
- *         raise ValueError("No value specified for struct attribute 'output_q'")
- *     result.output_q = value
- *     return result             # <<<<<<<<<<<<<<
- * 
- * 
- */
-  __pyx_r = __pyx_v_result;
-  goto __pyx_L0;
-
-  /* "FromPyStructUtility":11
- * 
- * @cname("__pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig")
- * cdef struct_type __pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig(obj) except *:             # <<<<<<<<<<<<<<
- *     cdef struct_type result
- *     if not PyMapping_Check(obj):
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __Pyx_pretend_to_initialize(&__pyx_r);
-  __pyx_L0:;
-  __Pyx_XDECREF(__pyx_v_value);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "string.to_py":31
- * 
- * @cname("__pyx_convert_PyObject_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyObject_string_to_py_std__in_string(const string& s):             # <<<<<<<<<<<<<<
- *     return __Pyx_PyObject_FromStringAndSize(s.data(), s.size())
- * cdef extern from *:
- */
-
-static CYTHON_INLINE PyObject *__pyx_convert_PyObject_string_to_py_std__in_string(std::string const &__pyx_v_s) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  __Pyx_RefNannySetupContext("__pyx_convert_PyObject_string_to_py_std__in_string", 0);
-
-  /* "string.to_py":32
- * @cname("__pyx_convert_PyObject_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyObject_string_to_py_std__in_string(const string& s):
- *     return __Pyx_PyObject_FromStringAndSize(s.data(), s.size())             # <<<<<<<<<<<<<<
- * cdef extern from *:
- *     cdef object __Pyx_PyUnicode_FromStringAndSize(const char*, size_t)
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_FromStringAndSize(__pyx_v_s.data(), __pyx_v_s.size()); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 32, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* "string.to_py":31
- * 
- * @cname("__pyx_convert_PyObject_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyObject_string_to_py_std__in_string(const string& s):             # <<<<<<<<<<<<<<
- *     return __Pyx_PyObject_FromStringAndSize(s.data(), s.size())
- * cdef extern from *:
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("string.to_py.__pyx_convert_PyObject_string_to_py_std__in_string", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = 0;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "string.to_py":37
- * 
- * @cname("__pyx_convert_PyUnicode_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyUnicode_string_to_py_std__in_string(const string& s):             # <<<<<<<<<<<<<<
- *     return __Pyx_PyUnicode_FromStringAndSize(s.data(), s.size())
- * cdef extern from *:
- */
-
-static CYTHON_INLINE PyObject *__pyx_convert_PyUnicode_string_to_py_std__in_string(std::string const &__pyx_v_s) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  __Pyx_RefNannySetupContext("__pyx_convert_PyUnicode_string_to_py_std__in_string", 0);
-
-  /* "string.to_py":38
- * @cname("__pyx_convert_PyUnicode_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyUnicode_string_to_py_std__in_string(const string& s):
- *     return __Pyx_PyUnicode_FromStringAndSize(s.data(), s.size())             # <<<<<<<<<<<<<<
- * cdef extern from *:
- *     cdef object __Pyx_PyStr_FromStringAndSize(const char*, size_t)
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyUnicode_FromStringAndSize(__pyx_v_s.data(), __pyx_v_s.size()); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 38, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* "string.to_py":37
- * 
- * @cname("__pyx_convert_PyUnicode_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyUnicode_string_to_py_std__in_string(const string& s):             # <<<<<<<<<<<<<<
- *     return __Pyx_PyUnicode_FromStringAndSize(s.data(), s.size())
- * cdef extern from *:
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("string.to_py.__pyx_convert_PyUnicode_string_to_py_std__in_string", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = 0;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "string.to_py":43
- * 
- * @cname("__pyx_convert_PyStr_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyStr_string_to_py_std__in_string(const string& s):             # <<<<<<<<<<<<<<
- *     return __Pyx_PyStr_FromStringAndSize(s.data(), s.size())
- * cdef extern from *:
- */
-
-static CYTHON_INLINE PyObject *__pyx_convert_PyStr_string_to_py_std__in_string(std::string const &__pyx_v_s) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  __Pyx_RefNannySetupContext("__pyx_convert_PyStr_string_to_py_std__in_string", 0);
-
-  /* "string.to_py":44
- * @cname("__pyx_convert_PyStr_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyStr_string_to_py_std__in_string(const string& s):
- *     return __Pyx_PyStr_FromStringAndSize(s.data(), s.size())             # <<<<<<<<<<<<<<
- * cdef extern from *:
- *     cdef object __Pyx_PyBytes_FromStringAndSize(const char*, size_t)
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyStr_FromStringAndSize(__pyx_v_s.data(), __pyx_v_s.size()); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 44, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* "string.to_py":43
- * 
- * @cname("__pyx_convert_PyStr_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyStr_string_to_py_std__in_string(const string& s):             # <<<<<<<<<<<<<<
- *     return __Pyx_PyStr_FromStringAndSize(s.data(), s.size())
- * cdef extern from *:
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("string.to_py.__pyx_convert_PyStr_string_to_py_std__in_string", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = 0;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "string.to_py":49
- * 
- * @cname("__pyx_convert_PyBytes_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyBytes_string_to_py_std__in_string(const string& s):             # <<<<<<<<<<<<<<
- *     return __Pyx_PyBytes_FromStringAndSize(s.data(), s.size())
- * cdef extern from *:
- */
-
-static CYTHON_INLINE PyObject *__pyx_convert_PyBytes_string_to_py_std__in_string(std::string const &__pyx_v_s) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  __Pyx_RefNannySetupContext("__pyx_convert_PyBytes_string_to_py_std__in_string", 0);
-
-  /* "string.to_py":50
- * @cname("__pyx_convert_PyBytes_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyBytes_string_to_py_std__in_string(const string& s):
- *     return __Pyx_PyBytes_FromStringAndSize(s.data(), s.size())             # <<<<<<<<<<<<<<
- * cdef extern from *:
- *     cdef object __Pyx_PyByteArray_FromStringAndSize(const char*, size_t)
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyBytes_FromStringAndSize(__pyx_v_s.data(), __pyx_v_s.size()); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 50, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* "string.to_py":49
- * 
- * @cname("__pyx_convert_PyBytes_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyBytes_string_to_py_std__in_string(const string& s):             # <<<<<<<<<<<<<<
- *     return __Pyx_PyBytes_FromStringAndSize(s.data(), s.size())
- * cdef extern from *:
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("string.to_py.__pyx_convert_PyBytes_string_to_py_std__in_string", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = 0;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "string.to_py":55
- * 
- * @cname("__pyx_convert_PyByteArray_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyByteArray_string_to_py_std__in_string(const string& s):             # <<<<<<<<<<<<<<
- *     return __Pyx_PyByteArray_FromStringAndSize(s.data(), s.size())
- * 
- */
-
-static CYTHON_INLINE PyObject *__pyx_convert_PyByteArray_string_to_py_std__in_string(std::string const &__pyx_v_s) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  __Pyx_RefNannySetupContext("__pyx_convert_PyByteArray_string_to_py_std__in_string", 0);
-
-  /* "string.to_py":56
- * @cname("__pyx_convert_PyByteArray_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyByteArray_string_to_py_std__in_string(const string& s):
- *     return __Pyx_PyByteArray_FromStringAndSize(s.data(), s.size())             # <<<<<<<<<<<<<<
- * 
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyByteArray_FromStringAndSize(__pyx_v_s.data(), __pyx_v_s.size()); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 56, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* "string.to_py":55
- * 
- * @cname("__pyx_convert_PyByteArray_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyByteArray_string_to_py_std__in_string(const string& s):             # <<<<<<<<<<<<<<
- *     return __Pyx_PyByteArray_FromStringAndSize(s.data(), s.size())
- * 
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("string.to_py.__pyx_convert_PyByteArray_string_to_py_std__in_string", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = 0;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
 static PyObject *__pyx_tp_new_5kenlm_Output(PyTypeObject *t, PyObject *a, PyObject *k) {
   PyObject *o;
   if (likely((t->tp_flags & Py_TPFLAGS_IS_ABSTRACT) == 0)) {
@@ -9127,24 +7107,11 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_Cannot_convert_s_to_string, __pyx_k_Cannot_convert_s_to_string, sizeof(__pyx_k_Cannot_convert_s_to_string), 0, 0, 1, 0},
   {&__pyx_kp_s_Cannot_read_model, __pyx_k_Cannot_read_model, sizeof(__pyx_k_Cannot_read_model), 0, 0, 1, 0},
   {&__pyx_n_s_IOError, __pyx_k_IOError, sizeof(__pyx_k_IOError), 0, 0, 1, 1},
-  {&__pyx_n_s_KeyError, __pyx_k_KeyError, sizeof(__pyx_k_KeyError), 0, 0, 1, 1},
   {&__pyx_n_s_LAZY, __pyx_k_LAZY, sizeof(__pyx_k_LAZY), 0, 0, 1, 1},
   {&__pyx_n_s_LanguageModel, __pyx_k_LanguageModel, sizeof(__pyx_k_LanguageModel), 0, 0, 1, 1},
   {&__pyx_n_s_LoadMethod, __pyx_k_LoadMethod, sizeof(__pyx_k_LoadMethod), 0, 0, 1, 1},
   {&__pyx_kp_s_Model_from_0, __pyx_k_Model_from_0, sizeof(__pyx_k_Model_from_0), 0, 0, 1, 0},
   {&__pyx_n_s_Model_full_scores, __pyx_k_Model_full_scores, sizeof(__pyx_k_Model_full_scores), 0, 0, 1, 1},
-  {&__pyx_kp_s_No_value_specified_for_struct_at, __pyx_k_No_value_specified_for_struct_at, sizeof(__pyx_k_No_value_specified_for_struct_at), 0, 0, 1, 0},
-  {&__pyx_kp_s_No_value_specified_for_struct_at_10, __pyx_k_No_value_specified_for_struct_at_10, sizeof(__pyx_k_No_value_specified_for_struct_at_10), 0, 0, 1, 0},
-  {&__pyx_kp_s_No_value_specified_for_struct_at_11, __pyx_k_No_value_specified_for_struct_at_11, sizeof(__pyx_k_No_value_specified_for_struct_at_11), 0, 0, 1, 0},
-  {&__pyx_kp_s_No_value_specified_for_struct_at_12, __pyx_k_No_value_specified_for_struct_at_12, sizeof(__pyx_k_No_value_specified_for_struct_at_12), 0, 0, 1, 0},
-  {&__pyx_kp_s_No_value_specified_for_struct_at_2, __pyx_k_No_value_specified_for_struct_at_2, sizeof(__pyx_k_No_value_specified_for_struct_at_2), 0, 0, 1, 0},
-  {&__pyx_kp_s_No_value_specified_for_struct_at_3, __pyx_k_No_value_specified_for_struct_at_3, sizeof(__pyx_k_No_value_specified_for_struct_at_3), 0, 0, 1, 0},
-  {&__pyx_kp_s_No_value_specified_for_struct_at_4, __pyx_k_No_value_specified_for_struct_at_4, sizeof(__pyx_k_No_value_specified_for_struct_at_4), 0, 0, 1, 0},
-  {&__pyx_kp_s_No_value_specified_for_struct_at_5, __pyx_k_No_value_specified_for_struct_at_5, sizeof(__pyx_k_No_value_specified_for_struct_at_5), 0, 0, 1, 0},
-  {&__pyx_kp_s_No_value_specified_for_struct_at_6, __pyx_k_No_value_specified_for_struct_at_6, sizeof(__pyx_k_No_value_specified_for_struct_at_6), 0, 0, 1, 0},
-  {&__pyx_kp_s_No_value_specified_for_struct_at_7, __pyx_k_No_value_specified_for_struct_at_7, sizeof(__pyx_k_No_value_specified_for_struct_at_7), 0, 0, 1, 0},
-  {&__pyx_kp_s_No_value_specified_for_struct_at_8, __pyx_k_No_value_specified_for_struct_at_8, sizeof(__pyx_k_No_value_specified_for_struct_at_8), 0, 0, 1, 0},
-  {&__pyx_kp_s_No_value_specified_for_struct_at_9, __pyx_k_No_value_specified_for_struct_at_9, sizeof(__pyx_k_No_value_specified_for_struct_at_9), 0, 0, 1, 0},
   {&__pyx_n_s_PARALLEL_READ, __pyx_k_PARALLEL_READ, sizeof(__pyx_k_PARALLEL_READ), 0, 0, 1, 1},
   {&__pyx_n_s_POPULATE_OR_LAZY, __pyx_k_POPULATE_OR_LAZY, sizeof(__pyx_k_POPULATE_OR_LAZY), 0, 0, 1, 1},
   {&__pyx_n_s_POPULATE_OR_READ, __pyx_k_POPULATE_OR_READ, sizeof(__pyx_k_POPULATE_OR_READ), 0, 0, 1, 1},
@@ -9152,15 +7119,12 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_READ, __pyx_k_READ, sizeof(__pyx_k_READ), 0, 0, 1, 1},
   {&__pyx_n_s_RuntimeError, __pyx_k_RuntimeError, sizeof(__pyx_k_RuntimeError), 0, 0, 1, 1},
   {&__pyx_n_s_TypeError, __pyx_k_TypeError, sizeof(__pyx_k_TypeError), 0, 0, 1, 1},
-  {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
   {&__pyx_kp_s__14, __pyx_k__14, sizeof(__pyx_k__14), 0, 0, 1, 0},
   {&__pyx_kp_s__15, __pyx_k__15, sizeof(__pyx_k__15), 0, 0, 1, 0},
   {&__pyx_n_s_abspath, __pyx_k_abspath, sizeof(__pyx_k_abspath), 0, 0, 1, 1},
   {&__pyx_n_s_args, __pyx_k_args, sizeof(__pyx_k_args), 0, 0, 1, 1},
   {&__pyx_n_s_basename, __pyx_k_basename, sizeof(__pyx_k_basename), 0, 0, 1, 1},
-  {&__pyx_n_s_block_count, __pyx_k_block_count, sizeof(__pyx_k_block_count), 0, 0, 1, 1},
   {&__pyx_n_s_bos, __pyx_k_bos, sizeof(__pyx_k_bos), 0, 0, 1, 1},
-  {&__pyx_n_s_buffer_size, __pyx_k_buffer_size, sizeof(__pyx_k_buffer_size), 0, 0, 1, 1},
   {&__pyx_n_s_class, __pyx_k_class, sizeof(__pyx_k_class), 0, 0, 1, 1},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
   {&__pyx_n_s_close, __pyx_k_close, sizeof(__pyx_k_close), 0, 0, 1, 1},
@@ -9169,7 +7133,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_doc, __pyx_k_doc, sizeof(__pyx_k_doc), 0, 0, 1, 1},
   {&__pyx_n_s_encode, __pyx_k_encode, sizeof(__pyx_k_encode), 0, 0, 1, 1},
   {&__pyx_n_s_end, __pyx_k_end, sizeof(__pyx_k_end), 0, 0, 1, 1},
-  {&__pyx_n_s_entry_size, __pyx_k_entry_size, sizeof(__pyx_k_entry_size), 0, 0, 1, 1},
   {&__pyx_n_s_eos, __pyx_k_eos, sizeof(__pyx_k_eos), 0, 0, 1, 1},
   {&__pyx_n_s_file, __pyx_k_file, sizeof(__pyx_k_file), 0, 0, 1, 1},
   {&__pyx_n_s_file_base, __pyx_k_file_base, sizeof(__pyx_k_file_base), 0, 0, 1, 1},
@@ -9185,7 +7148,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_log_prob, __pyx_k_log_prob, sizeof(__pyx_k_log_prob), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
   {&__pyx_n_s_metaclass, __pyx_k_metaclass, sizeof(__pyx_k_metaclass), 0, 0, 1, 1},
-  {&__pyx_n_s_minimum_block, __pyx_k_minimum_block, sizeof(__pyx_k_minimum_block), 0, 0, 1, 1},
   {&__pyx_n_s_module, __pyx_k_module, sizeof(__pyx_k_module), 0, 0, 1, 1},
   {&__pyx_n_s_name, __pyx_k_name, sizeof(__pyx_k_name), 0, 0, 1, 1},
   {&__pyx_n_s_ngram_length, __pyx_k_ngram_length, sizeof(__pyx_k_ngram_length), 0, 0, 1, 1},
@@ -9203,14 +7165,11 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_pipeline, __pyx_k_pipeline, sizeof(__pyx_k_pipeline), 0, 0, 1, 1},
   {&__pyx_n_s_prepare, __pyx_k_prepare, sizeof(__pyx_k_prepare), 0, 0, 1, 1},
   {&__pyx_n_s_print, __pyx_k_print, sizeof(__pyx_k_print), 0, 0, 1, 1},
-  {&__pyx_n_s_prune_vocab, __pyx_k_prune_vocab, sizeof(__pyx_k_prune_vocab), 0, 0, 1, 1},
   {&__pyx_kp_s_python_kenlm_pyx, __pyx_k_python_kenlm_pyx, sizeof(__pyx_k_python_kenlm_pyx), 0, 0, 1, 0},
   {&__pyx_n_s_qualname, __pyx_k_qualname, sizeof(__pyx_k_qualname), 0, 0, 1, 1},
-  {&__pyx_n_s_read_backoffs, __pyx_k_read_backoffs, sizeof(__pyx_k_read_backoffs), 0, 0, 1, 1},
   {&__pyx_n_s_reduce, __pyx_k_reduce, sizeof(__pyx_k_reduce), 0, 0, 1, 1},
   {&__pyx_n_s_reduce_cython, __pyx_k_reduce_cython, sizeof(__pyx_k_reduce_cython), 0, 0, 1, 1},
   {&__pyx_n_s_reduce_ex, __pyx_k_reduce_ex, sizeof(__pyx_k_reduce_ex), 0, 0, 1, 1},
-  {&__pyx_n_s_renumber_vocabulary, __pyx_k_renumber_vocabulary, sizeof(__pyx_k_renumber_vocabulary), 0, 0, 1, 1},
   {&__pyx_n_s_replace, __pyx_k_replace, sizeof(__pyx_k_replace), 0, 0, 1, 1},
   {&__pyx_n_s_score, __pyx_k_score, sizeof(__pyx_k_score), 0, 0, 1, 1},
   {&__pyx_kp_s_self__c_config_cannot_be_convert, __pyx_k_self__c_config_cannot_be_convert, sizeof(__pyx_k_self__c_config_cannot_be_convert), 0, 0, 1, 0},
@@ -9220,13 +7179,10 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_setstate, __pyx_k_setstate, sizeof(__pyx_k_setstate), 0, 0, 1, 1},
   {&__pyx_n_s_setstate_cython, __pyx_k_setstate_cython, sizeof(__pyx_k_setstate_cython), 0, 0, 1, 1},
   {&__pyx_n_s_skip_symbols, __pyx_k_skip_symbols, sizeof(__pyx_k_skip_symbols), 0, 0, 1, 1},
-  {&__pyx_n_s_sort, __pyx_k_sort, sizeof(__pyx_k_sort), 0, 0, 1, 1},
   {&__pyx_n_s_split, __pyx_k_split, sizeof(__pyx_k_split), 0, 0, 1, 1},
   {&__pyx_kp_s_temp_lol_txt, __pyx_k_temp_lol_txt, sizeof(__pyx_k_temp_lol_txt), 0, 0, 1, 0},
-  {&__pyx_n_s_temp_prefix, __pyx_k_temp_prefix, sizeof(__pyx_k_temp_prefix), 0, 0, 1, 1},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {&__pyx_n_s_throw, __pyx_k_throw, sizeof(__pyx_k_throw), 0, 0, 1, 1},
-  {&__pyx_n_s_total_memory, __pyx_k_total_memory, sizeof(__pyx_k_total_memory), 0, 0, 1, 1},
   {&__pyx_n_s_utf8, __pyx_k_utf8, sizeof(__pyx_k_utf8), 0, 0, 1, 1},
   {&__pyx_n_s_verbose_header, __pyx_k_verbose_header, sizeof(__pyx_k_verbose_header), 0, 0, 1, 1},
   {&__pyx_n_s_word, __pyx_k_word, sizeof(__pyx_k_word), 0, 0, 1, 1},
@@ -9237,8 +7193,6 @@ static int __Pyx_InitCachedBuiltins(void) {
   __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(0, 9, __pyx_L1_error)
   __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(0, 172, __pyx_L1_error)
   __pyx_builtin_IOError = __Pyx_GetBuiltinName(__pyx_n_s_IOError); if (!__pyx_builtin_IOError) __PYX_ERR(0, 174, __pyx_L1_error)
-  __pyx_builtin_KeyError = __Pyx_GetBuiltinName(__pyx_n_s_KeyError); if (!__pyx_builtin_KeyError) __PYX_ERR(1, 18, __pyx_L1_error)
-  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(1, 19, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -9376,160 +7330,6 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__16);
   __Pyx_GIVEREF(__pyx_tuple__16);
 
-  /* "FromPyStructUtility":19
- *         value = obj['temp_prefix']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'temp_prefix'")             # <<<<<<<<<<<<<<
- *     result.temp_prefix = value
- *     try:
- */
-  __pyx_tuple__17 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at); if (unlikely(!__pyx_tuple__17)) __PYX_ERR(1, 19, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__17);
-  __Pyx_GIVEREF(__pyx_tuple__17);
-
-  /* "FromPyStructUtility":24
- *         value = obj['buffer_size']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'buffer_size'")             # <<<<<<<<<<<<<<
- *     result.buffer_size = value
- *     try:
- */
-  __pyx_tuple__18 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_2); if (unlikely(!__pyx_tuple__18)) __PYX_ERR(1, 24, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__18);
-  __Pyx_GIVEREF(__pyx_tuple__18);
-
-  /* "FromPyStructUtility":29
- *         value = obj['total_memory']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'total_memory'")             # <<<<<<<<<<<<<<
- *     result.total_memory = value
- *     return result
- */
-  __pyx_tuple__19 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_3); if (unlikely(!__pyx_tuple__19)) __PYX_ERR(1, 29, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__19);
-  __Pyx_GIVEREF(__pyx_tuple__19);
-
-  /* "FromPyStructUtility":19
- *         value = obj['entry_size']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'entry_size'")             # <<<<<<<<<<<<<<
- *     result.entry_size = value
- *     try:
- */
-  __pyx_tuple__20 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_4); if (unlikely(!__pyx_tuple__20)) __PYX_ERR(1, 19, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__20);
-  __Pyx_GIVEREF(__pyx_tuple__20);
-
-  /* "FromPyStructUtility":24
- *         value = obj['block_count']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'block_count'")             # <<<<<<<<<<<<<<
- *     result.block_count = value
- *     try:
- */
-  __pyx_tuple__21 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_5); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(1, 24, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__21);
-  __Pyx_GIVEREF(__pyx_tuple__21);
-
-  /* "FromPyStructUtility":29
- *         value = obj['total_memory']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'total_memory'")             # <<<<<<<<<<<<<<
- *     result.total_memory = value
- *     return result
- */
-  __pyx_tuple__22 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_3); if (unlikely(!__pyx_tuple__22)) __PYX_ERR(1, 29, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__22);
-  __Pyx_GIVEREF(__pyx_tuple__22);
-
-  /* "FromPyStructUtility":19
- *         value = obj['order']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'order'")             # <<<<<<<<<<<<<<
- *     result.order = value
- *     try:
- */
-  __pyx_tuple__23 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_6); if (unlikely(!__pyx_tuple__23)) __PYX_ERR(1, 19, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__23);
-  __Pyx_GIVEREF(__pyx_tuple__23);
-
-  /* "FromPyStructUtility":24
- *         value = obj['sort']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'sort'")             # <<<<<<<<<<<<<<
- *     result.sort = value
- *     try:
- */
-  __pyx_tuple__24 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_7); if (unlikely(!__pyx_tuple__24)) __PYX_ERR(1, 24, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__24);
-  __Pyx_GIVEREF(__pyx_tuple__24);
-
-  /* "FromPyStructUtility":29
- *         value = obj['read_backoffs']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'read_backoffs'")             # <<<<<<<<<<<<<<
- *     result.read_backoffs = value
- *     try:
- */
-  __pyx_tuple__25 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_8); if (unlikely(!__pyx_tuple__25)) __PYX_ERR(1, 29, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__25);
-  __Pyx_GIVEREF(__pyx_tuple__25);
-
-  /* "FromPyStructUtility":34
- *         value = obj['minimum_block']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'minimum_block'")             # <<<<<<<<<<<<<<
- *     result.minimum_block = value
- *     try:
- */
-  __pyx_tuple__26 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_9); if (unlikely(!__pyx_tuple__26)) __PYX_ERR(1, 34, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__26);
-  __Pyx_GIVEREF(__pyx_tuple__26);
-
-  /* "FromPyStructUtility":39
- *         value = obj['block_count']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'block_count'")             # <<<<<<<<<<<<<<
- *     result.block_count = value
- *     try:
- */
-  __pyx_tuple__27 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_5); if (unlikely(!__pyx_tuple__27)) __PYX_ERR(1, 39, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__27);
-  __Pyx_GIVEREF(__pyx_tuple__27);
-
-  /* "FromPyStructUtility":44
- *         value = obj['prune_vocab']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'prune_vocab'")             # <<<<<<<<<<<<<<
- *     result.prune_vocab = value
- *     try:
- */
-  __pyx_tuple__28 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_10); if (unlikely(!__pyx_tuple__28)) __PYX_ERR(1, 44, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__28);
-  __Pyx_GIVEREF(__pyx_tuple__28);
-
-  /* "FromPyStructUtility":49
- *         value = obj['renumber_vocabulary']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'renumber_vocabulary'")             # <<<<<<<<<<<<<<
- *     result.renumber_vocabulary = value
- *     try:
- */
-  __pyx_tuple__29 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_11); if (unlikely(!__pyx_tuple__29)) __PYX_ERR(1, 49, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__29);
-  __Pyx_GIVEREF(__pyx_tuple__29);
-
-  /* "FromPyStructUtility":54
- *         value = obj['output_q']
- *     except KeyError:
- *         raise ValueError("No value specified for struct attribute 'output_q'")             # <<<<<<<<<<<<<<
- *     result.output_q = value
- *     return result
- */
-  __pyx_tuple__30 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_12); if (unlikely(!__pyx_tuple__30)) __PYX_ERR(1, 54, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__30);
-  __Pyx_GIVEREF(__pyx_tuple__30);
-
   /* "kenlm.pyx":41
  *     _kenlm.Pipeline(pipeline, __in, output._c_output[0])
  * 
@@ -9537,10 +7337,10 @@ static int __Pyx_InitCachedConstants(void) {
  *         path_text_file, path_arpa_file,
  *         order=3, interpolate_ngrams=True,
  */
-  __pyx_tuple__31 = PyTuple_Pack(9, __pyx_n_s_path_text_file, __pyx_n_s_path_arpa_file, __pyx_n_s_order, __pyx_n_s_interpolate_ngrams, __pyx_n_s_skip_symbols, __pyx_n_s_in, __pyx_n_s_out, __pyx_n_s_output, __pyx_n_s_pipeline); if (unlikely(!__pyx_tuple__31)) __PYX_ERR(0, 41, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__31);
-  __Pyx_GIVEREF(__pyx_tuple__31);
-  __pyx_codeobj__32 = (PyObject*)__Pyx_PyCode_New(5, 0, 9, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__31, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_python_kenlm_pyx, __pyx_n_s_compute_ngram, 41, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__32)) __PYX_ERR(0, 41, __pyx_L1_error)
+  __pyx_tuple__17 = PyTuple_Pack(9, __pyx_n_s_path_text_file, __pyx_n_s_path_arpa_file, __pyx_n_s_order, __pyx_n_s_interpolate_ngrams, __pyx_n_s_skip_symbols, __pyx_n_s_in, __pyx_n_s_out, __pyx_n_s_output, __pyx_n_s_pipeline); if (unlikely(!__pyx_tuple__17)) __PYX_ERR(0, 41, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__17);
+  __Pyx_GIVEREF(__pyx_tuple__17);
+  __pyx_codeobj__18 = (PyObject*)__Pyx_PyCode_New(5, 0, 9, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__17, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_python_kenlm_pyx, __pyx_n_s_compute_ngram, 41, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__18)) __PYX_ERR(0, 41, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -9897,14 +7697,6 @@ static int __pyx_pymod_exec_kenlm(PyObject *__pyx_pyinit_module)
   __Pyx_GOTREF(__pyx_t_1);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_test, __pyx_t_1) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-
-  /* "string.to_py":55
- * 
- * @cname("__pyx_convert_PyByteArray_string_to_py_std__in_string")
- * cdef inline object __pyx_convert_PyByteArray_string_to_py_std__in_string(const string& s):             # <<<<<<<<<<<<<<
- *     return __Pyx_PyByteArray_FromStringAndSize(s.data(), s.size())
- * 
- */
 
   /*--- Wrapped vars code ---*/
 
@@ -11280,79 +9072,7 @@ bad:
     }
 }
 
-static PyObject* __pyx_convert__to_py_struct__util_3a__3a_stream_3a__3a_SortConfig(struct util::stream::SortConfig s) {
-        PyObject* res;
-        PyObject* member;
-        res = __Pyx_PyDict_NewPresized(3); if (unlikely(!res)) return NULL;
-        member = __pyx_convert_PyObject_string_to_py_std__in_string(s.temp_prefix); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_temp_prefix, member) < 0)) goto bad;
-        Py_DECREF(member);
-        member = __Pyx_PyInt_From_int(s.buffer_size); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_buffer_size, member) < 0)) goto bad;
-        Py_DECREF(member);
-        member = __Pyx_PyInt_From_int(s.total_memory); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_total_memory, member) < 0)) goto bad;
-        Py_DECREF(member);
-        return res;
-        bad:
-        Py_XDECREF(member);
-        Py_DECREF(res);
-        return NULL;
-      }
-      static PyObject* __pyx_convert__to_py_struct__util_3a__3a_stream_3a__3a_ChainConfig(struct util::stream::ChainConfig s) {
-        PyObject* res;
-        PyObject* member;
-        res = __Pyx_PyDict_NewPresized(3); if (unlikely(!res)) return NULL;
-        member = __Pyx_PyInt_From_int(s.entry_size); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_entry_size, member) < 0)) goto bad;
-        Py_DECREF(member);
-        member = __Pyx_PyInt_From_int(s.block_count); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_block_count, member) < 0)) goto bad;
-        Py_DECREF(member);
-        member = __Pyx_PyInt_From_int(s.total_memory); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_total_memory, member) < 0)) goto bad;
-        Py_DECREF(member);
-        return res;
-        bad:
-        Py_XDECREF(member);
-        Py_DECREF(res);
-        return NULL;
-      }
-      static PyObject* __pyx_convert__to_py_struct__lm_3a__3a_builder_3a__3a_PipelineConfig(struct lm::builder::PipelineConfig s) {
-        PyObject* res;
-        PyObject* member;
-        res = __Pyx_PyDict_NewPresized(8); if (unlikely(!res)) return NULL;
-        member = __Pyx_PyInt_From_int(s.order); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_order, member) < 0)) goto bad;
-        Py_DECREF(member);
-        member = __pyx_convert__to_py_struct__util_3a__3a_stream_3a__3a_SortConfig(s.sort); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_sort, member) < 0)) goto bad;
-        Py_DECREF(member);
-        member = __pyx_convert__to_py_struct__util_3a__3a_stream_3a__3a_ChainConfig(s.read_backoffs); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_read_backoffs, member) < 0)) goto bad;
-        Py_DECREF(member);
-        member = __Pyx_PyInt_From_int(s.minimum_block); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_minimum_block, member) < 0)) goto bad;
-        Py_DECREF(member);
-        member = __Pyx_PyInt_From_int(s.block_count); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_block_count, member) < 0)) goto bad;
-        Py_DECREF(member);
-        member = __Pyx_PyBool_FromLong(s.prune_vocab); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_prune_vocab, member) < 0)) goto bad;
-        Py_DECREF(member);
-        member = __Pyx_PyBool_FromLong(s.renumber_vocabulary); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_renumber_vocabulary, member) < 0)) goto bad;
-        Py_DECREF(member);
-        member = __Pyx_PyBool_FromLong(s.output_q); if (unlikely(!member)) goto bad;
-        if (unlikely(PyDict_SetItem(res, __pyx_n_s_output_q, member) < 0)) goto bad;
-        Py_DECREF(member);
-        return res;
-        bad:
-        Py_XDECREF(member);
-        Py_DECREF(res);
-        return NULL;
-      }
-      /* Print */
+/* Print */
       #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION < 3
 static PyObject *__Pyx_GetStdout(void) {
     PyObject *f = PySys_GetObject((char *)"stdout");

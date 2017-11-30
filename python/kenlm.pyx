@@ -35,7 +35,7 @@ cdef class PrintHook:
     def __dealloc__(self):
         del self._c_printhook
 
-cdef Pipeline(pipeline, __in, Output output):
+cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):
     _kenlm.Pipeline(pipeline, __in, output._c_output[0])
 
 def compute_ngram(
@@ -54,7 +54,7 @@ def compute_ngram(
     cdef _kenlm.PipelineConfig pipeline
     pipeline.order = order
     pipeline.minimum_block = 8192
-    pipeline.sort.total_memory = 1073741824
+    pipeline.sort.total_memory = 107374182400
     pipeline.sort.buffer_size = 67108864
     pipeline.block_count = 2
     pipeline.read_backoffs.total_memory = 32768;
