@@ -1,3 +1,7 @@
+# PyKenLM
+
+Python wrapper around KenLM for both Training and Inference.
+
 # kenlm
 
 Language model inference code by Kenneth Heafield (kenlm at kheafield.com)
