@@ -13,7 +13,7 @@ def compile_test(header, library):
 FILES = glob.glob('util/*.cc') + glob.glob('util/stream/*.cc') + glob.glob('lm/*.cc') + glob.glob('lm/builder/*.cc') + glob.glob('util/double-conversion/*.cc')
 FILES = [fn for fn in FILES if not (fn.endswith('main.cc') or fn.endswith('test.cc'))]
 
-LIBS = ['stdc++', 'boost_system']
+LIBS = ['stdc++', 'boost_thread-mt']
 if platform.system() != 'Darwin':
     LIBS.append('rt')
 
