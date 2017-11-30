@@ -1320,9 +1320,9 @@ int __pyx_module_is_main_kenlm = 0;
 static PyObject *__pyx_builtin_TypeError;
 static PyObject *__pyx_builtin_RuntimeError;
 static PyObject *__pyx_builtin_IOError;
-static const char __pyx_k_a[] = "a";
 static const char __pyx_k_in[] = "_in";
 static const char __pyx_k_os[] = "os";
+static const char __pyx_k_Add[] = "Add";
 static const char __pyx_k__14[] = "\n";
 static const char __pyx_k__15[] = " ";
 static const char __pyx_k_bos[] = "bos";
@@ -1356,6 +1356,7 @@ static const char __pyx_k_encode[] = "encode";
 static const char __pyx_k_format[] = "format";
 static const char __pyx_k_import[] = "__import__";
 static const char __pyx_k_module[] = "__module__";
+static const char __pyx_k_output[] = "output";
 static const char __pyx_k_reduce[] = "__reduce__";
 static const char __pyx_k_0_1_2_3[] = "{0}({1}, {2}, {3})";
 static const char __pyx_k_IOError[] = "IOError";
@@ -1375,7 +1376,6 @@ static const char __pyx_k_TypeError[] = "TypeError";
 static const char __pyx_k_file_base[] = "file_base";
 static const char __pyx_k_metaclass[] = "__metaclass__";
 static const char __pyx_k_out_state[] = "out_state";
-static const char __pyx_k_printhook[] = "printhook";
 static const char __pyx_k_reduce_ex[] = "__reduce_ex__";
 static const char __pyx_k_LoadMethod[] = "LoadMethod";
 static const char __pyx_k_full_scores[] = "full_scores";
@@ -1406,6 +1406,7 @@ static const char __pyx_k_no_default___reduce___due_to_non[] = "no default __red
 static const char __pyx_k_self__c_config_cannot_be_convert[] = "self._c_config cannot be converted to a Python object for pickling";
 static const char __pyx_k_self__c_state_cannot_be_converte[] = "self._c_state cannot be converted to a Python object for pickling";
 static PyObject *__pyx_kp_s_0_1_2_3;
+static PyObject *__pyx_n_s_Add;
 static PyObject *__pyx_kp_s_Backwards_compatability_stub_Use;
 static PyObject *__pyx_kp_s_Cannot_convert_s_to_string;
 static PyObject *__pyx_kp_s_Cannot_read_model;
@@ -1424,7 +1425,6 @@ static PyObject *__pyx_n_s_RuntimeError;
 static PyObject *__pyx_n_s_TypeError;
 static PyObject *__pyx_kp_s__14;
 static PyObject *__pyx_kp_s__15;
-static PyObject *__pyx_n_s_a;
 static PyObject *__pyx_n_s_abspath;
 static PyObject *__pyx_n_s_args;
 static PyObject *__pyx_n_s_basename;
@@ -1461,13 +1461,13 @@ static PyObject *__pyx_n_s_order;
 static PyObject *__pyx_n_s_os;
 static PyObject *__pyx_n_s_out;
 static PyObject *__pyx_n_s_out_state;
+static PyObject *__pyx_n_s_output;
 static PyObject *__pyx_n_s_output_q;
 static PyObject *__pyx_n_s_path;
 static PyObject *__pyx_n_s_path_arpa_file;
 static PyObject *__pyx_n_s_path_text_file;
 static PyObject *__pyx_n_s_prepare;
 static PyObject *__pyx_n_s_print;
-static PyObject *__pyx_n_s_printhook;
 static PyObject *__pyx_kp_s_python_kenlm_pyx;
 static PyObject *__pyx_n_s_qualname;
 static PyObject *__pyx_n_s_reduce;
@@ -1491,9 +1491,10 @@ static PyObject *__pyx_n_s_verbose_header;
 static PyObject *__pyx_n_s_word;
 static PyObject *__pyx_n_s_write_fd;
 static int __pyx_pf_5kenlm_6Output___cinit__(struct __pyx_obj_5kenlm_Output *__pyx_v_self, PyObject *__pyx_v_file_base, PyObject *__pyx_v_keep_buffer, PyObject *__pyx_v_output_q); /* proto */
-static void __pyx_pf_5kenlm_6Output_2__dealloc__(struct __pyx_obj_5kenlm_Output *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5kenlm_6Output_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5kenlm_6Output_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
+static PyObject *__pyx_pf_5kenlm_6Output_2Add(struct __pyx_obj_5kenlm_Output *__pyx_v_self, PyObject *__pyx_v_write_fd, PyObject *__pyx_v_verbose_header); /* proto */
+static void __pyx_pf_5kenlm_6Output_4__dealloc__(struct __pyx_obj_5kenlm_Output *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_5kenlm_6Output_6__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_5kenlm_6Output_8__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static int __pyx_pf_5kenlm_9PrintHook___cinit__(struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self, PyObject *__pyx_v_write_fd, PyObject *__pyx_v_verbose_header); /* proto */
 static void __pyx_pf_5kenlm_9PrintHook_2__dealloc__(struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_5kenlm_9PrintHook_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self); /* proto */
@@ -1778,7 +1779,7 @@ static int __pyx_pf_5kenlm_6Output___cinit__(struct __pyx_obj_5kenlm_Output *__p
  *     def __cinit__(self, file_base, keep_buffer, output_q):
  *         self._c_output = new _kenlm.Output(file_base, keep_buffer, output_q)             # <<<<<<<<<<<<<<
  * 
- *     # def Add(self, _kenlm.OutputHook* hook):
+ *     def Add(self, write_fd, verbose_header):
  */
   __pyx_t_1 = __Pyx_PyObject_AsWritableString(__pyx_v_file_base); if (unlikely((!__pyx_t_1) && PyErr_Occurred())) __PYX_ERR(0, 18, __pyx_L1_error)
   try {
@@ -1808,8 +1809,125 @@ static int __pyx_pf_5kenlm_6Output___cinit__(struct __pyx_obj_5kenlm_Output *__p
   return __pyx_r;
 }
 
+/* "kenlm.pyx":20
+ *         self._c_output = new _kenlm.Output(file_base, keep_buffer, output_q)
+ * 
+ *     def Add(self, write_fd, verbose_header):             # <<<<<<<<<<<<<<
+ *         self._c_output.Add(new _kenlm.PrintHook(write_fd, verbose_header))
+ * 
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_5kenlm_6Output_3Add(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_5kenlm_6Output_3Add(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyObject *__pyx_v_write_fd = 0;
+  PyObject *__pyx_v_verbose_header = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("Add (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_write_fd,&__pyx_n_s_verbose_header,0};
+    PyObject* values[2] = {0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_write_fd)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_verbose_header)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("Add", 1, 2, 2, 1); __PYX_ERR(0, 20, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "Add") < 0)) __PYX_ERR(0, 20, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+    }
+    __pyx_v_write_fd = values[0];
+    __pyx_v_verbose_header = values[1];
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("Add", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 20, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("kenlm.Output.Add", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_5kenlm_6Output_2Add(((struct __pyx_obj_5kenlm_Output *)__pyx_v_self), __pyx_v_write_fd, __pyx_v_verbose_header);
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_5kenlm_6Output_2Add(struct __pyx_obj_5kenlm_Output *__pyx_v_self, PyObject *__pyx_v_write_fd, PyObject *__pyx_v_verbose_header) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  lm::builder::PrintHook *__pyx_t_2;
+  __Pyx_RefNannySetupContext("Add", 0);
+
+  /* "kenlm.pyx":21
+ * 
+ *     def Add(self, write_fd, verbose_header):
+ *         self._c_output.Add(new _kenlm.PrintHook(write_fd, verbose_header))             # <<<<<<<<<<<<<<
+ * 
+ *     def __dealloc__(self):
+ */
+  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_write_fd); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 21, __pyx_L1_error)
+  try {
+    __pyx_t_2 = new lm::builder::PrintHook(__pyx_t_1, __pyx_v_verbose_header);
+  } catch(...) {
+    __Pyx_CppExn2PyErr();
+    __PYX_ERR(0, 21, __pyx_L1_error)
+  }
+  try {
+    __pyx_v_self->_c_output->Add(__pyx_t_2);
+  } catch(...) {
+    __Pyx_CppExn2PyErr();
+    __PYX_ERR(0, 21, __pyx_L1_error)
+  }
+
+  /* "kenlm.pyx":20
+ *         self._c_output = new _kenlm.Output(file_base, keep_buffer, output_q)
+ * 
+ *     def Add(self, write_fd, verbose_header):             # <<<<<<<<<<<<<<
+ *         self._c_output.Add(new _kenlm.PrintHook(write_fd, verbose_header))
+ * 
+ */
+
+  /* function exit code */
+  __pyx_r = Py_None; __Pyx_INCREF(Py_None);
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_AddTraceback("kenlm.Output.Add", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
 /* "kenlm.pyx":23
- *     #     self._c_output.Add(hook)
+ *         self._c_output.Add(new _kenlm.PrintHook(write_fd, verbose_header))
  * 
  *     def __dealloc__(self):             # <<<<<<<<<<<<<<
  *         del self._c_output
@@ -1817,17 +1935,17 @@ static int __pyx_pf_5kenlm_6Output___cinit__(struct __pyx_obj_5kenlm_Output *__p
  */
 
 /* Python wrapper */
-static void __pyx_pw_5kenlm_6Output_3__dealloc__(PyObject *__pyx_v_self); /*proto*/
-static void __pyx_pw_5kenlm_6Output_3__dealloc__(PyObject *__pyx_v_self) {
+static void __pyx_pw_5kenlm_6Output_5__dealloc__(PyObject *__pyx_v_self); /*proto*/
+static void __pyx_pw_5kenlm_6Output_5__dealloc__(PyObject *__pyx_v_self) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__dealloc__ (wrapper)", 0);
-  __pyx_pf_5kenlm_6Output_2__dealloc__(((struct __pyx_obj_5kenlm_Output *)__pyx_v_self));
+  __pyx_pf_5kenlm_6Output_4__dealloc__(((struct __pyx_obj_5kenlm_Output *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
 }
 
-static void __pyx_pf_5kenlm_6Output_2__dealloc__(struct __pyx_obj_5kenlm_Output *__pyx_v_self) {
+static void __pyx_pf_5kenlm_6Output_4__dealloc__(struct __pyx_obj_5kenlm_Output *__pyx_v_self) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__dealloc__", 0);
 
@@ -1841,7 +1959,7 @@ static void __pyx_pf_5kenlm_6Output_2__dealloc__(struct __pyx_obj_5kenlm_Output 
   delete __pyx_v_self->_c_output;
 
   /* "kenlm.pyx":23
- *     #     self._c_output.Add(hook)
+ *         self._c_output.Add(new _kenlm.PrintHook(write_fd, verbose_header))
  * 
  *     def __dealloc__(self):             # <<<<<<<<<<<<<<
  *         del self._c_output
@@ -1859,19 +1977,19 @@ static void __pyx_pf_5kenlm_6Output_2__dealloc__(struct __pyx_obj_5kenlm_Output 
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5kenlm_6Output_5__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
-static PyObject *__pyx_pw_5kenlm_6Output_5__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
+static PyObject *__pyx_pw_5kenlm_6Output_7__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static PyObject *__pyx_pw_5kenlm_6Output_7__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__reduce_cython__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_5kenlm_6Output_4__reduce_cython__(((struct __pyx_obj_5kenlm_Output *)__pyx_v_self));
+  __pyx_r = __pyx_pf_5kenlm_6Output_6__reduce_cython__(((struct __pyx_obj_5kenlm_Output *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5kenlm_6Output_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self) {
+static PyObject *__pyx_pf_5kenlm_6Output_6__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -1913,19 +2031,19 @@ static PyObject *__pyx_pf_5kenlm_6Output_4__reduce_cython__(CYTHON_UNUSED struct
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5kenlm_6Output_7__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state); /*proto*/
-static PyObject *__pyx_pw_5kenlm_6Output_7__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pw_5kenlm_6Output_9__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state); /*proto*/
+static PyObject *__pyx_pw_5kenlm_6Output_9__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__setstate_cython__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_5kenlm_6Output_6__setstate_cython__(((struct __pyx_obj_5kenlm_Output *)__pyx_v_self), ((PyObject *)__pyx_v___pyx_state));
+  __pyx_r = __pyx_pf_5kenlm_6Output_8__setstate_cython__(((struct __pyx_obj_5kenlm_Output *)__pyx_v_self), ((PyObject *)__pyx_v___pyx_state));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5kenlm_6Output_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pf_5kenlm_6Output_8__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -2359,8 +2477,7 @@ static PyObject *__pyx_pw_5kenlm_1compute_ngram(PyObject *__pyx_self, PyObject *
 static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_path_text_file, PyObject *__pyx_v_path_arpa_file, CYTHON_UNUSED PyObject *__pyx_v_order, CYTHON_UNUSED PyObject *__pyx_v_interpolate_ngrams, CYTHON_UNUSED PyObject *__pyx_v_skip_symbols) {
   util::scoped_fd __pyx_v__in;
   util::scoped_fd __pyx_v__out;
-  CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_a = NULL;
-  CYTHON_UNUSED struct __pyx_obj_5kenlm_PrintHook *__pyx_v_printhook = NULL;
+  struct __pyx_obj_5kenlm_Output *__pyx_v_output = NULL;
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   char const *__pyx_t_1;
@@ -2368,6 +2485,9 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   char const *__pyx_t_3;
   PyObject *__pyx_t_4 = NULL;
   PyObject *__pyx_t_5 = NULL;
+  PyObject *__pyx_t_6 = NULL;
+  PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
   __Pyx_RefNannySetupContext("compute_ngram", 0);
 
   /* "kenlm.pyx":44
@@ -2396,7 +2516,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  *     _in.reset(_kenlm.OpenReadOrThrow(path_text_file))
  *     _out.reset(_kenlm.CreateOrThrow(path_arpa_file))             # <<<<<<<<<<<<<<
  * 
- *     a = Output('temp_lol.txt', False, False)
+ *     output = Output('temp_lol.txt', False, False)
  */
   __pyx_t_3 = __Pyx_PyObject_AsString(__pyx_v_path_arpa_file); if (unlikely((!__pyx_t_3) && PyErr_Occurred())) __PYX_ERR(0, 45, __pyx_L1_error)
   try {
@@ -2415,46 +2535,83 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   /* "kenlm.pyx":47
  *     _out.reset(_kenlm.CreateOrThrow(path_arpa_file))
  * 
- *     a = Output('temp_lol.txt', False, False)             # <<<<<<<<<<<<<<
+ *     output = Output('temp_lol.txt', False, False)             # <<<<<<<<<<<<<<
  * 
- *     printhook = PrintHook(_out.release(), False)
+ *     output.Add(_out.release(), False)
  */
   __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_5kenlm_Output), __pyx_tuple__6, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 47, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_v_a = ((struct __pyx_obj_5kenlm_Output *)__pyx_t_4);
+  __pyx_v_output = ((struct __pyx_obj_5kenlm_Output *)__pyx_t_4);
   __pyx_t_4 = 0;
 
   /* "kenlm.pyx":49
- *     a = Output('temp_lol.txt', False, False)
+ *     output = Output('temp_lol.txt', False, False)
  * 
- *     printhook = PrintHook(_out.release(), False)             # <<<<<<<<<<<<<<
+ *     output.Add(_out.release(), False)             # <<<<<<<<<<<<<<
  * 
  *     print('POUET')
  */
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_output), __pyx_n_s_Add); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 49, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
   try {
     __pyx_t_2 = __pyx_v__out.release();
   } catch(...) {
     __Pyx_CppExn2PyErr();
     __PYX_ERR(0, 49, __pyx_L1_error)
   }
-  __pyx_t_4 = __Pyx_PyInt_From_int(__pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 49, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 49, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_GIVEREF(__pyx_t_4);
-  PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_4);
-  __Pyx_INCREF(Py_False);
-  __Pyx_GIVEREF(Py_False);
-  PyTuple_SET_ITEM(__pyx_t_5, 1, Py_False);
-  __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_5kenlm_PrintHook), __pyx_t_5, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 49, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_6 = __Pyx_PyInt_From_int(__pyx_t_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 49, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __pyx_t_7 = NULL;
+  __pyx_t_2 = 0;
+  if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_5))) {
+    __pyx_t_7 = PyMethod_GET_SELF(__pyx_t_5);
+    if (likely(__pyx_t_7)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_5);
+      __Pyx_INCREF(__pyx_t_7);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_5, function);
+      __pyx_t_2 = 1;
+    }
+  }
+  #if CYTHON_FAST_PYCALL
+  if (PyFunction_Check(__pyx_t_5)) {
+    PyObject *__pyx_temp[3] = {__pyx_t_7, __pyx_t_6, Py_False};
+    __pyx_t_4 = __Pyx_PyFunction_FastCall(__pyx_t_5, __pyx_temp+1-__pyx_t_2, 2+__pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+  } else
+  #endif
+  #if CYTHON_FAST_PYCCALL
+  if (__Pyx_PyFastCFunction_Check(__pyx_t_5)) {
+    PyObject *__pyx_temp[3] = {__pyx_t_7, __pyx_t_6, Py_False};
+    __pyx_t_4 = __Pyx_PyCFunction_FastCall(__pyx_t_5, __pyx_temp+1-__pyx_t_2, 2+__pyx_t_2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+  } else
+  #endif
+  {
+    __pyx_t_8 = PyTuple_New(2+__pyx_t_2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_8);
+    if (__pyx_t_7) {
+      __Pyx_GIVEREF(__pyx_t_7); PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_7); __pyx_t_7 = NULL;
+    }
+    __Pyx_GIVEREF(__pyx_t_6);
+    PyTuple_SET_ITEM(__pyx_t_8, 0+__pyx_t_2, __pyx_t_6);
+    __Pyx_INCREF(Py_False);
+    __Pyx_GIVEREF(Py_False);
+    PyTuple_SET_ITEM(__pyx_t_8, 1+__pyx_t_2, Py_False);
+    __pyx_t_6 = 0;
+    __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  }
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_v_printhook = ((struct __pyx_obj_5kenlm_PrintHook *)__pyx_t_4);
-  __pyx_t_4 = 0;
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
   /* "kenlm.pyx":51
- *     printhook = PrintHook(_out.release(), False)
+ *     output.Add(_out.release(), False)
  * 
  *     print('POUET')             # <<<<<<<<<<<<<<
  * 
@@ -2476,11 +2633,13 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
   __Pyx_AddTraceback("kenlm.compute_ngram", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
-  __Pyx_XDECREF((PyObject *)__pyx_v_a);
-  __Pyx_XDECREF((PyObject *)__pyx_v_printhook);
+  __Pyx_XDECREF((PyObject *)__pyx_v_output);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
@@ -6018,7 +6177,7 @@ static void __pyx_tp_dealloc_5kenlm_Output(PyObject *o) {
     PyObject *etype, *eval, *etb;
     PyErr_Fetch(&etype, &eval, &etb);
     ++Py_REFCNT(o);
-    __pyx_pw_5kenlm_6Output_3__dealloc__(o);
+    __pyx_pw_5kenlm_6Output_5__dealloc__(o);
     --Py_REFCNT(o);
     PyErr_Restore(etype, eval, etb);
   }
@@ -6026,8 +6185,9 @@ static void __pyx_tp_dealloc_5kenlm_Output(PyObject *o) {
 }
 
 static PyMethodDef __pyx_methods_5kenlm_Output[] = {
-  {"__reduce_cython__", (PyCFunction)__pyx_pw_5kenlm_6Output_5__reduce_cython__, METH_NOARGS, 0},
-  {"__setstate_cython__", (PyCFunction)__pyx_pw_5kenlm_6Output_7__setstate_cython__, METH_O, 0},
+  {"Add", (PyCFunction)__pyx_pw_5kenlm_6Output_3Add, METH_VARARGS|METH_KEYWORDS, 0},
+  {"__reduce_cython__", (PyCFunction)__pyx_pw_5kenlm_6Output_7__reduce_cython__, METH_NOARGS, 0},
+  {"__setstate_cython__", (PyCFunction)__pyx_pw_5kenlm_6Output_9__setstate_cython__, METH_O, 0},
   {0, 0, 0, 0}
 };
 
@@ -6791,6 +6951,7 @@ static struct PyModuleDef __pyx_moduledef = {
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_0_1_2_3, __pyx_k_0_1_2_3, sizeof(__pyx_k_0_1_2_3), 0, 0, 1, 0},
+  {&__pyx_n_s_Add, __pyx_k_Add, sizeof(__pyx_k_Add), 0, 0, 1, 1},
   {&__pyx_kp_s_Backwards_compatability_stub_Use, __pyx_k_Backwards_compatability_stub_Use, sizeof(__pyx_k_Backwards_compatability_stub_Use), 0, 0, 1, 0},
   {&__pyx_kp_s_Cannot_convert_s_to_string, __pyx_k_Cannot_convert_s_to_string, sizeof(__pyx_k_Cannot_convert_s_to_string), 0, 0, 1, 0},
   {&__pyx_kp_s_Cannot_read_model, __pyx_k_Cannot_read_model, sizeof(__pyx_k_Cannot_read_model), 0, 0, 1, 0},
@@ -6809,7 +6970,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_TypeError, __pyx_k_TypeError, sizeof(__pyx_k_TypeError), 0, 0, 1, 1},
   {&__pyx_kp_s__14, __pyx_k__14, sizeof(__pyx_k__14), 0, 0, 1, 0},
   {&__pyx_kp_s__15, __pyx_k__15, sizeof(__pyx_k__15), 0, 0, 1, 0},
-  {&__pyx_n_s_a, __pyx_k_a, sizeof(__pyx_k_a), 0, 0, 1, 1},
   {&__pyx_n_s_abspath, __pyx_k_abspath, sizeof(__pyx_k_abspath), 0, 0, 1, 1},
   {&__pyx_n_s_args, __pyx_k_args, sizeof(__pyx_k_args), 0, 0, 1, 1},
   {&__pyx_n_s_basename, __pyx_k_basename, sizeof(__pyx_k_basename), 0, 0, 1, 1},
@@ -6846,13 +7006,13 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_os, __pyx_k_os, sizeof(__pyx_k_os), 0, 0, 1, 1},
   {&__pyx_n_s_out, __pyx_k_out, sizeof(__pyx_k_out), 0, 0, 1, 1},
   {&__pyx_n_s_out_state, __pyx_k_out_state, sizeof(__pyx_k_out_state), 0, 0, 1, 1},
+  {&__pyx_n_s_output, __pyx_k_output, sizeof(__pyx_k_output), 0, 0, 1, 1},
   {&__pyx_n_s_output_q, __pyx_k_output_q, sizeof(__pyx_k_output_q), 0, 0, 1, 1},
   {&__pyx_n_s_path, __pyx_k_path, sizeof(__pyx_k_path), 0, 0, 1, 1},
   {&__pyx_n_s_path_arpa_file, __pyx_k_path_arpa_file, sizeof(__pyx_k_path_arpa_file), 0, 0, 1, 1},
   {&__pyx_n_s_path_text_file, __pyx_k_path_text_file, sizeof(__pyx_k_path_text_file), 0, 0, 1, 1},
   {&__pyx_n_s_prepare, __pyx_k_prepare, sizeof(__pyx_k_prepare), 0, 0, 1, 1},
   {&__pyx_n_s_print, __pyx_k_print, sizeof(__pyx_k_print), 0, 0, 1, 1},
-  {&__pyx_n_s_printhook, __pyx_k_printhook, sizeof(__pyx_k_printhook), 0, 0, 1, 1},
   {&__pyx_kp_s_python_kenlm_pyx, __pyx_k_python_kenlm_pyx, sizeof(__pyx_k_python_kenlm_pyx), 0, 0, 1, 0},
   {&__pyx_n_s_qualname, __pyx_k_qualname, sizeof(__pyx_k_qualname), 0, 0, 1, 1},
   {&__pyx_n_s_reduce, __pyx_k_reduce, sizeof(__pyx_k_reduce), 0, 0, 1, 1},
@@ -6942,9 +7102,9 @@ static int __Pyx_InitCachedConstants(void) {
   /* "kenlm.pyx":47
  *     _out.reset(_kenlm.CreateOrThrow(path_arpa_file))
  * 
- *     a = Output('temp_lol.txt', False, False)             # <<<<<<<<<<<<<<
+ *     output = Output('temp_lol.txt', False, False)             # <<<<<<<<<<<<<<
  * 
- *     printhook = PrintHook(_out.release(), False)
+ *     output.Add(_out.release(), False)
  */
   __pyx_tuple__6 = PyTuple_Pack(3, __pyx_kp_s_temp_lol_txt, Py_False, Py_False); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(0, 47, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__6);
@@ -7025,10 +7185,10 @@ static int __Pyx_InitCachedConstants(void) {
  *         path_text_file, path_arpa_file,
  *         order=3, interpolate_ngrams=True,
  */
-  __pyx_tuple__17 = PyTuple_Pack(9, __pyx_n_s_path_text_file, __pyx_n_s_path_arpa_file, __pyx_n_s_order, __pyx_n_s_interpolate_ngrams, __pyx_n_s_skip_symbols, __pyx_n_s_in, __pyx_n_s_out, __pyx_n_s_a, __pyx_n_s_printhook); if (unlikely(!__pyx_tuple__17)) __PYX_ERR(0, 38, __pyx_L1_error)
+  __pyx_tuple__17 = PyTuple_Pack(8, __pyx_n_s_path_text_file, __pyx_n_s_path_arpa_file, __pyx_n_s_order, __pyx_n_s_interpolate_ngrams, __pyx_n_s_skip_symbols, __pyx_n_s_in, __pyx_n_s_out, __pyx_n_s_output); if (unlikely(!__pyx_tuple__17)) __PYX_ERR(0, 38, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__17);
   __Pyx_GIVEREF(__pyx_tuple__17);
-  __pyx_codeobj__18 = (PyObject*)__Pyx_PyCode_New(5, 0, 9, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__17, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_python_kenlm_pyx, __pyx_n_s_compute_ngram, 38, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__18)) __PYX_ERR(0, 38, __pyx_L1_error)
+  __pyx_codeobj__18 = (PyObject*)__Pyx_PyCode_New(5, 0, 8, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__17, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_python_kenlm_pyx, __pyx_n_s_compute_ngram, 38, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__18)) __PYX_ERR(0, 38, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;

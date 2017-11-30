@@ -17,8 +17,8 @@ cdef class Output:
     def __cinit__(self, file_base, keep_buffer, output_q):
         self._c_output = new _kenlm.Output(file_base, keep_buffer, output_q)
 
-    # def Add(self, _kenlm.OutputHook* hook):
-    #     self._c_output.Add(hook)
+    def Add(self, write_fd, verbose_header):
+        self._c_output.Add(new _kenlm.PrintHook(write_fd, verbose_header))
 
     def __dealloc__(self):
         del self._c_output
@@ -44,9 +44,9 @@ def compute_ngram(
     _in.reset(_kenlm.OpenReadOrThrow(path_text_file))
     _out.reset(_kenlm.CreateOrThrow(path_arpa_file))
 
-    a = Output('temp_lol.txt', False, False)
+    output = Output('temp_lol.txt', False, False)
 
-    printhook = PrintHook(_out.release(), False)
+    output.Add(_out.release(), False)
     
     print('POUET')
 
