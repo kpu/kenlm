@@ -1,5 +1,6 @@
 from libcpp.string cimport string
 from libcpp.vector cimport vector
+from libc.stdint cimport uint64_t
 
 cdef extern from "lm/word_index.hh" namespace "lm":
     ctypedef unsigned WordIndex
@@ -60,6 +61,11 @@ cdef extern from "util/file.hh" namespace "util":
 
     int OpenReadOrThrow(char*) except +
     int CreateOrThrow(char*) except +
+    string DefaultTempDirectory() except +
+
+cdef extern from "util/usage.hh" namespace "util":
+    int GuessPhysicalMemory() except +
+    uint64_t ParseSize(string) except +
 
 cdef extern from "util/stream/config.hh" namespace "util::stream":
     cdef struct SortConfig:
@@ -79,14 +85,15 @@ cdef extern from "lm/builder/initial_probabilities.hh" namespace "lm::builder":
         bint interpolate_unigrams
 
 cdef extern from "lm/lm_exception.hh" namespace "lm":
-    cdef enum WarningAction:
+    ctypedef enum WarningAction:
         THROW_UP
         COMPLAIN
         SILENT
 
 cdef extern from "lm/builder/discount.hh" namespace "lm::builder":
     cdef struct Discount:
-        float* amount
+        # float* amount
+        pass
 
 cdef extern from "lm/builder/adjust_counts.hh" namespace "lm::builder":
     cdef struct DiscountConfig:
@@ -111,7 +118,7 @@ cdef extern from "lm/builder/pipeline.hh" namespace "lm::builder":
     struct PipelineConfig:
         int order
         SortConfig sort
-        InitialProbabilitiesConfig initial_prob
+        InitialProbabilitiesConfig initial_probs
         ChainConfig read_backoffs
         unsigned int vocab_estimate
         int minimum_block
@@ -121,7 +128,7 @@ cdef extern from "lm/builder/pipeline.hh" namespace "lm::builder":
         bint renumber_vocabulary
         DiscountConfig discount
         bint output_q
-        int vocab_size_for_unk
+        uint64_t vocab_size_for_unk
         WarningAction disallowed_symbol_action
 
     void Pipeline(PipelineConfig, int, Output) except +

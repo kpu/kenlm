@@ -40,8 +40,32 @@ cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):
 
 def compute_ngram(
         path_text_file, path_arpa_file,
-        order=3, interpolate_ngrams=True,
-        skip_symbols=False):
+        order=3,
+        interpolate_unigrams=True,
+        skip_symbols=False,
+        temp_prefix=None,
+        memory="1G"):
+
+    cdef _kenlm.PipelineConfig pipeline
+    pipeline.order = order
+    pipeline.initial_probs.interpolate_unigrams = interpolate_unigrams
+
+    if skip_symbols:
+        pipeline.disallowed_symbol_action = _kenlm.COMPLAIN
+    else:
+        pipeline.disallowed_symbol_action = _kenlm.THROW_UP
+
+    if temp_prefix is None:
+        pipeline.sort.temp_prefix = _kenlm.DefaultTempDirectory()
+    else:
+        pipeline.sort.temp_prefix = temp_prefix
+
+    if memory is None:
+        pipeline.sort.total_memory = _kenlm.GuessPhysicalMemory()
+    else:
+        pipeline.sort.total_memory = _kenlm.ParseSize(memory)
+
+
     cdef _kenlm.scoped_fd _in
     cdef _kenlm.scoped_fd _out
     _in.reset(_kenlm.OpenReadOrThrow(path_text_file))
@@ -50,9 +74,9 @@ def compute_ngram(
     output = Output('temp_lol.txt', False, False)
 
     output.Add(_out.release(), False)
-    
-    cdef _kenlm.PipelineConfig pipeline
-    pipeline.order = order
+
+
+
     pipeline.minimum_block = 8192
     pipeline.sort.total_memory = 107374182400
     pipeline.sort.buffer_size = 67108864
