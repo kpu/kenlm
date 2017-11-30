@@ -1,3 +1,5 @@
+from libcpp.string cimport string
+
 cdef extern from "lm/word_index.hh" namespace "lm":
     ctypedef unsigned WordIndex
 
@@ -55,12 +57,19 @@ cdef extern from "util/file.hh" namespace "util":
         void reset(int) except +
         int release() except +
 
-    int OpenReadOrThrow(const char *) except +
-    int CreateOrThrow(const char *) except +
+    int OpenReadOrThrow(char*) except +
+    int CreateOrThrow(char*) except +
 
-# cdef extern from "lm/builder/pipeline.hh" namespace "lm::builder":
-#     cdef cppclass PipelineConfig:
+cdef extern from "util/stream/config.hh" namespace "util::stream":
+    cdef struct SortConfig:
+        string temp_prefix
+        int buffer_size
+        int total_memory
 
+    struct ChainConfig:
+        int entry_size
+        int block_count
+        int total_memory
 
 cdef extern from "lm/builder/output.hh" namespace "lm::builder":
 
@@ -73,3 +82,16 @@ cdef extern from "lm/builder/output.hh" namespace "lm::builder":
 
     cdef cppclass PrintHook(OutputHook):
         PrintHook(int, bool) except +
+
+cdef extern from "lm/builder/pipeline.hh" namespace "lm::builder":
+    struct PipelineConfig:
+        int order
+        SortConfig sort
+        ChainConfig read_backoffs
+        int minimum_block
+        int block_count
+        bint prune_vocab
+        bint renumber_vocabulary
+        bint output_q
+
+    void Pipeline(PipelineConfig, int, Output)
