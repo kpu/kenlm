@@ -10,10 +10,10 @@ def compile_test(header, library):
     return os.system(command) == 0
 
 
-FILES = glob.glob('util/*.cc') + glob.glob('lm/*.cc') + glob.glob('util/double-conversion/*.cc')
+FILES = glob.glob('util/*.cc') + glob.glob('util/stream/*.cc') + glob.glob('lm/*.cc') + glob.glob('lm/builder/*.cc') + glob.glob('util/double-conversion/*.cc')
 FILES = [fn for fn in FILES if not (fn.endswith('main.cc') or fn.endswith('test.cc'))]
 
-LIBS = ['stdc++']
+LIBS = ['stdc++', 'boost_system']
 if platform.system() != 'Darwin':
     LIBS.append('rt')
 

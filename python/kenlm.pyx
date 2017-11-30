@@ -17,6 +17,9 @@ cdef class Output:
     def __cinit__(self, file_base, keep_buffer, output_q):
         self._c_output = new _kenlm.Output(file_base, keep_buffer, output_q)
 
+    # def Add(self, _kenlm.OutputHook* hook):
+    #     self._c_output.Add(hook)
+
     def __dealloc__(self):
         del self._c_output
 

@@ -63,8 +63,13 @@ cdef extern from "util/file.hh" namespace "util":
 
 
 cdef extern from "lm/builder/output.hh" namespace "lm::builder":
+
+    cdef cppclass OutputHook:
+        pass
+
     cdef cppclass Output:
         Output(char*, bool, bool) except +
+        void Add(OutputHook*) except +
 
-    cdef cppclass PrintHook:
+    cdef cppclass PrintHook(OutputHook):
         PrintHook(int, bool) except +
