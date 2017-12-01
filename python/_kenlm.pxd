@@ -43,7 +43,7 @@ cdef extern from "util/mmap.hh" namespace "util":
 
 cdef extern from "lm/config.hh" namespace "lm::ngram":
     cdef cppclass Config:
-        Config()
+        Config() except +
         float probing_multiplier
         LoadMethod load_method
 
@@ -65,19 +65,19 @@ cdef extern from "util/file.hh" namespace "util":
     void NormalizeTempPrefix(string) except +
 
 cdef extern from "util/usage.hh" namespace "util":
-    int GuessPhysicalMemory() except +
+    uint64_t GuessPhysicalMemory() except +
     uint64_t ParseSize(string) except +
 
 cdef extern from "util/stream/config.hh" namespace "util::stream":
     cdef struct SortConfig:
         string temp_prefix
-        int buffer_size
-        int total_memory
+        size_t buffer_size
+        size_t total_memory
 
     cdef struct ChainConfig:
-        int entry_size
-        int block_count
-        int total_memory
+        size_t entry_size
+        size_t block_count
+        size_t total_memory
 
 cdef extern from "lm/builder/initial_probabilities.hh" namespace "lm::builder":
     cdef struct InitialProbabilitiesConfig:
@@ -115,14 +115,14 @@ cdef extern from "lm/builder/output.hh" namespace "lm::builder":
 
 cdef extern from "lm/builder/pipeline.hh" namespace "lm::builder":
     struct PipelineConfig:
-        int order
+        size_t order
         SortConfig sort
         InitialProbabilitiesConfig initial_probs
         ChainConfig read_backoffs
-        unsigned int vocab_estimate
-        int minimum_block
-        int block_count
-        vector[int] prune_thresholds
+        WordIndex vocab_estimate
+        size_t minimum_block
+        size_t block_count
+        vector[uint64_t] prune_thresholds
         bint prune_vocab
         bint renumber_vocabulary
         DiscountConfig discount

@@ -127,11 +127,16 @@ class Master {
     template <class Compare> void SetupSorts(Sorts<Compare> &sorts, bool exclude_unigrams) {
       sorts.Init(config_.order - exclude_unigrams);
       // Unigrams don't get sorted because their order is always the same.
+      std::cerr << "Pouet-1" << std::endl;
       if (exclude_unigrams) chains_[0] >> unigrams_.Sink() >> util::stream::kRecycle;
+      std::cerr << "Pouet-2" << std::endl;
       for (std::size_t i = exclude_unigrams; i < config_.order; ++i) {
+        std::cerr << "Pouet-3" << std::endl;
         sorts.push_back(chains_[i], config_.sort, Compare(i + 1));
       }
+      std::cerr << "Pouet-4" << std::endl;
       chains_.Wait(true);
+      std::cerr << "Pouet-5" << std::endl;
     }
 
     unsigned int Steps() const { return steps_; }
@@ -236,14 +241,20 @@ util::stream::Sort<SuffixOrder, CombineCounts> *CountText(int text_file /* input
 }
 
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<uint64_t> &counts_pruned, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary, util::FixedArray<util::stream::FileBuffer> &gammas, const std::vector<uint64_t> &prune_thresholds, bool prune_vocab, const SpecialVocab &specials) {
+  std::cerr << "[BEGIN] InitialProbabilities" << std::endl;
+
   const PipelineConfig &config = master.Config();
   util::stream::Chains second(config.order);
+  std::cerr << "alpha" << std::endl;
 
   {
     Sorts<ContextOrder> sorts;
     master.SetupSorts(sorts, !config.renumber_vocabulary);
+    std::cerr << "beta" << std::endl;
     PrintStatistics(counts, counts_pruned, discounts);
+    std::cerr << "gamma" << std::endl;
     lm::ngram::ShowSizes(counts_pruned);
+    std::cerr << "delta" << std::endl;
     std::cerr << "=== 3/" << master.Steps() << " Calculating and sorting initial probabilities ===" << std::endl;
     master.SortAndReadTwice(counts_pruned, sorts, second, config.initial_probs.adder_in);
   }
@@ -259,6 +270,7 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
   }
   // Has to be done here due to gamma_chains scope.
   master.SetupSorts(primary, true);
+  std::cerr << "[BEGIN] InitialProbabilities" << std::endl;
 }
 
 void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &master, Sorts<SuffixOrder> &primary, util::FixedArray<util::stream::FileBuffer> &gammas, Output &output, const SpecialVocab &specials) {
@@ -270,10 +282,12 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
   for (std::size_t i = 0; i < config.order - 1; ++i) {
     util::stream::ChainConfig read_backoffs(config.read_backoffs);
 
+    std::cerr << "A-1" << std::endl;
     if(config.prune_vocab || config.prune_thresholds[i + 1] > 0)
         read_backoffs.entry_size = sizeof(HashGamma);
     else
         read_backoffs.entry_size = sizeof(float);
+    std::cerr << "A-2" << std::endl;
 
     gamma_chains.push_back(read_backoffs);
     gamma_chains.back() >> gammas[i].Source(true);
@@ -328,7 +342,7 @@ class VocabNumbering {
 
 } // namespace
 
-void Pipeline(PipelineConfig &config, int text_file, Output &output) {
+void  Pipeline(PipelineConfig &config, int text_file, Output &output) {
   // Some fail-fast sanity checks.
   if (config.sort.buffer_size * 4 > config.TotalMemory()) {
     config.sort.buffer_size = config.TotalMemory() / 4;
@@ -362,19 +376,28 @@ void Pipeline(PipelineConfig &config, int text_file, Output &output) {
     master.InitForAdjust(*sorted_counts, type_count, subtract_for_numbering);
     sorted_counts.reset();
 
+    std::cerr << "COUCOU DU C++" << std::endl;
+
     std::vector<uint64_t> counts;
     std::vector<uint64_t> counts_pruned;
     std::vector<Discount> discounts;
     master >> AdjustCounts(config.prune_thresholds, counts, counts_pruned, prune_words, config.discount, discounts);
     numbering.ApplyRenumber(master.MutableChains());
 
+    std::cerr << "COUCOU DU 1er" << std::endl;
+
     {
       util::FixedArray<util::stream::FileBuffer> gammas;
       Sorts<SuffixOrder> primary;
+      std::cerr << "COUCOU DU 1er-1" << std::endl;
       InitialProbabilities(counts, counts_pruned, discounts, master, primary, gammas, config.prune_thresholds, config.prune_vocab, numbering.Specials());
+      std::cerr << "COUCOU DU 1er-2" << std::endl;
       output.SetHeader(HeaderInfo(text_file_name, token_count, counts_pruned));
+      std::cerr << "COUCOU DU 1er-3" << std::endl;
       // Also does output.
+      std::cerr << "COUCOU DU 2nd" << std::endl;
       InterpolateProbabilities(counts_pruned, master, primary, gammas, output, numbering.Specials());
+      std::cerr << "COUCOU DU 3rd" << std::endl;
     }
   } catch (const util::Exception &e) {
     std::cerr << e.what() << std::endl;

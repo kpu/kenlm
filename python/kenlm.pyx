@@ -87,9 +87,9 @@ def compute_ngram(
         interpolate_unigrams=True,
         skip_symbols=False,
         temp_prefix=None,
-        memory="1G",
+        memory="2G",
         minimum_block="8K",
-        sort_block="64M",
+        sort_block="128M",
         block_count=2,
         vocab_estimate=1000000,
         vocab_pad=0,
@@ -99,7 +99,9 @@ def compute_ngram(
         collapse_values=False,
         pruning=[],
         limit_vocab_file='',
-        discount_fallback=None):
+        discount_fallback=[0.5, 1, 1.5]):
+
+    print("This machine has " + str(_kenlm.GuessPhysicalMemory()) + " bytes of memory.\n\n")
 
     cdef _kenlm.PipelineConfig pipeline
     pipeline.order = order
@@ -186,6 +188,11 @@ def compute_ngram(
 
     _kenlm.NormalizeTempPrefix(pipeline.sort.temp_prefix)
 
+
+    pipeline.initial_probs.adder_in.total_memory = 32768;
+    pipeline.initial_probs.adder_in.block_count = 2;
+    pipeline.initial_probs.adder_out.total_memory = 32768;
+    pipeline.initial_probs.adder_out.block_count = 2;
     pipeline.read_backoffs.total_memory = 32768;
     pipeline.read_backoffs.block_count = 2;
 
@@ -214,6 +221,15 @@ def compute_ngram(
     # pipeline.read_backoffs.total_memory = 32768;
     # pipeline.read_backoffs.block_count = 2;
 
+    print("pipeline.order : " + str(pipeline.order))
+
+    print("pipeline.sort.temp_prefix " + str(pipeline.sort.temp_prefix))
+    print("pipeline.sort.buffer_size " + str(pipeline.sort.buffer_size))
+    print("pipeline.sort.total_memory " + str(pipeline.sort.total_memory))
+
+    print("pipeline.initial_probs")
+    
+    print("pipeline.minimum_block : " + str(pipeline.sort.total_memory))
 
     Pipeline(pipeline, _in.release(), output)
 
