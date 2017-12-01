@@ -194,11 +194,18 @@ def compute_ngram(
     _in.reset(_kenlm.OpenReadOrThrow(path_text_file))
     _out.reset(_kenlm.CreateOrThrow(path_arpa_file))
 
-    output = Output('temp_lol.txt', False, False)
+    print("After reset")
 
-    output.Add(_out.release(), False)
+    if intermediate is None:
+        pipeline.renumber_vocabulary = False
+        output = Output(pipeline.sort.temp_prefix, False, False)
+    else:
+        pipeline.renumber_vocabulary = True
+        output = Output(intermediate, False, False)
 
+    output.Add(_out.release(), verbose_header)
 
+    print("MOUAIS")
 
     # pipeline.minimum_block = 8192
     # pipeline.sort.total_memory = 107374182400
