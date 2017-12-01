@@ -35,8 +35,51 @@ cdef class PrintHook:
     def __dealloc__(self):
         del self._c_printhook
 
+cdef class Discount:
+    """
+    Wrapper around 
+    """
+    cdef _kenlm.Discount  _c_discount
+
+    def __cinit__(self):
+        self._c_discount = _kenlm.Discount()
+        pass
+
+    def set(self, key, val):
+        self._c_discount.amount[key] = val
+
+    def __dealloc__(self):
+        #del self._c_discount
+        pass
+
 cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):
     _kenlm.Pipeline(pipeline, __in, output._c_output[0])
+
+
+def parse_discount_fallback(param):
+    ret = Discount()
+
+    if len(param) > 3:
+        raise RuntimeError("Specify at most three fallback discounts: 1, 2, and 3+")
+
+    if len(param) == 0:
+        raise RuntimeError("Fallback discounting enabled, but no discount specified")
+
+    ret.set(0, 0.0)
+
+    for i in range(3):
+        discount = param[len(param) - 1]
+        if i < len(param):
+            discount = param[i]
+        discount = float(discount)
+
+        if (discount < 0.0 or discount > (i + 1)):
+            raise RuntimeError("The discount for count " + str(i+1) + " was parsed as " + discount + " which is not in the range [0, " + str(i+1) + "].")
+
+        ret.set(i+1, discount)
+
+    return ret
+
 
 def compute_ngram(
         path_text_file, path_arpa_file,
@@ -44,16 +87,23 @@ def compute_ngram(
         interpolate_unigrams=True,
         skip_symbols=False,
         temp_prefix=None,
-        memory="1G"):
+        memory="1G",
+        minimum_block="8K",
+        sort_block="64M",
+        block_count=2,
+        vocab_estimate=1000000,
+        vocab_pad=0,
+        verbose_header=False,
+        intermediate=None,
+        renumber=False,
+        collapse_values=False,
+        pruning='',
+        limit_vocab_file='',
+        discount_fallback=None):
 
     cdef _kenlm.PipelineConfig pipeline
     pipeline.order = order
     pipeline.initial_probs.interpolate_unigrams = interpolate_unigrams
-
-    if skip_symbols:
-        pipeline.disallowed_symbol_action = _kenlm.COMPLAIN
-    else:
-        pipeline.disallowed_symbol_action = _kenlm.THROW_UP
 
     if temp_prefix is None:
         pipeline.sort.temp_prefix = _kenlm.DefaultTempDirectory()
@@ -64,6 +114,48 @@ def compute_ngram(
         pipeline.sort.total_memory = _kenlm.GuessPhysicalMemory()
     else:
         pipeline.sort.total_memory = _kenlm.ParseSize(memory)
+
+    pipeline.minimum_block = _kenlm.ParseSize(minimum_block)
+    pipeline.sort.buffer_size = _kenlm.ParseSize(sort_block)
+    pipeline.block_count = block_count
+    pipeline.vocab_estimate = vocab_estimate
+    pipeline.vocab_size_for_unk = vocab_pad
+    pipeline.renumber_vocabulary = renumber
+    pipeline.output_q = collapse_values
+
+    if pipeline.vocab_size_for_unk and not pipeline.initial_probs.interpolate_unigrams:
+        print('--vocab_pad requires --interpolate_unigrams be on')
+        exit(1)
+
+    if skip_symbols:
+        pipeline.disallowed_symbol_action = _kenlm.COMPLAIN
+    else:
+        pipeline.disallowed_symbol_action = _kenlm.THROW_UP
+
+    if discount_fallback is None:
+        pipeline.discount.fallback = _kenlm.Discount()
+        pipeline.discount.bad_action = _kenlm.THROW_UP
+    else:
+        if len(discount_fallback) > 3:
+            raise RuntimeError("Specify at most three fallback discounts: 1, 2, and 3+")
+
+        if len(discount_fallback) == 0:
+            raise RuntimeError("Fallback discounting enabled, but no discount specified")
+
+        pipeline.discount.fallback.amount[0] = 0.0
+
+        for i in range(3):
+            discount = discount_fallback[len(discount_fallback) - 1]
+            if i < len(discount_fallback):
+                discount = discount_fallback[i]
+            discount = float(discount)
+
+            if (discount < 0.0 or discount > (i + 1)):
+                raise RuntimeError("The discount for count " + str(i+1) + " was parsed as " + discount + " which is not in the range [0, " + str(i+1) + "].")
+
+            pipeline.discount.fallback.amount[i+1] = discount
+
+        pipeline.discount.bad_action = _kenlm.COMPLAIN
 
 
     cdef _kenlm.scoped_fd _in
@@ -77,12 +169,12 @@ def compute_ngram(
 
 
 
-    pipeline.minimum_block = 8192
-    pipeline.sort.total_memory = 107374182400
-    pipeline.sort.buffer_size = 67108864
-    pipeline.block_count = 2
-    pipeline.read_backoffs.total_memory = 32768;
-    pipeline.read_backoffs.block_count = 2;
+    # pipeline.minimum_block = 8192
+    # pipeline.sort.total_memory = 107374182400
+    # pipeline.sort.buffer_size = 67108864
+    # pipeline.block_count = 2
+    # pipeline.read_backoffs.total_memory = 32768;
+    # pipeline.read_backoffs.block_count = 2;
 
 
     Pipeline(pipeline, _in.release(), output)

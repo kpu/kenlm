@@ -92,15 +92,13 @@ cdef extern from "lm/lm_exception.hh" namespace "lm":
 
 cdef extern from "lm/builder/discount.hh" namespace "lm::builder":
     cdef struct Discount:
-        # float* amount
-        pass
+        float* amount
 
 cdef extern from "lm/builder/adjust_counts.hh" namespace "lm::builder":
     cdef struct DiscountConfig:
         vector[Discount] overwrite
         Discount fallback
         WarningAction bad_action
-
 
 cdef extern from "lm/builder/output.hh" namespace "lm::builder":
 
