@@ -62,6 +62,7 @@ cdef extern from "util/file.hh" namespace "util":
     int OpenReadOrThrow(char*) except +
     int CreateOrThrow(char*) except +
     string DefaultTempDirectory() except +
+    void NormalizeTempPrefix(string) except +
 
 cdef extern from "util/usage.hh" namespace "util":
     int GuessPhysicalMemory() except +

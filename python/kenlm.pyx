@@ -35,50 +35,50 @@ cdef class PrintHook:
     def __dealloc__(self):
         del self._c_printhook
 
-cdef class Discount:
-    """
-    Wrapper around 
-    """
-    cdef _kenlm.Discount  _c_discount
+# cdef class Discount:
+#     """
+#     Wrapper around 
+#     """
+#     cdef _kenlm.Discount  _c_discount
 
-    def __cinit__(self):
-        self._c_discount = _kenlm.Discount()
-        pass
+#     def __cinit__(self):
+#         self._c_discount = _kenlm.Discount()
+#         pass
 
-    def set(self, key, val):
-        self._c_discount.amount[key] = val
+#     def set(self, key, val):
+#         self._c_discount.amount[key] = val
 
-    def __dealloc__(self):
-        #del self._c_discount
-        pass
+#     def __dealloc__(self):
+#         #del self._c_discount
+#         pass
 
 cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):
     _kenlm.Pipeline(pipeline, __in, output._c_output[0])
 
 
-def parse_discount_fallback(param):
-    ret = Discount()
+# def parse_discount_fallback(param):
+#     ret = Discount()
 
-    if len(param) > 3:
-        raise RuntimeError("Specify at most three fallback discounts: 1, 2, and 3+")
+#     if len(param) > 3:
+#         raise RuntimeError("Specify at most three fallback discounts: 1, 2, and 3+")
 
-    if len(param) == 0:
-        raise RuntimeError("Fallback discounting enabled, but no discount specified")
+#     if len(param) == 0:
+#         raise RuntimeError("Fallback discounting enabled, but no discount specified")
 
-    ret.set(0, 0.0)
+#     ret.set(0, 0.0)
 
-    for i in range(3):
-        discount = param[len(param) - 1]
-        if i < len(param):
-            discount = param[i]
-        discount = float(discount)
+#     for i in range(3):
+#         discount = param[len(param) - 1]
+#         if i < len(param):
+#             discount = param[i]
+#         discount = float(discount)
 
-        if (discount < 0.0 or discount > (i + 1)):
-            raise RuntimeError("The discount for count " + str(i+1) + " was parsed as " + discount + " which is not in the range [0, " + str(i+1) + "].")
+#         if (discount < 0.0 or discount > (i + 1)):
+#             raise RuntimeError("The discount for count " + str(i+1) + " was parsed as " + discount + " which is not in the range [0, " + str(i+1) + "].")
 
-        ret.set(i+1, discount)
+#         ret.set(i+1, discount)
 
-    return ret
+#     return ret
 
 
 def compute_ngram(
@@ -97,7 +97,7 @@ def compute_ngram(
         intermediate=None,
         renumber=False,
         collapse_values=False,
-        pruning='',
+        pruning=[],
         limit_vocab_file='',
         discount_fallback=None):
 
@@ -132,8 +132,11 @@ def compute_ngram(
     else:
         pipeline.disallowed_symbol_action = _kenlm.THROW_UP
 
+    print("[BEGIN] Parse Discount Fallback")
+
+    for i in range(4):
+        pipeline.discount.fallback.amount[i] = 0.0
     if discount_fallback is None:
-        pipeline.discount.fallback = _kenlm.Discount()
         pipeline.discount.bad_action = _kenlm.THROW_UP
     else:
         if len(discount_fallback) > 3:
@@ -157,6 +160,34 @@ def compute_ngram(
 
         pipeline.discount.bad_action = _kenlm.COMPLAIN
 
+    print("[END] Parse Discount Fallback")
+
+    print("[BEGIN] Parse Pruning")
+
+    if len(pruning) > 0:
+
+        pipeline.prune_thresholds.reserve(len(pruning))
+
+        for e in pruning:
+            pipeline.prune_thresholds.push_back(int(e))
+
+        if len(pruning) > order:
+            raise RuntimeError(
+                "You specified pruning thresholds for orders 1 through " + len(pruning) +
+                " but the model only has order " + order
+            )
+
+    print("[END] Parse Pruning")
+
+    if len(limit_vocab_file) == 0:
+        pipeline.prune_vocab = True
+    else:
+        pipeline.prune_vocab = False
+
+    _kenlm.NormalizeTempPrefix(pipeline.sort.temp_prefix)
+
+    pipeline.read_backoffs.total_memory = 32768;
+    pipeline.read_backoffs.block_count = 2;
 
     cdef _kenlm.scoped_fd _in
     cdef _kenlm.scoped_fd _out
