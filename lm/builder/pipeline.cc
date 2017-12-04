@@ -21,6 +21,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <boost/thread.hpp>
+#include <boost/lexical_cast.hpp>
 
 namespace lm { namespace builder {
 
@@ -359,6 +361,7 @@ void  Pipeline(PipelineConfig &config, int text_file, Output &output) {
   Master master(config, output.Steps());
   // master's destructor will wait for chains.  But they might be deadlocked if
   // this thread dies because e.g. it ran out of memory.
+ 
   try {
     VocabNumbering numbering(output.VocabFile(), config.TempPrefix(), config.renumber_vocabulary);
     uint64_t token_count;
@@ -376,7 +379,7 @@ void  Pipeline(PipelineConfig &config, int text_file, Output &output) {
     master.InitForAdjust(*sorted_counts, type_count, subtract_for_numbering);
     sorted_counts.reset();
 
-    std::cerr << "COUCOU DU C++" << std::endl;
+    std::cerr << "COUCOU DU C++ " << std::endl;
 
     std::vector<uint64_t> counts;
     std::vector<uint64_t> counts_pruned;
@@ -384,7 +387,7 @@ void  Pipeline(PipelineConfig &config, int text_file, Output &output) {
     master >> AdjustCounts(config.prune_thresholds, counts, counts_pruned, prune_words, config.discount, discounts);
     numbering.ApplyRenumber(master.MutableChains());
 
-    std::cerr << "COUCOU DU 1er" << std::endl;
+    std::cerr << "COUCOU DU 1er " << std::endl;
 
     {
       util::FixedArray<util::stream::FileBuffer> gammas;

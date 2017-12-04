@@ -8,6 +8,7 @@
 #include <cassert>
 #include <stdint.h>
 #include <cstring>
+#include <iostream>
 
 namespace lm {
 
@@ -63,6 +64,7 @@ template <class PayloadT> class NGram : public NGramHeader {
     }
 
     static std::size_t OrderFromSize(std::size_t size) {
+      std::cerr << "lol " << size << std::endl;
       std::size_t ret = (size - sizeof(Payload)) / sizeof(WordIndex);
       assert(size == TotalSize(ret));
       return ret;

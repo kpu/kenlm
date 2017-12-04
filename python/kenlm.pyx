@@ -83,7 +83,7 @@ cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):
 
 def compute_ngram(
         path_text_file, path_arpa_file,
-        order=3,
+        order=2,
         interpolate_unigrams=True,
         skip_symbols=False,
         temp_prefix=None,
@@ -179,12 +179,17 @@ def compute_ngram(
                 " but the model only has order " + order
             )
 
+    else:
+        pipeline.prune_thresholds.resize(order, 0)
+
     print("[END] Parse Pruning")
 
     if len(limit_vocab_file) == 0:
         pipeline.prune_vocab = True
+
     else:
         pipeline.prune_vocab = False
+    pipeline.prune_vocab_file = limit_vocab_file
 
     _kenlm.NormalizeTempPrefix(pipeline.sort.temp_prefix)
 
@@ -221,15 +226,49 @@ def compute_ngram(
     # pipeline.read_backoffs.total_memory = 32768;
     # pipeline.read_backoffs.block_count = 2;
 
-    print("pipeline.order : " + str(pipeline.order))
+    # pipeline.initial_probs.adder_in.entry_size = 32768
+    # pipeline.initial_probs.adder_out.entry_size = 32768
+    # pipeline.read_backoffs.entry_size = 32768
 
+    print("pipeline.order : " + str(pipeline.order))
+    print("")
     print("pipeline.sort.temp_prefix " + str(pipeline.sort.temp_prefix))
     print("pipeline.sort.buffer_size " + str(pipeline.sort.buffer_size))
     print("pipeline.sort.total_memory " + str(pipeline.sort.total_memory))
-
-    print("pipeline.initial_probs")
-    
-    print("pipeline.minimum_block : " + str(pipeline.sort.total_memory))
+    print("")
+    print("pipeline.initial_probs.adder_in.entry_size : " + str(pipeline.initial_probs.adder_in.entry_size))
+    print("pipeline.initial_probs.adder_in.block_count : " + str(pipeline.initial_probs.adder_in.block_count))
+    print("pipeline.initial_probs.adder_in.total_memory : " + str(pipeline.initial_probs.adder_in.total_memory))
+    print("pipeline.initial_probs.adder_out.entry_size : " + str(pipeline.initial_probs.adder_out.entry_size))
+    print("pipeline.initial_probs.adder_out.block_count : " + str(pipeline.initial_probs.adder_out.block_count))
+    print("pipeline.initial_probs.adder_out.total_memory : " + str(pipeline.initial_probs.adder_out.total_memory))
+    print("pipeline.initial_probs.interpolate_unigrams : " + str(pipeline.initial_probs.interpolate_unigrams))
+    print("")
+    print("pipeline.read_backoffs.entry_size : " + str(pipeline.read_backoffs.entry_size))
+    print("pipeline.read_backoffs.block_count : " + str(pipeline.read_backoffs.block_count))
+    print("pipeline.read_backoffs.total_memory : " + str(pipeline.read_backoffs.total_memory))
+    print("")
+    print("pipeline.vocab_estimate : " + str(pipeline.vocab_estimate))
+    print("")
+    print("pipeline.minimum_block : " + str(pipeline.minimum_block))
+    print("")
+    print("pipeline.block_count : " + str(pipeline.block_count))
+    print("")
+    print("pipeline.prune_thresholds : ")
+    for i in range(pipeline.prune_thresholds.size()):
+        print(pipeline.prune_thresholds[i])
+    print("")
+    print("pipeline.prune_vocab : " + str(pipeline.prune_vocab))
+    print("")
+    print("pipeline.prune_vocab_file : " + str(pipeline.prune_vocab_file))
+    print("")
+    print("pipeline.renumber_vocabulary : " + str(pipeline.renumber_vocabulary))
+    print("")
+    print("pipeline.discount.fallback")
+    print("")
+    print("pipeline.output_q : " + str(pipeline.output_q))
+    print("")
+    print("pipeline.vocab_size_for_unk : " + str(pipeline.vocab_size_for_unk))
 
     Pipeline(pipeline, _in.release(), output)
 

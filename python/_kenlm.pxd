@@ -1,6 +1,7 @@
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libc.stdint cimport uint64_t
+from libcpp cimport bool
 
 cdef extern from "lm/word_index.hh" namespace "lm":
     ctypedef unsigned WordIndex
@@ -83,7 +84,7 @@ cdef extern from "lm/builder/initial_probabilities.hh" namespace "lm::builder":
     cdef struct InitialProbabilitiesConfig:
         ChainConfig adder_in
         ChainConfig adder_out
-        bint interpolate_unigrams
+        bool interpolate_unigrams
 
 cdef extern from "lm/lm_exception.hh" namespace "lm":
     ctypedef enum WarningAction:
@@ -93,7 +94,7 @@ cdef extern from "lm/lm_exception.hh" namespace "lm":
 
 cdef extern from "lm/builder/discount.hh" namespace "lm::builder":
     cdef struct Discount:
-        float* amount
+        float amount[4]
 
 cdef extern from "lm/builder/adjust_counts.hh" namespace "lm::builder":
     cdef struct DiscountConfig:
@@ -123,10 +124,11 @@ cdef extern from "lm/builder/pipeline.hh" namespace "lm::builder":
         size_t minimum_block
         size_t block_count
         vector[uint64_t] prune_thresholds
-        bint prune_vocab
-        bint renumber_vocabulary
+        bool prune_vocab
+        string prune_vocab_file
+        bool renumber_vocabulary
         DiscountConfig discount
-        bint output_q
+        bool output_q
         uint64_t vocab_size_for_unk
         WarningAction disallowed_symbol_action
 
