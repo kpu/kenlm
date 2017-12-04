@@ -20,8 +20,8 @@ cdef class Output:
     def Add(self, write_fd, verbose_header):
         self._c_output.Add(new _kenlm.PrintHook(write_fd, verbose_header))
 
-    def __dealloc__(self):
-        del self._c_output
+    # def __dealloc__(self):
+    #     del self._c_output
 
 cdef class PrintHook:
     """
@@ -32,8 +32,8 @@ cdef class PrintHook:
     def __cinit__(self, write_fd, verbose_header):
         self._c_printhook = new _kenlm.PrintHook(write_fd, verbose_header)
 
-    def __dealloc__(self):
-        del self._c_printhook
+    # def __dealloc__(self):
+    #     del self._c_printhook
 
 # cdef class Discount:
 #     """

@@ -788,7 +788,7 @@ struct __pyx_obj_5kenlm_Output {
 
 
 /* "kenlm.pyx":26
- *         del self._c_output
+ *     #     del self._c_output
  * 
  * cdef class PrintHook:             # <<<<<<<<<<<<<<
  *     """
@@ -1652,13 +1652,11 @@ static PyObject *__pyx_n_s_word;
 static PyObject *__pyx_n_s_write_fd;
 static int __pyx_pf_5kenlm_6Output___cinit__(struct __pyx_obj_5kenlm_Output *__pyx_v_self, PyObject *__pyx_v_file_base, PyObject *__pyx_v_keep_buffer, PyObject *__pyx_v_output_q); /* proto */
 static PyObject *__pyx_pf_5kenlm_6Output_2Add(struct __pyx_obj_5kenlm_Output *__pyx_v_self, PyObject *__pyx_v_write_fd, PyObject *__pyx_v_verbose_header); /* proto */
-static void __pyx_pf_5kenlm_6Output_4__dealloc__(struct __pyx_obj_5kenlm_Output *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5kenlm_6Output_6__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5kenlm_6Output_8__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
+static PyObject *__pyx_pf_5kenlm_6Output_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_5kenlm_6Output_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static int __pyx_pf_5kenlm_9PrintHook___cinit__(struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self, PyObject *__pyx_v_write_fd, PyObject *__pyx_v_verbose_header); /* proto */
-static void __pyx_pf_5kenlm_9PrintHook_2__dealloc__(struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5kenlm_9PrintHook_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_5kenlm_9PrintHook_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
+static PyObject *__pyx_pf_5kenlm_9PrintHook_2__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_5kenlm_9PrintHook_4__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_path_text_file, PyObject *__pyx_v_path_arpa_file, PyObject *__pyx_v_order, PyObject *__pyx_v_interpolate_unigrams, PyObject *__pyx_v_skip_symbols, PyObject *__pyx_v_temp_prefix, PyObject *__pyx_v_memory, PyObject *__pyx_v_minimum_block, PyObject *__pyx_v_sort_block, PyObject *__pyx_v_block_count, PyObject *__pyx_v_vocab_estimate, PyObject *__pyx_v_vocab_pad, PyObject *__pyx_v_verbose_header, PyObject *__pyx_v_intermediate, PyObject *__pyx_v_renumber, PyObject *__pyx_v_collapse_values, PyObject *__pyx_v_pruning, PyObject *__pyx_v_limit_vocab_file, PyObject *__pyx_v_discount_fallback); /* proto */
 static int __pyx_pf_5kenlm_15FullScoreReturn___cinit__(struct __pyx_obj_5kenlm_FullScoreReturn *__pyx_v_self, PyObject *__pyx_v_log_prob, PyObject *__pyx_v_ngram_length, PyObject *__pyx_v_oov); /* proto */
 static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_2__repr__(struct __pyx_obj_5kenlm_FullScoreReturn *__pyx_v_self); /* proto */
@@ -2064,7 +2062,7 @@ static PyObject *__pyx_pf_5kenlm_6Output_2Add(struct __pyx_obj_5kenlm_Output *__
  *     def Add(self, write_fd, verbose_header):
  *         self._c_output.Add(new _kenlm.PrintHook(write_fd, verbose_header))             # <<<<<<<<<<<<<<
  * 
- *     def __dealloc__(self):
+ *     # def __dealloc__(self):
  */
   __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_write_fd); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 21, __pyx_L1_error)
   try {
@@ -2100,50 +2098,6 @@ static PyObject *__pyx_pf_5kenlm_6Output_2Add(struct __pyx_obj_5kenlm_Output *__
   return __pyx_r;
 }
 
-/* "kenlm.pyx":23
- *         self._c_output.Add(new _kenlm.PrintHook(write_fd, verbose_header))
- * 
- *     def __dealloc__(self):             # <<<<<<<<<<<<<<
- *         del self._c_output
- * 
- */
-
-/* Python wrapper */
-static void __pyx_pw_5kenlm_6Output_5__dealloc__(PyObject *__pyx_v_self); /*proto*/
-static void __pyx_pw_5kenlm_6Output_5__dealloc__(PyObject *__pyx_v_self) {
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__dealloc__ (wrapper)", 0);
-  __pyx_pf_5kenlm_6Output_4__dealloc__(((struct __pyx_obj_5kenlm_Output *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-}
-
-static void __pyx_pf_5kenlm_6Output_4__dealloc__(struct __pyx_obj_5kenlm_Output *__pyx_v_self) {
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__dealloc__", 0);
-
-  /* "kenlm.pyx":24
- * 
- *     def __dealloc__(self):
- *         del self._c_output             # <<<<<<<<<<<<<<
- * 
- * cdef class PrintHook:
- */
-  delete __pyx_v_self->_c_output;
-
-  /* "kenlm.pyx":23
- *         self._c_output.Add(new _kenlm.PrintHook(write_fd, verbose_header))
- * 
- *     def __dealloc__(self):             # <<<<<<<<<<<<<<
- *         del self._c_output
- * 
- */
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-}
-
 /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
@@ -2151,19 +2105,19 @@ static void __pyx_pf_5kenlm_6Output_4__dealloc__(struct __pyx_obj_5kenlm_Output 
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5kenlm_6Output_7__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
-static PyObject *__pyx_pw_5kenlm_6Output_7__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
+static PyObject *__pyx_pw_5kenlm_6Output_5__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static PyObject *__pyx_pw_5kenlm_6Output_5__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__reduce_cython__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_5kenlm_6Output_6__reduce_cython__(((struct __pyx_obj_5kenlm_Output *)__pyx_v_self));
+  __pyx_r = __pyx_pf_5kenlm_6Output_4__reduce_cython__(((struct __pyx_obj_5kenlm_Output *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5kenlm_6Output_6__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self) {
+static PyObject *__pyx_pf_5kenlm_6Output_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -2205,19 +2159,19 @@ static PyObject *__pyx_pf_5kenlm_6Output_6__reduce_cython__(CYTHON_UNUSED struct
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5kenlm_6Output_9__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state); /*proto*/
-static PyObject *__pyx_pw_5kenlm_6Output_9__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pw_5kenlm_6Output_7__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state); /*proto*/
+static PyObject *__pyx_pw_5kenlm_6Output_7__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__setstate_cython__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_5kenlm_6Output_8__setstate_cython__(((struct __pyx_obj_5kenlm_Output *)__pyx_v_self), ((PyObject *)__pyx_v___pyx_state));
+  __pyx_r = __pyx_pf_5kenlm_6Output_6__setstate_cython__(((struct __pyx_obj_5kenlm_Output *)__pyx_v_self), ((PyObject *)__pyx_v___pyx_state));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5kenlm_6Output_8__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pf_5kenlm_6Output_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_Output *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -2332,7 +2286,7 @@ static int __pyx_pf_5kenlm_9PrintHook___cinit__(struct __pyx_obj_5kenlm_PrintHoo
  *     def __cinit__(self, write_fd, verbose_header):
  *         self._c_printhook = new _kenlm.PrintHook(write_fd, verbose_header)             # <<<<<<<<<<<<<<
  * 
- *     def __dealloc__(self):
+ *     # def __dealloc__(self):
  */
   __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_write_fd); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 33, __pyx_L1_error)
   try {
@@ -2362,50 +2316,6 @@ static int __pyx_pf_5kenlm_9PrintHook___cinit__(struct __pyx_obj_5kenlm_PrintHoo
   return __pyx_r;
 }
 
-/* "kenlm.pyx":35
- *         self._c_printhook = new _kenlm.PrintHook(write_fd, verbose_header)
- * 
- *     def __dealloc__(self):             # <<<<<<<<<<<<<<
- *         del self._c_printhook
- * 
- */
-
-/* Python wrapper */
-static void __pyx_pw_5kenlm_9PrintHook_3__dealloc__(PyObject *__pyx_v_self); /*proto*/
-static void __pyx_pw_5kenlm_9PrintHook_3__dealloc__(PyObject *__pyx_v_self) {
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__dealloc__ (wrapper)", 0);
-  __pyx_pf_5kenlm_9PrintHook_2__dealloc__(((struct __pyx_obj_5kenlm_PrintHook *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-}
-
-static void __pyx_pf_5kenlm_9PrintHook_2__dealloc__(struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self) {
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__dealloc__", 0);
-
-  /* "kenlm.pyx":36
- * 
- *     def __dealloc__(self):
- *         del self._c_printhook             # <<<<<<<<<<<<<<
- * 
- * # cdef class Discount:
- */
-  delete __pyx_v_self->_c_printhook;
-
-  /* "kenlm.pyx":35
- *         self._c_printhook = new _kenlm.PrintHook(write_fd, verbose_header)
- * 
- *     def __dealloc__(self):             # <<<<<<<<<<<<<<
- *         del self._c_printhook
- * 
- */
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-}
-
 /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
  *     raise TypeError("no default __reduce__ due to non-trivial __cinit__")
@@ -2413,19 +2323,19 @@ static void __pyx_pf_5kenlm_9PrintHook_2__dealloc__(struct __pyx_obj_5kenlm_Prin
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5kenlm_9PrintHook_5__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
-static PyObject *__pyx_pw_5kenlm_9PrintHook_5__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
+static PyObject *__pyx_pw_5kenlm_9PrintHook_3__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static PyObject *__pyx_pw_5kenlm_9PrintHook_3__reduce_cython__(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__reduce_cython__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_5kenlm_9PrintHook_4__reduce_cython__(((struct __pyx_obj_5kenlm_PrintHook *)__pyx_v_self));
+  __pyx_r = __pyx_pf_5kenlm_9PrintHook_2__reduce_cython__(((struct __pyx_obj_5kenlm_PrintHook *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5kenlm_9PrintHook_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self) {
+static PyObject *__pyx_pf_5kenlm_9PrintHook_2__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -2467,19 +2377,19 @@ static PyObject *__pyx_pf_5kenlm_9PrintHook_4__reduce_cython__(CYTHON_UNUSED str
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5kenlm_9PrintHook_7__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state); /*proto*/
-static PyObject *__pyx_pw_5kenlm_9PrintHook_7__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pw_5kenlm_9PrintHook_5__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state); /*proto*/
+static PyObject *__pyx_pw_5kenlm_9PrintHook_5__setstate_cython__(PyObject *__pyx_v_self, PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__setstate_cython__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_5kenlm_9PrintHook_6__setstate_cython__(((struct __pyx_obj_5kenlm_PrintHook *)__pyx_v_self), ((PyObject *)__pyx_v___pyx_state));
+  __pyx_r = __pyx_pf_5kenlm_9PrintHook_4__setstate_cython__(((struct __pyx_obj_5kenlm_PrintHook *)__pyx_v_self), ((PyObject *)__pyx_v___pyx_state));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5kenlm_9PrintHook_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pf_5kenlm_9PrintHook_4__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -8247,21 +8157,13 @@ static void __pyx_tp_dealloc_5kenlm_Output(PyObject *o) {
     if (PyObject_CallFinalizerFromDealloc(o)) return;
   }
   #endif
-  {
-    PyObject *etype, *eval, *etb;
-    PyErr_Fetch(&etype, &eval, &etb);
-    ++Py_REFCNT(o);
-    __pyx_pw_5kenlm_6Output_5__dealloc__(o);
-    --Py_REFCNT(o);
-    PyErr_Restore(etype, eval, etb);
-  }
   (*Py_TYPE(o)->tp_free)(o);
 }
 
 static PyMethodDef __pyx_methods_5kenlm_Output[] = {
   {"Add", (PyCFunction)__pyx_pw_5kenlm_6Output_3Add, METH_VARARGS|METH_KEYWORDS, 0},
-  {"__reduce_cython__", (PyCFunction)__pyx_pw_5kenlm_6Output_7__reduce_cython__, METH_NOARGS, 0},
-  {"__setstate_cython__", (PyCFunction)__pyx_pw_5kenlm_6Output_9__setstate_cython__, METH_O, 0},
+  {"__reduce_cython__", (PyCFunction)__pyx_pw_5kenlm_6Output_5__reduce_cython__, METH_NOARGS, 0},
+  {"__setstate_cython__", (PyCFunction)__pyx_pw_5kenlm_6Output_7__setstate_cython__, METH_O, 0},
   {0, 0, 0, 0}
 };
 
@@ -8344,20 +8246,12 @@ static void __pyx_tp_dealloc_5kenlm_PrintHook(PyObject *o) {
     if (PyObject_CallFinalizerFromDealloc(o)) return;
   }
   #endif
-  {
-    PyObject *etype, *eval, *etb;
-    PyErr_Fetch(&etype, &eval, &etb);
-    ++Py_REFCNT(o);
-    __pyx_pw_5kenlm_9PrintHook_3__dealloc__(o);
-    --Py_REFCNT(o);
-    PyErr_Restore(etype, eval, etb);
-  }
   (*Py_TYPE(o)->tp_free)(o);
 }
 
 static PyMethodDef __pyx_methods_5kenlm_PrintHook[] = {
-  {"__reduce_cython__", (PyCFunction)__pyx_pw_5kenlm_9PrintHook_5__reduce_cython__, METH_NOARGS, 0},
-  {"__setstate_cython__", (PyCFunction)__pyx_pw_5kenlm_9PrintHook_7__setstate_cython__, METH_O, 0},
+  {"__reduce_cython__", (PyCFunction)__pyx_pw_5kenlm_9PrintHook_3__reduce_cython__, METH_NOARGS, 0},
+  {"__setstate_cython__", (PyCFunction)__pyx_pw_5kenlm_9PrintHook_5__setstate_cython__, METH_O, 0},
   {0, 0, 0, 0}
 };
 
