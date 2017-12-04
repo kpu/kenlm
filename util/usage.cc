@@ -246,7 +246,7 @@ void PrintUsage(std::ostream &out) {
 
 /* Written by Paul Eggert.  */
 uint64_t GuessPhysicalMemory() {
-  return 1717986918;
+  // return 1717986918;
 #if defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
   {
     long pages = sysconf(_SC_PHYS_PAGES);

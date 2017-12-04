@@ -5,8 +5,6 @@
 #include <algorithm>
 #include <iostream>
 #include <limits>
-#include <boost/thread.hpp>
-#include <boost/lexical_cast.hpp>
 
 namespace lm { namespace builder {
 
@@ -117,7 +115,6 @@ class CollapseStream {
       prune_threshold_(prune_threshold),
       prune_words_(prune_words),
       block_(position) {
-      std::cerr << "CollapseStream" << std::endl;
       StartBlock();
     }
 
@@ -217,21 +214,8 @@ class CollapseStream {
 };
 
 } // namespace
-  // 
-
-unsigned long getThreadId(){
-    std::string threadId = boost::lexical_cast<std::string>(boost::this_thread::get_id());
-    unsigned long threadNumber = 0;
-    sscanf(threadId.c_str(), "%lx", &threadNumber);
-    return threadNumber;
-}
-
-boost::mutex mutex;
 
 void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << std::endl;
-  mutex.unlock();
   const std::size_t order = positions.size();
   StatCollector stats(order, counts_, counts_pruned_, discounts_);
   if (order == 1) {
@@ -255,71 +239,11 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
     return;
   }
 
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << " ALPHA" << std::endl;
-  mutex.unlock();
-
   NGramStreams<BuildingPayload> streams;
-
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << " ALPHA - 1" << std::endl;
-  mutex.unlock();
 
   streams.Init(positions, positions.size() - 1);
 
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << " ALPHA - 2" << std::endl;
-  mutex.unlock();
-
-  prune_thresholds_.back();
-
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << " ALPHA - 2 - 1" << std::endl;
-  mutex.unlock();
-
-  positions[positions.size() - 1];
-
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << " ALPHA - 2 - 2" << std::endl;
-  mutex.unlock();
-
-  std::cerr << positions[positions.size() - 1].GetChain().EntrySize() << std::endl;
-
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << " ALPHA - 2 - 3" << std::endl;
-  mutex.unlock();
-
-  NGram<BuildingPayload>::OrderFromSize(positions[positions.size() - 1].GetChain().EntrySize());
-
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << " " << prune_thresholds_.size() << " ALPHA - 2 - 4" << std::endl;
-  mutex.unlock();
-
-  uint64_t prune_threshold_(prune_thresholds_.back());
-
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << " " << prune_threshold_ << " ALPHA - 2 - 5" << std::endl;
-  mutex.unlock();
-
-  const std::vector<bool>& _prune_words_(prune_words_);
-
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << " " << _prune_words_.size() << " ALPHA - 2 - 6" << std::endl;
-  mutex.unlock();
-
-  util::stream::Link block_(positions[positions.size() - 1]);
-
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << " ALPHA - 2 - 7" << std::endl;
-  mutex.unlock();
-
-  block_.Poison();
-
   CollapseStream full(positions[positions.size() - 1], prune_thresholds_.back(), prune_words_);
-
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << " BETA" << std::endl;
-  mutex.unlock();
 
   // Initialization: <unk> has count 0 and so does <s>.
   NGramStream<BuildingPayload> *lower_valid = streams.begin();
@@ -420,11 +344,6 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
     s->Poison();
 
   stats.CalculateDiscounts(discount_config_);
-
-
-  mutex.lock();
-  std::cerr << "Thread " << getThreadId() << " END" << std::endl;
-  mutex.unlock();
 
   // NOTE: See special early-return case for unigrams near the top of this function
 }

@@ -179,6 +179,8 @@ def compute_ngram(
                 " but the model only has order " + order
             )
 
+        pipeline.prune_thresholds.resize(order, pipeline.prune_thresholds.back());
+
     else:
         pipeline.prune_thresholds.resize(order, 0)
 
