@@ -265,7 +265,7 @@ uint64_t GuessPhysicalMemory() {
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)
-  {  /* this works on windows */
+  { /* this works on windows */
     PFN_MS_EX pfnex;
     HMODULE h = GetModuleHandle (TEXT("kernel32.dll"));
 
