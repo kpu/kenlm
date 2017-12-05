@@ -127,16 +127,11 @@ class Master {
     template <class Compare> void SetupSorts(Sorts<Compare> &sorts, bool exclude_unigrams) {
       sorts.Init(config_.order - exclude_unigrams);
       // Unigrams don't get sorted because their order is always the same.
-      std::cerr << "Pouet-1" << std::endl;
       if (exclude_unigrams) chains_[0] >> unigrams_.Sink() >> util::stream::kRecycle;
-      std::cerr << "Pouet-2" << std::endl;
       for (std::size_t i = exclude_unigrams; i < config_.order; ++i) {
-        std::cerr << "Pouet-3" << std::endl;
         sorts.push_back(chains_[i], config_.sort, Compare(i + 1));
       }
-      std::cerr << "Pouet-4" << std::endl;
       chains_.Wait(true);
-      std::cerr << "Pouet-5" << std::endl;
     }
 
     unsigned int Steps() const { return steps_; }
