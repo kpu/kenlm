@@ -39,7 +39,7 @@ cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):
     _kenlm.Pipeline(pipeline, __in, output._c_output[0])
 
 
-def compute_ngram(
+def lmplz(
         path_text_file, path_arpa_file,
         order=3,
         interpolate_unigrams=True,

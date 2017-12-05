@@ -1411,6 +1411,7 @@ static const char __pyx_k_word[] = "word";
 static const char __pyx_k_class[] = "__class__";
 static const char __pyx_k_close[] = "close";
 static const char __pyx_k_kenlm[] = "kenlm";
+static const char __pyx_k_lmplz[] = "lmplz";
 static const char __pyx_k_order[] = "order";
 static const char __pyx_k_range[] = "range";
 static const char __pyx_k_score[] = "score";
@@ -1461,7 +1462,6 @@ static const char __pyx_k_ngram_length[] = "ngram_length";
 static const char __pyx_k_skip_symbols[] = "skip_symbols";
 static const char __pyx_k_LanguageModel[] = "LanguageModel";
 static const char __pyx_k_PARALLEL_READ[] = "PARALLEL_READ";
-static const char __pyx_k_compute_ngram[] = "compute_ngram";
 static const char __pyx_k_minimum_block[] = "minimum_block";
 static const char __pyx_k_reduce_cython[] = "__reduce_cython__";
 static const char __pyx_k_was_parsed_as[] = " was parsed as ";
@@ -1530,7 +1530,6 @@ static PyObject *__pyx_n_s_class;
 static PyObject *__pyx_n_s_cline_in_traceback;
 static PyObject *__pyx_n_s_close;
 static PyObject *__pyx_n_s_collapse_values;
-static PyObject *__pyx_n_s_compute_ngram;
 static PyObject *__pyx_n_s_config;
 static PyObject *__pyx_n_s_discount;
 static PyObject *__pyx_n_s_discount_fallback;
@@ -1551,6 +1550,7 @@ static PyObject *__pyx_n_s_interpolate_unigrams;
 static PyObject *__pyx_n_s_keep_buffer;
 static PyObject *__pyx_n_s_kenlm;
 static PyObject *__pyx_n_s_limit_vocab_file;
+static PyObject *__pyx_n_s_lmplz;
 static PyObject *__pyx_n_s_log_prob;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_memory;
@@ -1612,7 +1612,7 @@ static int __pyx_pf_5kenlm_9PrintHook___cinit__(struct __pyx_obj_5kenlm_PrintHoo
 static void __pyx_pf_5kenlm_9PrintHook_2__dealloc__(struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_5kenlm_9PrintHook_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_5kenlm_9PrintHook_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_5kenlm_PrintHook *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
-static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_path_text_file, PyObject *__pyx_v_path_arpa_file, PyObject *__pyx_v_order, PyObject *__pyx_v_interpolate_unigrams, PyObject *__pyx_v_skip_symbols, PyObject *__pyx_v_temp_prefix, PyObject *__pyx_v_memory, PyObject *__pyx_v_minimum_block, PyObject *__pyx_v_sort_block, PyObject *__pyx_v_block_count, PyObject *__pyx_v_vocab_estimate, PyObject *__pyx_v_vocab_pad, PyObject *__pyx_v_verbose_header, PyObject *__pyx_v_intermediate, PyObject *__pyx_v_renumber, PyObject *__pyx_v_collapse_values, PyObject *__pyx_v_pruning, PyObject *__pyx_v_limit_vocab_file, PyObject *__pyx_v_discount_fallback); /* proto */
+static PyObject *__pyx_pf_5kenlm_lmplz(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_path_text_file, PyObject *__pyx_v_path_arpa_file, PyObject *__pyx_v_order, PyObject *__pyx_v_interpolate_unigrams, PyObject *__pyx_v_skip_symbols, PyObject *__pyx_v_temp_prefix, PyObject *__pyx_v_memory, PyObject *__pyx_v_minimum_block, PyObject *__pyx_v_sort_block, PyObject *__pyx_v_block_count, PyObject *__pyx_v_vocab_estimate, PyObject *__pyx_v_vocab_pad, PyObject *__pyx_v_verbose_header, PyObject *__pyx_v_intermediate, PyObject *__pyx_v_renumber, PyObject *__pyx_v_collapse_values, PyObject *__pyx_v_pruning, PyObject *__pyx_v_limit_vocab_file, PyObject *__pyx_v_discount_fallback); /* proto */
 static int __pyx_pf_5kenlm_15FullScoreReturn___cinit__(struct __pyx_obj_5kenlm_FullScoreReturn *__pyx_v_self, PyObject *__pyx_v_log_prob, PyObject *__pyx_v_ngram_length, PyObject *__pyx_v_oov); /* proto */
 static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_2__repr__(struct __pyx_obj_5kenlm_FullScoreReturn *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_8log_prob___get__(struct __pyx_obj_5kenlm_FullScoreReturn *__pyx_v_self); /* proto */
@@ -2526,15 +2526,15 @@ static PyObject *__pyx_f_5kenlm_Pipeline(struct lm::builder::PipelineConfig __py
 /* "kenlm.pyx":42
  * 
  * 
- * def compute_ngram(             # <<<<<<<<<<<<<<
+ * def lmplz(             # <<<<<<<<<<<<<<
  *         path_text_file, path_arpa_file,
  *         order=3,
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_5kenlm_1compute_ngram(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_5kenlm_1compute_ngram = {"compute_ngram", (PyCFunction)__pyx_pw_5kenlm_1compute_ngram, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_5kenlm_1compute_ngram(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_5kenlm_1lmplz(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_5kenlm_1lmplz = {"lmplz", (PyCFunction)__pyx_pw_5kenlm_1lmplz, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_5kenlm_1lmplz(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_path_text_file = 0;
   PyObject *__pyx_v_path_arpa_file = 0;
   PyObject *__pyx_v_order = 0;
@@ -2556,7 +2556,7 @@ static PyObject *__pyx_pw_5kenlm_1compute_ngram(PyObject *__pyx_self, PyObject *
   PyObject *__pyx_v_discount_fallback = 0;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("compute_ngram (wrapper)", 0);
+  __Pyx_RefNannySetupContext("lmplz (wrapper)", 0);
   {
     static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_path_text_file,&__pyx_n_s_path_arpa_file,&__pyx_n_s_order,&__pyx_n_s_interpolate_unigrams,&__pyx_n_s_skip_symbols,&__pyx_n_s_temp_prefix,&__pyx_n_s_memory,&__pyx_n_s_minimum_block,&__pyx_n_s_sort_block,&__pyx_n_s_block_count,&__pyx_n_s_vocab_estimate,&__pyx_n_s_vocab_pad,&__pyx_n_s_verbose_header,&__pyx_n_s_intermediate,&__pyx_n_s_renumber,&__pyx_n_s_collapse_values,&__pyx_n_s_pruning,&__pyx_n_s_limit_vocab_file,&__pyx_n_s_discount_fallback,0};
     PyObject* values[19] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
@@ -2687,7 +2687,7 @@ static PyObject *__pyx_pw_5kenlm_1compute_ngram(PyObject *__pyx_self, PyObject *
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_path_arpa_file)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("compute_ngram", 0, 2, 19, 1); __PYX_ERR(0, 42, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("lmplz", 0, 2, 19, 1); __PYX_ERR(0, 42, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
@@ -2793,7 +2793,7 @@ static PyObject *__pyx_pw_5kenlm_1compute_ngram(PyObject *__pyx_self, PyObject *
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "compute_ngram") < 0)) __PYX_ERR(0, 42, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "lmplz") < 0)) __PYX_ERR(0, 42, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -2859,18 +2859,18 @@ static PyObject *__pyx_pw_5kenlm_1compute_ngram(PyObject *__pyx_self, PyObject *
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("compute_ngram", 0, 2, 19, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 42, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("lmplz", 0, 2, 19, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 42, __pyx_L3_error)
   __pyx_L3_error:;
-  __Pyx_AddTraceback("kenlm.compute_ngram", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("kenlm.lmplz", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_5kenlm_compute_ngram(__pyx_self, __pyx_v_path_text_file, __pyx_v_path_arpa_file, __pyx_v_order, __pyx_v_interpolate_unigrams, __pyx_v_skip_symbols, __pyx_v_temp_prefix, __pyx_v_memory, __pyx_v_minimum_block, __pyx_v_sort_block, __pyx_v_block_count, __pyx_v_vocab_estimate, __pyx_v_vocab_pad, __pyx_v_verbose_header, __pyx_v_intermediate, __pyx_v_renumber, __pyx_v_collapse_values, __pyx_v_pruning, __pyx_v_limit_vocab_file, __pyx_v_discount_fallback);
+  __pyx_r = __pyx_pf_5kenlm_lmplz(__pyx_self, __pyx_v_path_text_file, __pyx_v_path_arpa_file, __pyx_v_order, __pyx_v_interpolate_unigrams, __pyx_v_skip_symbols, __pyx_v_temp_prefix, __pyx_v_memory, __pyx_v_minimum_block, __pyx_v_sort_block, __pyx_v_block_count, __pyx_v_vocab_estimate, __pyx_v_vocab_pad, __pyx_v_verbose_header, __pyx_v_intermediate, __pyx_v_renumber, __pyx_v_collapse_values, __pyx_v_pruning, __pyx_v_limit_vocab_file, __pyx_v_discount_fallback);
 
   /* "kenlm.pyx":42
  * 
  * 
- * def compute_ngram(             # <<<<<<<<<<<<<<
+ * def lmplz(             # <<<<<<<<<<<<<<
  *         path_text_file, path_arpa_file,
  *         order=3,
  */
@@ -2880,7 +2880,7 @@ static PyObject *__pyx_pw_5kenlm_1compute_ngram(PyObject *__pyx_self, PyObject *
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_path_text_file, PyObject *__pyx_v_path_arpa_file, PyObject *__pyx_v_order, PyObject *__pyx_v_interpolate_unigrams, PyObject *__pyx_v_skip_symbols, PyObject *__pyx_v_temp_prefix, PyObject *__pyx_v_memory, PyObject *__pyx_v_minimum_block, PyObject *__pyx_v_sort_block, PyObject *__pyx_v_block_count, PyObject *__pyx_v_vocab_estimate, PyObject *__pyx_v_vocab_pad, PyObject *__pyx_v_verbose_header, PyObject *__pyx_v_intermediate, PyObject *__pyx_v_renumber, PyObject *__pyx_v_collapse_values, PyObject *__pyx_v_pruning, PyObject *__pyx_v_limit_vocab_file, PyObject *__pyx_v_discount_fallback) {
+static PyObject *__pyx_pf_5kenlm_lmplz(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_path_text_file, PyObject *__pyx_v_path_arpa_file, PyObject *__pyx_v_order, PyObject *__pyx_v_interpolate_unigrams, PyObject *__pyx_v_skip_symbols, PyObject *__pyx_v_temp_prefix, PyObject *__pyx_v_memory, PyObject *__pyx_v_minimum_block, PyObject *__pyx_v_sort_block, PyObject *__pyx_v_block_count, PyObject *__pyx_v_vocab_estimate, PyObject *__pyx_v_vocab_pad, PyObject *__pyx_v_verbose_header, PyObject *__pyx_v_intermediate, PyObject *__pyx_v_renumber, PyObject *__pyx_v_collapse_values, PyObject *__pyx_v_pruning, PyObject *__pyx_v_limit_vocab_file, PyObject *__pyx_v_discount_fallback) {
   struct lm::builder::PipelineConfig __pyx_v_pipeline;
   PyObject *__pyx_v_i = NULL;
   PyObject *__pyx_v_discount = NULL;
@@ -2910,7 +2910,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   char *__pyx_t_18;
   int __pyx_t_19;
   PyObject *__pyx_t_20 = NULL;
-  __Pyx_RefNannySetupContext("compute_ngram", 0);
+  __Pyx_RefNannySetupContext("lmplz", 0);
 
   /* "kenlm.pyx":63
  * 
@@ -4175,7 +4175,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   /* "kenlm.pyx":42
  * 
  * 
- * def compute_ngram(             # <<<<<<<<<<<<<<
+ * def lmplz(             # <<<<<<<<<<<<<<
  *         path_text_file, path_arpa_file,
  *         order=3,
  */
@@ -4189,7 +4189,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   __Pyx_XDECREF(__pyx_t_14);
   __Pyx_XDECREF(__pyx_t_15);
   __Pyx_XDECREF(__pyx_t_20);
-  __Pyx_AddTraceback("kenlm.compute_ngram", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("kenlm.lmplz", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_i);
@@ -8843,7 +8843,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
   {&__pyx_n_s_close, __pyx_k_close, sizeof(__pyx_k_close), 0, 0, 1, 1},
   {&__pyx_n_s_collapse_values, __pyx_k_collapse_values, sizeof(__pyx_k_collapse_values), 0, 0, 1, 1},
-  {&__pyx_n_s_compute_ngram, __pyx_k_compute_ngram, sizeof(__pyx_k_compute_ngram), 0, 0, 1, 1},
   {&__pyx_n_s_config, __pyx_k_config, sizeof(__pyx_k_config), 0, 0, 1, 1},
   {&__pyx_n_s_discount, __pyx_k_discount, sizeof(__pyx_k_discount), 0, 0, 1, 1},
   {&__pyx_n_s_discount_fallback, __pyx_k_discount_fallback, sizeof(__pyx_k_discount_fallback), 0, 0, 1, 1},
@@ -8864,6 +8863,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_keep_buffer, __pyx_k_keep_buffer, sizeof(__pyx_k_keep_buffer), 0, 0, 1, 1},
   {&__pyx_n_s_kenlm, __pyx_k_kenlm, sizeof(__pyx_k_kenlm), 0, 0, 1, 1},
   {&__pyx_n_s_limit_vocab_file, __pyx_k_limit_vocab_file, sizeof(__pyx_k_limit_vocab_file), 0, 0, 1, 1},
+  {&__pyx_n_s_lmplz, __pyx_k_lmplz, sizeof(__pyx_k_lmplz), 0, 0, 1, 1},
   {&__pyx_n_s_log_prob, __pyx_k_log_prob, sizeof(__pyx_k_log_prob), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
   {&__pyx_n_s_memory, __pyx_k_memory, sizeof(__pyx_k_memory), 0, 0, 1, 1},
@@ -9107,14 +9107,14 @@ static int __Pyx_InitCachedConstants(void) {
   /* "kenlm.pyx":42
  * 
  * 
- * def compute_ngram(             # <<<<<<<<<<<<<<
+ * def lmplz(             # <<<<<<<<<<<<<<
  *         path_text_file, path_arpa_file,
  *         order=3,
  */
   __pyx_tuple__25 = PyTuple_Pack(26, __pyx_n_s_path_text_file, __pyx_n_s_path_arpa_file, __pyx_n_s_order, __pyx_n_s_interpolate_unigrams, __pyx_n_s_skip_symbols, __pyx_n_s_temp_prefix, __pyx_n_s_memory, __pyx_n_s_minimum_block, __pyx_n_s_sort_block, __pyx_n_s_block_count, __pyx_n_s_vocab_estimate, __pyx_n_s_vocab_pad, __pyx_n_s_verbose_header, __pyx_n_s_intermediate, __pyx_n_s_renumber, __pyx_n_s_collapse_values, __pyx_n_s_pruning, __pyx_n_s_limit_vocab_file, __pyx_n_s_discount_fallback, __pyx_n_s_pipeline, __pyx_n_s_i, __pyx_n_s_discount, __pyx_n_s_e, __pyx_n_s_in, __pyx_n_s_out, __pyx_n_s_output); if (unlikely(!__pyx_tuple__25)) __PYX_ERR(0, 42, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__25);
   __Pyx_GIVEREF(__pyx_tuple__25);
-  __pyx_codeobj__26 = (PyObject*)__Pyx_PyCode_New(19, 0, 26, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__25, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_python_kenlm_pyx, __pyx_n_s_compute_ngram, 42, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__26)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __pyx_codeobj__26 = (PyObject*)__Pyx_PyCode_New(19, 0, 26, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__25, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_python_kenlm_pyx, __pyx_n_s_lmplz, 42, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__26)) __PYX_ERR(0, 42, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -9377,13 +9377,13 @@ static int __pyx_pymod_exec_kenlm(PyObject *__pyx_pyinit_module)
   /* "kenlm.pyx":42
  * 
  * 
- * def compute_ngram(             # <<<<<<<<<<<<<<
+ * def lmplz(             # <<<<<<<<<<<<<<
  *         path_text_file, path_arpa_file,
  *         order=3,
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5kenlm_1compute_ngram, NULL, __pyx_n_s_kenlm); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5kenlm_1lmplz, NULL, __pyx_n_s_kenlm); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_compute_ngram, __pyx_t_1) < 0) __PYX_ERR(0, 42, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_lmplz, __pyx_t_1) < 0) __PYX_ERR(0, 42, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "kenlm.pyx":232
