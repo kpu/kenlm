@@ -21,8 +21,6 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <boost/thread.hpp>
-#include <boost/lexical_cast.hpp>
 
 namespace lm { namespace builder {
 
@@ -379,28 +377,19 @@ void  Pipeline(PipelineConfig &config, int text_file, Output &output) {
     master.InitForAdjust(*sorted_counts, type_count, subtract_for_numbering);
     sorted_counts.reset();
 
-    std::cerr << "COUCOU DU C++ " << std::endl;
-
     std::vector<uint64_t> counts;
     std::vector<uint64_t> counts_pruned;
     std::vector<Discount> discounts;
     master >> AdjustCounts(config.prune_thresholds, counts, counts_pruned, prune_words, config.discount, discounts);
     numbering.ApplyRenumber(master.MutableChains());
 
-    std::cerr << "COUCOU DU 1er " << std::endl;
-
     {
       util::FixedArray<util::stream::FileBuffer> gammas;
       Sorts<SuffixOrder> primary;
-      std::cerr << "COUCOU DU 1er-1" << std::endl;
       InitialProbabilities(counts, counts_pruned, discounts, master, primary, gammas, config.prune_thresholds, config.prune_vocab, numbering.Specials());
-      std::cerr << "COUCOU DU 1er-2" << std::endl;
       output.SetHeader(HeaderInfo(text_file_name, token_count, counts_pruned));
-      std::cerr << "COUCOU DU 1er-3" << std::endl;
       // Also does output.
-      std::cerr << "COUCOU DU 2nd" << std::endl;
       InterpolateProbabilities(counts_pruned, master, primary, gammas, output, numbering.Specials());
-      std::cerr << "COUCOU DU 3rd" << std::endl;
     }
   } catch (const util::Exception &e) {
     std::cerr << e.what() << std::endl;

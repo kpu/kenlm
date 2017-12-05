@@ -240,7 +240,6 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
   }
 
   NGramStreams<BuildingPayload> streams;
-
   streams.Init(positions, positions.size() - 1);
 
   CollapseStream full(positions[positions.size() - 1], prune_thresholds_.back(), prune_words_);

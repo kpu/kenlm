@@ -12,7 +12,6 @@
 #include "util/stream/stream.hh"
 
 #include <vector>
-#include <iostream>
 
 namespace lm { namespace builder {
 
@@ -287,12 +286,10 @@ void InitialProbabilities(
     const SpecialVocab &specials) {
   for (size_t i = 0; i < primary.size(); ++i) {
     util::stream::ChainConfig gamma_config = config.adder_out;
-    std::cerr << "A" << std::endl;
     if(prune_vocab || prune_thresholds[i] > 0)
       gamma_config.entry_size = sizeof(HashBufferEntry);
     else
       gamma_config.entry_size = sizeof(BufferEntry);
-    std::cerr << "B" << std::endl;
 
     util::stream::ChainPosition second(second_in[i].Add());
     second_in[i] >> util::stream::kRecycle;
