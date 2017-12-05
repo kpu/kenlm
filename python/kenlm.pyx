@@ -41,13 +41,13 @@ cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):
 
 def compute_ngram(
         path_text_file, path_arpa_file,
-        order=2,
+        order=3,
         interpolate_unigrams=True,
         skip_symbols=False,
         temp_prefix=None,
-        memory="2G",
+        memory="1G",
         minimum_block="8K",
-        sort_block="128M",
+        sort_block="64M",
         block_count=2,
         vocab_estimate=1000000,
         vocab_pad=0,
@@ -82,8 +82,7 @@ def compute_ngram(
     pipeline.output_q = collapse_values
 
     if pipeline.vocab_size_for_unk and not pipeline.initial_probs.interpolate_unigrams:
-        print('--vocab_pad requires --interpolate_unigrams be on')
-        exit(1)
+        raise RuntimeError('--vocab_pad requires --interpolate_unigrams be on')
 
     if skip_symbols:
         pipeline.disallowed_symbol_action = _kenlm.COMPLAIN
@@ -92,6 +91,7 @@ def compute_ngram(
 
     for i in range(4):
         pipeline.discount.fallback.amount[i] = 0.0
+
     if discount_fallback is None:
         pipeline.discount.bad_action = _kenlm.THROW_UP
     else:
@@ -143,7 +143,6 @@ def compute_ngram(
 
     _kenlm.NormalizeTempPrefix(pipeline.sort.temp_prefix)
 
-
     pipeline.initial_probs.adder_in.total_memory = 32768;
     pipeline.initial_probs.adder_in.block_count = 2;
     pipeline.initial_probs.adder_out.total_memory = 32768;
@@ -165,8 +164,8 @@ def compute_ngram(
 
     output.Add(_out.release(), verbose_header)
 
-
     Pipeline(pipeline, _in.release(), output)
+
 
 cdef class FullScoreReturn:
     """

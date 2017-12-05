@@ -800,8 +800,8 @@ struct __pyx_obj_5kenlm_PrintHook {
 };
 
 
-/* "kenlm.pyx":171
- *     Pipeline(pipeline, _in.release(), output)
+/* "kenlm.pyx":170
+ * 
  * 
  * cdef class FullScoreReturn:             # <<<<<<<<<<<<<<
  *     """
@@ -815,7 +815,7 @@ struct __pyx_obj_5kenlm_FullScoreReturn {
 };
 
 
-/* "kenlm.pyx":204
+/* "kenlm.pyx":203
  *             return self.oov
  * 
  * cdef class State:             # <<<<<<<<<<<<<<
@@ -828,7 +828,7 @@ struct __pyx_obj_5kenlm_State {
 };
 
 
-/* "kenlm.pyx":240
+/* "kenlm.pyx":239
  *     PARALLEL_READ = _kenlm.PARALLEL_READ
  * 
  * cdef class Config:             # <<<<<<<<<<<<<<
@@ -841,7 +841,7 @@ struct __pyx_obj_5kenlm_Config {
 };
 
 
-/* "kenlm.pyx":256
+/* "kenlm.pyx":255
  *             self._c_config.load_method = to
  * 
  * cdef class Model:             # <<<<<<<<<<<<<<
@@ -856,7 +856,7 @@ struct __pyx_obj_5kenlm_Model {
 };
 
 
-/* "kenlm.pyx":350
+/* "kenlm.pyx":349
  *         return 10.0**(-self.score(sentence) / words)
  * 
  *     def full_scores(self, sentence, bos = True, eos = True):             # <<<<<<<<<<<<<<
@@ -1219,13 +1219,6 @@ static void __Pyx_CppExn2PyErr() {
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_uint64_t(uint64_t value);
 
-/* Print.proto */
-static int __Pyx_Print(PyObject*, PyObject *, int);
-#if CYTHON_COMPILING_IN_PYPY || PY_MAJOR_VERSION >= 3
-static PyObject* __pyx_print = 0;
-static PyObject* __pyx_print_kwargs = 0;
-#endif
-
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value);
 
@@ -1249,9 +1242,6 @@ static CYTHON_INLINE uint64_t __Pyx_PyInt_As_uint64_t(PyObject *);
 
 /* CIntFromPy.proto */
 static CYTHON_INLINE enum util::LoadMethod __Pyx_PyInt_As_enum__util_3a__3a_LoadMethod(PyObject *);
-
-/* PrintOne.proto */
-static int __Pyx_PrintOne(PyObject* stream, PyObject *o);
 
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
@@ -1388,33 +1378,29 @@ int __pyx_module_is_main_kenlm = 0;
 
 /* Implementation of 'kenlm' */
 static PyObject *__pyx_builtin_TypeError;
-static PyObject *__pyx_builtin_exit;
-static PyObject *__pyx_builtin_range;
 static PyObject *__pyx_builtin_RuntimeError;
+static PyObject *__pyx_builtin_range;
 static PyObject *__pyx_builtin_IOError;
 static const char __pyx_k_e[] = "e";
 static const char __pyx_k_i[] = "i";
-static const char __pyx_k_2G[] = "2G";
+static const char __pyx_k_1G[] = "1G";
 static const char __pyx_k_8K[] = "8K";
 static const char __pyx_k__7[] = "";
 static const char __pyx_k_in[] = "_in";
 static const char __pyx_k_os[] = "os";
+static const char __pyx_k_64M[] = "64M";
 static const char __pyx_k_Add[] = "Add";
 static const char __pyx_k__14[] = "].";
 static const char __pyx_k__22[] = "\n";
 static const char __pyx_k__23[] = " ";
 static const char __pyx_k_bos[] = "bos";
 static const char __pyx_k_doc[] = "__doc__";
-static const char __pyx_k_end[] = "end";
 static const char __pyx_k_eos[] = "eos";
 static const char __pyx_k_oov[] = "oov";
 static const char __pyx_k_out[] = "_out";
-static const char __pyx_k_128M[] = "128M";
 static const char __pyx_k_LAZY[] = "LAZY";
 static const char __pyx_k_READ[] = "READ";
 static const char __pyx_k_args[] = "args";
-static const char __pyx_k_exit[] = "exit";
-static const char __pyx_k_file[] = "file";
 static const char __pyx_k_main[] = "__main__";
 static const char __pyx_k_name[] = "__name__";
 static const char __pyx_k_path[] = "path";
@@ -1426,7 +1412,6 @@ static const char __pyx_k_class[] = "__class__";
 static const char __pyx_k_close[] = "close";
 static const char __pyx_k_kenlm[] = "kenlm";
 static const char __pyx_k_order[] = "order";
-static const char __pyx_k_print[] = "print";
 static const char __pyx_k_range[] = "range";
 static const char __pyx_k_score[] = "score";
 static const char __pyx_k_split[] = "split";
@@ -1508,8 +1493,8 @@ static const char __pyx_k_no_default___reduce___due_to_non[] = "no default __red
 static const char __pyx_k_self__c_config_cannot_be_convert[] = "self._c_config cannot be converted to a Python object for pickling";
 static const char __pyx_k_self__c_state_cannot_be_converte[] = "self._c_state cannot be converted to a Python object for pickling";
 static PyObject *__pyx_kp_s_0_1_2_3;
-static PyObject *__pyx_kp_s_128M;
-static PyObject *__pyx_kp_s_2G;
+static PyObject *__pyx_kp_s_1G;
+static PyObject *__pyx_kp_s_64M;
 static PyObject *__pyx_kp_s_8K;
 static PyObject *__pyx_n_s_Add;
 static PyObject *__pyx_kp_s_Backwards_compatability_stub_Use;
@@ -1552,10 +1537,7 @@ static PyObject *__pyx_n_s_discount_fallback;
 static PyObject *__pyx_n_s_doc;
 static PyObject *__pyx_n_s_e;
 static PyObject *__pyx_n_s_encode;
-static PyObject *__pyx_n_s_end;
 static PyObject *__pyx_n_s_eos;
-static PyObject *__pyx_n_s_exit;
-static PyObject *__pyx_n_s_file;
 static PyObject *__pyx_n_s_file_base;
 static PyObject *__pyx_n_s_format;
 static PyObject *__pyx_n_s_full_scores;
@@ -1590,7 +1572,6 @@ static PyObject *__pyx_n_s_path_arpa_file;
 static PyObject *__pyx_n_s_path_text_file;
 static PyObject *__pyx_n_s_pipeline;
 static PyObject *__pyx_n_s_prepare;
-static PyObject *__pyx_n_s_print;
 static PyObject *__pyx_n_s_pruning;
 static PyObject *__pyx_kp_s_python_kenlm_pyx;
 static PyObject *__pyx_n_s_qualname;
@@ -2547,7 +2528,7 @@ static PyObject *__pyx_f_5kenlm_Pipeline(struct lm::builder::PipelineConfig __py
  * 
  * def compute_ngram(             # <<<<<<<<<<<<<<
  *         path_text_file, path_arpa_file,
- *         order=2,
+ *         order=3,
  */
 
 /* Python wrapper */
@@ -2579,11 +2560,11 @@ static PyObject *__pyx_pw_5kenlm_1compute_ngram(PyObject *__pyx_self, PyObject *
   {
     static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_path_text_file,&__pyx_n_s_path_arpa_file,&__pyx_n_s_order,&__pyx_n_s_interpolate_unigrams,&__pyx_n_s_skip_symbols,&__pyx_n_s_temp_prefix,&__pyx_n_s_memory,&__pyx_n_s_minimum_block,&__pyx_n_s_sort_block,&__pyx_n_s_block_count,&__pyx_n_s_vocab_estimate,&__pyx_n_s_vocab_pad,&__pyx_n_s_verbose_header,&__pyx_n_s_intermediate,&__pyx_n_s_renumber,&__pyx_n_s_collapse_values,&__pyx_n_s_pruning,&__pyx_n_s_limit_vocab_file,&__pyx_n_s_discount_fallback,0};
     PyObject* values[19] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    values[2] = ((PyObject *)__pyx_int_2);
+    values[2] = ((PyObject *)__pyx_int_3);
 
     /* "kenlm.pyx":45
  *         path_text_file, path_arpa_file,
- *         order=2,
+ *         order=3,
  *         interpolate_unigrams=True,             # <<<<<<<<<<<<<<
  *         skip_symbols=False,
  *         temp_prefix=None,
@@ -2591,11 +2572,11 @@ static PyObject *__pyx_pw_5kenlm_1compute_ngram(PyObject *__pyx_self, PyObject *
     values[3] = ((PyObject *)Py_True);
 
     /* "kenlm.pyx":46
- *         order=2,
+ *         order=3,
  *         interpolate_unigrams=True,
  *         skip_symbols=False,             # <<<<<<<<<<<<<<
  *         temp_prefix=None,
- *         memory="2G",
+ *         memory="1G",
  */
     values[4] = ((PyObject *)Py_False);
 
@@ -2603,13 +2584,13 @@ static PyObject *__pyx_pw_5kenlm_1compute_ngram(PyObject *__pyx_self, PyObject *
  *         interpolate_unigrams=True,
  *         skip_symbols=False,
  *         temp_prefix=None,             # <<<<<<<<<<<<<<
- *         memory="2G",
+ *         memory="1G",
  *         minimum_block="8K",
  */
     values[5] = ((PyObject *)Py_None);
-    values[6] = ((PyObject *)__pyx_kp_s_2G);
+    values[6] = ((PyObject *)__pyx_kp_s_1G);
     values[7] = ((PyObject *)__pyx_kp_s_8K);
-    values[8] = ((PyObject *)__pyx_kp_s_128M);
+    values[8] = ((PyObject *)__pyx_kp_s_64M);
     values[9] = ((PyObject *)__pyx_int_2);
     values[10] = ((PyObject *)__pyx_int_1000000);
     values[11] = ((PyObject *)__pyx_int_0);
@@ -2891,7 +2872,7 @@ static PyObject *__pyx_pw_5kenlm_1compute_ngram(PyObject *__pyx_self, PyObject *
  * 
  * def compute_ngram(             # <<<<<<<<<<<<<<
  *         path_text_file, path_arpa_file,
- *         order=2,
+ *         order=3,
  */
 
   /* function exit code */
@@ -3141,8 +3122,8 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  *     pipeline.output_q = collapse_values
  * 
  *     if pipeline.vocab_size_for_unk and not pipeline.initial_probs.interpolate_unigrams:             # <<<<<<<<<<<<<<
- *         print('--vocab_pad requires --interpolate_unigrams be on')
- *         exit(1)
+ *         raise RuntimeError('--vocab_pad requires --interpolate_unigrams be on')
+ * 
  */
   __pyx_t_4 = (__pyx_v_pipeline.vocab_size_for_unk != 0);
   if (__pyx_t_4) {
@@ -3158,43 +3139,36 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
     /* "kenlm.pyx":85
  * 
  *     if pipeline.vocab_size_for_unk and not pipeline.initial_probs.interpolate_unigrams:
- *         print('--vocab_pad requires --interpolate_unigrams be on')             # <<<<<<<<<<<<<<
- *         exit(1)
- * 
- */
-    if (__Pyx_PrintOne(0, __pyx_kp_s_vocab_pad_requires_interpolate) < 0) __PYX_ERR(0, 85, __pyx_L1_error)
-
-    /* "kenlm.pyx":86
- *     if pipeline.vocab_size_for_unk and not pipeline.initial_probs.interpolate_unigrams:
- *         print('--vocab_pad requires --interpolate_unigrams be on')
- *         exit(1)             # <<<<<<<<<<<<<<
+ *         raise RuntimeError('--vocab_pad requires --interpolate_unigrams be on')             # <<<<<<<<<<<<<<
  * 
  *     if skip_symbols:
  */
-    __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_exit, __pyx_tuple__9, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 86, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__9, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 85, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
+    __Pyx_Raise(__pyx_t_8, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __PYX_ERR(0, 85, __pyx_L1_error)
 
     /* "kenlm.pyx":84
  *     pipeline.output_q = collapse_values
  * 
  *     if pipeline.vocab_size_for_unk and not pipeline.initial_probs.interpolate_unigrams:             # <<<<<<<<<<<<<<
- *         print('--vocab_pad requires --interpolate_unigrams be on')
- *         exit(1)
+ *         raise RuntimeError('--vocab_pad requires --interpolate_unigrams be on')
+ * 
  */
   }
 
-  /* "kenlm.pyx":88
- *         exit(1)
+  /* "kenlm.pyx":87
+ *         raise RuntimeError('--vocab_pad requires --interpolate_unigrams be on')
  * 
  *     if skip_symbols:             # <<<<<<<<<<<<<<
  *         pipeline.disallowed_symbol_action = _kenlm.COMPLAIN
  *     else:
  */
-  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_v_skip_symbols); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 88, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_v_skip_symbols); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 87, __pyx_L1_error)
   if (__pyx_t_3) {
 
-    /* "kenlm.pyx":89
+    /* "kenlm.pyx":88
  * 
  *     if skip_symbols:
  *         pipeline.disallowed_symbol_action = _kenlm.COMPLAIN             # <<<<<<<<<<<<<<
@@ -3203,8 +3177,8 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  */
     __pyx_v_pipeline.disallowed_symbol_action = lm::COMPLAIN;
 
-    /* "kenlm.pyx":88
- *         exit(1)
+    /* "kenlm.pyx":87
+ *         raise RuntimeError('--vocab_pad requires --interpolate_unigrams be on')
  * 
  *     if skip_symbols:             # <<<<<<<<<<<<<<
  *         pipeline.disallowed_symbol_action = _kenlm.COMPLAIN
@@ -3213,7 +3187,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
     goto __pyx_L8;
   }
 
-  /* "kenlm.pyx":91
+  /* "kenlm.pyx":90
  *         pipeline.disallowed_symbol_action = _kenlm.COMPLAIN
  *     else:
  *         pipeline.disallowed_symbol_action = _kenlm.THROW_UP             # <<<<<<<<<<<<<<
@@ -3225,22 +3199,22 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   }
   __pyx_L8:;
 
-  /* "kenlm.pyx":93
+  /* "kenlm.pyx":92
  *         pipeline.disallowed_symbol_action = _kenlm.THROW_UP
  * 
  *     for i in range(4):             # <<<<<<<<<<<<<<
  *         pipeline.discount.fallback.amount[i] = 0.0
- *     if discount_fallback is None:
+ * 
  */
-  __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_range, __pyx_tuple__10, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 93, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_range, __pyx_tuple__10, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 92, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   if (likely(PyList_CheckExact(__pyx_t_8)) || PyTuple_CheckExact(__pyx_t_8)) {
     __pyx_t_9 = __pyx_t_8; __Pyx_INCREF(__pyx_t_9); __pyx_t_10 = 0;
     __pyx_t_11 = NULL;
   } else {
-    __pyx_t_10 = -1; __pyx_t_9 = PyObject_GetIter(__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __pyx_t_10 = -1; __pyx_t_9 = PyObject_GetIter(__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 92, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
-    __pyx_t_11 = Py_TYPE(__pyx_t_9)->tp_iternext; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 93, __pyx_L1_error)
+    __pyx_t_11 = Py_TYPE(__pyx_t_9)->tp_iternext; if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 92, __pyx_L1_error)
   }
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
   for (;;) {
@@ -3248,17 +3222,17 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
       if (likely(PyList_CheckExact(__pyx_t_9))) {
         if (__pyx_t_10 >= PyList_GET_SIZE(__pyx_t_9)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_8 = PyList_GET_ITEM(__pyx_t_9, __pyx_t_10); __Pyx_INCREF(__pyx_t_8); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 93, __pyx_L1_error)
+        __pyx_t_8 = PyList_GET_ITEM(__pyx_t_9, __pyx_t_10); __Pyx_INCREF(__pyx_t_8); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 92, __pyx_L1_error)
         #else
-        __pyx_t_8 = PySequence_ITEM(__pyx_t_9, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 93, __pyx_L1_error)
+        __pyx_t_8 = PySequence_ITEM(__pyx_t_9, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 92, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_8);
         #endif
       } else {
         if (__pyx_t_10 >= PyTuple_GET_SIZE(__pyx_t_9)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_8 = PyTuple_GET_ITEM(__pyx_t_9, __pyx_t_10); __Pyx_INCREF(__pyx_t_8); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 93, __pyx_L1_error)
+        __pyx_t_8 = PyTuple_GET_ITEM(__pyx_t_9, __pyx_t_10); __Pyx_INCREF(__pyx_t_8); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 92, __pyx_L1_error)
         #else
-        __pyx_t_8 = PySequence_ITEM(__pyx_t_9, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 93, __pyx_L1_error)
+        __pyx_t_8 = PySequence_ITEM(__pyx_t_9, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 92, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_8);
         #endif
       }
@@ -3268,7 +3242,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-          else __PYX_ERR(0, 93, __pyx_L1_error)
+          else __PYX_ERR(0, 92, __pyx_L1_error)
         }
         break;
       }
@@ -3277,29 +3251,29 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
     __Pyx_XDECREF_SET(__pyx_v_i, __pyx_t_8);
     __pyx_t_8 = 0;
 
-    /* "kenlm.pyx":94
+    /* "kenlm.pyx":93
  * 
  *     for i in range(4):
  *         pipeline.discount.fallback.amount[i] = 0.0             # <<<<<<<<<<<<<<
+ * 
  *     if discount_fallback is None:
- *         pipeline.discount.bad_action = _kenlm.THROW_UP
  */
-    __pyx_t_12 = __Pyx_PyIndex_AsSsize_t(__pyx_v_i); if (unlikely((__pyx_t_12 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 94, __pyx_L1_error)
+    __pyx_t_12 = __Pyx_PyIndex_AsSsize_t(__pyx_v_i); if (unlikely((__pyx_t_12 == (Py_ssize_t)-1) && PyErr_Occurred())) __PYX_ERR(0, 93, __pyx_L1_error)
     (__pyx_v_pipeline.discount.fallback.amount[__pyx_t_12]) = 0.0;
 
-    /* "kenlm.pyx":93
+    /* "kenlm.pyx":92
  *         pipeline.disallowed_symbol_action = _kenlm.THROW_UP
  * 
  *     for i in range(4):             # <<<<<<<<<<<<<<
  *         pipeline.discount.fallback.amount[i] = 0.0
- *     if discount_fallback is None:
+ * 
  */
   }
   __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
 
   /* "kenlm.pyx":95
- *     for i in range(4):
  *         pipeline.discount.fallback.amount[i] = 0.0
+ * 
  *     if discount_fallback is None:             # <<<<<<<<<<<<<<
  *         pipeline.discount.bad_action = _kenlm.THROW_UP
  *     else:
@@ -3309,7 +3283,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   if (__pyx_t_4) {
 
     /* "kenlm.pyx":96
- *         pipeline.discount.fallback.amount[i] = 0.0
+ * 
  *     if discount_fallback is None:
  *         pipeline.discount.bad_action = _kenlm.THROW_UP             # <<<<<<<<<<<<<<
  *     else:
@@ -3318,8 +3292,8 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
     __pyx_v_pipeline.discount.bad_action = lm::THROW_UP;
 
     /* "kenlm.pyx":95
- *     for i in range(4):
  *         pipeline.discount.fallback.amount[i] = 0.0
+ * 
  *     if discount_fallback is None:             # <<<<<<<<<<<<<<
  *         pipeline.discount.bad_action = _kenlm.THROW_UP
  *     else:
@@ -3915,7 +3889,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  * 
  *     _kenlm.NormalizeTempPrefix(pipeline.sort.temp_prefix)             # <<<<<<<<<<<<<<
  * 
- * 
+ *     pipeline.initial_probs.adder_in.total_memory = 32768;
  */
   try {
     util::NormalizeTempPrefix(__pyx_v_pipeline.sort.temp_prefix);
@@ -3924,8 +3898,8 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
     __PYX_ERR(0, 144, __pyx_L1_error)
   }
 
-  /* "kenlm.pyx":147
- * 
+  /* "kenlm.pyx":146
+ *     _kenlm.NormalizeTempPrefix(pipeline.sort.temp_prefix)
  * 
  *     pipeline.initial_probs.adder_in.total_memory = 32768;             # <<<<<<<<<<<<<<
  *     pipeline.initial_probs.adder_in.block_count = 2;
@@ -3933,7 +3907,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  */
   __pyx_v_pipeline.initial_probs.adder_in.total_memory = 0x8000;
 
-  /* "kenlm.pyx":148
+  /* "kenlm.pyx":147
  * 
  *     pipeline.initial_probs.adder_in.total_memory = 32768;
  *     pipeline.initial_probs.adder_in.block_count = 2;             # <<<<<<<<<<<<<<
@@ -3942,7 +3916,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  */
   __pyx_v_pipeline.initial_probs.adder_in.block_count = 2;
 
-  /* "kenlm.pyx":149
+  /* "kenlm.pyx":148
  *     pipeline.initial_probs.adder_in.total_memory = 32768;
  *     pipeline.initial_probs.adder_in.block_count = 2;
  *     pipeline.initial_probs.adder_out.total_memory = 32768;             # <<<<<<<<<<<<<<
@@ -3951,7 +3925,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  */
   __pyx_v_pipeline.initial_probs.adder_out.total_memory = 0x8000;
 
-  /* "kenlm.pyx":150
+  /* "kenlm.pyx":149
  *     pipeline.initial_probs.adder_in.block_count = 2;
  *     pipeline.initial_probs.adder_out.total_memory = 32768;
  *     pipeline.initial_probs.adder_out.block_count = 2;             # <<<<<<<<<<<<<<
@@ -3960,7 +3934,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  */
   __pyx_v_pipeline.initial_probs.adder_out.block_count = 2;
 
-  /* "kenlm.pyx":151
+  /* "kenlm.pyx":150
  *     pipeline.initial_probs.adder_out.total_memory = 32768;
  *     pipeline.initial_probs.adder_out.block_count = 2;
  *     pipeline.read_backoffs.total_memory = 32768;             # <<<<<<<<<<<<<<
@@ -3969,7 +3943,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  */
   __pyx_v_pipeline.read_backoffs.total_memory = 0x8000;
 
-  /* "kenlm.pyx":152
+  /* "kenlm.pyx":151
  *     pipeline.initial_probs.adder_out.block_count = 2;
  *     pipeline.read_backoffs.total_memory = 32768;
  *     pipeline.read_backoffs.block_count = 2;             # <<<<<<<<<<<<<<
@@ -3978,49 +3952,49 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  */
   __pyx_v_pipeline.read_backoffs.block_count = 2;
 
-  /* "kenlm.pyx":156
+  /* "kenlm.pyx":155
  *     cdef _kenlm.scoped_fd _in
  *     cdef _kenlm.scoped_fd _out
  *     _in.reset(_kenlm.OpenReadOrThrow(path_text_file))             # <<<<<<<<<<<<<<
  *     _out.reset(_kenlm.CreateOrThrow(path_arpa_file))
  * 
  */
-  __pyx_t_18 = __Pyx_PyObject_AsWritableString(__pyx_v_path_text_file); if (unlikely((!__pyx_t_18) && PyErr_Occurred())) __PYX_ERR(0, 156, __pyx_L1_error)
+  __pyx_t_18 = __Pyx_PyObject_AsWritableString(__pyx_v_path_text_file); if (unlikely((!__pyx_t_18) && PyErr_Occurred())) __PYX_ERR(0, 155, __pyx_L1_error)
   try {
     __pyx_t_19 = util::OpenReadOrThrow(__pyx_t_18);
   } catch(...) {
     __Pyx_CppExn2PyErr();
-    __PYX_ERR(0, 156, __pyx_L1_error)
+    __PYX_ERR(0, 155, __pyx_L1_error)
   }
   try {
     __pyx_v__in.reset(__pyx_t_19);
   } catch(...) {
     __Pyx_CppExn2PyErr();
-    __PYX_ERR(0, 156, __pyx_L1_error)
+    __PYX_ERR(0, 155, __pyx_L1_error)
   }
 
-  /* "kenlm.pyx":157
+  /* "kenlm.pyx":156
  *     cdef _kenlm.scoped_fd _out
  *     _in.reset(_kenlm.OpenReadOrThrow(path_text_file))
  *     _out.reset(_kenlm.CreateOrThrow(path_arpa_file))             # <<<<<<<<<<<<<<
  * 
  *     if intermediate is None:
  */
-  __pyx_t_18 = __Pyx_PyObject_AsWritableString(__pyx_v_path_arpa_file); if (unlikely((!__pyx_t_18) && PyErr_Occurred())) __PYX_ERR(0, 157, __pyx_L1_error)
+  __pyx_t_18 = __Pyx_PyObject_AsWritableString(__pyx_v_path_arpa_file); if (unlikely((!__pyx_t_18) && PyErr_Occurred())) __PYX_ERR(0, 156, __pyx_L1_error)
   try {
     __pyx_t_19 = util::CreateOrThrow(__pyx_t_18);
   } catch(...) {
     __Pyx_CppExn2PyErr();
-    __PYX_ERR(0, 157, __pyx_L1_error)
+    __PYX_ERR(0, 156, __pyx_L1_error)
   }
   try {
     __pyx_v__out.reset(__pyx_t_19);
   } catch(...) {
     __Pyx_CppExn2PyErr();
-    __PYX_ERR(0, 157, __pyx_L1_error)
+    __PYX_ERR(0, 156, __pyx_L1_error)
   }
 
-  /* "kenlm.pyx":159
+  /* "kenlm.pyx":158
  *     _out.reset(_kenlm.CreateOrThrow(path_arpa_file))
  * 
  *     if intermediate is None:             # <<<<<<<<<<<<<<
@@ -4031,7 +4005,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   __pyx_t_3 = (__pyx_t_4 != 0);
   if (__pyx_t_3) {
 
-    /* "kenlm.pyx":160
+    /* "kenlm.pyx":159
  * 
  *     if intermediate is None:
  *         pipeline.renumber_vocabulary = False             # <<<<<<<<<<<<<<
@@ -4040,16 +4014,16 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  */
     __pyx_v_pipeline.renumber_vocabulary = 0;
 
-    /* "kenlm.pyx":161
+    /* "kenlm.pyx":160
  *     if intermediate is None:
  *         pipeline.renumber_vocabulary = False
  *         output = Output(pipeline.sort.temp_prefix, False, False)             # <<<<<<<<<<<<<<
  *     else:
  *         pipeline.renumber_vocabulary = True
  */
-    __pyx_t_8 = __pyx_convert_PyBytes_string_to_py_std__in_string(__pyx_v_pipeline.sort.temp_prefix); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 161, __pyx_L1_error)
+    __pyx_t_8 = __pyx_convert_PyBytes_string_to_py_std__in_string(__pyx_v_pipeline.sort.temp_prefix); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 160, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
-    __pyx_t_14 = PyTuple_New(3); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 161, __pyx_L1_error)
+    __pyx_t_14 = PyTuple_New(3); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 160, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_14);
     __Pyx_GIVEREF(__pyx_t_8);
     PyTuple_SET_ITEM(__pyx_t_14, 0, __pyx_t_8);
@@ -4060,13 +4034,13 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
     __Pyx_GIVEREF(Py_False);
     PyTuple_SET_ITEM(__pyx_t_14, 2, Py_False);
     __pyx_t_8 = 0;
-    __pyx_t_8 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_5kenlm_Output), __pyx_t_14, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 161, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_5kenlm_Output), __pyx_t_14, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 160, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
     __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
     __pyx_v_output = ((struct __pyx_obj_5kenlm_Output *)__pyx_t_8);
     __pyx_t_8 = 0;
 
-    /* "kenlm.pyx":159
+    /* "kenlm.pyx":158
  *     _out.reset(_kenlm.CreateOrThrow(path_arpa_file))
  * 
  *     if intermediate is None:             # <<<<<<<<<<<<<<
@@ -4076,7 +4050,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
     goto __pyx_L25;
   }
 
-  /* "kenlm.pyx":163
+  /* "kenlm.pyx":162
  *         output = Output(pipeline.sort.temp_prefix, False, False)
  *     else:
  *         pipeline.renumber_vocabulary = True             # <<<<<<<<<<<<<<
@@ -4086,14 +4060,14 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   /*else*/ {
     __pyx_v_pipeline.renumber_vocabulary = 1;
 
-    /* "kenlm.pyx":164
+    /* "kenlm.pyx":163
  *     else:
  *         pipeline.renumber_vocabulary = True
  *         output = Output(intermediate, False, False)             # <<<<<<<<<<<<<<
  * 
  *     output.Add(_out.release(), verbose_header)
  */
-    __pyx_t_8 = PyTuple_New(3); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 164, __pyx_L1_error)
+    __pyx_t_8 = PyTuple_New(3); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 163, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
     __Pyx_INCREF(__pyx_v_intermediate);
     __Pyx_GIVEREF(__pyx_v_intermediate);
@@ -4104,7 +4078,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
     __Pyx_INCREF(Py_False);
     __Pyx_GIVEREF(Py_False);
     PyTuple_SET_ITEM(__pyx_t_8, 2, Py_False);
-    __pyx_t_14 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_5kenlm_Output), __pyx_t_8, NULL); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 164, __pyx_L1_error)
+    __pyx_t_14 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_5kenlm_Output), __pyx_t_8, NULL); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 163, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_14);
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
     __pyx_v_output = ((struct __pyx_obj_5kenlm_Output *)__pyx_t_14);
@@ -4112,22 +4086,22 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   }
   __pyx_L25:;
 
-  /* "kenlm.pyx":166
+  /* "kenlm.pyx":165
  *         output = Output(intermediate, False, False)
  * 
  *     output.Add(_out.release(), verbose_header)             # <<<<<<<<<<<<<<
  * 
- * 
+ *     Pipeline(pipeline, _in.release(), output)
  */
-  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_output), __pyx_n_s_Add); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 166, __pyx_L1_error)
+  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_output), __pyx_n_s_Add); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 165, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   try {
     __pyx_t_19 = __pyx_v__out.release();
   } catch(...) {
     __Pyx_CppExn2PyErr();
-    __PYX_ERR(0, 166, __pyx_L1_error)
+    __PYX_ERR(0, 165, __pyx_L1_error)
   }
-  __pyx_t_15 = __Pyx_PyInt_From_int(__pyx_t_19); if (unlikely(!__pyx_t_15)) __PYX_ERR(0, 166, __pyx_L1_error)
+  __pyx_t_15 = __Pyx_PyInt_From_int(__pyx_t_19); if (unlikely(!__pyx_t_15)) __PYX_ERR(0, 165, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_15);
   __pyx_t_9 = NULL;
   __pyx_t_19 = 0;
@@ -4144,7 +4118,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   #if CYTHON_FAST_PYCALL
   if (PyFunction_Check(__pyx_t_8)) {
     PyObject *__pyx_temp[3] = {__pyx_t_9, __pyx_t_15, __pyx_v_verbose_header};
-    __pyx_t_14 = __Pyx_PyFunction_FastCall(__pyx_t_8, __pyx_temp+1-__pyx_t_19, 2+__pyx_t_19); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 166, __pyx_L1_error)
+    __pyx_t_14 = __Pyx_PyFunction_FastCall(__pyx_t_8, __pyx_temp+1-__pyx_t_19, 2+__pyx_t_19); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 165, __pyx_L1_error)
     __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_GOTREF(__pyx_t_14);
     __Pyx_DECREF(__pyx_t_15); __pyx_t_15 = 0;
@@ -4153,14 +4127,14 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   #if CYTHON_FAST_PYCCALL
   if (__Pyx_PyFastCFunction_Check(__pyx_t_8)) {
     PyObject *__pyx_temp[3] = {__pyx_t_9, __pyx_t_15, __pyx_v_verbose_header};
-    __pyx_t_14 = __Pyx_PyCFunction_FastCall(__pyx_t_8, __pyx_temp+1-__pyx_t_19, 2+__pyx_t_19); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 166, __pyx_L1_error)
+    __pyx_t_14 = __Pyx_PyCFunction_FastCall(__pyx_t_8, __pyx_temp+1-__pyx_t_19, 2+__pyx_t_19); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 165, __pyx_L1_error)
     __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
     __Pyx_GOTREF(__pyx_t_14);
     __Pyx_DECREF(__pyx_t_15); __pyx_t_15 = 0;
   } else
   #endif
   {
-    __pyx_t_20 = PyTuple_New(2+__pyx_t_19); if (unlikely(!__pyx_t_20)) __PYX_ERR(0, 166, __pyx_L1_error)
+    __pyx_t_20 = PyTuple_New(2+__pyx_t_19); if (unlikely(!__pyx_t_20)) __PYX_ERR(0, 165, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_20);
     if (__pyx_t_9) {
       __Pyx_GIVEREF(__pyx_t_9); PyTuple_SET_ITEM(__pyx_t_20, 0, __pyx_t_9); __pyx_t_9 = NULL;
@@ -4171,29 +4145,29 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
     __Pyx_GIVEREF(__pyx_v_verbose_header);
     PyTuple_SET_ITEM(__pyx_t_20, 1+__pyx_t_19, __pyx_v_verbose_header);
     __pyx_t_15 = 0;
-    __pyx_t_14 = __Pyx_PyObject_Call(__pyx_t_8, __pyx_t_20, NULL); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 166, __pyx_L1_error)
+    __pyx_t_14 = __Pyx_PyObject_Call(__pyx_t_8, __pyx_t_20, NULL); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 165, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_14);
     __Pyx_DECREF(__pyx_t_20); __pyx_t_20 = 0;
   }
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
 
-  /* "kenlm.pyx":169
- * 
+  /* "kenlm.pyx":167
+ *     output.Add(_out.release(), verbose_header)
  * 
  *     Pipeline(pipeline, _in.release(), output)             # <<<<<<<<<<<<<<
  * 
- * cdef class FullScoreReturn:
+ * 
  */
   try {
     __pyx_t_19 = __pyx_v__in.release();
   } catch(...) {
     __Pyx_CppExn2PyErr();
-    __PYX_ERR(0, 169, __pyx_L1_error)
+    __PYX_ERR(0, 167, __pyx_L1_error)
   }
-  __pyx_t_14 = __Pyx_PyInt_From_int(__pyx_t_19); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 169, __pyx_L1_error)
+  __pyx_t_14 = __Pyx_PyInt_From_int(__pyx_t_19); if (unlikely(!__pyx_t_14)) __PYX_ERR(0, 167, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_14);
-  __pyx_t_8 = __pyx_f_5kenlm_Pipeline(__pyx_v_pipeline, __pyx_t_14, __pyx_v_output); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 169, __pyx_L1_error)
+  __pyx_t_8 = __pyx_f_5kenlm_Pipeline(__pyx_v_pipeline, __pyx_t_14, __pyx_v_output); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 167, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
   __Pyx_DECREF(__pyx_t_14); __pyx_t_14 = 0;
   __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
@@ -4203,7 +4177,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
  * 
  * def compute_ngram(             # <<<<<<<<<<<<<<
  *         path_text_file, path_arpa_file,
- *         order=2,
+ *         order=3,
  */
 
   /* function exit code */
@@ -4227,7 +4201,7 @@ static PyObject *__pyx_pf_5kenlm_compute_ngram(CYTHON_UNUSED PyObject *__pyx_sel
   return __pyx_r;
 }
 
-/* "kenlm.pyx":184
+/* "kenlm.pyx":183
  *     cdef bint oov
  * 
  *     def __cinit__(self, log_prob, ngram_length, oov):             # <<<<<<<<<<<<<<
@@ -4269,17 +4243,17 @@ static int __pyx_pw_5kenlm_15FullScoreReturn_1__cinit__(PyObject *__pyx_v_self, 
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_ngram_length)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 3, 3, 1); __PYX_ERR(0, 184, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 3, 3, 1); __PYX_ERR(0, 183, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_oov)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 3, 3, 2); __PYX_ERR(0, 184, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 3, 3, 2); __PYX_ERR(0, 183, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__cinit__") < 0)) __PYX_ERR(0, 184, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__cinit__") < 0)) __PYX_ERR(0, 183, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -4294,7 +4268,7 @@ static int __pyx_pw_5kenlm_15FullScoreReturn_1__cinit__(PyObject *__pyx_v_self, 
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 184, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 183, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("kenlm.FullScoreReturn.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -4315,37 +4289,37 @@ static int __pyx_pf_5kenlm_15FullScoreReturn___cinit__(struct __pyx_obj_5kenlm_F
   int __pyx_t_3;
   __Pyx_RefNannySetupContext("__cinit__", 0);
 
-  /* "kenlm.pyx":185
+  /* "kenlm.pyx":184
  * 
  *     def __cinit__(self, log_prob, ngram_length, oov):
  *         self.log_prob = log_prob             # <<<<<<<<<<<<<<
  *         self.ngram_length = ngram_length
  *         self.oov = oov
  */
-  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_log_prob); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 185, __pyx_L1_error)
+  __pyx_t_1 = __pyx_PyFloat_AsFloat(__pyx_v_log_prob); if (unlikely((__pyx_t_1 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 184, __pyx_L1_error)
   __pyx_v_self->log_prob = __pyx_t_1;
 
-  /* "kenlm.pyx":186
+  /* "kenlm.pyx":185
  *     def __cinit__(self, log_prob, ngram_length, oov):
  *         self.log_prob = log_prob
  *         self.ngram_length = ngram_length             # <<<<<<<<<<<<<<
  *         self.oov = oov
  * 
  */
-  __pyx_t_2 = __Pyx_PyInt_As_int(__pyx_v_ngram_length); if (unlikely((__pyx_t_2 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 186, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_As_int(__pyx_v_ngram_length); if (unlikely((__pyx_t_2 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 185, __pyx_L1_error)
   __pyx_v_self->ngram_length = __pyx_t_2;
 
-  /* "kenlm.pyx":187
+  /* "kenlm.pyx":186
  *         self.log_prob = log_prob
  *         self.ngram_length = ngram_length
  *         self.oov = oov             # <<<<<<<<<<<<<<
  * 
  *     def __repr__(self):
  */
-  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_v_oov); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 187, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_v_oov); if (unlikely((__pyx_t_3 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 186, __pyx_L1_error)
   __pyx_v_self->oov = __pyx_t_3;
 
-  /* "kenlm.pyx":184
+  /* "kenlm.pyx":183
  *     cdef bint oov
  * 
  *     def __cinit__(self, log_prob, ngram_length, oov):             # <<<<<<<<<<<<<<
@@ -4364,7 +4338,7 @@ static int __pyx_pf_5kenlm_15FullScoreReturn___cinit__(struct __pyx_obj_5kenlm_F
   return __pyx_r;
 }
 
-/* "kenlm.pyx":189
+/* "kenlm.pyx":188
  *         self.oov = oov
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -4399,7 +4373,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_2__repr__(struct __pyx_obj_5k
   PyObject *__pyx_t_9 = NULL;
   __Pyx_RefNannySetupContext("__repr__", 0);
 
-  /* "kenlm.pyx":190
+  /* "kenlm.pyx":189
  * 
  *     def __repr__(self):
  *         return '{0}({1}, {2}, {3})'.format(self.__class__.__name__, repr(self.log_prob), repr(self.ngram_length), repr(self.oov))             # <<<<<<<<<<<<<<
@@ -4407,26 +4381,26 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_2__repr__(struct __pyx_obj_5k
  *     property log_prob:
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_0_1_2_3, __pyx_n_s_format); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_0_1_2_3, __pyx_n_s_format); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_class); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_class); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_name); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_name); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->log_prob); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->log_prob); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_5 = PyObject_Repr(__pyx_t_3); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_5 = PyObject_Repr(__pyx_t_3); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_self->ngram_length); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_int(__pyx_v_self->ngram_length); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_6 = PyObject_Repr(__pyx_t_3); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_6 = PyObject_Repr(__pyx_t_3); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyBool_FromLong(__pyx_v_self->oov); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyBool_FromLong(__pyx_v_self->oov); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_7 = PyObject_Repr(__pyx_t_3); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_t_7 = PyObject_Repr(__pyx_t_3); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_t_3 = NULL;
@@ -4444,7 +4418,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_2__repr__(struct __pyx_obj_5k
   #if CYTHON_FAST_PYCALL
   if (PyFunction_Check(__pyx_t_2)) {
     PyObject *__pyx_temp[5] = {__pyx_t_3, __pyx_t_4, __pyx_t_5, __pyx_t_6, __pyx_t_7};
-    __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_8, 4+__pyx_t_8); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 190, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_8, 4+__pyx_t_8); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 189, __pyx_L1_error)
     __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
@@ -4456,7 +4430,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_2__repr__(struct __pyx_obj_5k
   #if CYTHON_FAST_PYCCALL
   if (__Pyx_PyFastCFunction_Check(__pyx_t_2)) {
     PyObject *__pyx_temp[5] = {__pyx_t_3, __pyx_t_4, __pyx_t_5, __pyx_t_6, __pyx_t_7};
-    __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_8, 4+__pyx_t_8); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 190, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-__pyx_t_8, 4+__pyx_t_8); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 189, __pyx_L1_error)
     __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
@@ -4466,7 +4440,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_2__repr__(struct __pyx_obj_5k
   } else
   #endif
   {
-    __pyx_t_9 = PyTuple_New(4+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 190, __pyx_L1_error)
+    __pyx_t_9 = PyTuple_New(4+__pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 189, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
     if (__pyx_t_3) {
       __Pyx_GIVEREF(__pyx_t_3); PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_t_3); __pyx_t_3 = NULL;
@@ -4483,7 +4457,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_2__repr__(struct __pyx_obj_5k
     __pyx_t_5 = 0;
     __pyx_t_6 = 0;
     __pyx_t_7 = 0;
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_9, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 190, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_9, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 189, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
   }
@@ -4492,7 +4466,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_2__repr__(struct __pyx_obj_5k
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":189
+  /* "kenlm.pyx":188
  *         self.oov = oov
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -4518,7 +4492,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_2__repr__(struct __pyx_obj_5k
   return __pyx_r;
 }
 
-/* "kenlm.pyx":193
+/* "kenlm.pyx":192
  * 
  *     property log_prob:
  *         def __get__(self):             # <<<<<<<<<<<<<<
@@ -4545,7 +4519,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_8log_prob___get__(struct __py
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "kenlm.pyx":194
+  /* "kenlm.pyx":193
  *     property log_prob:
  *         def __get__(self):
  *             return self.log_prob             # <<<<<<<<<<<<<<
@@ -4553,13 +4527,13 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_8log_prob___get__(struct __py
  *     property ngram_length:
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->log_prob); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 194, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->log_prob); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":193
+  /* "kenlm.pyx":192
  * 
  *     property log_prob:
  *         def __get__(self):             # <<<<<<<<<<<<<<
@@ -4578,7 +4552,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_8log_prob___get__(struct __py
   return __pyx_r;
 }
 
-/* "kenlm.pyx":197
+/* "kenlm.pyx":196
  * 
  *     property ngram_length:
  *         def __get__(self):             # <<<<<<<<<<<<<<
@@ -4605,7 +4579,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_12ngram_length___get__(struct
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "kenlm.pyx":198
+  /* "kenlm.pyx":197
  *     property ngram_length:
  *         def __get__(self):
  *             return self.ngram_length             # <<<<<<<<<<<<<<
@@ -4613,13 +4587,13 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_12ngram_length___get__(struct
  *     property oov:
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_self->ngram_length); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 198, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_self->ngram_length); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 197, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":197
+  /* "kenlm.pyx":196
  * 
  *     property ngram_length:
  *         def __get__(self):             # <<<<<<<<<<<<<<
@@ -4638,7 +4612,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_12ngram_length___get__(struct
   return __pyx_r;
 }
 
-/* "kenlm.pyx":201
+/* "kenlm.pyx":200
  * 
  *     property oov:
  *         def __get__(self):             # <<<<<<<<<<<<<<
@@ -4665,7 +4639,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_3oov___get__(struct __pyx_obj
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "kenlm.pyx":202
+  /* "kenlm.pyx":201
  *     property oov:
  *         def __get__(self):
  *             return self.oov             # <<<<<<<<<<<<<<
@@ -4673,13 +4647,13 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_3oov___get__(struct __pyx_obj
  * cdef class State:
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyBool_FromLong(__pyx_v_self->oov); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 202, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyBool_FromLong(__pyx_v_self->oov); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 201, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":201
+  /* "kenlm.pyx":200
  * 
  *     property oov:
  *         def __get__(self):             # <<<<<<<<<<<<<<
@@ -4805,7 +4779,7 @@ static PyObject *__pyx_pf_5kenlm_15FullScoreReturn_6__setstate_cython__(CYTHON_U
   return __pyx_r;
 }
 
-/* "kenlm.pyx":215
+/* "kenlm.pyx":214
  *     cdef _kenlm.State _c_state
  * 
  *     def __richcmp__(State qa, State qb, int op):             # <<<<<<<<<<<<<<
@@ -4819,8 +4793,8 @@ static PyObject *__pyx_pw_5kenlm_5State_1__richcmp__(PyObject *__pyx_v_qa, PyObj
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__richcmp__ (wrapper)", 0);
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_qa), __pyx_ptype_5kenlm_State, 1, "qa", 0))) __PYX_ERR(0, 215, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_qb), __pyx_ptype_5kenlm_State, 1, "qb", 0))) __PYX_ERR(0, 215, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_qa), __pyx_ptype_5kenlm_State, 1, "qa", 0))) __PYX_ERR(0, 214, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_qb), __pyx_ptype_5kenlm_State, 1, "qb", 0))) __PYX_ERR(0, 214, __pyx_L1_error)
   __pyx_r = __pyx_pf_5kenlm_5State___richcmp__(((struct __pyx_obj_5kenlm_State *)__pyx_v_qa), ((struct __pyx_obj_5kenlm_State *)__pyx_v_qb), ((int)__pyx_v_op));
 
   /* function exit code */
@@ -4839,7 +4813,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__richcmp__", 0);
 
-  /* "kenlm.pyx":216
+  /* "kenlm.pyx":215
  * 
  *     def __richcmp__(State qa, State qb, int op):
  *         r = qa._c_state.Compare(qb._c_state)             # <<<<<<<<<<<<<<
@@ -4848,7 +4822,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  */
   __pyx_v_r = __pyx_v_qa->_c_state.Compare(__pyx_v_qb->_c_state);
 
-  /* "kenlm.pyx":217
+  /* "kenlm.pyx":216
  *     def __richcmp__(State qa, State qb, int op):
  *         r = qa._c_state.Compare(qb._c_state)
  *         if op == 0:    # <             # <<<<<<<<<<<<<<
@@ -4858,7 +4832,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
   switch (__pyx_v_op) {
     case 0:
 
-    /* "kenlm.pyx":218
+    /* "kenlm.pyx":217
  *         r = qa._c_state.Compare(qb._c_state)
  *         if op == 0:    # <
  *             return r < 0             # <<<<<<<<<<<<<<
@@ -4866,13 +4840,13 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  *             return r <= 0
  */
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_1 = __Pyx_PyBool_FromLong((__pyx_v_r < 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 218, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyBool_FromLong((__pyx_v_r < 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 217, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_r = __pyx_t_1;
     __pyx_t_1 = 0;
     goto __pyx_L0;
 
-    /* "kenlm.pyx":217
+    /* "kenlm.pyx":216
  *     def __richcmp__(State qa, State qb, int op):
  *         r = qa._c_state.Compare(qb._c_state)
  *         if op == 0:    # <             # <<<<<<<<<<<<<<
@@ -4881,7 +4855,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  */
     break;
 
-    /* "kenlm.pyx":219
+    /* "kenlm.pyx":218
  *         if op == 0:    # <
  *             return r < 0
  *         elif op == 1:  # <=             # <<<<<<<<<<<<<<
@@ -4890,7 +4864,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  */
     case 1:
 
-    /* "kenlm.pyx":220
+    /* "kenlm.pyx":219
  *             return r < 0
  *         elif op == 1:  # <=
  *             return r <= 0             # <<<<<<<<<<<<<<
@@ -4898,13 +4872,13 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  *             return r == 0
  */
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_1 = __Pyx_PyBool_FromLong((__pyx_v_r <= 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 220, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyBool_FromLong((__pyx_v_r <= 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 219, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_r = __pyx_t_1;
     __pyx_t_1 = 0;
     goto __pyx_L0;
 
-    /* "kenlm.pyx":219
+    /* "kenlm.pyx":218
  *         if op == 0:    # <
  *             return r < 0
  *         elif op == 1:  # <=             # <<<<<<<<<<<<<<
@@ -4913,7 +4887,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  */
     break;
 
-    /* "kenlm.pyx":221
+    /* "kenlm.pyx":220
  *         elif op == 1:  # <=
  *             return r <= 0
  *         elif op == 2:  # ==             # <<<<<<<<<<<<<<
@@ -4922,7 +4896,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  */
     case 2:
 
-    /* "kenlm.pyx":222
+    /* "kenlm.pyx":221
  *             return r <= 0
  *         elif op == 2:  # ==
  *             return r == 0             # <<<<<<<<<<<<<<
@@ -4930,13 +4904,13 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  *             return r != 0
  */
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_1 = __Pyx_PyBool_FromLong((__pyx_v_r == 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 222, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyBool_FromLong((__pyx_v_r == 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 221, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_r = __pyx_t_1;
     __pyx_t_1 = 0;
     goto __pyx_L0;
 
-    /* "kenlm.pyx":221
+    /* "kenlm.pyx":220
  *         elif op == 1:  # <=
  *             return r <= 0
  *         elif op == 2:  # ==             # <<<<<<<<<<<<<<
@@ -4945,7 +4919,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  */
     break;
 
-    /* "kenlm.pyx":223
+    /* "kenlm.pyx":222
  *         elif op == 2:  # ==
  *             return r == 0
  *         elif op == 3:  # !=             # <<<<<<<<<<<<<<
@@ -4954,7 +4928,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  */
     case 3:
 
-    /* "kenlm.pyx":224
+    /* "kenlm.pyx":223
  *             return r == 0
  *         elif op == 3:  # !=
  *             return r != 0             # <<<<<<<<<<<<<<
@@ -4962,13 +4936,13 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  *             return r > 0
  */
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_1 = __Pyx_PyBool_FromLong((__pyx_v_r != 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 224, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyBool_FromLong((__pyx_v_r != 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 223, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_r = __pyx_t_1;
     __pyx_t_1 = 0;
     goto __pyx_L0;
 
-    /* "kenlm.pyx":223
+    /* "kenlm.pyx":222
  *         elif op == 2:  # ==
  *             return r == 0
  *         elif op == 3:  # !=             # <<<<<<<<<<<<<<
@@ -4977,7 +4951,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  */
     break;
 
-    /* "kenlm.pyx":225
+    /* "kenlm.pyx":224
  *         elif op == 3:  # !=
  *             return r != 0
  *         elif op == 4:  # >             # <<<<<<<<<<<<<<
@@ -4986,7 +4960,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  */
     case 4:
 
-    /* "kenlm.pyx":226
+    /* "kenlm.pyx":225
  *             return r != 0
  *         elif op == 4:  # >
  *             return r > 0             # <<<<<<<<<<<<<<
@@ -4994,13 +4968,13 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  *             return r >= 0
  */
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_1 = __Pyx_PyBool_FromLong((__pyx_v_r > 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 226, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyBool_FromLong((__pyx_v_r > 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 225, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_r = __pyx_t_1;
     __pyx_t_1 = 0;
     goto __pyx_L0;
 
-    /* "kenlm.pyx":225
+    /* "kenlm.pyx":224
  *         elif op == 3:  # !=
  *             return r != 0
  *         elif op == 4:  # >             # <<<<<<<<<<<<<<
@@ -5010,7 +4984,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
     break;
     default:
 
-    /* "kenlm.pyx":228
+    /* "kenlm.pyx":227
  *             return r > 0
  *         else:          # >=
  *             return r >= 0             # <<<<<<<<<<<<<<
@@ -5018,7 +4992,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
  *     def __hash__(self):
  */
     __Pyx_XDECREF(__pyx_r);
-    __pyx_t_1 = __Pyx_PyBool_FromLong((__pyx_v_r >= 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 228, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyBool_FromLong((__pyx_v_r >= 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 227, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_r = __pyx_t_1;
     __pyx_t_1 = 0;
@@ -5026,7 +5000,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
     break;
   }
 
-  /* "kenlm.pyx":215
+  /* "kenlm.pyx":214
  *     cdef _kenlm.State _c_state
  * 
  *     def __richcmp__(State qa, State qb, int op):             # <<<<<<<<<<<<<<
@@ -5045,7 +5019,7 @@ static PyObject *__pyx_pf_5kenlm_5State___richcmp__(struct __pyx_obj_5kenlm_Stat
   return __pyx_r;
 }
 
-/* "kenlm.pyx":230
+/* "kenlm.pyx":229
  *             return r >= 0
  * 
  *     def __hash__(self):             # <<<<<<<<<<<<<<
@@ -5071,7 +5045,7 @@ static Py_hash_t __pyx_pf_5kenlm_5State_2__hash__(struct __pyx_obj_5kenlm_State 
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__hash__", 0);
 
-  /* "kenlm.pyx":231
+  /* "kenlm.pyx":230
  * 
  *     def __hash__(self):
  *         return _kenlm.hash_value(self._c_state)             # <<<<<<<<<<<<<<
@@ -5081,7 +5055,7 @@ static Py_hash_t __pyx_pf_5kenlm_5State_2__hash__(struct __pyx_obj_5kenlm_State 
   __pyx_r = lm::ngram::hash_value(__pyx_v_self->_c_state);
   goto __pyx_L0;
 
-  /* "kenlm.pyx":230
+  /* "kenlm.pyx":229
  *             return r >= 0
  * 
  *     def __hash__(self):             # <<<<<<<<<<<<<<
@@ -5203,7 +5177,7 @@ static PyObject *__pyx_pf_5kenlm_5State_6__setstate_cython__(CYTHON_UNUSED struc
   return __pyx_r;
 }
 
-/* "kenlm.pyx":247
+/* "kenlm.pyx":246
  *     cdef _kenlm.Config _c_config
  * 
  *     def __init__(self):             # <<<<<<<<<<<<<<
@@ -5233,7 +5207,7 @@ static int __pyx_pf_5kenlm_6Config___init__(struct __pyx_obj_5kenlm_Config *__py
   lm::ngram::Config __pyx_t_1;
   __Pyx_RefNannySetupContext("__init__", 0);
 
-  /* "kenlm.pyx":248
+  /* "kenlm.pyx":247
  * 
  *     def __init__(self):
  *         self._c_config = _kenlm.Config()             # <<<<<<<<<<<<<<
@@ -5244,11 +5218,11 @@ static int __pyx_pf_5kenlm_6Config___init__(struct __pyx_obj_5kenlm_Config *__py
     __pyx_t_1 = lm::ngram::Config();
   } catch(...) {
     __Pyx_CppExn2PyErr();
-    __PYX_ERR(0, 248, __pyx_L1_error)
+    __PYX_ERR(0, 247, __pyx_L1_error)
   }
   __pyx_v_self->_c_config = __pyx_t_1;
 
-  /* "kenlm.pyx":247
+  /* "kenlm.pyx":246
  *     cdef _kenlm.Config _c_config
  * 
  *     def __init__(self):             # <<<<<<<<<<<<<<
@@ -5267,7 +5241,7 @@ static int __pyx_pf_5kenlm_6Config___init__(struct __pyx_obj_5kenlm_Config *__py
   return __pyx_r;
 }
 
-/* "kenlm.pyx":251
+/* "kenlm.pyx":250
  * 
  *     property load_method:
  *         def __get__(self):             # <<<<<<<<<<<<<<
@@ -5294,7 +5268,7 @@ static PyObject *__pyx_pf_5kenlm_6Config_11load_method___get__(struct __pyx_obj_
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "kenlm.pyx":252
+  /* "kenlm.pyx":251
  *     property load_method:
  *         def __get__(self):
  *             return self._c_config.load_method             # <<<<<<<<<<<<<<
@@ -5302,13 +5276,13 @@ static PyObject *__pyx_pf_5kenlm_6Config_11load_method___get__(struct __pyx_obj_
  *             self._c_config.load_method = to
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_enum__util_3a__3a_LoadMethod(__pyx_v_self->_c_config.load_method); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 252, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_enum__util_3a__3a_LoadMethod(__pyx_v_self->_c_config.load_method); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 251, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":251
+  /* "kenlm.pyx":250
  * 
  *     property load_method:
  *         def __get__(self):             # <<<<<<<<<<<<<<
@@ -5327,7 +5301,7 @@ static PyObject *__pyx_pf_5kenlm_6Config_11load_method___get__(struct __pyx_obj_
   return __pyx_r;
 }
 
-/* "kenlm.pyx":253
+/* "kenlm.pyx":252
  *         def __get__(self):
  *             return self._c_config.load_method
  *         def __set__(self, to):             # <<<<<<<<<<<<<<
@@ -5354,17 +5328,17 @@ static int __pyx_pf_5kenlm_6Config_11load_method_2__set__(struct __pyx_obj_5kenl
   enum util::LoadMethod __pyx_t_1;
   __Pyx_RefNannySetupContext("__set__", 0);
 
-  /* "kenlm.pyx":254
+  /* "kenlm.pyx":253
  *             return self._c_config.load_method
  *         def __set__(self, to):
  *             self._c_config.load_method = to             # <<<<<<<<<<<<<<
  * 
  * cdef class Model:
  */
-  __pyx_t_1 = ((enum util::LoadMethod)__Pyx_PyInt_As_enum__util_3a__3a_LoadMethod(__pyx_v_to)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 254, __pyx_L1_error)
+  __pyx_t_1 = ((enum util::LoadMethod)__Pyx_PyInt_As_enum__util_3a__3a_LoadMethod(__pyx_v_to)); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 253, __pyx_L1_error)
   __pyx_v_self->_c_config.load_method = __pyx_t_1;
 
-  /* "kenlm.pyx":253
+  /* "kenlm.pyx":252
  *         def __get__(self):
  *             return self._c_config.load_method
  *         def __set__(self, to):             # <<<<<<<<<<<<<<
@@ -5490,7 +5464,7 @@ static PyObject *__pyx_pf_5kenlm_6Config_4__setstate_cython__(CYTHON_UNUSED stru
   return __pyx_r;
 }
 
-/* "kenlm.pyx":265
+/* "kenlm.pyx":264
  *     cdef _kenlm.const_Vocabulary* vocab
  * 
  *     def __init__(self, path, Config config = Config()):             # <<<<<<<<<<<<<<
@@ -5538,7 +5512,7 @@ static int __pyx_pw_5kenlm_5Model_1__init__(PyObject *__pyx_v_self, PyObject *__
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__init__") < 0)) __PYX_ERR(0, 265, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__init__") < 0)) __PYX_ERR(0, 264, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -5554,13 +5528,13 @@ static int __pyx_pw_5kenlm_5Model_1__init__(PyObject *__pyx_v_self, PyObject *__
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__init__", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 265, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__init__", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 264, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("kenlm.Model.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_config), __pyx_ptype_5kenlm_Config, 1, "config", 0))) __PYX_ERR(0, 265, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_config), __pyx_ptype_5kenlm_Config, 1, "config", 0))) __PYX_ERR(0, 264, __pyx_L1_error)
   __pyx_r = __pyx_pf_5kenlm_5Model___init__(((struct __pyx_obj_5kenlm_Model *)__pyx_v_self), __pyx_v_path, __pyx_v_config);
 
   /* function exit code */
@@ -5592,22 +5566,22 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
   PyObject *__pyx_t_13 = NULL;
   __Pyx_RefNannySetupContext("__init__", 0);
 
-  /* "kenlm.pyx":272
+  /* "kenlm.pyx":271
  *         :param config: configuration options (see lm/config.hh for documentation)
  *         """
  *         self.path = os.path.abspath(as_str(path))             # <<<<<<<<<<<<<<
  *         try:
  *             self.model = _kenlm.LoadVirtual(self.path, config._c_config)
  */
-  __pyx_t_2 = __Pyx_GetModuleGlobalName(__pyx_n_s_os); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 272, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_GetModuleGlobalName(__pyx_n_s_os); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 271, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_path); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 272, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_path); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 271, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_abspath); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 272, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_abspath); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 271, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __pyx_f_5kenlm_as_str(__pyx_v_path); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 272, __pyx_L1_error)
+  __pyx_t_3 = __pyx_f_5kenlm_as_str(__pyx_v_path); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 271, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_t_4 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_2))) {
@@ -5620,14 +5594,14 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
     }
   }
   if (!__pyx_t_4) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 272, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 271, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_GOTREF(__pyx_t_1);
   } else {
     #if CYTHON_FAST_PYCALL
     if (PyFunction_Check(__pyx_t_2)) {
       PyObject *__pyx_temp[2] = {__pyx_t_4, __pyx_t_3};
-      __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 272, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 271, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -5636,33 +5610,33 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
     #if CYTHON_FAST_PYCCALL
     if (__Pyx_PyFastCFunction_Check(__pyx_t_2)) {
       PyObject *__pyx_temp[2] = {__pyx_t_4, __pyx_t_3};
-      __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 272, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 271, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     } else
     #endif
     {
-      __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 272, __pyx_L1_error)
+      __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 271, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_GIVEREF(__pyx_t_4); PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_4); __pyx_t_4 = NULL;
       __Pyx_GIVEREF(__pyx_t_3);
       PyTuple_SET_ITEM(__pyx_t_5, 0+1, __pyx_t_3);
       __pyx_t_3 = 0;
-      __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_5, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 272, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_5, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 271, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     }
   }
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (!(likely(PyBytes_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "bytes", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 272, __pyx_L1_error)
+  if (!(likely(PyBytes_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "bytes", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 271, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->path);
   __Pyx_DECREF(__pyx_v_self->path);
   __pyx_v_self->path = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":273
+  /* "kenlm.pyx":272
  *         """
  *         self.path = os.path.abspath(as_str(path))
  *         try:             # <<<<<<<<<<<<<<
@@ -5678,7 +5652,7 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
     __Pyx_XGOTREF(__pyx_t_8);
     /*try:*/ {
 
-      /* "kenlm.pyx":274
+      /* "kenlm.pyx":273
  *         self.path = os.path.abspath(as_str(path))
  *         try:
  *             self.model = _kenlm.LoadVirtual(self.path, config._c_config)             # <<<<<<<<<<<<<<
@@ -5687,18 +5661,18 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
  */
       if (unlikely(__pyx_v_self->path == Py_None)) {
         PyErr_SetString(PyExc_TypeError, "expected bytes, NoneType found");
-        __PYX_ERR(0, 274, __pyx_L3_error)
+        __PYX_ERR(0, 273, __pyx_L3_error)
       }
-      __pyx_t_9 = __Pyx_PyBytes_AsWritableString(__pyx_v_self->path); if (unlikely((!__pyx_t_9) && PyErr_Occurred())) __PYX_ERR(0, 274, __pyx_L3_error)
+      __pyx_t_9 = __Pyx_PyBytes_AsWritableString(__pyx_v_self->path); if (unlikely((!__pyx_t_9) && PyErr_Occurred())) __PYX_ERR(0, 273, __pyx_L3_error)
       try {
         __pyx_t_10 = lm::ngram::LoadVirtual(__pyx_t_9, __pyx_v_config->_c_config);
       } catch(...) {
         __Pyx_CppExn2PyErr();
-        __PYX_ERR(0, 274, __pyx_L3_error)
+        __PYX_ERR(0, 273, __pyx_L3_error)
       }
       __pyx_v_self->model = __pyx_t_10;
 
-      /* "kenlm.pyx":273
+      /* "kenlm.pyx":272
  *         """
  *         self.path = os.path.abspath(as_str(path))
  *         try:             # <<<<<<<<<<<<<<
@@ -5717,7 +5691,7 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
     __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-    /* "kenlm.pyx":275
+    /* "kenlm.pyx":274
  *         try:
  *             self.model = _kenlm.LoadVirtual(self.path, config._c_config)
  *         except RuntimeError as exception:             # <<<<<<<<<<<<<<
@@ -5727,45 +5701,45 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
     __pyx_t_11 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_RuntimeError);
     if (__pyx_t_11) {
       __Pyx_AddTraceback("kenlm.Model.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_1, &__pyx_t_2, &__pyx_t_5) < 0) __PYX_ERR(0, 275, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_1, &__pyx_t_2, &__pyx_t_5) < 0) __PYX_ERR(0, 274, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_INCREF(__pyx_t_2);
       __pyx_v_exception = __pyx_t_2;
 
-      /* "kenlm.pyx":276
+      /* "kenlm.pyx":275
  *             self.model = _kenlm.LoadVirtual(self.path, config._c_config)
  *         except RuntimeError as exception:
  *             exception_message = str(exception).replace('\n', ' ')             # <<<<<<<<<<<<<<
  *             raise IOError('Cannot read model \'{}\' ({})'.format(path, exception_message))\
  *                     from exception
  */
-      __pyx_t_3 = PyTuple_New(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 276, __pyx_L5_except_error)
+      __pyx_t_3 = PyTuple_New(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 275, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_INCREF(__pyx_v_exception);
       __Pyx_GIVEREF(__pyx_v_exception);
       PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_v_exception);
-      __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)(&PyString_Type)), __pyx_t_3, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 276, __pyx_L5_except_error)
+      __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)(&PyString_Type)), __pyx_t_3, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 275, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_replace); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 276, __pyx_L5_except_error)
+      __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_replace); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 275, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_tuple__24, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 276, __pyx_L5_except_error)
+      __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_tuple__24, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 275, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       __pyx_v_exception_message = __pyx_t_4;
       __pyx_t_4 = 0;
 
-      /* "kenlm.pyx":277
+      /* "kenlm.pyx":276
  *         except RuntimeError as exception:
  *             exception_message = str(exception).replace('\n', ' ')
  *             raise IOError('Cannot read model \'{}\' ({})'.format(path, exception_message))\             # <<<<<<<<<<<<<<
  *                     from exception
  *         self.vocab = &self.model.BaseVocabulary()
  */
-      __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_Cannot_read_model, __pyx_n_s_format); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 277, __pyx_L5_except_error)
+      __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_Cannot_read_model, __pyx_n_s_format); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 276, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_3);
       __pyx_t_12 = NULL;
       __pyx_t_11 = 0;
@@ -5782,7 +5756,7 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
       #if CYTHON_FAST_PYCALL
       if (PyFunction_Check(__pyx_t_3)) {
         PyObject *__pyx_temp[3] = {__pyx_t_12, __pyx_v_path, __pyx_v_exception_message};
-        __pyx_t_4 = __Pyx_PyFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_11, 2+__pyx_t_11); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 277, __pyx_L5_except_error)
+        __pyx_t_4 = __Pyx_PyFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_11, 2+__pyx_t_11); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 276, __pyx_L5_except_error)
         __Pyx_XDECREF(__pyx_t_12); __pyx_t_12 = 0;
         __Pyx_GOTREF(__pyx_t_4);
       } else
@@ -5790,13 +5764,13 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
       #if CYTHON_FAST_PYCCALL
       if (__Pyx_PyFastCFunction_Check(__pyx_t_3)) {
         PyObject *__pyx_temp[3] = {__pyx_t_12, __pyx_v_path, __pyx_v_exception_message};
-        __pyx_t_4 = __Pyx_PyCFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_11, 2+__pyx_t_11); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 277, __pyx_L5_except_error)
+        __pyx_t_4 = __Pyx_PyCFunction_FastCall(__pyx_t_3, __pyx_temp+1-__pyx_t_11, 2+__pyx_t_11); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 276, __pyx_L5_except_error)
         __Pyx_XDECREF(__pyx_t_12); __pyx_t_12 = 0;
         __Pyx_GOTREF(__pyx_t_4);
       } else
       #endif
       {
-        __pyx_t_13 = PyTuple_New(2+__pyx_t_11); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 277, __pyx_L5_except_error)
+        __pyx_t_13 = PyTuple_New(2+__pyx_t_11); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 276, __pyx_L5_except_error)
         __Pyx_GOTREF(__pyx_t_13);
         if (__pyx_t_12) {
           __Pyx_GIVEREF(__pyx_t_12); PyTuple_SET_ITEM(__pyx_t_13, 0, __pyx_t_12); __pyx_t_12 = NULL;
@@ -5807,21 +5781,21 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
         __Pyx_INCREF(__pyx_v_exception_message);
         __Pyx_GIVEREF(__pyx_v_exception_message);
         PyTuple_SET_ITEM(__pyx_t_13, 1+__pyx_t_11, __pyx_v_exception_message);
-        __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_13, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 277, __pyx_L5_except_error)
+        __pyx_t_4 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_13, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 276, __pyx_L5_except_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
       }
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_3 = PyTuple_New(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 277, __pyx_L5_except_error)
+      __pyx_t_3 = PyTuple_New(1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 276, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_GIVEREF(__pyx_t_4);
       PyTuple_SET_ITEM(__pyx_t_3, 0, __pyx_t_4);
       __pyx_t_4 = 0;
-      __pyx_t_4 = __Pyx_PyObject_Call(__pyx_builtin_IOError, __pyx_t_3, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 277, __pyx_L5_except_error)
+      __pyx_t_4 = __Pyx_PyObject_Call(__pyx_builtin_IOError, __pyx_t_3, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 276, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-      /* "kenlm.pyx":278
+      /* "kenlm.pyx":277
  *             exception_message = str(exception).replace('\n', ' ')
  *             raise IOError('Cannot read model \'{}\' ({})'.format(path, exception_message))\
  *                     from exception             # <<<<<<<<<<<<<<
@@ -5830,12 +5804,12 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
  */
       __Pyx_Raise(__pyx_t_4, 0, 0, __pyx_v_exception);
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __PYX_ERR(0, 277, __pyx_L5_except_error)
+      __PYX_ERR(0, 276, __pyx_L5_except_error)
     }
     goto __pyx_L5_except_error;
     __pyx_L5_except_error:;
 
-    /* "kenlm.pyx":273
+    /* "kenlm.pyx":272
  *         """
  *         self.path = os.path.abspath(as_str(path))
  *         try:             # <<<<<<<<<<<<<<
@@ -5850,7 +5824,7 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
     __pyx_L8_try_end:;
   }
 
-  /* "kenlm.pyx":279
+  /* "kenlm.pyx":278
  *             raise IOError('Cannot read model \'{}\' ({})'.format(path, exception_message))\
  *                     from exception
  *         self.vocab = &self.model.BaseVocabulary()             # <<<<<<<<<<<<<<
@@ -5859,7 +5833,7 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
  */
   __pyx_v_self->vocab = (&__pyx_v_self->model->BaseVocabulary());
 
-  /* "kenlm.pyx":265
+  /* "kenlm.pyx":264
  *     cdef _kenlm.const_Vocabulary* vocab
  * 
  *     def __init__(self, path, Config config = Config()):             # <<<<<<<<<<<<<<
@@ -5887,7 +5861,7 @@ static int __pyx_pf_5kenlm_5Model___init__(struct __pyx_obj_5kenlm_Model *__pyx_
   return __pyx_r;
 }
 
-/* "kenlm.pyx":281
+/* "kenlm.pyx":280
  *         self.vocab = &self.model.BaseVocabulary()
  * 
  *     def __dealloc__(self):             # <<<<<<<<<<<<<<
@@ -5910,7 +5884,7 @@ static void __pyx_pf_5kenlm_5Model_2__dealloc__(struct __pyx_obj_5kenlm_Model *_
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__dealloc__", 0);
 
-  /* "kenlm.pyx":282
+  /* "kenlm.pyx":281
  * 
  *     def __dealloc__(self):
  *         del self.model             # <<<<<<<<<<<<<<
@@ -5919,7 +5893,7 @@ static void __pyx_pf_5kenlm_5Model_2__dealloc__(struct __pyx_obj_5kenlm_Model *_
  */
   delete __pyx_v_self->model;
 
-  /* "kenlm.pyx":281
+  /* "kenlm.pyx":280
  *         self.vocab = &self.model.BaseVocabulary()
  * 
  *     def __dealloc__(self):             # <<<<<<<<<<<<<<
@@ -5931,7 +5905,7 @@ static void __pyx_pf_5kenlm_5Model_2__dealloc__(struct __pyx_obj_5kenlm_Model *_
   __Pyx_RefNannyFinishContext();
 }
 
-/* "kenlm.pyx":285
+/* "kenlm.pyx":284
  * 
  *     property order:
  *         def __get__(self):             # <<<<<<<<<<<<<<
@@ -5958,7 +5932,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_5order___get__(struct __pyx_obj_5kenlm_M
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__get__", 0);
 
-  /* "kenlm.pyx":286
+  /* "kenlm.pyx":285
  *     property order:
  *         def __get__(self):
  *             return self.model.Order()             # <<<<<<<<<<<<<<
@@ -5966,13 +5940,13 @@ static PyObject *__pyx_pf_5kenlm_5Model_5order___get__(struct __pyx_obj_5kenlm_M
  *     def score(self, sentence, bos = True, eos = True):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_unsigned_int(__pyx_v_self->model->Order()); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 286, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_unsigned_int(__pyx_v_self->model->Order()); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 285, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":285
+  /* "kenlm.pyx":284
  * 
  *     property order:
  *         def __get__(self):             # <<<<<<<<<<<<<<
@@ -5991,7 +5965,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_5order___get__(struct __pyx_obj_5kenlm_M
   return __pyx_r;
 }
 
-/* "kenlm.pyx":288
+/* "kenlm.pyx":287
  *             return self.model.Order()
  * 
  *     def score(self, sentence, bos = True, eos = True):             # <<<<<<<<<<<<<<
@@ -6046,7 +6020,7 @@ static PyObject *__pyx_pw_5kenlm_5Model_5score(PyObject *__pyx_v_self, PyObject 
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "score") < 0)) __PYX_ERR(0, 288, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "score") < 0)) __PYX_ERR(0, 287, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -6065,7 +6039,7 @@ static PyObject *__pyx_pw_5kenlm_5Model_5score(PyObject *__pyx_v_self, PyObject 
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("score", 0, 1, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 288, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("score", 0, 1, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 287, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("kenlm.Model.score", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -6094,16 +6068,16 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
   char *__pyx_t_6;
   __Pyx_RefNannySetupContext("score", 0);
 
-  /* "kenlm.pyx":327
+  /* "kenlm.pyx":326
  *         model.score("a fragment </s>", bos = False, eos = False)
  *         """
  *         cdef list words = as_str(sentence).split()             # <<<<<<<<<<<<<<
  *         cdef _kenlm.State state
  *         if bos:
  */
-  __pyx_t_2 = __pyx_f_5kenlm_as_str(__pyx_v_sentence); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 327, __pyx_L1_error)
+  __pyx_t_2 = __pyx_f_5kenlm_as_str(__pyx_v_sentence); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 326, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_split); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 327, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_split); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 326, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_t_2 = NULL;
@@ -6117,28 +6091,28 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
     }
   }
   if (__pyx_t_2) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 327, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 326, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 327, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 326, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (!(likely(PyList_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 327, __pyx_L1_error)
+  if (!(likely(PyList_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 326, __pyx_L1_error)
   __pyx_v_words = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":329
+  /* "kenlm.pyx":328
  *         cdef list words = as_str(sentence).split()
  *         cdef _kenlm.State state
  *         if bos:             # <<<<<<<<<<<<<<
  *             self.model.BeginSentenceWrite(&state)
  *         else:
  */
-  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_v_bos); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 329, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_v_bos); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 328, __pyx_L1_error)
   if (__pyx_t_4) {
 
-    /* "kenlm.pyx":330
+    /* "kenlm.pyx":329
  *         cdef _kenlm.State state
  *         if bos:
  *             self.model.BeginSentenceWrite(&state)             # <<<<<<<<<<<<<<
@@ -6147,7 +6121,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
  */
     __pyx_v_self->model->BeginSentenceWrite((&__pyx_v_state));
 
-    /* "kenlm.pyx":329
+    /* "kenlm.pyx":328
  *         cdef list words = as_str(sentence).split()
  *         cdef _kenlm.State state
  *         if bos:             # <<<<<<<<<<<<<<
@@ -6157,7 +6131,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
     goto __pyx_L3;
   }
 
-  /* "kenlm.pyx":332
+  /* "kenlm.pyx":331
  *             self.model.BeginSentenceWrite(&state)
  *         else:
  *             self.model.NullContextWrite(&state)             # <<<<<<<<<<<<<<
@@ -6169,7 +6143,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
   }
   __pyx_L3:;
 
-  /* "kenlm.pyx":334
+  /* "kenlm.pyx":333
  *             self.model.NullContextWrite(&state)
  *         cdef _kenlm.State out_state
  *         cdef float total = 0             # <<<<<<<<<<<<<<
@@ -6178,7 +6152,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
  */
   __pyx_v_total = 0.0;
 
-  /* "kenlm.pyx":335
+  /* "kenlm.pyx":334
  *         cdef _kenlm.State out_state
  *         cdef float total = 0
  *         for word in words:             # <<<<<<<<<<<<<<
@@ -6187,31 +6161,31 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
  */
   if (unlikely(__pyx_v_words == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
-    __PYX_ERR(0, 335, __pyx_L1_error)
+    __PYX_ERR(0, 334, __pyx_L1_error)
   }
   __pyx_t_1 = __pyx_v_words; __Pyx_INCREF(__pyx_t_1); __pyx_t_5 = 0;
   for (;;) {
     if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_1)) break;
     #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-    __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 335, __pyx_L1_error)
+    __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 334, __pyx_L1_error)
     #else
-    __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 335, __pyx_L1_error)
+    __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 334, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     #endif
     __Pyx_XDECREF_SET(__pyx_v_word, __pyx_t_3);
     __pyx_t_3 = 0;
 
-    /* "kenlm.pyx":336
+    /* "kenlm.pyx":335
  *         cdef float total = 0
  *         for word in words:
  *             total += self.model.BaseScore(&state, self.vocab.Index(word), &out_state)             # <<<<<<<<<<<<<<
  *             state = out_state
  *         if eos:
  */
-    __pyx_t_6 = __Pyx_PyObject_AsWritableString(__pyx_v_word); if (unlikely((!__pyx_t_6) && PyErr_Occurred())) __PYX_ERR(0, 336, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_AsWritableString(__pyx_v_word); if (unlikely((!__pyx_t_6) && PyErr_Occurred())) __PYX_ERR(0, 335, __pyx_L1_error)
     __pyx_v_total = (__pyx_v_total + __pyx_v_self->model->BaseScore((&__pyx_v_state), __pyx_v_self->vocab->Index(__pyx_t_6), (&__pyx_v_out_state)));
 
-    /* "kenlm.pyx":337
+    /* "kenlm.pyx":336
  *         for word in words:
  *             total += self.model.BaseScore(&state, self.vocab.Index(word), &out_state)
  *             state = out_state             # <<<<<<<<<<<<<<
@@ -6220,7 +6194,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
  */
     __pyx_v_state = __pyx_v_out_state;
 
-    /* "kenlm.pyx":335
+    /* "kenlm.pyx":334
  *         cdef _kenlm.State out_state
  *         cdef float total = 0
  *         for word in words:             # <<<<<<<<<<<<<<
@@ -6230,17 +6204,17 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":338
+  /* "kenlm.pyx":337
  *             total += self.model.BaseScore(&state, self.vocab.Index(word), &out_state)
  *             state = out_state
  *         if eos:             # <<<<<<<<<<<<<<
  *             total += self.model.BaseScore(&state, self.vocab.EndSentence(), &out_state)
  *         return total
  */
-  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_v_eos); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 338, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_v_eos); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 337, __pyx_L1_error)
   if (__pyx_t_4) {
 
-    /* "kenlm.pyx":339
+    /* "kenlm.pyx":338
  *             state = out_state
  *         if eos:
  *             total += self.model.BaseScore(&state, self.vocab.EndSentence(), &out_state)             # <<<<<<<<<<<<<<
@@ -6249,7 +6223,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
  */
     __pyx_v_total = (__pyx_v_total + __pyx_v_self->model->BaseScore((&__pyx_v_state), __pyx_v_self->vocab->EndSentence(), (&__pyx_v_out_state)));
 
-    /* "kenlm.pyx":338
+    /* "kenlm.pyx":337
  *             total += self.model.BaseScore(&state, self.vocab.Index(word), &out_state)
  *             state = out_state
  *         if eos:             # <<<<<<<<<<<<<<
@@ -6258,7 +6232,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
  */
   }
 
-  /* "kenlm.pyx":340
+  /* "kenlm.pyx":339
  *         if eos:
  *             total += self.model.BaseScore(&state, self.vocab.EndSentence(), &out_state)
  *         return total             # <<<<<<<<<<<<<<
@@ -6266,13 +6240,13 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
  *     def perplexity(self, sentence):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_total); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 340, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_total); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 339, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":288
+  /* "kenlm.pyx":287
  *             return self.model.Order()
  * 
  *     def score(self, sentence, bos = True, eos = True):             # <<<<<<<<<<<<<<
@@ -6295,7 +6269,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_4score(struct __pyx_obj_5kenlm_Model *__
   return __pyx_r;
 }
 
-/* "kenlm.pyx":342
+/* "kenlm.pyx":341
  *         return total
  * 
  *     def perplexity(self, sentence):             # <<<<<<<<<<<<<<
@@ -6328,16 +6302,16 @@ static PyObject *__pyx_pf_5kenlm_5Model_6perplexity(struct __pyx_obj_5kenlm_Mode
   PyObject *__pyx_t_5 = NULL;
   __Pyx_RefNannySetupContext("perplexity", 0);
 
-  /* "kenlm.pyx":347
+  /* "kenlm.pyx":346
  *         @param sentence One full sentence to score.  Do not include <s> or </s>.
  *         """
  *         words = len(as_str(sentence).split()) + 1 # For </s>             # <<<<<<<<<<<<<<
  *         return 10.0**(-self.score(sentence) / words)
  * 
  */
-  __pyx_t_2 = __pyx_f_5kenlm_as_str(__pyx_v_sentence); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 347, __pyx_L1_error)
+  __pyx_t_2 = __pyx_f_5kenlm_as_str(__pyx_v_sentence); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 346, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_split); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 347, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_split); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 346, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_t_2 = NULL;
@@ -6351,21 +6325,21 @@ static PyObject *__pyx_pf_5kenlm_5Model_6perplexity(struct __pyx_obj_5kenlm_Mode
     }
   }
   if (__pyx_t_2) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 347, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 346, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 347, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 346, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_4 = PyObject_Length(__pyx_t_1); if (unlikely(__pyx_t_4 == ((Py_ssize_t)-1))) __PYX_ERR(0, 347, __pyx_L1_error)
+  __pyx_t_4 = PyObject_Length(__pyx_t_1); if (unlikely(__pyx_t_4 == ((Py_ssize_t)-1))) __PYX_ERR(0, 346, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyInt_FromSsize_t((__pyx_t_4 + 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 347, __pyx_L1_error)
+  __pyx_t_1 = PyInt_FromSsize_t((__pyx_t_4 + 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 346, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_v_words = __pyx_t_1;
   __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":348
+  /* "kenlm.pyx":347
  *         """
  *         words = len(as_str(sentence).split()) + 1 # For </s>
  *         return 10.0**(-self.score(sentence) / words)             # <<<<<<<<<<<<<<
@@ -6373,7 +6347,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_6perplexity(struct __pyx_obj_5kenlm_Mode
  *     def full_scores(self, sentence, bos = True, eos = True):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_score); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 348, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_score); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 347, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_t_2 = NULL;
   if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_3))) {
@@ -6386,13 +6360,13 @@ static PyObject *__pyx_pf_5kenlm_5Model_6perplexity(struct __pyx_obj_5kenlm_Mode
     }
   }
   if (!__pyx_t_2) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_v_sentence); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 348, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_v_sentence); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 347, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
   } else {
     #if CYTHON_FAST_PYCALL
     if (PyFunction_Check(__pyx_t_3)) {
       PyObject *__pyx_temp[2] = {__pyx_t_2, __pyx_v_sentence};
-      __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_3, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 348, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_3, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 347, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
       __Pyx_GOTREF(__pyx_t_1);
     } else
@@ -6400,38 +6374,38 @@ static PyObject *__pyx_pf_5kenlm_5Model_6perplexity(struct __pyx_obj_5kenlm_Mode
     #if CYTHON_FAST_PYCCALL
     if (__Pyx_PyFastCFunction_Check(__pyx_t_3)) {
       PyObject *__pyx_temp[2] = {__pyx_t_2, __pyx_v_sentence};
-      __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_3, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 348, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_3, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 347, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
       __Pyx_GOTREF(__pyx_t_1);
     } else
     #endif
     {
-      __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 348, __pyx_L1_error)
+      __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 347, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_GIVEREF(__pyx_t_2); PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_2); __pyx_t_2 = NULL;
       __Pyx_INCREF(__pyx_v_sentence);
       __Pyx_GIVEREF(__pyx_v_sentence);
       PyTuple_SET_ITEM(__pyx_t_5, 0+1, __pyx_v_sentence);
-      __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_5, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 348, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_5, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 347, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     }
   }
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = PyNumber_Negative(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 348, __pyx_L1_error)
+  __pyx_t_3 = PyNumber_Negative(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 347, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyNumber_Divide(__pyx_t_3, __pyx_v_words); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 348, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyNumber_Divide(__pyx_t_3, __pyx_v_words); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 347, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = PyNumber_Power(__pyx_float_10_0, __pyx_t_1, Py_None); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 348, __pyx_L1_error)
+  __pyx_t_3 = PyNumber_Power(__pyx_float_10_0, __pyx_t_1, Py_None); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 347, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_r = __pyx_t_3;
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":342
+  /* "kenlm.pyx":341
  *         return total
  * 
  *     def perplexity(self, sentence):             # <<<<<<<<<<<<<<
@@ -6455,7 +6429,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_6perplexity(struct __pyx_obj_5kenlm_Mode
 }
 static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx_generator, CYTHON_UNUSED PyThreadState *__pyx_tstate, PyObject *__pyx_sent_value); /* proto */
 
-/* "kenlm.pyx":350
+/* "kenlm.pyx":349
  *         return 10.0**(-self.score(sentence) / words)
  * 
  *     def full_scores(self, sentence, bos = True, eos = True):             # <<<<<<<<<<<<<<
@@ -6510,7 +6484,7 @@ static PyObject *__pyx_pw_5kenlm_5Model_9full_scores(PyObject *__pyx_v_self, PyO
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "full_scores") < 0)) __PYX_ERR(0, 350, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "full_scores") < 0)) __PYX_ERR(0, 349, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -6529,7 +6503,7 @@ static PyObject *__pyx_pw_5kenlm_5Model_9full_scores(PyObject *__pyx_v_self, PyO
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("full_scores", 0, 1, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 350, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("full_scores", 0, 1, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 349, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("kenlm.Model.full_scores", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -6551,7 +6525,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_8full_scores(struct __pyx_obj_5kenlm_Mod
   if (unlikely(!__pyx_cur_scope)) {
     __pyx_cur_scope = ((struct __pyx_obj_5kenlm___pyx_scope_struct__full_scores *)Py_None);
     __Pyx_INCREF(Py_None);
-    __PYX_ERR(0, 350, __pyx_L1_error)
+    __PYX_ERR(0, 349, __pyx_L1_error)
   } else {
     __Pyx_GOTREF(__pyx_cur_scope);
   }
@@ -6568,7 +6542,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_8full_scores(struct __pyx_obj_5kenlm_Mod
   __Pyx_INCREF(__pyx_cur_scope->__pyx_v_eos);
   __Pyx_GIVEREF(__pyx_cur_scope->__pyx_v_eos);
   {
-    __pyx_CoroutineObject *gen = __Pyx_Generator_New((__pyx_coroutine_body_t) __pyx_gb_5kenlm_5Model_10generator, (PyObject *) __pyx_cur_scope, __pyx_n_s_full_scores, __pyx_n_s_Model_full_scores, __pyx_n_s_kenlm); if (unlikely(!gen)) __PYX_ERR(0, 350, __pyx_L1_error)
+    __pyx_CoroutineObject *gen = __Pyx_Generator_New((__pyx_coroutine_body_t) __pyx_gb_5kenlm_5Model_10generator, (PyObject *) __pyx_cur_scope, __pyx_n_s_full_scores, __pyx_n_s_Model_full_scores, __pyx_n_s_kenlm); if (unlikely(!gen)) __PYX_ERR(0, 349, __pyx_L1_error)
     __Pyx_DECREF(__pyx_cur_scope);
     __Pyx_RefNannyFinishContext();
     return (PyObject *) gen;
@@ -6607,18 +6581,18 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
     return NULL;
   }
   __pyx_L3_first_run:;
-  if (unlikely(!__pyx_sent_value)) __PYX_ERR(0, 350, __pyx_L1_error)
+  if (unlikely(!__pyx_sent_value)) __PYX_ERR(0, 349, __pyx_L1_error)
 
-  /* "kenlm.pyx":357
+  /* "kenlm.pyx":356
  *         @param eos should kenlm add an eos state
  *         """
  *         cdef list words = as_str(sentence).split()             # <<<<<<<<<<<<<<
  *         cdef _kenlm.State state
  *         if bos:
  */
-  __pyx_t_2 = __pyx_f_5kenlm_as_str(__pyx_cur_scope->__pyx_v_sentence); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 357, __pyx_L1_error)
+  __pyx_t_2 = __pyx_f_5kenlm_as_str(__pyx_cur_scope->__pyx_v_sentence); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 356, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_split); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 357, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_split); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 356, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_t_2 = NULL;
@@ -6632,29 +6606,29 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
     }
   }
   if (__pyx_t_2) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 357, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 356, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 357, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 356, __pyx_L1_error)
   }
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (!(likely(PyList_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 357, __pyx_L1_error)
+  if (!(likely(PyList_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 356, __pyx_L1_error)
   __Pyx_GIVEREF(__pyx_t_1);
   __pyx_cur_scope->__pyx_v_words = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":359
+  /* "kenlm.pyx":358
  *         cdef list words = as_str(sentence).split()
  *         cdef _kenlm.State state
  *         if bos:             # <<<<<<<<<<<<<<
  *             self.model.BeginSentenceWrite(&state)
  *         else:
  */
-  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_cur_scope->__pyx_v_bos); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 359, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_cur_scope->__pyx_v_bos); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 358, __pyx_L1_error)
   if (__pyx_t_4) {
 
-    /* "kenlm.pyx":360
+    /* "kenlm.pyx":359
  *         cdef _kenlm.State state
  *         if bos:
  *             self.model.BeginSentenceWrite(&state)             # <<<<<<<<<<<<<<
@@ -6663,7 +6637,7 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
  */
     __pyx_cur_scope->__pyx_v_self->model->BeginSentenceWrite((&__pyx_cur_scope->__pyx_v_state));
 
-    /* "kenlm.pyx":359
+    /* "kenlm.pyx":358
  *         cdef list words = as_str(sentence).split()
  *         cdef _kenlm.State state
  *         if bos:             # <<<<<<<<<<<<<<
@@ -6673,7 +6647,7 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
     goto __pyx_L4;
   }
 
-  /* "kenlm.pyx":362
+  /* "kenlm.pyx":361
  *             self.model.BeginSentenceWrite(&state)
  *         else:
  *             self.model.NullContextWrite(&state)             # <<<<<<<<<<<<<<
@@ -6685,7 +6659,7 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
   }
   __pyx_L4:;
 
-  /* "kenlm.pyx":365
+  /* "kenlm.pyx":364
  *         cdef _kenlm.State out_state
  *         cdef _kenlm.FullScoreReturn ret
  *         cdef float total = 0             # <<<<<<<<<<<<<<
@@ -6694,7 +6668,7 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
  */
   __pyx_cur_scope->__pyx_v_total = 0.0;
 
-  /* "kenlm.pyx":367
+  /* "kenlm.pyx":366
  *         cdef float total = 0
  *         cdef _kenlm.WordIndex wid
  *         for word in words:             # <<<<<<<<<<<<<<
@@ -6703,15 +6677,15 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
  */
   if (unlikely(__pyx_cur_scope->__pyx_v_words == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
-    __PYX_ERR(0, 367, __pyx_L1_error)
+    __PYX_ERR(0, 366, __pyx_L1_error)
   }
   __pyx_t_1 = __pyx_cur_scope->__pyx_v_words; __Pyx_INCREF(__pyx_t_1); __pyx_t_5 = 0;
   for (;;) {
     if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_1)) break;
     #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-    __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 367, __pyx_L1_error)
+    __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_3); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 366, __pyx_L1_error)
     #else
-    __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 367, __pyx_L1_error)
+    __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 366, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     #endif
     __Pyx_XGOTREF(__pyx_cur_scope->__pyx_v_word);
@@ -6719,17 +6693,17 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
     __Pyx_GIVEREF(__pyx_t_3);
     __pyx_t_3 = 0;
 
-    /* "kenlm.pyx":368
+    /* "kenlm.pyx":367
  *         cdef _kenlm.WordIndex wid
  *         for word in words:
  *             wid = self.vocab.Index(word)             # <<<<<<<<<<<<<<
  *             ret = self.model.BaseFullScore(&state, wid, &out_state)
  *             yield (ret.prob, ret.ngram_length, wid == 0)
  */
-    __pyx_t_6 = __Pyx_PyObject_AsWritableString(__pyx_cur_scope->__pyx_v_word); if (unlikely((!__pyx_t_6) && PyErr_Occurred())) __PYX_ERR(0, 368, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_AsWritableString(__pyx_cur_scope->__pyx_v_word); if (unlikely((!__pyx_t_6) && PyErr_Occurred())) __PYX_ERR(0, 367, __pyx_L1_error)
     __pyx_cur_scope->__pyx_v_wid = __pyx_cur_scope->__pyx_v_self->vocab->Index(__pyx_t_6);
 
-    /* "kenlm.pyx":369
+    /* "kenlm.pyx":368
  *         for word in words:
  *             wid = self.vocab.Index(word)
  *             ret = self.model.BaseFullScore(&state, wid, &out_state)             # <<<<<<<<<<<<<<
@@ -6738,20 +6712,20 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
  */
     __pyx_cur_scope->__pyx_v_ret = __pyx_cur_scope->__pyx_v_self->model->BaseFullScore((&__pyx_cur_scope->__pyx_v_state), __pyx_cur_scope->__pyx_v_wid, (&__pyx_cur_scope->__pyx_v_out_state));
 
-    /* "kenlm.pyx":370
+    /* "kenlm.pyx":369
  *             wid = self.vocab.Index(word)
  *             ret = self.model.BaseFullScore(&state, wid, &out_state)
  *             yield (ret.prob, ret.ngram_length, wid == 0)             # <<<<<<<<<<<<<<
  *             state = out_state
  *         if eos:
  */
-    __pyx_t_3 = PyFloat_FromDouble(__pyx_cur_scope->__pyx_v_ret.prob); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 370, __pyx_L1_error)
+    __pyx_t_3 = PyFloat_FromDouble(__pyx_cur_scope->__pyx_v_ret.prob); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 369, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_2 = __Pyx_PyInt_From_unsigned_char(__pyx_cur_scope->__pyx_v_ret.ngram_length); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 370, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyInt_From_unsigned_char(__pyx_cur_scope->__pyx_v_ret.ngram_length); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 369, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_7 = __Pyx_PyBool_FromLong((__pyx_cur_scope->__pyx_v_wid == 0)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 370, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyBool_FromLong((__pyx_cur_scope->__pyx_v_wid == 0)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 369, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_8 = PyTuple_New(3); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 370, __pyx_L1_error)
+    __pyx_t_8 = PyTuple_New(3); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 369, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
     __Pyx_GIVEREF(__pyx_t_3);
     PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_3);
@@ -6778,9 +6752,9 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
     __pyx_cur_scope->__pyx_t_0 = 0;
     __Pyx_XGOTREF(__pyx_t_1);
     __pyx_t_5 = __pyx_cur_scope->__pyx_t_1;
-    if (unlikely(!__pyx_sent_value)) __PYX_ERR(0, 370, __pyx_L1_error)
+    if (unlikely(!__pyx_sent_value)) __PYX_ERR(0, 369, __pyx_L1_error)
 
-    /* "kenlm.pyx":371
+    /* "kenlm.pyx":370
  *             ret = self.model.BaseFullScore(&state, wid, &out_state)
  *             yield (ret.prob, ret.ngram_length, wid == 0)
  *             state = out_state             # <<<<<<<<<<<<<<
@@ -6789,7 +6763,7 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
  */
     __pyx_cur_scope->__pyx_v_state = __pyx_cur_scope->__pyx_v_out_state;
 
-    /* "kenlm.pyx":367
+    /* "kenlm.pyx":366
  *         cdef float total = 0
  *         cdef _kenlm.WordIndex wid
  *         for word in words:             # <<<<<<<<<<<<<<
@@ -6799,17 +6773,17 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":372
+  /* "kenlm.pyx":371
  *             yield (ret.prob, ret.ngram_length, wid == 0)
  *             state = out_state
  *         if eos:             # <<<<<<<<<<<<<<
  *             ret = self.model.BaseFullScore(&state,
  *                 self.vocab.EndSentence(), &out_state)
  */
-  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_cur_scope->__pyx_v_eos); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 372, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_cur_scope->__pyx_v_eos); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 371, __pyx_L1_error)
   if (__pyx_t_4) {
 
-    /* "kenlm.pyx":373
+    /* "kenlm.pyx":372
  *             state = out_state
  *         if eos:
  *             ret = self.model.BaseFullScore(&state,             # <<<<<<<<<<<<<<
@@ -6818,18 +6792,18 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
  */
     __pyx_cur_scope->__pyx_v_ret = __pyx_cur_scope->__pyx_v_self->model->BaseFullScore((&__pyx_cur_scope->__pyx_v_state), __pyx_cur_scope->__pyx_v_self->vocab->EndSentence(), (&__pyx_cur_scope->__pyx_v_out_state));
 
-    /* "kenlm.pyx":375
+    /* "kenlm.pyx":374
  *             ret = self.model.BaseFullScore(&state,
  *                 self.vocab.EndSentence(), &out_state)
  *             yield (ret.prob, ret.ngram_length, False)             # <<<<<<<<<<<<<<
  * 
  * 
  */
-    __pyx_t_1 = PyFloat_FromDouble(__pyx_cur_scope->__pyx_v_ret.prob); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 375, __pyx_L1_error)
+    __pyx_t_1 = PyFloat_FromDouble(__pyx_cur_scope->__pyx_v_ret.prob); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 374, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_8 = __Pyx_PyInt_From_unsigned_char(__pyx_cur_scope->__pyx_v_ret.ngram_length); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 375, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyInt_From_unsigned_char(__pyx_cur_scope->__pyx_v_ret.ngram_length); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 374, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
-    __pyx_t_7 = PyTuple_New(3); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 375, __pyx_L1_error)
+    __pyx_t_7 = PyTuple_New(3); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 374, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     __Pyx_GIVEREF(__pyx_t_1);
     PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_1);
@@ -6849,9 +6823,9 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
     __pyx_generator->resume_label = 2;
     return __pyx_r;
     __pyx_L9_resume_from_yield:;
-    if (unlikely(!__pyx_sent_value)) __PYX_ERR(0, 375, __pyx_L1_error)
+    if (unlikely(!__pyx_sent_value)) __PYX_ERR(0, 374, __pyx_L1_error)
 
-    /* "kenlm.pyx":372
+    /* "kenlm.pyx":371
  *             yield (ret.prob, ret.ngram_length, wid == 0)
  *             state = out_state
  *         if eos:             # <<<<<<<<<<<<<<
@@ -6861,7 +6835,7 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
   }
   CYTHON_MAYBE_UNUSED_VAR(__pyx_cur_scope);
 
-  /* "kenlm.pyx":350
+  /* "kenlm.pyx":349
  *         return 10.0**(-self.score(sentence) / words)
  * 
  *     def full_scores(self, sentence, bos = True, eos = True):             # <<<<<<<<<<<<<<
@@ -6888,7 +6862,7 @@ static PyObject *__pyx_gb_5kenlm_5Model_10generator(__pyx_CoroutineObject *__pyx
   return __pyx_r;
 }
 
-/* "kenlm.pyx":378
+/* "kenlm.pyx":377
  * 
  * 
  *     def BeginSentenceWrite(self, State state):             # <<<<<<<<<<<<<<
@@ -6903,7 +6877,7 @@ static PyObject *__pyx_pw_5kenlm_5Model_12BeginSentenceWrite(PyObject *__pyx_v_s
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("BeginSentenceWrite (wrapper)", 0);
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_state), __pyx_ptype_5kenlm_State, 1, "state", 0))) __PYX_ERR(0, 378, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_state), __pyx_ptype_5kenlm_State, 1, "state", 0))) __PYX_ERR(0, 377, __pyx_L1_error)
   __pyx_r = __pyx_pf_5kenlm_5Model_11BeginSentenceWrite(((struct __pyx_obj_5kenlm_Model *)__pyx_v_self), ((struct __pyx_obj_5kenlm_State *)__pyx_v_state));
 
   /* function exit code */
@@ -6920,7 +6894,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_11BeginSentenceWrite(struct __pyx_obj_5k
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("BeginSentenceWrite", 0);
 
-  /* "kenlm.pyx":380
+  /* "kenlm.pyx":379
  *     def BeginSentenceWrite(self, State state):
  *         """Change the given state to a BOS state."""
  *         self.model.BeginSentenceWrite(&state._c_state)             # <<<<<<<<<<<<<<
@@ -6929,7 +6903,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_11BeginSentenceWrite(struct __pyx_obj_5k
  */
   __pyx_v_self->model->BeginSentenceWrite((&__pyx_v_state->_c_state));
 
-  /* "kenlm.pyx":378
+  /* "kenlm.pyx":377
  * 
  * 
  *     def BeginSentenceWrite(self, State state):             # <<<<<<<<<<<<<<
@@ -6944,7 +6918,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_11BeginSentenceWrite(struct __pyx_obj_5k
   return __pyx_r;
 }
 
-/* "kenlm.pyx":382
+/* "kenlm.pyx":381
  *         self.model.BeginSentenceWrite(&state._c_state)
  * 
  *     def NullContextWrite(self, State state):             # <<<<<<<<<<<<<<
@@ -6959,7 +6933,7 @@ static PyObject *__pyx_pw_5kenlm_5Model_14NullContextWrite(PyObject *__pyx_v_sel
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("NullContextWrite (wrapper)", 0);
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_state), __pyx_ptype_5kenlm_State, 1, "state", 0))) __PYX_ERR(0, 382, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_state), __pyx_ptype_5kenlm_State, 1, "state", 0))) __PYX_ERR(0, 381, __pyx_L1_error)
   __pyx_r = __pyx_pf_5kenlm_5Model_13NullContextWrite(((struct __pyx_obj_5kenlm_Model *)__pyx_v_self), ((struct __pyx_obj_5kenlm_State *)__pyx_v_state));
 
   /* function exit code */
@@ -6976,7 +6950,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_13NullContextWrite(struct __pyx_obj_5ken
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("NullContextWrite", 0);
 
-  /* "kenlm.pyx":384
+  /* "kenlm.pyx":383
  *     def NullContextWrite(self, State state):
  *         """Change the given state to a NULL state."""
  *         self.model.NullContextWrite(&state._c_state)             # <<<<<<<<<<<<<<
@@ -6985,7 +6959,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_13NullContextWrite(struct __pyx_obj_5ken
  */
   __pyx_v_self->model->NullContextWrite((&__pyx_v_state->_c_state));
 
-  /* "kenlm.pyx":382
+  /* "kenlm.pyx":381
  *         self.model.BeginSentenceWrite(&state._c_state)
  * 
  *     def NullContextWrite(self, State state):             # <<<<<<<<<<<<<<
@@ -7000,7 +6974,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_13NullContextWrite(struct __pyx_obj_5ken
   return __pyx_r;
 }
 
-/* "kenlm.pyx":386
+/* "kenlm.pyx":385
  *         self.model.NullContextWrite(&state._c_state)
  * 
  *     def BaseScore(self, State in_state, str word, State out_state):             # <<<<<<<<<<<<<<
@@ -7043,17 +7017,17 @@ static PyObject *__pyx_pw_5kenlm_5Model_16BaseScore(PyObject *__pyx_v_self, PyOb
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_word)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("BaseScore", 1, 3, 3, 1); __PYX_ERR(0, 386, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("BaseScore", 1, 3, 3, 1); __PYX_ERR(0, 385, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_out_state)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("BaseScore", 1, 3, 3, 2); __PYX_ERR(0, 386, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("BaseScore", 1, 3, 3, 2); __PYX_ERR(0, 385, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "BaseScore") < 0)) __PYX_ERR(0, 386, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "BaseScore") < 0)) __PYX_ERR(0, 385, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -7068,15 +7042,15 @@ static PyObject *__pyx_pw_5kenlm_5Model_16BaseScore(PyObject *__pyx_v_self, PyOb
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("BaseScore", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 386, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("BaseScore", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 385, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("kenlm.Model.BaseScore", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_in_state), __pyx_ptype_5kenlm_State, 1, "in_state", 0))) __PYX_ERR(0, 386, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_word), (&PyString_Type), 1, "word", 1))) __PYX_ERR(0, 386, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_out_state), __pyx_ptype_5kenlm_State, 1, "out_state", 0))) __PYX_ERR(0, 386, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_in_state), __pyx_ptype_5kenlm_State, 1, "in_state", 0))) __PYX_ERR(0, 385, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_word), (&PyString_Type), 1, "word", 1))) __PYX_ERR(0, 385, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_out_state), __pyx_ptype_5kenlm_State, 1, "out_state", 0))) __PYX_ERR(0, 385, __pyx_L1_error)
   __pyx_r = __pyx_pf_5kenlm_5Model_15BaseScore(((struct __pyx_obj_5kenlm_Model *)__pyx_v_self), __pyx_v_in_state, __pyx_v_word, __pyx_v_out_state);
 
   /* function exit code */
@@ -7096,24 +7070,24 @@ static PyObject *__pyx_pf_5kenlm_5Model_15BaseScore(struct __pyx_obj_5kenlm_Mode
   char *__pyx_t_2;
   __Pyx_RefNannySetupContext("BaseScore", 0);
 
-  /* "kenlm.pyx":395
+  /* "kenlm.pyx":394
  *         :returns: p(word|state)
  *         """
  *         cdef float total = self.model.BaseScore(&in_state._c_state, self.vocab.Index(as_str(word)), &out_state._c_state)             # <<<<<<<<<<<<<<
  *         return total
  * 
  */
-  __pyx_t_1 = __pyx_f_5kenlm_as_str(__pyx_v_word); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 395, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_5kenlm_as_str(__pyx_v_word); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 394, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (unlikely(__pyx_t_1 == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "expected bytes, NoneType found");
-    __PYX_ERR(0, 395, __pyx_L1_error)
+    __PYX_ERR(0, 394, __pyx_L1_error)
   }
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 395, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 394, __pyx_L1_error)
   __pyx_v_total = __pyx_v_self->model->BaseScore((&__pyx_v_in_state->_c_state), __pyx_v_self->vocab->Index(__pyx_t_2), (&__pyx_v_out_state->_c_state));
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":396
+  /* "kenlm.pyx":395
  *         """
  *         cdef float total = self.model.BaseScore(&in_state._c_state, self.vocab.Index(as_str(word)), &out_state._c_state)
  *         return total             # <<<<<<<<<<<<<<
@@ -7121,13 +7095,13 @@ static PyObject *__pyx_pf_5kenlm_5Model_15BaseScore(struct __pyx_obj_5kenlm_Mode
  *     def BaseFullScore(self, State in_state, str word, State out_state):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_total); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 396, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_total); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 395, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":386
+  /* "kenlm.pyx":385
  *         self.model.NullContextWrite(&state._c_state)
  * 
  *     def BaseScore(self, State in_state, str word, State out_state):             # <<<<<<<<<<<<<<
@@ -7146,7 +7120,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_15BaseScore(struct __pyx_obj_5kenlm_Mode
   return __pyx_r;
 }
 
-/* "kenlm.pyx":398
+/* "kenlm.pyx":397
  *         return total
  * 
  *     def BaseFullScore(self, State in_state, str word, State out_state):             # <<<<<<<<<<<<<<
@@ -7189,17 +7163,17 @@ static PyObject *__pyx_pw_5kenlm_5Model_18BaseFullScore(PyObject *__pyx_v_self, 
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_word)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("BaseFullScore", 1, 3, 3, 1); __PYX_ERR(0, 398, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("BaseFullScore", 1, 3, 3, 1); __PYX_ERR(0, 397, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_out_state)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("BaseFullScore", 1, 3, 3, 2); __PYX_ERR(0, 398, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("BaseFullScore", 1, 3, 3, 2); __PYX_ERR(0, 397, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "BaseFullScore") < 0)) __PYX_ERR(0, 398, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "BaseFullScore") < 0)) __PYX_ERR(0, 397, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -7214,15 +7188,15 @@ static PyObject *__pyx_pw_5kenlm_5Model_18BaseFullScore(PyObject *__pyx_v_self, 
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("BaseFullScore", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 398, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("BaseFullScore", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 397, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("kenlm.Model.BaseFullScore", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_in_state), __pyx_ptype_5kenlm_State, 1, "in_state", 0))) __PYX_ERR(0, 398, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_word), (&PyString_Type), 1, "word", 1))) __PYX_ERR(0, 398, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_out_state), __pyx_ptype_5kenlm_State, 1, "out_state", 0))) __PYX_ERR(0, 398, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_in_state), __pyx_ptype_5kenlm_State, 1, "in_state", 0))) __PYX_ERR(0, 397, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_word), (&PyString_Type), 1, "word", 1))) __PYX_ERR(0, 397, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_out_state), __pyx_ptype_5kenlm_State, 1, "out_state", 0))) __PYX_ERR(0, 397, __pyx_L1_error)
   __pyx_r = __pyx_pf_5kenlm_5Model_17BaseFullScore(((struct __pyx_obj_5kenlm_Model *)__pyx_v_self), __pyx_v_in_state, __pyx_v_word, __pyx_v_out_state);
 
   /* function exit code */
@@ -7246,24 +7220,24 @@ static PyObject *__pyx_pf_5kenlm_5Model_17BaseFullScore(struct __pyx_obj_5kenlm_
   PyObject *__pyx_t_5 = NULL;
   __Pyx_RefNannySetupContext("BaseFullScore", 0);
 
-  /* "kenlm.pyx":406
+  /* "kenlm.pyx":405
  *         :returns: FullScoreReturn(word|state)
  *         """
  *         cdef _kenlm.WordIndex wid = self.vocab.Index(as_str(word))             # <<<<<<<<<<<<<<
  *         cdef _kenlm.FullScoreReturn ret = self.model.BaseFullScore(&in_state._c_state, wid, &out_state._c_state)
  *         return FullScoreReturn(ret.prob, ret.ngram_length, wid == 0)
  */
-  __pyx_t_1 = __pyx_f_5kenlm_as_str(__pyx_v_word); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 406, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_5kenlm_as_str(__pyx_v_word); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 405, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (unlikely(__pyx_t_1 == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "expected bytes, NoneType found");
-    __PYX_ERR(0, 406, __pyx_L1_error)
+    __PYX_ERR(0, 405, __pyx_L1_error)
   }
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 406, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_t_1); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 405, __pyx_L1_error)
   __pyx_v_wid = __pyx_v_self->vocab->Index(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":407
+  /* "kenlm.pyx":406
  *         """
  *         cdef _kenlm.WordIndex wid = self.vocab.Index(as_str(word))
  *         cdef _kenlm.FullScoreReturn ret = self.model.BaseFullScore(&in_state._c_state, wid, &out_state._c_state)             # <<<<<<<<<<<<<<
@@ -7272,7 +7246,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_17BaseFullScore(struct __pyx_obj_5kenlm_
  */
   __pyx_v_ret = __pyx_v_self->model->BaseFullScore((&__pyx_v_in_state->_c_state), __pyx_v_wid, (&__pyx_v_out_state->_c_state));
 
-  /* "kenlm.pyx":408
+  /* "kenlm.pyx":407
  *         cdef _kenlm.WordIndex wid = self.vocab.Index(as_str(word))
  *         cdef _kenlm.FullScoreReturn ret = self.model.BaseFullScore(&in_state._c_state, wid, &out_state._c_state)
  *         return FullScoreReturn(ret.prob, ret.ngram_length, wid == 0)             # <<<<<<<<<<<<<<
@@ -7280,13 +7254,13 @@ static PyObject *__pyx_pf_5kenlm_5Model_17BaseFullScore(struct __pyx_obj_5kenlm_
  *     def __contains__(self, word):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_ret.prob); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 408, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_ret.prob); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 407, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = __Pyx_PyInt_From_unsigned_char(__pyx_v_ret.ngram_length); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 408, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_From_unsigned_char(__pyx_v_ret.ngram_length); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 407, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyBool_FromLong((__pyx_v_wid == 0)); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 408, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyBool_FromLong((__pyx_v_wid == 0)); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 407, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = PyTuple_New(3); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 408, __pyx_L1_error)
+  __pyx_t_5 = PyTuple_New(3); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 407, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_GIVEREF(__pyx_t_1);
   PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_1);
@@ -7297,14 +7271,14 @@ static PyObject *__pyx_pf_5kenlm_5Model_17BaseFullScore(struct __pyx_obj_5kenlm_
   __pyx_t_1 = 0;
   __pyx_t_3 = 0;
   __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_5kenlm_FullScoreReturn), __pyx_t_5, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 408, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_5kenlm_FullScoreReturn), __pyx_t_5, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 407, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_r = __pyx_t_4;
   __pyx_t_4 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":398
+  /* "kenlm.pyx":397
  *         return total
  * 
  *     def BaseFullScore(self, State in_state, str word, State out_state):             # <<<<<<<<<<<<<<
@@ -7326,7 +7300,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_17BaseFullScore(struct __pyx_obj_5kenlm_
   return __pyx_r;
 }
 
-/* "kenlm.pyx":410
+/* "kenlm.pyx":409
  *         return FullScoreReturn(ret.prob, ret.ngram_length, wid == 0)
  * 
  *     def __contains__(self, word):             # <<<<<<<<<<<<<<
@@ -7355,19 +7329,19 @@ static int __pyx_pf_5kenlm_5Model_19__contains__(struct __pyx_obj_5kenlm_Model *
   char *__pyx_t_2;
   __Pyx_RefNannySetupContext("__contains__", 0);
 
-  /* "kenlm.pyx":411
+  /* "kenlm.pyx":410
  * 
  *     def __contains__(self, word):
  *         cdef bytes w = as_str(word)             # <<<<<<<<<<<<<<
  *         return (self.vocab.Index(w) != 0)
  * 
  */
-  __pyx_t_1 = __pyx_f_5kenlm_as_str(__pyx_v_word); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 411, __pyx_L1_error)
+  __pyx_t_1 = __pyx_f_5kenlm_as_str(__pyx_v_word); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 410, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_v_w = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":412
+  /* "kenlm.pyx":411
  *     def __contains__(self, word):
  *         cdef bytes w = as_str(word)
  *         return (self.vocab.Index(w) != 0)             # <<<<<<<<<<<<<<
@@ -7376,13 +7350,13 @@ static int __pyx_pf_5kenlm_5Model_19__contains__(struct __pyx_obj_5kenlm_Model *
  */
   if (unlikely(__pyx_v_w == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "expected bytes, NoneType found");
-    __PYX_ERR(0, 412, __pyx_L1_error)
+    __PYX_ERR(0, 411, __pyx_L1_error)
   }
-  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_w); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 412, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyBytes_AsWritableString(__pyx_v_w); if (unlikely((!__pyx_t_2) && PyErr_Occurred())) __PYX_ERR(0, 411, __pyx_L1_error)
   __pyx_r = (__pyx_v_self->vocab->Index(__pyx_t_2) != 0);
   goto __pyx_L0;
 
-  /* "kenlm.pyx":410
+  /* "kenlm.pyx":409
  *         return FullScoreReturn(ret.prob, ret.ngram_length, wid == 0)
  * 
  *     def __contains__(self, word):             # <<<<<<<<<<<<<<
@@ -7401,7 +7375,7 @@ static int __pyx_pf_5kenlm_5Model_19__contains__(struct __pyx_obj_5kenlm_Model *
   return __pyx_r;
 }
 
-/* "kenlm.pyx":414
+/* "kenlm.pyx":413
  *         return (self.vocab.Index(w) != 0)
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -7433,7 +7407,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_21__repr__(struct __pyx_obj_5kenlm_Model
   PyObject *__pyx_t_6 = NULL;
   __Pyx_RefNannySetupContext("__repr__", 0);
 
-  /* "kenlm.pyx":415
+  /* "kenlm.pyx":414
  * 
  *     def __repr__(self):
  *         return '<Model from {0}>'.format(os.path.basename(self.path))             # <<<<<<<<<<<<<<
@@ -7441,14 +7415,14 @@ static PyObject *__pyx_pf_5kenlm_5Model_21__repr__(struct __pyx_obj_5kenlm_Model
  *     def __reduce__(self):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_Model_from_0, __pyx_n_s_format); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_kp_s_Model_from_0, __pyx_n_s_format); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 414, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = __Pyx_GetModuleGlobalName(__pyx_n_s_os); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_GetModuleGlobalName(__pyx_n_s_os); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 414, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_path); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_path); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 414, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_basename); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 415, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_basename); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 414, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_t_5 = NULL;
@@ -7462,13 +7436,13 @@ static PyObject *__pyx_pf_5kenlm_5Model_21__repr__(struct __pyx_obj_5kenlm_Model
     }
   }
   if (!__pyx_t_5) {
-    __pyx_t_3 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_v_self->path); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 415, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_v_self->path); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 414, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
   } else {
     #if CYTHON_FAST_PYCALL
     if (PyFunction_Check(__pyx_t_4)) {
       PyObject *__pyx_temp[2] = {__pyx_t_5, __pyx_v_self->path};
-      __pyx_t_3 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 415, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyFunction_FastCall(__pyx_t_4, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 414, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
       __Pyx_GOTREF(__pyx_t_3);
     } else
@@ -7476,19 +7450,19 @@ static PyObject *__pyx_pf_5kenlm_5Model_21__repr__(struct __pyx_obj_5kenlm_Model
     #if CYTHON_FAST_PYCCALL
     if (__Pyx_PyFastCFunction_Check(__pyx_t_4)) {
       PyObject *__pyx_temp[2] = {__pyx_t_5, __pyx_v_self->path};
-      __pyx_t_3 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 415, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyCFunction_FastCall(__pyx_t_4, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 414, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
       __Pyx_GOTREF(__pyx_t_3);
     } else
     #endif
     {
-      __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 415, __pyx_L1_error)
+      __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 414, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_5); __pyx_t_5 = NULL;
       __Pyx_INCREF(__pyx_v_self->path);
       __Pyx_GIVEREF(__pyx_v_self->path);
       PyTuple_SET_ITEM(__pyx_t_6, 0+1, __pyx_v_self->path);
-      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 415, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 414, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     }
@@ -7505,14 +7479,14 @@ static PyObject *__pyx_pf_5kenlm_5Model_21__repr__(struct __pyx_obj_5kenlm_Model
     }
   }
   if (!__pyx_t_4) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 415, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 414, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_GOTREF(__pyx_t_1);
   } else {
     #if CYTHON_FAST_PYCALL
     if (PyFunction_Check(__pyx_t_2)) {
       PyObject *__pyx_temp[2] = {__pyx_t_4, __pyx_t_3};
-      __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 415, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyFunction_FastCall(__pyx_t_2, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 414, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -7521,20 +7495,20 @@ static PyObject *__pyx_pf_5kenlm_5Model_21__repr__(struct __pyx_obj_5kenlm_Model
     #if CYTHON_FAST_PYCCALL
     if (__Pyx_PyFastCFunction_Check(__pyx_t_2)) {
       PyObject *__pyx_temp[2] = {__pyx_t_4, __pyx_t_3};
-      __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 415, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyCFunction_FastCall(__pyx_t_2, __pyx_temp+1-1, 1+1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 414, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     } else
     #endif
     {
-      __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 415, __pyx_L1_error)
+      __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 414, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_6);
       __Pyx_GIVEREF(__pyx_t_4); PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_4); __pyx_t_4 = NULL;
       __Pyx_GIVEREF(__pyx_t_3);
       PyTuple_SET_ITEM(__pyx_t_6, 0+1, __pyx_t_3);
       __pyx_t_3 = 0;
-      __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_6, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 415, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_t_6, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 414, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     }
@@ -7544,7 +7518,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_21__repr__(struct __pyx_obj_5kenlm_Model
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":414
+  /* "kenlm.pyx":413
  *         return (self.vocab.Index(w) != 0)
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -7568,7 +7542,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_21__repr__(struct __pyx_obj_5kenlm_Model
   return __pyx_r;
 }
 
-/* "kenlm.pyx":417
+/* "kenlm.pyx":416
  *         return '<Model from {0}>'.format(os.path.basename(self.path))
  * 
  *     def __reduce__(self):             # <<<<<<<<<<<<<<
@@ -7596,7 +7570,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_23__reduce__(struct __pyx_obj_5kenlm_Mod
   PyObject *__pyx_t_2 = NULL;
   __Pyx_RefNannySetupContext("__reduce__", 0);
 
-  /* "kenlm.pyx":418
+  /* "kenlm.pyx":417
  * 
  *     def __reduce__(self):
  *         return (Model, (self.path,))             # <<<<<<<<<<<<<<
@@ -7604,12 +7578,12 @@ static PyObject *__pyx_pf_5kenlm_5Model_23__reduce__(struct __pyx_obj_5kenlm_Mod
  * class LanguageModel(Model):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 418, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 417, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(__pyx_v_self->path);
   __Pyx_GIVEREF(__pyx_v_self->path);
   PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_v_self->path);
-  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 418, __pyx_L1_error)
+  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 417, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_INCREF(((PyObject *)__pyx_ptype_5kenlm_Model));
   __Pyx_GIVEREF(((PyObject *)__pyx_ptype_5kenlm_Model));
@@ -7621,7 +7595,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_23__reduce__(struct __pyx_obj_5kenlm_Mod
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "kenlm.pyx":417
+  /* "kenlm.pyx":416
  *         return '<Model from {0}>'.format(os.path.basename(self.path))
  * 
  *     def __reduce__(self):             # <<<<<<<<<<<<<<
@@ -7641,7 +7615,7 @@ static PyObject *__pyx_pf_5kenlm_5Model_23__reduce__(struct __pyx_obj_5kenlm_Mod
   return __pyx_r;
 }
 
-/* "kenlm.pyx":262
+/* "kenlm.pyx":261
  * 
  *     cdef _kenlm.Model* model
  *     cdef public bytes path             # <<<<<<<<<<<<<<
@@ -7696,7 +7670,7 @@ static int __pyx_pf_5kenlm_5Model_4path_2__set__(struct __pyx_obj_5kenlm_Model *
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
   __Pyx_RefNannySetupContext("__set__", 0);
-  if (!(likely(PyBytes_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "bytes", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 262, __pyx_L1_error)
+  if (!(likely(PyBytes_CheckExact(__pyx_v_value))||((__pyx_v_value) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "bytes", Py_TYPE(__pyx_v_value)->tp_name), 0))) __PYX_ERR(0, 261, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -8832,8 +8806,8 @@ static struct PyModuleDef __pyx_moduledef = {
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_0_1_2_3, __pyx_k_0_1_2_3, sizeof(__pyx_k_0_1_2_3), 0, 0, 1, 0},
-  {&__pyx_kp_s_128M, __pyx_k_128M, sizeof(__pyx_k_128M), 0, 0, 1, 0},
-  {&__pyx_kp_s_2G, __pyx_k_2G, sizeof(__pyx_k_2G), 0, 0, 1, 0},
+  {&__pyx_kp_s_1G, __pyx_k_1G, sizeof(__pyx_k_1G), 0, 0, 1, 0},
+  {&__pyx_kp_s_64M, __pyx_k_64M, sizeof(__pyx_k_64M), 0, 0, 1, 0},
   {&__pyx_kp_s_8K, __pyx_k_8K, sizeof(__pyx_k_8K), 0, 0, 1, 0},
   {&__pyx_n_s_Add, __pyx_k_Add, sizeof(__pyx_k_Add), 0, 0, 1, 1},
   {&__pyx_kp_s_Backwards_compatability_stub_Use, __pyx_k_Backwards_compatability_stub_Use, sizeof(__pyx_k_Backwards_compatability_stub_Use), 0, 0, 1, 0},
@@ -8876,10 +8850,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_doc, __pyx_k_doc, sizeof(__pyx_k_doc), 0, 0, 1, 1},
   {&__pyx_n_s_e, __pyx_k_e, sizeof(__pyx_k_e), 0, 0, 1, 1},
   {&__pyx_n_s_encode, __pyx_k_encode, sizeof(__pyx_k_encode), 0, 0, 1, 1},
-  {&__pyx_n_s_end, __pyx_k_end, sizeof(__pyx_k_end), 0, 0, 1, 1},
   {&__pyx_n_s_eos, __pyx_k_eos, sizeof(__pyx_k_eos), 0, 0, 1, 1},
-  {&__pyx_n_s_exit, __pyx_k_exit, sizeof(__pyx_k_exit), 0, 0, 1, 1},
-  {&__pyx_n_s_file, __pyx_k_file, sizeof(__pyx_k_file), 0, 0, 1, 1},
   {&__pyx_n_s_file_base, __pyx_k_file_base, sizeof(__pyx_k_file_base), 0, 0, 1, 1},
   {&__pyx_n_s_format, __pyx_k_format, sizeof(__pyx_k_format), 0, 0, 1, 1},
   {&__pyx_n_s_full_scores, __pyx_k_full_scores, sizeof(__pyx_k_full_scores), 0, 0, 1, 1},
@@ -8914,7 +8885,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_path_text_file, __pyx_k_path_text_file, sizeof(__pyx_k_path_text_file), 0, 0, 1, 1},
   {&__pyx_n_s_pipeline, __pyx_k_pipeline, sizeof(__pyx_k_pipeline), 0, 0, 1, 1},
   {&__pyx_n_s_prepare, __pyx_k_prepare, sizeof(__pyx_k_prepare), 0, 0, 1, 1},
-  {&__pyx_n_s_print, __pyx_k_print, sizeof(__pyx_k_print), 0, 0, 1, 1},
   {&__pyx_n_s_pruning, __pyx_k_pruning, sizeof(__pyx_k_pruning), 0, 0, 1, 1},
   {&__pyx_kp_s_python_kenlm_pyx, __pyx_k_python_kenlm_pyx, sizeof(__pyx_k_python_kenlm_pyx), 0, 0, 1, 0},
   {&__pyx_n_s_qualname, __pyx_k_qualname, sizeof(__pyx_k_qualname), 0, 0, 1, 1},
@@ -8950,10 +8920,9 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
 };
 static int __Pyx_InitCachedBuiltins(void) {
   __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(0, 9, __pyx_L1_error)
-  __pyx_builtin_exit = __Pyx_GetBuiltinName(__pyx_n_s_exit); if (!__pyx_builtin_exit) __PYX_ERR(0, 86, __pyx_L1_error)
-  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 93, __pyx_L1_error)
-  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(0, 99, __pyx_L1_error)
-  __pyx_builtin_IOError = __Pyx_GetBuiltinName(__pyx_n_s_IOError); if (!__pyx_builtin_IOError) __PYX_ERR(0, 277, __pyx_L1_error)
+  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) __PYX_ERR(0, 85, __pyx_L1_error)
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 92, __pyx_L1_error)
+  __pyx_builtin_IOError = __Pyx_GetBuiltinName(__pyx_n_s_IOError); if (!__pyx_builtin_IOError) __PYX_ERR(0, 276, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -9012,25 +8981,25 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__5);
   __Pyx_GIVEREF(__pyx_tuple__5);
 
-  /* "kenlm.pyx":86
+  /* "kenlm.pyx":85
+ * 
  *     if pipeline.vocab_size_for_unk and not pipeline.initial_probs.interpolate_unigrams:
- *         print('--vocab_pad requires --interpolate_unigrams be on')
- *         exit(1)             # <<<<<<<<<<<<<<
+ *         raise RuntimeError('--vocab_pad requires --interpolate_unigrams be on')             # <<<<<<<<<<<<<<
  * 
  *     if skip_symbols:
  */
-  __pyx_tuple__9 = PyTuple_Pack(1, __pyx_int_1); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(0, 86, __pyx_L1_error)
+  __pyx_tuple__9 = PyTuple_Pack(1, __pyx_kp_s_vocab_pad_requires_interpolate); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(0, 85, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__9);
   __Pyx_GIVEREF(__pyx_tuple__9);
 
-  /* "kenlm.pyx":93
+  /* "kenlm.pyx":92
  *         pipeline.disallowed_symbol_action = _kenlm.THROW_UP
  * 
  *     for i in range(4):             # <<<<<<<<<<<<<<
  *         pipeline.discount.fallback.amount[i] = 0.0
- *     if discount_fallback is None:
+ * 
  */
-  __pyx_tuple__10 = PyTuple_Pack(1, __pyx_int_4); if (unlikely(!__pyx_tuple__10)) __PYX_ERR(0, 93, __pyx_L1_error)
+  __pyx_tuple__10 = PyTuple_Pack(1, __pyx_int_4); if (unlikely(!__pyx_tuple__10)) __PYX_ERR(0, 92, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__10);
   __Pyx_GIVEREF(__pyx_tuple__10);
 
@@ -9124,14 +9093,14 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__20);
   __Pyx_GIVEREF(__pyx_tuple__20);
 
-  /* "kenlm.pyx":276
+  /* "kenlm.pyx":275
  *             self.model = _kenlm.LoadVirtual(self.path, config._c_config)
  *         except RuntimeError as exception:
  *             exception_message = str(exception).replace('\n', ' ')             # <<<<<<<<<<<<<<
  *             raise IOError('Cannot read model \'{}\' ({})'.format(path, exception_message))\
  *                     from exception
  */
-  __pyx_tuple__24 = PyTuple_Pack(2, __pyx_kp_s__22, __pyx_kp_s__23); if (unlikely(!__pyx_tuple__24)) __PYX_ERR(0, 276, __pyx_L1_error)
+  __pyx_tuple__24 = PyTuple_Pack(2, __pyx_kp_s__22, __pyx_kp_s__23); if (unlikely(!__pyx_tuple__24)) __PYX_ERR(0, 275, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__24);
   __Pyx_GIVEREF(__pyx_tuple__24);
 
@@ -9140,7 +9109,7 @@ static int __Pyx_InitCachedConstants(void) {
  * 
  * def compute_ngram(             # <<<<<<<<<<<<<<
  *         path_text_file, path_arpa_file,
- *         order=2,
+ *         order=3,
  */
   __pyx_tuple__25 = PyTuple_Pack(26, __pyx_n_s_path_text_file, __pyx_n_s_path_arpa_file, __pyx_n_s_order, __pyx_n_s_interpolate_unigrams, __pyx_n_s_skip_symbols, __pyx_n_s_temp_prefix, __pyx_n_s_memory, __pyx_n_s_minimum_block, __pyx_n_s_sort_block, __pyx_n_s_block_count, __pyx_n_s_vocab_estimate, __pyx_n_s_vocab_pad, __pyx_n_s_verbose_header, __pyx_n_s_intermediate, __pyx_n_s_renumber, __pyx_n_s_collapse_values, __pyx_n_s_pruning, __pyx_n_s_limit_vocab_file, __pyx_n_s_discount_fallback, __pyx_n_s_pipeline, __pyx_n_s_i, __pyx_n_s_discount, __pyx_n_s_e, __pyx_n_s_in, __pyx_n_s_out, __pyx_n_s_output); if (unlikely(!__pyx_tuple__25)) __PYX_ERR(0, 42, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__25);
@@ -9320,26 +9289,26 @@ static int __pyx_pymod_exec_kenlm(PyObject *__pyx_pyinit_module)
   if (PyObject_SetAttrString(__pyx_m, "PrintHook", (PyObject *)&__pyx_type_5kenlm_PrintHook) < 0) __PYX_ERR(0, 26, __pyx_L1_error)
   if (__Pyx_setup_reduce((PyObject*)&__pyx_type_5kenlm_PrintHook) < 0) __PYX_ERR(0, 26, __pyx_L1_error)
   __pyx_ptype_5kenlm_PrintHook = &__pyx_type_5kenlm_PrintHook;
-  if (PyType_Ready(&__pyx_type_5kenlm_FullScoreReturn) < 0) __PYX_ERR(0, 171, __pyx_L1_error)
+  if (PyType_Ready(&__pyx_type_5kenlm_FullScoreReturn) < 0) __PYX_ERR(0, 170, __pyx_L1_error)
   __pyx_type_5kenlm_FullScoreReturn.tp_print = 0;
-  if (PyObject_SetAttrString(__pyx_m, "FullScoreReturn", (PyObject *)&__pyx_type_5kenlm_FullScoreReturn) < 0) __PYX_ERR(0, 171, __pyx_L1_error)
-  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_5kenlm_FullScoreReturn) < 0) __PYX_ERR(0, 171, __pyx_L1_error)
+  if (PyObject_SetAttrString(__pyx_m, "FullScoreReturn", (PyObject *)&__pyx_type_5kenlm_FullScoreReturn) < 0) __PYX_ERR(0, 170, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_5kenlm_FullScoreReturn) < 0) __PYX_ERR(0, 170, __pyx_L1_error)
   __pyx_ptype_5kenlm_FullScoreReturn = &__pyx_type_5kenlm_FullScoreReturn;
-  if (PyType_Ready(&__pyx_type_5kenlm_State) < 0) __PYX_ERR(0, 204, __pyx_L1_error)
+  if (PyType_Ready(&__pyx_type_5kenlm_State) < 0) __PYX_ERR(0, 203, __pyx_L1_error)
   __pyx_type_5kenlm_State.tp_print = 0;
-  if (PyObject_SetAttrString(__pyx_m, "State", (PyObject *)&__pyx_type_5kenlm_State) < 0) __PYX_ERR(0, 204, __pyx_L1_error)
-  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_5kenlm_State) < 0) __PYX_ERR(0, 204, __pyx_L1_error)
+  if (PyObject_SetAttrString(__pyx_m, "State", (PyObject *)&__pyx_type_5kenlm_State) < 0) __PYX_ERR(0, 203, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_5kenlm_State) < 0) __PYX_ERR(0, 203, __pyx_L1_error)
   __pyx_ptype_5kenlm_State = &__pyx_type_5kenlm_State;
-  if (PyType_Ready(&__pyx_type_5kenlm_Config) < 0) __PYX_ERR(0, 240, __pyx_L1_error)
+  if (PyType_Ready(&__pyx_type_5kenlm_Config) < 0) __PYX_ERR(0, 239, __pyx_L1_error)
   __pyx_type_5kenlm_Config.tp_print = 0;
-  if (PyObject_SetAttrString(__pyx_m, "Config", (PyObject *)&__pyx_type_5kenlm_Config) < 0) __PYX_ERR(0, 240, __pyx_L1_error)
-  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_5kenlm_Config) < 0) __PYX_ERR(0, 240, __pyx_L1_error)
+  if (PyObject_SetAttrString(__pyx_m, "Config", (PyObject *)&__pyx_type_5kenlm_Config) < 0) __PYX_ERR(0, 239, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject*)&__pyx_type_5kenlm_Config) < 0) __PYX_ERR(0, 239, __pyx_L1_error)
   __pyx_ptype_5kenlm_Config = &__pyx_type_5kenlm_Config;
-  if (PyType_Ready(&__pyx_type_5kenlm_Model) < 0) __PYX_ERR(0, 256, __pyx_L1_error)
+  if (PyType_Ready(&__pyx_type_5kenlm_Model) < 0) __PYX_ERR(0, 255, __pyx_L1_error)
   __pyx_type_5kenlm_Model.tp_print = 0;
   #if CYTHON_COMPILING_IN_CPYTHON
   {
-    PyObject *wrapper = PyObject_GetAttrString((PyObject *)&__pyx_type_5kenlm_Model, "__init__"); if (unlikely(!wrapper)) __PYX_ERR(0, 256, __pyx_L1_error)
+    PyObject *wrapper = PyObject_GetAttrString((PyObject *)&__pyx_type_5kenlm_Model, "__init__"); if (unlikely(!wrapper)) __PYX_ERR(0, 255, __pyx_L1_error)
     if (Py_TYPE(wrapper) == &PyWrapperDescr_Type) {
       __pyx_wrapperbase_5kenlm_5Model___init__ = *((PyWrapperDescrObject *)wrapper)->d_base;
       __pyx_wrapperbase_5kenlm_5Model___init__.doc = __pyx_doc_5kenlm_5Model___init__;
@@ -9347,9 +9316,9 @@ static int __pyx_pymod_exec_kenlm(PyObject *__pyx_pyinit_module)
     }
   }
   #endif
-  if (PyObject_SetAttrString(__pyx_m, "Model", (PyObject *)&__pyx_type_5kenlm_Model) < 0) __PYX_ERR(0, 256, __pyx_L1_error)
+  if (PyObject_SetAttrString(__pyx_m, "Model", (PyObject *)&__pyx_type_5kenlm_Model) < 0) __PYX_ERR(0, 255, __pyx_L1_error)
   __pyx_ptype_5kenlm_Model = &__pyx_type_5kenlm_Model;
-  if (PyType_Ready(&__pyx_type_5kenlm___pyx_scope_struct__full_scores) < 0) __PYX_ERR(0, 350, __pyx_L1_error)
+  if (PyType_Ready(&__pyx_type_5kenlm___pyx_scope_struct__full_scores) < 0) __PYX_ERR(0, 349, __pyx_L1_error)
   __pyx_type_5kenlm___pyx_scope_struct__full_scores.tp_print = 0;
   __pyx_ptype_5kenlm___pyx_scope_struct__full_scores = &__pyx_type_5kenlm___pyx_scope_struct__full_scores;
   /*--- Type import code ---*/
@@ -9410,127 +9379,127 @@ static int __pyx_pymod_exec_kenlm(PyObject *__pyx_pyinit_module)
  * 
  * def compute_ngram(             # <<<<<<<<<<<<<<
  *         path_text_file, path_arpa_file,
- *         order=2,
+ *         order=3,
  */
   __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_5kenlm_1compute_ngram, NULL, __pyx_n_s_kenlm); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_compute_ngram, __pyx_t_1) < 0) __PYX_ERR(0, 42, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":233
+  /* "kenlm.pyx":232
  *         return _kenlm.hash_value(self._c_state)
  * 
  * class LoadMethod:             # <<<<<<<<<<<<<<
  *     LAZY = _kenlm.LAZY
  *     POPULATE_OR_LAZY = _kenlm.POPULATE_OR_LAZY
  */
-  __pyx_t_1 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_empty_tuple, __pyx_n_s_LoadMethod, __pyx_n_s_LoadMethod, (PyObject *) NULL, __pyx_n_s_kenlm, (PyObject *) NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 233, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_Py3MetaclassPrepare((PyObject *) NULL, __pyx_empty_tuple, __pyx_n_s_LoadMethod, __pyx_n_s_LoadMethod, (PyObject *) NULL, __pyx_n_s_kenlm, (PyObject *) NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 232, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
 
-  /* "kenlm.pyx":234
+  /* "kenlm.pyx":233
  * 
  * class LoadMethod:
  *     LAZY = _kenlm.LAZY             # <<<<<<<<<<<<<<
  *     POPULATE_OR_LAZY = _kenlm.POPULATE_OR_LAZY
  *     POPULATE_OR_READ = _kenlm.POPULATE_OR_READ
  */
-  __pyx_t_2 = __Pyx_PyInt_From_enum__util_3a__3a_LoadMethod(util::LAZY); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 234, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_enum__util_3a__3a_LoadMethod(util::LAZY); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 233, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyObject_SetItem(__pyx_t_1, __pyx_n_s_LAZY, __pyx_t_2) < 0) __PYX_ERR(0, 234, __pyx_L1_error)
+  if (PyObject_SetItem(__pyx_t_1, __pyx_n_s_LAZY, __pyx_t_2) < 0) __PYX_ERR(0, 233, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "kenlm.pyx":235
+  /* "kenlm.pyx":234
  * class LoadMethod:
  *     LAZY = _kenlm.LAZY
  *     POPULATE_OR_LAZY = _kenlm.POPULATE_OR_LAZY             # <<<<<<<<<<<<<<
  *     POPULATE_OR_READ = _kenlm.POPULATE_OR_READ
  *     READ = _kenlm.READ
  */
-  __pyx_t_2 = __Pyx_PyInt_From_enum__util_3a__3a_LoadMethod(util::POPULATE_OR_LAZY); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 235, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_enum__util_3a__3a_LoadMethod(util::POPULATE_OR_LAZY); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 234, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyObject_SetItem(__pyx_t_1, __pyx_n_s_POPULATE_OR_LAZY, __pyx_t_2) < 0) __PYX_ERR(0, 235, __pyx_L1_error)
+  if (PyObject_SetItem(__pyx_t_1, __pyx_n_s_POPULATE_OR_LAZY, __pyx_t_2) < 0) __PYX_ERR(0, 234, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "kenlm.pyx":236
+  /* "kenlm.pyx":235
  *     LAZY = _kenlm.LAZY
  *     POPULATE_OR_LAZY = _kenlm.POPULATE_OR_LAZY
  *     POPULATE_OR_READ = _kenlm.POPULATE_OR_READ             # <<<<<<<<<<<<<<
  *     READ = _kenlm.READ
  *     PARALLEL_READ = _kenlm.PARALLEL_READ
  */
-  __pyx_t_2 = __Pyx_PyInt_From_enum__util_3a__3a_LoadMethod(util::POPULATE_OR_READ); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 236, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_enum__util_3a__3a_LoadMethod(util::POPULATE_OR_READ); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 235, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyObject_SetItem(__pyx_t_1, __pyx_n_s_POPULATE_OR_READ, __pyx_t_2) < 0) __PYX_ERR(0, 236, __pyx_L1_error)
+  if (PyObject_SetItem(__pyx_t_1, __pyx_n_s_POPULATE_OR_READ, __pyx_t_2) < 0) __PYX_ERR(0, 235, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "kenlm.pyx":237
+  /* "kenlm.pyx":236
  *     POPULATE_OR_LAZY = _kenlm.POPULATE_OR_LAZY
  *     POPULATE_OR_READ = _kenlm.POPULATE_OR_READ
  *     READ = _kenlm.READ             # <<<<<<<<<<<<<<
  *     PARALLEL_READ = _kenlm.PARALLEL_READ
  * 
  */
-  __pyx_t_2 = __Pyx_PyInt_From_enum__util_3a__3a_LoadMethod(util::READ); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 237, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_enum__util_3a__3a_LoadMethod(util::READ); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 236, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyObject_SetItem(__pyx_t_1, __pyx_n_s_READ, __pyx_t_2) < 0) __PYX_ERR(0, 237, __pyx_L1_error)
+  if (PyObject_SetItem(__pyx_t_1, __pyx_n_s_READ, __pyx_t_2) < 0) __PYX_ERR(0, 236, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "kenlm.pyx":238
+  /* "kenlm.pyx":237
  *     POPULATE_OR_READ = _kenlm.POPULATE_OR_READ
  *     READ = _kenlm.READ
  *     PARALLEL_READ = _kenlm.PARALLEL_READ             # <<<<<<<<<<<<<<
  * 
  * cdef class Config:
  */
-  __pyx_t_2 = __Pyx_PyInt_From_enum__util_3a__3a_LoadMethod(util::PARALLEL_READ); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 238, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_enum__util_3a__3a_LoadMethod(util::PARALLEL_READ); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 237, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyObject_SetItem(__pyx_t_1, __pyx_n_s_PARALLEL_READ, __pyx_t_2) < 0) __PYX_ERR(0, 238, __pyx_L1_error)
+  if (PyObject_SetItem(__pyx_t_1, __pyx_n_s_PARALLEL_READ, __pyx_t_2) < 0) __PYX_ERR(0, 237, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "kenlm.pyx":233
+  /* "kenlm.pyx":232
  *         return _kenlm.hash_value(self._c_state)
  * 
  * class LoadMethod:             # <<<<<<<<<<<<<<
  *     LAZY = _kenlm.LAZY
  *     POPULATE_OR_LAZY = _kenlm.POPULATE_OR_LAZY
  */
-  __pyx_t_2 = __Pyx_Py3ClassCreate(((PyObject*)&__Pyx_DefaultClassType), __pyx_n_s_LoadMethod, __pyx_empty_tuple, __pyx_t_1, NULL, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 233, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_Py3ClassCreate(((PyObject*)&__Pyx_DefaultClassType), __pyx_n_s_LoadMethod, __pyx_empty_tuple, __pyx_t_1, NULL, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 232, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_LoadMethod, __pyx_t_2) < 0) __PYX_ERR(0, 233, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_LoadMethod, __pyx_t_2) < 0) __PYX_ERR(0, 232, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":265
+  /* "kenlm.pyx":264
  *     cdef _kenlm.const_Vocabulary* vocab
  * 
  *     def __init__(self, path, Config config = Config()):             # <<<<<<<<<<<<<<
  *         """
  *         Load the language model.
  */
-  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_5kenlm_Config), __pyx_empty_tuple, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 265, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_5kenlm_Config), __pyx_empty_tuple, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 264, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_k__21 = ((struct __pyx_obj_5kenlm_Config *)__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "kenlm.pyx":420
+  /* "kenlm.pyx":419
  *         return (Model, (self.path,))
  * 
  * class LanguageModel(Model):             # <<<<<<<<<<<<<<
  *     """Backwards compatability stub.  Use Model."""
  */
-  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 420, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 419, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(((PyObject *)__pyx_ptype_5kenlm_Model));
   __Pyx_GIVEREF(((PyObject *)__pyx_ptype_5kenlm_Model));
   PyTuple_SET_ITEM(__pyx_t_1, 0, ((PyObject *)__pyx_ptype_5kenlm_Model));
-  __pyx_t_2 = __Pyx_CalculateMetaclass(NULL, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 420, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_CalculateMetaclass(NULL, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 419, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_Py3MetaclassPrepare(__pyx_t_2, __pyx_t_1, __pyx_n_s_LanguageModel, __pyx_n_s_LanguageModel, (PyObject *) NULL, __pyx_n_s_kenlm, __pyx_kp_s_Backwards_compatability_stub_Use); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 420, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_Py3MetaclassPrepare(__pyx_t_2, __pyx_t_1, __pyx_n_s_LanguageModel, __pyx_n_s_LanguageModel, (PyObject *) NULL, __pyx_n_s_kenlm, __pyx_kp_s_Backwards_compatability_stub_Use); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 419, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_Py3ClassCreate(__pyx_t_2, __pyx_n_s_LanguageModel, __pyx_t_1, __pyx_t_3, NULL, 0, 1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 420, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_Py3ClassCreate(__pyx_t_2, __pyx_n_s_LanguageModel, __pyx_t_1, __pyx_t_3, NULL, 0, 1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 419, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_LanguageModel, __pyx_t_4) < 0) __PYX_ERR(0, 420, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_LanguageModel, __pyx_t_4) < 0) __PYX_ERR(0, 419, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -11131,112 +11100,6 @@ bad:
     }
 }
 
-/* Print */
-      #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION < 3
-static PyObject *__Pyx_GetStdout(void) {
-    PyObject *f = PySys_GetObject((char *)"stdout");
-    if (!f) {
-        PyErr_SetString(PyExc_RuntimeError, "lost sys.stdout");
-    }
-    return f;
-}
-static int __Pyx_Print(PyObject* f, PyObject *arg_tuple, int newline) {
-    int i;
-    if (!f) {
-        if (!(f = __Pyx_GetStdout()))
-            return -1;
-    }
-    Py_INCREF(f);
-    for (i=0; i < PyTuple_GET_SIZE(arg_tuple); i++) {
-        PyObject* v;
-        if (PyFile_SoftSpace(f, 1)) {
-            if (PyFile_WriteString(" ", f) < 0)
-                goto error;
-        }
-        v = PyTuple_GET_ITEM(arg_tuple, i);
-        if (PyFile_WriteObject(v, f, Py_PRINT_RAW) < 0)
-            goto error;
-        if (PyString_Check(v)) {
-            char *s = PyString_AsString(v);
-            Py_ssize_t len = PyString_Size(v);
-            if (len > 0) {
-                switch (s[len-1]) {
-                    case ' ': break;
-                    case '\f': case '\r': case '\n': case '\t': case '\v':
-                        PyFile_SoftSpace(f, 0);
-                        break;
-                    default:  break;
-                }
-            }
-        }
-    }
-    if (newline) {
-        if (PyFile_WriteString("\n", f) < 0)
-            goto error;
-        PyFile_SoftSpace(f, 0);
-    }
-    Py_DECREF(f);
-    return 0;
-error:
-    Py_DECREF(f);
-    return -1;
-}
-#else
-static int __Pyx_Print(PyObject* stream, PyObject *arg_tuple, int newline) {
-    PyObject* kwargs = 0;
-    PyObject* result = 0;
-    PyObject* end_string;
-    if (unlikely(!__pyx_print)) {
-        __pyx_print = PyObject_GetAttr(__pyx_b, __pyx_n_s_print);
-        if (!__pyx_print)
-            return -1;
-    }
-    if (stream) {
-        kwargs = PyDict_New();
-        if (unlikely(!kwargs))
-            return -1;
-        if (unlikely(PyDict_SetItem(kwargs, __pyx_n_s_file, stream) < 0))
-            goto bad;
-        if (!newline) {
-            end_string = PyUnicode_FromStringAndSize(" ", 1);
-            if (unlikely(!end_string))
-                goto bad;
-            if (PyDict_SetItem(kwargs, __pyx_n_s_end, end_string) < 0) {
-                Py_DECREF(end_string);
-                goto bad;
-            }
-            Py_DECREF(end_string);
-        }
-    } else if (!newline) {
-        if (unlikely(!__pyx_print_kwargs)) {
-            __pyx_print_kwargs = PyDict_New();
-            if (unlikely(!__pyx_print_kwargs))
-                return -1;
-            end_string = PyUnicode_FromStringAndSize(" ", 1);
-            if (unlikely(!end_string))
-                return -1;
-            if (PyDict_SetItem(__pyx_print_kwargs, __pyx_n_s_end, end_string) < 0) {
-                Py_DECREF(end_string);
-                return -1;
-            }
-            Py_DECREF(end_string);
-        }
-        kwargs = __pyx_print_kwargs;
-    }
-    result = PyObject_Call(__pyx_print, arg_tuple, kwargs);
-    if (unlikely(kwargs) && (kwargs != __pyx_print_kwargs))
-        Py_DECREF(kwargs);
-    if (!result)
-        return -1;
-    Py_DECREF(result);
-    return 0;
-bad:
-    if (kwargs != __pyx_print_kwargs)
-        Py_XDECREF(kwargs);
-    return -1;
-}
-#endif
-
 /* CIntToPy */
       static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
     const int neg_one = (int) -1, const_zero = (int) 0;
@@ -12274,43 +12137,6 @@ raise_neg_overflow:
         "can't convert negative value to enum util::LoadMethod");
     return (enum util::LoadMethod) -1;
 }
-
-/* PrintOne */
-      #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION < 3
-static int __Pyx_PrintOne(PyObject* f, PyObject *o) {
-    if (!f) {
-        if (!(f = __Pyx_GetStdout()))
-            return -1;
-    }
-    Py_INCREF(f);
-    if (PyFile_SoftSpace(f, 0)) {
-        if (PyFile_WriteString(" ", f) < 0)
-            goto error;
-    }
-    if (PyFile_WriteObject(o, f, Py_PRINT_RAW) < 0)
-        goto error;
-    if (PyFile_WriteString("\n", f) < 0)
-        goto error;
-    Py_DECREF(f);
-    return 0;
-error:
-    Py_DECREF(f);
-    return -1;
-    /* the line below is just to avoid C compiler
-     * warnings about unused functions */
-    return __Pyx_Print(f, NULL, 0);
-}
-#else
-static int __Pyx_PrintOne(PyObject* stream, PyObject *o) {
-    int res;
-    PyObject* arg_tuple = PyTuple_Pack(1, o);
-    if (unlikely(!arg_tuple))
-        return -1;
-    res = __Pyx_Print(stream, arg_tuple, 1);
-    Py_DECREF(arg_tuple);
-    return res;
-}
-#endif
 
 /* CIntToPy */
       static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
