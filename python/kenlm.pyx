@@ -20,8 +20,8 @@ cdef class Output:
     def Add(self, write_fd, verbose_header):
         self._c_output.Add(new _kenlm.PrintHook(write_fd, verbose_header))
 
-    # def __dealloc__(self):
-    #     del self._c_output
+    def __dealloc__(self):
+        del self._c_output
 
 cdef class PrintHook:
     """
@@ -32,53 +32,11 @@ cdef class PrintHook:
     def __cinit__(self, write_fd, verbose_header):
         self._c_printhook = new _kenlm.PrintHook(write_fd, verbose_header)
 
-    # def __dealloc__(self):
-    #     del self._c_printhook
-
-# cdef class Discount:
-#     """
-#     Wrapper around 
-#     """
-#     cdef _kenlm.Discount  _c_discount
-
-#     def __cinit__(self):
-#         self._c_discount = _kenlm.Discount()
-#         pass
-
-#     def set(self, key, val):
-#         self._c_discount.amount[key] = val
-
-#     def __dealloc__(self):
-#         #del self._c_discount
-#         pass
+    def __dealloc__(self):
+        del self._c_printhook
 
 cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):
     _kenlm.Pipeline(pipeline, __in, output._c_output[0])
-
-
-# def parse_discount_fallback(param):
-#     ret = Discount()
-
-#     if len(param) > 3:
-#         raise RuntimeError("Specify at most three fallback discounts: 1, 2, and 3+")
-
-#     if len(param) == 0:
-#         raise RuntimeError("Fallback discounting enabled, but no discount specified")
-
-#     ret.set(0, 0.0)
-
-#     for i in range(3):
-#         discount = param[len(param) - 1]
-#         if i < len(param):
-#             discount = param[i]
-#         discount = float(discount)
-
-#         if (discount < 0.0 or discount > (i + 1)):
-#             raise RuntimeError("The discount for count " + str(i+1) + " was parsed as " + discount + " which is not in the range [0, " + str(i+1) + "].")
-
-#         ret.set(i+1, discount)
-
-#     return ret
 
 
 def compute_ngram(
