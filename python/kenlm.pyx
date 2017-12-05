@@ -101,8 +101,6 @@ def compute_ngram(
         limit_vocab_file='',
         discount_fallback=[0.5, 1, 1.5]):
 
-    print("This machine has " + str(_kenlm.GuessPhysicalMemory()) + " bytes of memory.\n\n")
-
     cdef _kenlm.PipelineConfig pipeline
     pipeline.order = order
     pipeline.initial_probs.interpolate_unigrams = interpolate_unigrams
@@ -134,8 +132,6 @@ def compute_ngram(
     else:
         pipeline.disallowed_symbol_action = _kenlm.THROW_UP
 
-    print("[BEGIN] Parse Discount Fallback")
-
     for i in range(4):
         pipeline.discount.fallback.amount[i] = 0.0
     if discount_fallback is None:
@@ -162,10 +158,6 @@ def compute_ngram(
 
         pipeline.discount.bad_action = _kenlm.COMPLAIN
 
-    print("[END] Parse Discount Fallback")
-
-    print("[BEGIN] Parse Pruning")
-
     if len(pruning) > 0:
 
         pipeline.prune_thresholds.reserve(len(pruning))
@@ -183,8 +175,6 @@ def compute_ngram(
 
     else:
         pipeline.prune_thresholds.resize(order, 0)
-
-    print("[END] Parse Pruning")
 
     if len(limit_vocab_file) == 0:
         pipeline.prune_vocab = True
@@ -208,8 +198,6 @@ def compute_ngram(
     _in.reset(_kenlm.OpenReadOrThrow(path_text_file))
     _out.reset(_kenlm.CreateOrThrow(path_arpa_file))
 
-    print("After reset")
-
     if intermediate is None:
         pipeline.renumber_vocabulary = False
         output = Output(pipeline.sort.temp_prefix, False, False)
@@ -219,62 +207,8 @@ def compute_ngram(
 
     output.Add(_out.release(), verbose_header)
 
-    print("MOUAIS")
-
-    # pipeline.minimum_block = 8192
-    # pipeline.sort.total_memory = 107374182400
-    # pipeline.sort.buffer_size = 67108864
-    # pipeline.block_count = 2
-    # pipeline.read_backoffs.total_memory = 32768;
-    # pipeline.read_backoffs.block_count = 2;
-
-    # pipeline.initial_probs.adder_in.entry_size = 32768
-    # pipeline.initial_probs.adder_out.entry_size = 32768
-    # pipeline.read_backoffs.entry_size = 32768
-
-    print("pipeline.order : " + str(pipeline.order))
-    print("")
-    print("pipeline.sort.temp_prefix " + str(pipeline.sort.temp_prefix))
-    print("pipeline.sort.buffer_size " + str(pipeline.sort.buffer_size))
-    print("pipeline.sort.total_memory " + str(pipeline.sort.total_memory))
-    print("")
-    print("pipeline.initial_probs.adder_in.entry_size : " + str(pipeline.initial_probs.adder_in.entry_size))
-    print("pipeline.initial_probs.adder_in.block_count : " + str(pipeline.initial_probs.adder_in.block_count))
-    print("pipeline.initial_probs.adder_in.total_memory : " + str(pipeline.initial_probs.adder_in.total_memory))
-    print("pipeline.initial_probs.adder_out.entry_size : " + str(pipeline.initial_probs.adder_out.entry_size))
-    print("pipeline.initial_probs.adder_out.block_count : " + str(pipeline.initial_probs.adder_out.block_count))
-    print("pipeline.initial_probs.adder_out.total_memory : " + str(pipeline.initial_probs.adder_out.total_memory))
-    print("pipeline.initial_probs.interpolate_unigrams : " + str(pipeline.initial_probs.interpolate_unigrams))
-    print("")
-    print("pipeline.read_backoffs.entry_size : " + str(pipeline.read_backoffs.entry_size))
-    print("pipeline.read_backoffs.block_count : " + str(pipeline.read_backoffs.block_count))
-    print("pipeline.read_backoffs.total_memory : " + str(pipeline.read_backoffs.total_memory))
-    print("")
-    print("pipeline.vocab_estimate : " + str(pipeline.vocab_estimate))
-    print("")
-    print("pipeline.minimum_block : " + str(pipeline.minimum_block))
-    print("")
-    print("pipeline.block_count : " + str(pipeline.block_count))
-    print("")
-    print("pipeline.prune_thresholds : ")
-    for i in range(pipeline.prune_thresholds.size()):
-        print(pipeline.prune_thresholds[i])
-    print("")
-    print("pipeline.prune_vocab : " + str(pipeline.prune_vocab))
-    print("")
-    print("pipeline.prune_vocab_file : " + str(pipeline.prune_vocab_file))
-    print("")
-    print("pipeline.renumber_vocabulary : " + str(pipeline.renumber_vocabulary))
-    print("")
-    print("pipeline.discount.fallback")
-    print("")
-    print("pipeline.output_q : " + str(pipeline.output_q))
-    print("")
-    print("pipeline.vocab_size_for_unk : " + str(pipeline.vocab_size_for_unk))
 
     Pipeline(pipeline, _in.release(), output)
-
-    print('POUET')
 
 cdef class FullScoreReturn:
     """
