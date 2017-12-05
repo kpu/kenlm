@@ -241,20 +241,14 @@ util::stream::Sort<SuffixOrder, CombineCounts> *CountText(int text_file /* input
 }
 
 void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector<uint64_t> &counts_pruned, const std::vector<Discount> &discounts, Master &master, Sorts<SuffixOrder> &primary, util::FixedArray<util::stream::FileBuffer> &gammas, const std::vector<uint64_t> &prune_thresholds, bool prune_vocab, const SpecialVocab &specials) {
-  std::cerr << "[BEGIN] InitialProbabilities" << std::endl;
-
   const PipelineConfig &config = master.Config();
   util::stream::Chains second(config.order);
-  std::cerr << "alpha" << std::endl;
 
   {
     Sorts<ContextOrder> sorts;
     master.SetupSorts(sorts, !config.renumber_vocabulary);
-    std::cerr << "beta" << std::endl;
     PrintStatistics(counts, counts_pruned, discounts);
-    std::cerr << "gamma" << std::endl;
     lm::ngram::ShowSizes(counts_pruned);
-    std::cerr << "delta" << std::endl;
     std::cerr << "=== 3/" << master.Steps() << " Calculating and sorting initial probabilities ===" << std::endl;
     master.SortAndReadTwice(counts_pruned, sorts, second, config.initial_probs.adder_in);
   }
@@ -270,7 +264,6 @@ void InitialProbabilities(const std::vector<uint64_t> &counts, const std::vector
   }
   // Has to be done here due to gamma_chains scope.
   master.SetupSorts(primary, true);
-  std::cerr << "[BEGIN] InitialProbabilities" << std::endl;
 }
 
 void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &master, Sorts<SuffixOrder> &primary, util::FixedArray<util::stream::FileBuffer> &gammas, Output &output, const SpecialVocab &specials) {
@@ -282,12 +275,10 @@ void InterpolateProbabilities(const std::vector<uint64_t> &counts, Master &maste
   for (std::size_t i = 0; i < config.order - 1; ++i) {
     util::stream::ChainConfig read_backoffs(config.read_backoffs);
 
-    std::cerr << "A-1" << std::endl;
     if(config.prune_vocab || config.prune_thresholds[i + 1] > 0)
         read_backoffs.entry_size = sizeof(HashGamma);
     else
         read_backoffs.entry_size = sizeof(float);
-    std::cerr << "A-2" << std::endl;
 
     gamma_chains.push_back(read_backoffs);
     gamma_chains.back() >> gammas[i].Source(true);
@@ -342,7 +333,7 @@ class VocabNumbering {
 
 } // namespace
 
-void  Pipeline(PipelineConfig &config, int text_file, Output &output) {
+void Pipeline(PipelineConfig &config, int text_file, Output &output) {
   // Some fail-fast sanity checks.
   if (config.sort.buffer_size * 4 > config.TotalMemory()) {
     config.sort.buffer_size = config.TotalMemory() / 4;
@@ -359,7 +350,6 @@ void  Pipeline(PipelineConfig &config, int text_file, Output &output) {
   Master master(config, output.Steps());
   // master's destructor will wait for chains.  But they might be deadlocked if
   // this thread dies because e.g. it ran out of memory.
- 
   try {
     VocabNumbering numbering(output.VocabFile(), config.TempPrefix(), config.renumber_vocabulary);
     uint64_t token_count;
