@@ -45,8 +45,6 @@ typedef WINBOOL (WINAPI *PFN_MS_EX) (lMEMORYSTATUSEX*);
 #include <mach/mach.h>
 #endif
 
-#include <iostream>
-
 namespace util {
 namespace {
 
@@ -246,7 +244,6 @@ void PrintUsage(std::ostream &out) {
 
 /* Written by Paul Eggert.  */
 uint64_t GuessPhysicalMemory() {
-  // return 1717986918;
 #if defined(_SC_PHYS_PAGES) && defined(_SC_PAGESIZE)
   {
     long pages = sysconf(_SC_PHYS_PAGES);
@@ -268,8 +265,7 @@ uint64_t GuessPhysicalMemory() {
 #endif
 
 #if defined(_WIN32) || defined(_WIN64)
-  {  
-    //this works on windows 
+  {  /* this works on windows */
     PFN_MS_EX pfnex;
     HMODULE h = GetModuleHandle (TEXT("kernel32.dll"));
 
@@ -296,7 +292,6 @@ uint64_t GuessPhysicalMemory() {
       }
   }
 #endif
-  std::cerr << "END GuessPhysicalMemory" << std::endl;
   return 0;
 }
 
