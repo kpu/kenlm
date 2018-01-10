@@ -28,7 +28,7 @@ set(KENLM_BUILDER_SOURCE
 #
 add_library(kenlm_builder ${KENLM_BUILDER_SOURCE})
 
-target_link_libraries(kenlm_builder kenlm)
+target_link_libraries(kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} ${THREADS})
 
 if (NOT MSVC)
 	set(THREADS pthread)
