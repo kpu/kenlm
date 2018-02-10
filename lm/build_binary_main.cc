@@ -10,7 +10,6 @@
 #include <iomanip>
 #include <limits>
 #include <cmath>
-#include <cstdlib>
 
 #ifdef WIN32
 #include "util/getopt.hh"
