@@ -8,6 +8,165 @@ cdef bytes as_str(data):
         return data.encode('utf8')
     raise TypeError('Cannot convert %s to string' % type(data))
 
+cdef class Output:
+    """
+    Wrapper around lm::builder::Output.
+    """
+    cdef _kenlm.Output* _c_output
+
+    def __cinit__(self, file_base, keep_buffer, output_q):
+        self._c_output = new _kenlm.Output(file_base, keep_buffer, output_q)
+
+    def Add(self, write_fd, verbose_header):
+        self._c_output.Add(new _kenlm.PrintHook(write_fd, verbose_header))
+
+    def __dealloc__(self):
+        del self._c_output
+
+cdef class PrintHook:
+    """
+    Wrapper around lm::builder::Printhook
+    """
+    cdef _kenlm.PrintHook* _c_printhook
+
+    def __cinit__(self, write_fd, verbose_header):
+        self._c_printhook = new _kenlm.PrintHook(write_fd, verbose_header)
+
+    def __dealloc__(self):
+        del self._c_printhook
+
+cdef Pipeline(_kenlm.PipelineConfig pipeline, __in, Output output):
+    _kenlm.Pipeline(pipeline, __in, output._c_output[0])
+
+
+def lmplz(
+        path_text_file, path_arpa_file,
+        order=3,
+        interpolate_unigrams=True,
+        skip_symbols=False,
+        temp_prefix=None,
+        memory="1G",
+        minimum_block="8K",
+        sort_block="64M",
+        block_count=2,
+        vocab_estimate=1000000,
+        vocab_pad=0,
+        verbose_header=False,
+        intermediate=None,
+        renumber=False,
+        collapse_values=False,
+        pruning=[],
+        limit_vocab_file='',
+        discount_fallback=[0.5, 1, 1.5]):
+
+    cdef _kenlm.PipelineConfig pipeline
+    pipeline.order = order
+    pipeline.initial_probs.interpolate_unigrams = interpolate_unigrams
+
+    if temp_prefix is None:
+        pipeline.sort.temp_prefix = _kenlm.DefaultTempDirectory()
+    else:
+        pipeline.sort.temp_prefix = temp_prefix
+
+    if memory is None:
+        pipeline.sort.total_memory = _kenlm.GuessPhysicalMemory()
+    else:
+        pipeline.sort.total_memory = _kenlm.ParseSize(memory)
+
+    pipeline.minimum_block = _kenlm.ParseSize(minimum_block)
+    pipeline.sort.buffer_size = _kenlm.ParseSize(sort_block)
+    pipeline.block_count = block_count
+    pipeline.vocab_estimate = vocab_estimate
+    pipeline.vocab_size_for_unk = vocab_pad
+    pipeline.renumber_vocabulary = renumber
+    pipeline.output_q = collapse_values
+
+    if pipeline.vocab_size_for_unk and not pipeline.initial_probs.interpolate_unigrams:
+        raise RuntimeError('--vocab_pad requires --interpolate_unigrams be on')
+
+    if skip_symbols:
+        pipeline.disallowed_symbol_action = _kenlm.COMPLAIN
+    else:
+        pipeline.disallowed_symbol_action = _kenlm.THROW_UP
+
+    for i in range(4):
+        pipeline.discount.fallback.amount[i] = 0.0
+
+    if discount_fallback is None:
+        pipeline.discount.bad_action = _kenlm.THROW_UP
+    else:
+        if len(discount_fallback) > 3:
+            raise RuntimeError("Specify at most three fallback discounts: 1, 2, and 3+")
+
+        if len(discount_fallback) == 0:
+            raise RuntimeError("Fallback discounting enabled, but no discount specified")
+
+        pipeline.discount.fallback.amount[0] = 0.0
+
+        for i in range(3):
+            discount = discount_fallback[len(discount_fallback) - 1]
+            if i < len(discount_fallback):
+                discount = discount_fallback[i]
+            discount = float(discount)
+
+            if (discount < 0.0 or discount > (i + 1)):
+                raise RuntimeError("The discount for count " + str(i+1) + " was parsed as " + discount + " which is not in the range [0, " + str(i+1) + "].")
+
+            pipeline.discount.fallback.amount[i+1] = discount
+
+        pipeline.discount.bad_action = _kenlm.COMPLAIN
+
+    if len(pruning) > 0:
+
+        pipeline.prune_thresholds.reserve(len(pruning))
+
+        for e in pruning:
+            pipeline.prune_thresholds.push_back(int(e))
+
+        if len(pruning) > order:
+            raise RuntimeError(
+                "You specified pruning thresholds for orders 1 through " + len(pruning) +
+                " but the model only has order " + order
+            )
+
+        pipeline.prune_thresholds.resize(order, pipeline.prune_thresholds.back());
+
+    else:
+        pipeline.prune_thresholds.resize(order, 0)
+
+    if len(limit_vocab_file) == 0:
+        pipeline.prune_vocab = True
+
+    else:
+        pipeline.prune_vocab = False
+    pipeline.prune_vocab_file = limit_vocab_file
+
+    _kenlm.NormalizeTempPrefix(pipeline.sort.temp_prefix)
+
+    pipeline.initial_probs.adder_in.total_memory = 32768;
+    pipeline.initial_probs.adder_in.block_count = 2;
+    pipeline.initial_probs.adder_out.total_memory = 32768;
+    pipeline.initial_probs.adder_out.block_count = 2;
+    pipeline.read_backoffs.total_memory = 32768;
+    pipeline.read_backoffs.block_count = 2;
+
+    cdef _kenlm.scoped_fd _in
+    cdef _kenlm.scoped_fd _out
+    _in.reset(_kenlm.OpenReadOrThrow(path_text_file))
+    _out.reset(_kenlm.CreateOrThrow(path_arpa_file))
+
+    if intermediate is None:
+        pipeline.renumber_vocabulary = False
+        output = Output(pipeline.sort.temp_prefix, False, False)
+    else:
+        pipeline.renumber_vocabulary = True
+        output = Output(intermediate, False, False)
+
+    output.Add(_out.release(), verbose_header)
+
+    Pipeline(pipeline, _in.release(), output)
+
+
 cdef class FullScoreReturn:
     """
     Wrapper around FullScoreReturn.
