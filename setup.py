@@ -13,9 +13,12 @@ def compile_test(header, library):
 FILES = glob.glob('util/*.cc') + glob.glob('lm/*.cc') + glob.glob('util/double-conversion/*.cc')
 FILES = [fn for fn in FILES if not (fn.endswith('main.cc') or fn.endswith('test.cc'))]
 
-LIBS = ['stdc++']
-if platform.system() != 'Darwin':
-    LIBS.append('rt')
+if platform.system() == 'Linux':
+    LIBS = ['stdc++', 'rt']
+elif platform.system() == 'Darwin':
+    LIBS = ['stdc++']
+else:
+    LIBS = []
 
 #We don't need -std=c++11 but python seems to be compiled with it now.  https://github.com/kpu/kenlm/issues/86
 ARGS = ['-O3', '-DNDEBUG', '-DKENLM_MAX_ORDER=6', '-std=c++11']
