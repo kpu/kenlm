@@ -70,6 +70,11 @@ cdef class State:
     def __hash__(self):
         return _kenlm.hash_value(self._c_state)
 
+    def __copy__(self):
+        ret = State()
+        ret._c_state = self._c_state
+        return ret
+
 class LoadMethod:
     LAZY = _kenlm.LAZY
     POPULATE_OR_LAZY = _kenlm.POPULATE_OR_LAZY
