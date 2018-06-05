@@ -94,7 +94,7 @@ pip install https://github.com/kpu/kenlm/archive/master.zip
 ### Basic Usage
 ```python
 import kenlm
-model = kenlm.Model('lm/test.arpa')
+model = kenlm.LanguageModel('lm/test.arpa')
 print(model.score('this is a sentence .', bos = True, eos = True))
 ```
 See [python/example.py](python/example.py) and [python/kenlm.pyx](python/kenlm.pyx) for more, including stateful APIs.  
