@@ -16,7 +16,7 @@ FILES = [fn for fn in FILES if not (fn.endswith('main.cc') or fn.endswith('test.
 if platform.system() == 'Linux':
     LIBS = ['stdc++', 'rt']
 elif platform.system() == 'Darwin':
-    LIBS = ['stdc++']
+    LIBS = ['c++']
 else:
     LIBS = []
 
