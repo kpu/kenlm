@@ -16,12 +16,16 @@ FILES = [fn for fn in FILES if not (fn.endswith('main.cc') or fn.endswith('test.
 if platform.system() == 'Linux':
     LIBS = ['stdc++', 'rt']
 elif platform.system() == 'Darwin':
-    LIBS = ['stdc++']
+    LIBS = ['c++']
 else:
     LIBS = []
 
 #We don't need -std=c++11 but python seems to be compiled with it now.  https://github.com/kpu/kenlm/issues/86
 ARGS = ['-O3', '-DNDEBUG', '-DKENLM_MAX_ORDER=6', '-std=c++11']
+
+#Attempted fix to https://github.com/kpu/kenlm/issues/186
+if platform.system() == 'Darwin':
+    ARGS.append("-stdlib=libc++")
 
 if compile_test('zlib.h', 'z'):
     ARGS.append('-DHAVE_ZLIB')
