@@ -25,7 +25,7 @@ ARGS = ['-O3', '-DNDEBUG', '-DKENLM_MAX_ORDER=6', '-std=c++11']
 
 #Attempted fix to https://github.com/kpu/kenlm/issues/186 and https://github.com/kpu/kenlm/issues/197
 if platform.system() == 'Darwin':
-    ARGS.append("-stdlib=libc++ -mmacosx-version-min=10.7")
+    ARGS += ["-stdlib=libc++", "-mmacosx-version-min=10.7"]
 
 if compile_test('zlib.h', 'z'):
     ARGS.append('-DHAVE_ZLIB')
