@@ -48,3 +48,5 @@ cdef extern from "lm/model.hh" namespace "lm::ngram":
     #default constructor
     cdef Model *LoadVirtual(char *) except +
 
+cdef extern from "python/score_sentence.hh" namespace "lm::base":
+    cdef float ScoreSentence(const Model *model, const char *sentence)
