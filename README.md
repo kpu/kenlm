@@ -71,7 +71,7 @@ Hideo Okuma and Tomoyuki Yoshimura from NICT contributed ports to ARM and MinGW.
 
 - Select the macros you want, listed in the previous section.  
 
-- There are two build systems: compile.sh and Jamroot+Jamfile.  They're pretty simple and are intended to be reimplemented in your build system.  
+- There are two build systems: compile.sh and cmake.  They're pretty simple and are intended to be reimplemented in your build system.  
 
 - Use either the interface in `lm/model.hh` or `lm/virtual_interface.hh`.  Interface documentation is in comments of `lm/virtual_interface.hh` and `lm/model.hh`.  
 

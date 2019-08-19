@@ -169,6 +169,8 @@ cdef class Model:
         #Unlike <s>, the end of sentence token </s> can appear explicitly.
         model.score("a fragment </s>", bos = False, eos = False)
         """
+        if bos and eos:
+            return _kenlm.ScoreSentence(self.model, as_str(sentence))
         cdef list words = as_str(sentence).split()
         cdef _kenlm.State state
         if bos:
