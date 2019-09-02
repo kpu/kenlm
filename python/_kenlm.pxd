@@ -1,3 +1,5 @@
+from libcpp cimport bool
+
 cdef extern from "lm/word_index.hh" namespace "lm":
     ctypedef unsigned WordIndex
 
@@ -42,6 +44,8 @@ cdef extern from "lm/config.hh" namespace "lm::ngram":
         Config()
         float probing_multiplier
         LoadMethod load_method
+        bool show_progress
+        float unknown_missing_logprob
 
 cdef extern from "lm/model.hh" namespace "lm::ngram":
     cdef Model *LoadVirtual(char *, Config &config) except +

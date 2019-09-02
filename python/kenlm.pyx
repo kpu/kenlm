@@ -28,7 +28,7 @@ cdef class FullScoreReturn:
 
     def __repr__(self):
         return '{0}({1}, {2}, {3})'.format(self.__class__.__name__, repr(self.log_prob), repr(self.ngram_length), repr(self.oov))
-    
+
     property log_prob:
         def __get__(self):
             return self.log_prob
@@ -46,7 +46,7 @@ cdef class State:
     Wrapper around lm::ngram::State so that python code can make incremental queries.
 
     Notes:
-        * rich comparisons 
+        * rich comparisons
         * hashable
     """
 
@@ -75,6 +75,9 @@ cdef class State:
         ret._c_state = self._c_state
         return ret
 
+    def __deepcopy__(self):
+        return self.__copy__()
+
 class LoadMethod:
     LAZY = _kenlm.LAZY
     POPULATE_OR_LAZY = _kenlm.POPULATE_OR_LAZY
@@ -85,7 +88,7 @@ class LoadMethod:
 cdef class Config:
     """
     Wrapper around lm::ngram::Config.
-    Pass this to Model's constructor to set the load_method.
+    Pass this to Model's constructor to set configuration options.
     """
     cdef _kenlm.Config _c_config
 
@@ -97,6 +100,12 @@ cdef class Config:
             return self._c_config.load_method
         def __set__(self, to):
             self._c_config.load_method = to
+
+    property show_progress:
+        def __get__(self):
+            return self._c_config.show_progress
+        def __set__(self, to):
+            self._c_config.show_progress = to
 
 cdef class Model:
     """
