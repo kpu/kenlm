@@ -25,6 +25,34 @@ namespace lm { namespace builder { namespace {
   ++stream; \
 }
 
+class CheckAnswers {
+  public:
+    void Run(const util::stream::ChainPosition &position) {
+      NGramStream<BuildingPayload> stream(position);
+      const char *v[] = {"<unk>", "<s>", "</s>", "looking", "on", "a", "little", "more", "loin", "foo", "bar"};
+      WordIndex *w;
+
+      Check("<s> <s> looking", 1);
+      Check("<s> looking on", 1);
+      Check("looking on a", 1);
+      Check("on a little", 2);
+      Check("a little more", 2);
+      Check("little more loin", 2);
+      Check("more loin </s>", 2);
+      Check("<s> <s> on", 2);
+      Check("<s> on a", 1);
+      Check("<s> on foo", 1);
+      Check("on foo little", 1);
+      Check("foo little more", 1);
+      Check("little more loin", 1);
+      Check("more loin </s>", 1);
+      Check("<s> <s> bar", 1);
+      Check("<s> bar </s>", 1);
+      Check("<s> <s> </s>", 1);
+      BOOST_CHECK(!stream);
+    }
+};
+
 BOOST_AUTO_TEST_CASE(Short) {
   util::scoped_fd input_file(util::MakeTemp("corpus_count_test_temp"));
   const char input[] = "looking on a little more loin\non a little more loin\non foo little more loin\nbar\n\n";
@@ -43,38 +71,15 @@ BOOST_AUTO_TEST_CASE(Short) {
 
   util::scoped_fd vocab(util::MakeTemp("corpus_count_test_vocab"));
 
-  util::stream::Chain chain(config);
   uint64_t token_count;
   WordIndex type_count = 10;
   std::vector<bool> prune_words;
+  util::stream::Chain chain(config);
   CorpusCount counter(input_piece, vocab.get(), true, token_count, type_count, prune_words, "", chain.BlockSize() / chain.EntrySize(), SILENT);
-  chain >> boost::ref(counter);
-  NGramStream<BuildingPayload> stream(chain.Add());
-  chain >> util::stream::kRecycle;
+  chain >> boost::ref(counter) >> CheckAnswers() >> util::stream::kRecycle;
 
-  const char *v[] = {"<unk>", "<s>", "</s>", "looking", "on", "a", "little", "more", "loin", "foo", "bar"};
-
-  WordIndex *w;
-
-  Check("<s> <s> looking", 1);
-  Check("<s> looking on", 1);
-  Check("looking on a", 1);
-  Check("on a little", 2);
-  Check("a little more", 2);
-  Check("little more loin", 2);
-  Check("more loin </s>", 2);
-  Check("<s> <s> on", 2);
-  Check("<s> on a", 1);
-  Check("<s> on foo", 1);
-  Check("on foo little", 1);
-  Check("foo little more", 1);
-  Check("little more loin", 1);
-  Check("more loin </s>", 1);
-  Check("<s> <s> bar", 1);
-  Check("<s> bar </s>", 1);
-  Check("<s> <s> </s>", 1);
-  BOOST_CHECK(!stream);
-  BOOST_CHECK_EQUAL(sizeof(v) / sizeof(const char*), type_count);
+  chain.Wait();
+  BOOST_CHECK_EQUAL(11, type_count);
 }
 
 }}} // namespaces
