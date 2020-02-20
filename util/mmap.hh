@@ -60,7 +60,10 @@ class scoped_mmap {
 class scoped_memory {
   public:
     typedef enum {
-      MMAP_ROUND_UP_ALLOCATED, // The size was rounded up to a multiple of page size.  Do the same before munmap.
+      // TODO: store rounded up size instead?
+      MMAP_ROUND_1G_ALLOCATED, // The size was rounded up for a 1GB page.  Do the same before munmap.
+      MMAP_ROUND_2M_ALLOCATED, // The size was rounded up for a 2MB page.  Do the same before munmap.
+      MMAP_ROUND_PAGE_ALLOCATED, // The size was rounded up to a multiple of the default page size.  Do the same before munmap.
       MMAP_ALLOCATED, // munmap
       MALLOC_ALLOCATED, // free
       NONE_ALLOCATED // nothing to free (though there can be something here if it's owned by somebody else).
