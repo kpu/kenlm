@@ -264,7 +264,7 @@ void HugeRealloc(std::size_t to, bool zero_new, scoped_memory &mem) {
         mem.reset(replacement.release(), to, scoped_memory::MALLOC_ALLOCATED);
       } else {
         void *new_addr = mremap(mem.get(), from_size, to, MREMAP_MAYMOVE);
-        UTIL_THROW_IF(!new_addr, ErrnoException, "Failed to mremap from " << from_size << " to " << to);
+        UTIL_THROW_IF(new_addr == MAP_FAILED, ErrnoException, "Failed to mremap from " << from_size << " to " << to);
         mem.steal();
         mem.reset(new_addr, to, scoped_memory::MMAP_ALLOCATED);
       }
