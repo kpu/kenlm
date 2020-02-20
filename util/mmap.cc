@@ -79,18 +79,6 @@ void scoped_memory::reset(void *data, std::size_t size, Alloc source) {
   source_ = source;
 }
 
-/*void scoped_memory::call_realloc(std::size_t size) {
-  assert(source_ == MALLOC_ALLOCATED || source_ == NONE_ALLOCATED);
-  void *new_data = realloc(data_, size);
-  if (!new_data) {
-    reset();
-  } else {
-    data_ = new_data;
-    size_ = size;
-    source_ = MALLOC_ALLOCATED;
-  }
-}*/
-
 const int kFileFlags =
 #if defined(_WIN32) || defined(_WIN64)
   0 // MapOrThrow ignores flags on windows
