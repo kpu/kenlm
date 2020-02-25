@@ -81,12 +81,18 @@ class FilePiece {
       return LineIterator();
     }
 
-    char get() {
+    char peek() {
       if (position_ == position_end_) {
         Shift();
         if (at_end_) throw EndOfFileException();
       }
-      return *(position_++);
+      return *position_;
+    }
+
+    char get() {
+      char ret = peek();
+      ++position_;
+      return ret;
     }
 
     // Leaves the delimiter, if any, to be returned by get().  Delimiters defined by isspace().
