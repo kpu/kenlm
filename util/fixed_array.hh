@@ -71,6 +71,21 @@ template <class T> class FixedArray {
      */
     ~FixedArray() { clear(); }
 
+#if __cplusplus >= 201103L
+    FixedArray(FixedArray &&from)
+      : block_(std::move(from.block_)),
+        newed_end_(from.newed_end_)
+#  ifndef NDEBUG
+        , allocated_end_(from.allocated_end_)
+#  endif // NDEBUG
+    {
+      from.newed_end_ = NULL;
+#  ifndef NDEBUG
+      from.allocated_end_ = NULL;
+#  endif // NDEBUG
+    }
+#endif // C++11
+
     /** Gets a pointer to the first object currently stored in this data structure. */
     T *begin() { return static_cast<T*>(block_.get()); }
 
@@ -122,6 +137,20 @@ template <class T> class FixedArray {
      * The memory backing the constructed object is managed by this data structure.
      * I miss C++11 variadic templates.
      */
+#if __cplusplus >= 201103L
+    template <typename... Construct> T *emplace_back(Construct&&... construct) {
+      T *ret = end();
+      new (end()) T(construct...);
+      Constructed();
+      return ret;
+    }
+    template <typename... Construct> T *push_back(Construct&&... construct) {
+      T *ret = end();
+      new (end()) T(construct...);
+      Constructed();
+      return ret;
+    }
+#else
     void push_back() {
       new (end()) T();
       Constructed();
@@ -138,6 +167,7 @@ template <class T> class FixedArray {
       new (end()) T(c, d);
       Constructed();
     }
+#endif
 
     void pop_back() {
       back().~T();
