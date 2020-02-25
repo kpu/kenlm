@@ -162,7 +162,7 @@ inline StringPiece Trim(StringPiece str, const bool *spaces = kSpaces) {
   while (!str.empty() && spaces[static_cast<unsigned char>(*str.data())]) {
     str = StringPiece(str.data() + 1, str.size() - 1);
   }
-  while (!str.empty() && spaces[static_cast<unsigned char>(str[str.size() - 1])]) {
+  while (!str.empty() && spaces[static_cast<unsigned char>(str.data()[str.size() - 1])]) {
     str = StringPiece(str.data(), str.size() - 1);
   }
   return str;
