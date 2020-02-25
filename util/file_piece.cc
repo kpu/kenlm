@@ -61,7 +61,7 @@ FilePiece::FilePiece(int fd, const char *name, std::ostream *show_progress, std:
   Initialize(NamePossiblyFind(fd, name).c_str(), show_progress, min_buffer);
 }
 
-FilePiece::FilePiece(std::istream &stream, const char *name, std::size_t min_buffer) :
+FilePiece::FilePiece(std::istream &stream, const char * /*name*/, std::size_t min_buffer) :
   total_size_(kBadSize) {
   InitializeNoRead("istream", min_buffer);
 
