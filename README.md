@@ -7,7 +7,7 @@ I do development in master on https://github.com/kpu/kenlm/.  Normally, it works
 The website https://kheafield.com/code/kenlm/ has more documentation.  If you're a decoder developer, please download the latest version from there instead of copying from another decoder.
 
 ## Compiling
-Use cmake, see [BUILDING](BUILDING) for more detail.
+Use cmake, see [BUILDING](BUILDING) for build dependencies and more detail.
 ```bash
 mkdir -p build
 cd build
