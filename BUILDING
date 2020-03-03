@@ -18,4 +18,4 @@ OSX:
   brew install cmake boost eigen
 
 Debian/Ubuntu:
-  sudo apt install libeigen3-dev build-essential libboost-system-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev cmake zlib1g-dev libbz2-dev liblzma-dev
+  sudo apt install build-essential cmake libboost-system-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libeigen3-dev zlib1g-dev libbz2-dev liblzma-dev
