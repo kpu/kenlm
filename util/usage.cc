@@ -38,7 +38,7 @@ typedef WINBOOL (WINAPI *PFN_MS_EX) (lMEMORYSTATUSEX*);
 #include <unistd.h>
 #endif
 
-#if defined(__MACH__) || defined(__FreeBSD__) || defined(__APPLE__)
+#if defined(__MACH__) || defined(__APPLE__)
 #include <sys/types.h>
 #include <sys/sysctl.h>
 #include <mach/task.h>
@@ -170,7 +170,7 @@ double ThreadTime() {
   // GetThreadTimes() reports in units of 100 nanoseconds, i.e. ten-millionths
   // of a second.
   return ticks / (10 * 1000 * 1000);
-#elif defined(__MACH__) || defined(__FreeBSD__) || defined(__APPLE__)
+#elif defined(__MACH__) || defined(__APPLE__)
   struct task_basic_info t_info;
   mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;  
   task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count);
