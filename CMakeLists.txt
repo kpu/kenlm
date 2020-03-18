@@ -47,9 +47,12 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# Tell cmake that we want unit tests to be compiled
-include(CTest)
-enable_testing()
+option(COMPILE_TESTS "Compile tests" OFF)
+if (COMPILE_TESTS)
+  # Tell cmake that we want unit tests to be compiled
+  include(CTest)
+  enable_testing()
+endif()
 
 # Add our CMake helper functions
 include(cmake/KenLMFunctions.cmake)
