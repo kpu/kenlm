@@ -13,7 +13,8 @@ void Usage(const char *name) {
     "Usage: " << name << " [-b] [-n] [-w] [-s] lm_file\n"
     "-b: Do not buffer output.\n"
     "-n: Do not wrap the input in <s> and </s>.\n"
-    "-v summary|sentence|word: Level of verbosity\n"
+    "-v summary|sentence|word: Print statistics at this level.\n"
+    "   Can be used multiple times: -v summary -v sentence -v word\n"
     "-l lazy|populate|read|parallel: Load lazily, with populate, or malloc+read\n"
     "The default loading method is populate on Linux and read on others.\n\n"
     "Each word in the output is formatted as:\n"
@@ -30,7 +31,9 @@ int main(int argc, char *argv[]) {
 
   lm::ngram::Config config;
   bool sentence_context = true;
-  unsigned int verbosity = 2;
+  bool print_word = false;
+  bool print_line = false;
+  bool print_summary = false;
   bool flush = false;
 
   int opt;
@@ -43,12 +46,24 @@ int main(int argc, char *argv[]) {
         sentence_context = false;
         break;
       case 'v':
-        if (!strcmp(optarg, "word") || !strcmp(optarg, "2")) {
-          verbosity = 2;
-        } else if (!strcmp(optarg, "sentence") || !strcmp(optarg, "1")) {
-          verbosity = 1;
-        } else if (!strcmp(optarg, "summary") || !strcmp(optarg, "0")) {
-          verbosity = 0;
+        if (!strcmp(optarg, "2")) {
+          print_word = true;
+          print_line = true;
+          print_summary = true;
+        } else if (!strcmp(optarg, "1")) {
+          print_word = false;
+          print_line = true;
+          print_summary = true;
+        } else if (!strcmp(optarg, "0")) {
+          print_word = false;
+          print_line = false;
+          print_summary = true;
+        } else if (!strcmp(optarg, "word")) {
+          print_word = true;
+        } else if (!strcmp(optarg, "sentence")) {
+          print_line = true;
+        } else if (!strcmp(optarg, "summary")) {
+          print_summary = true;
         } else {
           Usage(argv[0]);
         }
@@ -73,7 +88,13 @@ int main(int argc, char *argv[]) {
   }
   if (optind + 1 != argc)
     Usage(argv[0]);
-  lm::ngram::QueryPrinter printer(1, verbosity >= 2, verbosity >= 1, true, flush);
+  // No verbosity argument specified.
+  if (!print_word && !print_line && !print_summary) {
+    print_word = true;
+    print_line = true;
+    print_summary = true;
+  }
+  lm::ngram::QueryPrinter printer(1, print_word, print_line, print_summary, flush);
   const char *file = argv[optind];
   try {
     using namespace lm::ngram;
