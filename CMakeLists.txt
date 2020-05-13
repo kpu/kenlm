@@ -83,3 +83,8 @@ include_directories(
 add_subdirectory(util)
 add_subdirectory(lm)
 
+option (ENABLE_PYTHON "python bindings" OFF)
+if(ENABLE_PYTHON)
+  add_subdirectory(python)
+endif()
+
