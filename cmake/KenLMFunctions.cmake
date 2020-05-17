@@ -58,12 +58,8 @@ function(KenLMAddTest)
   endif()
 
   # Specify command arguments for how to run each unit test
-  #
-  # Assuming that foo was defined via add_executable(foo ...),
-  #   the syntax $<TARGET_FILE:foo> gives the full path to the executable.
-  #
   add_test(NAME ${KenLMAddTest_TEST}
-           COMMAND $<TARGET_FILE:${KenLMAddTest_TEST}> ${test_params})
+           COMMAND ${KenLMAddTest_TEST} ${test_params})
 
   # Group unit tests together
   set_target_properties(${KenLMAddTest_TEST} PROPERTIES FOLDER "unit_tests")
