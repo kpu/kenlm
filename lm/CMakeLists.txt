@@ -35,6 +35,7 @@ if (NOT MSVC)
 endif()
 
 add_library(kenlm ${KENLM_LM_SOURCE} ${KENLM_LM_COMMON_SOURCE})
+set_target_properties(kenlm PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(kenlm kenlm_util ${Boost_LIBRARIES} ${THREADS})
 
 set(KENLM_MAX_ORDER 6 CACHE STRING "Maximum supported ngram order")
