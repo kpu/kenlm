@@ -57,7 +57,7 @@ class StatCollector {
           float y = static_cast<float>(s.n[1]) / static_cast<float>(s.n[1] + 2.0 * s.n[2]);
           for (unsigned j = 1; j < 4; ++j) {
             discounts_[i].amount[j] = static_cast<float>(j) - static_cast<float>(j + 1) * y * static_cast<float>(s.n[j+1]) / static_cast<float>(s.n[j]);
-            UTIL_THROW_IF(discounts_[i].amount[j] < 0.0 || discounts_[i].amount[j] > j, BadDiscountException, "ERROR: " << (i+1) << "-gram discount out of range for adjusted count " << j << ": " << discounts_[i].amount[j]);
+            UTIL_THROW_IF(discounts_[i].amount[j] < 0.0 || discounts_[i].amount[j] > j, BadDiscountException, "ERROR: " << (i+1) << "-gram discount out of range for adjusted count " << j << ": " << discounts_[i].amount[j] << ".  This means modified Kneser-Ney smoothing thinks something is weird about your data.  To override this error for e.g. a class-based model, rerun with --discount_fallback\n");
           }
         } catch (const BadDiscountException &e) {
           switch (config.bad_action) {
