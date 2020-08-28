@@ -37,9 +37,15 @@ namespace util {
 inline uint8_t BitPackShift(uint8_t bit, uint8_t /*length*/) {
   return bit;
 }
+inline uint8_t BitPackShift32(uint8_t bit, uint8_t /*length*/) {
+  return bit;
+}
 #elif BYTE_ORDER == BIG_ENDIAN
 inline uint8_t BitPackShift(uint8_t bit, uint8_t length) {
   return 64 - length - bit;
+}
+inline uint8_t BitPackShift32(uint8_t bit, uint8_t length) {
+  return 32 - length - bit;
 }
 #else
 #error "Bit packing code isn't written for your byte order."
@@ -85,9 +91,9 @@ inline uint32_t ReadInt25(const void *base, uint64_t bit_off, uint8_t length, ui
   const uint8_t *base_off = reinterpret_cast<const uint8_t*>(base) + (bit_off >> 3);
   uint32_t value32;
   memcpy(&value32, base_off, sizeof(value32));
-  return (value32 >> BitPackShift(bit_off & 7, length)) & mask;
+  return (value32 >> BitPackShift32(bit_off & 7, length)) & mask;
 #else
-  return (*reinterpret_cast<const uint32_t*>(reinterpret_cast<const uint8_t*>(base) + (bit_off >> 3)) >> BitPackShift(bit_off & 7, length)) & mask;
+  return (*reinterpret_cast<const uint32_t*>(reinterpret_cast<const uint8_t*>(base) + (bit_off >> 3)) >> BitPackShift32(bit_off & 7, length)) & mask;
 #endif
 }
 
@@ -96,11 +102,11 @@ inline void WriteInt25(void *base, uint64_t bit_off, uint8_t length, uint32_t va
   uint8_t *base_off = reinterpret_cast<uint8_t*>(base) + (bit_off >> 3);
   uint32_t value32;
   memcpy(&value32, base_off, sizeof(value32));
-  value32 |= (value << BitPackShift(bit_off & 7, length));
+  value32 |= (value << BitPackShift32(bit_off & 7, length));
   memcpy(base_off, &value32, sizeof(value32));
 #else
   *reinterpret_cast<uint32_t*>(reinterpret_cast<uint8_t*>(base) + (bit_off >> 3)) |=
-    (value << BitPackShift(bit_off & 7, length));
+    (value << BitPackShift32(bit_off & 7, length));
 #endif
 }
 

@@ -168,8 +168,8 @@ class SeparatelyQuantize {
         float Rest() const { return Prob(); }
 
         void Write(float prob, float backoff) const {
-          util::WriteInt57(address_.base, address_.offset, ProbBins().Bits() + BackoffBins().Bits(),
-              (ProbBins().EncodeProb(prob) << BackoffBins().Bits()) | BackoffBins().EncodeBackoff(backoff));
+          util::WriteInt25(address_.base, address_.offset + BackoffBins().Bits(), ProbBins().Bits(), ProbBins().EncodeProb(prob));
+          util::WriteInt25(address_.base, address_.offset, BackoffBins().Bits(), BackoffBins().EncodeBackoff(backoff));
         }
 
       private:
