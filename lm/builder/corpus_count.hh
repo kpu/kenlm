@@ -42,8 +42,8 @@ class CorpusCount {
     bool dynamic_vocab_;
     uint64_t &token_count_;
     WordIndex &type_count_;
-    std::vector<bool>& prune_words_;
-    const std::string& prune_vocab_filename_;
+    std::vector<bool> &prune_words_;
+    const std::string prune_vocab_filename_;
 
     std::size_t dedupe_mem_size_;
     util::scoped_malloc dedupe_mem_;
