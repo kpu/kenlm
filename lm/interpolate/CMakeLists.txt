@@ -16,7 +16,7 @@ if(EIGEN3_FOUND)
         tune_instances.cc
         tune_weights.cc
         universal_vocab.cc)
-  
+
     find_package(OpenMP)
     if (OPENMP_FOUND)
       set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -24,10 +24,10 @@ if(EIGEN3_FOUND)
     else()
       message(STATUS "OpenMP support would be nice for parallelizing matrix operations.")
     endif()
-  
+
     add_library(kenlm_interpolate ${KENLM_INTERPOLATE_SOURCE})
     target_link_libraries(kenlm_interpolate kenlm)
-  
+
     set(KENLM_INTERPOLATE_EXES
         interpolate
         streaming_example)
@@ -35,29 +35,21 @@ if(EIGEN3_FOUND)
 	if (NOT MSVC)
 	  set(THREADS pthread)
 	endif()
-  
+
       set(KENLM_INTERPOLATE_LIBS
         kenlm_interpolate)
-  
+
     AddExes(EXES ${KENLM_INTERPOLATE_EXES}
             LIBRARIES ${KENLM_INTERPOLATE_LIBS})
-  
+
     if(BUILD_TESTING)
-        AddTests(TESTS backoff_reunification_test bounded_sequence_encoding_test normalize_test tune_derivatives_test
+        AddTests(TESTS backoff_reunification_test bounded_sequence_encoding_test merge_vocab_test normalize_test tune_derivatives_test
                  LIBRARIES ${KENLM_INTERPOLATE_LIBS} pthread)
-  
+
         # tune_instances_test needs an extra command line parameter
         KenLMAddTest(TEST tune_instances_test
                      LIBRARIES ${KENLM_INTERPOLATE_LIBS}
                      TEST_ARGS -- ${CMAKE_CURRENT_SOURCE_DIR}/../common/test_data)
-  
-        foreach(test_file test1 test2 test3 test_bad_order test_no_unk)
-          set(KENLM_MERGE_TESTS_PATH ${KENLM_MERGE_TESTS_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/merge_test/${test_file})
-        endforeach(test_file)
-  
-        KenLMAddTest(TEST merge_vocab_test
-                     LIBRARIES ${KENLM_INTERPOLATE_LIBS}
-                     TEST_ARGS ${KENLM_MERGE_TESTS_PATH})
     endif()
   else()
     message(WARNING "Not building interpolation. You have an old version of Eigen3, ${EIGEN3_VERSION}, which has a race condition: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=466.  Please install Eigen 3.1.0 or above.")
