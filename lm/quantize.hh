@@ -168,8 +168,16 @@ class SeparatelyQuantize {
         float Rest() const { return Prob(); }
 
         void Write(float prob, float backoff) const {
-          util::WriteInt25(address_.base, address_.offset + BackoffBins().Bits(), ProbBins().Bits(), ProbBins().EncodeProb(prob));
-          util::WriteInt25(address_.base, address_.offset, BackoffBins().Bits(), BackoffBins().EncodeBackoff(backoff));
+          uint64_t prob_encoded = ProbBins().EncodeProb(prob);
+	  uint64_t backoff_encoded = BackoffBins().EncodeBackoff(backoff);
+#if BYTE_ORDER == LITTLE_ENDIAN
+	  prob_encoded
+#elif BYTE_ORDER == BIG_ENDIAN
+          backoff_encoded
+#endif
+		  <<= BackoffBins().Bits();
+          util::WriteInt57(address_.base, address_.offset, ProbBins().Bits() + BackoffBins().Bits(),
+			   prob_encoded | backoff_encoded);
         }
 
       private:
