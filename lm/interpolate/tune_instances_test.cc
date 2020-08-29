@@ -20,17 +20,23 @@ BOOST_AUTO_TEST_CASE(Toy) {
   util::scoped_fd test_input(util::MakeTemp("temporary"));
   util::FileStream(test_input.get()) << "c\n";
 
-  StringPiece dir("../common/test_data/");
+  std::string dir("../common/test_data");
   if (boost::unit_test::framework::master_test_suite().argc == 2) {
-    StringPiece zero_file(boost::unit_test::framework::master_test_suite().argv[1]);
-    BOOST_REQUIRE(zero_file.size() > strlen("toy0.1"));
-    BOOST_REQUIRE_EQUAL("toy0.1", StringPiece(zero_file.data() + zero_file.size() - 6, 6));
-    dir = StringPiece(zero_file.data(), zero_file.size() - 6);
+    dir = boost::unit_test::framework::master_test_suite().argv[1];
   }
 
+#if BYTE_ORDER == LITTLE_ENDIAN
+  std::string endian = "little";
+#elif BYTE_ORDER == BIG_ENDIAN
+  std::string endian = "big";
+#else
+#error "Unsupported byte order."
+#endif
+  dir += "/" + endian + "endian/";
+
   std::vector<StringPiece> model_names;
-  std::string full0 = std::string(dir.data(), dir.size()) + "toy0";
-  std::string full1 = std::string(dir.data(), dir.size()) + "toy1";
+  std::string full0 = dir + "toy0";
+  std::string full1 = dir + "toy1";
   model_names.push_back(full0);
   model_names.push_back(full1);
 

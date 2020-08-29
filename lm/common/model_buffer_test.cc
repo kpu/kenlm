@@ -8,12 +8,20 @@
 namespace lm { namespace {
 
 BOOST_AUTO_TEST_CASE(Query) {
-  std::string dir("test_data/");
+  std::string dir("test_data");
   if (boost::unit_test::framework::master_test_suite().argc == 2) {
     dir = boost::unit_test::framework::master_test_suite().argv[1];
   }
   ngram::Model ref((dir + "/toy0.arpa").c_str());
-  ModelBuffer test(dir + "/toy0");
+#if BYTE_ORDER == LITTLE_ENDIAN
+  std::string endian = "little";
+#elif BYTE_ORDER == BIG_ENDIAN
+  std::string endian = "big";
+#else
+#error "Unsupported byte order."
+#endif
+
+  ModelBuffer test(dir + "/" + endian + "endian/toy0");
   ngram::State ref_state, test_state;
   WordIndex a = ref.GetVocabulary().Index("a");
   BOOST_CHECK_CLOSE(
