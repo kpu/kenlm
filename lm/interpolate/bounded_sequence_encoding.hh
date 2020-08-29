@@ -10,10 +10,6 @@
 #include "util/exception.hh"
 #include "util/fixed_array.hh"
 
-#if BYTE_ORDER != LITTLE_ENDIAN
-#warning The interpolation code assumes little endian for now.
-#endif
-
 #include <algorithm>
 #include <cstring>
 
@@ -40,6 +36,9 @@ class BoundedSequenceEncoding {
         }
         cur |= static_cast<uint64_t>(*from) << i->shift;
       }
+#if BYTE_ORDER == BIG_ENDIAN
+      cur <<= (8 - overhang_) * 8;
+#endif
       memcpy(to, &cur, overhang_);
     }
 
@@ -47,12 +46,18 @@ class BoundedSequenceEncoding {
       const uint8_t *from = static_cast<const uint8_t*>(from_void);
       uint64_t cur = 0;
       memcpy(&cur, from, first_copy_);
+#if BYTE_ORDER == BIG_ENDIAN
+      cur >>= (8 - first_copy_) * 8;
+#endif
       for (const Entry *i = entries_.begin(); i != entries_.end(); ++i, ++to) {
         if (UTIL_UNLIKELY(i->next)) {
           from += sizeof(uint64_t);
           cur = 0;
           std::memcpy(&cur, from,
               std::min<std::size_t>(sizeof(uint64_t), static_cast<const uint8_t*>(from_void) + byte_length_ - from));
+#if BYTE_ORDER == BIG_ENDIAN
+          cur >>= (8 - (static_cast<const uint8_t*>(from_void) + byte_length_ - from)) * 8;
+#endif
         }
         *to = (cur >> i->shift) & i->mask;
       }

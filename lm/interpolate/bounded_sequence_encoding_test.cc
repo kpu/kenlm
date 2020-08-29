@@ -9,6 +9,17 @@ namespace lm {
 namespace interpolate {
 namespace {
 
+BOOST_AUTO_TEST_CASE(Simple) {
+  unsigned char bounds[] = {2};
+  BoundedSequenceEncoding enc(bounds, bounds + 1);
+  util::scoped_malloc backing(util::MallocOrThrow(enc.EncodedLength()));
+  unsigned char input = 1;
+  enc.Encode(&input, backing.get());
+  unsigned char output;
+  enc.Decode(backing.get(), &output);
+  BOOST_CHECK_EQUAL(1, output);
+}
+
 void ExhaustiveTest(unsigned char *bound_begin, unsigned char *bound_end) {
   BoundedSequenceEncoding enc(bound_begin, bound_end);
   util::scoped_malloc backing(util::MallocOrThrow(enc.EncodedLength()));
