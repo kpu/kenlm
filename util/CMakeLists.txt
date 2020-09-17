@@ -57,11 +57,8 @@ set_source_files_properties(file_piece_test.cc PROPERTIES COMPILE_FLAGS ${READ_C
 add_subdirectory(double-conversion)
 add_subdirectory(stream)
 
-find_library(LIBRT rt)
-if (LIBRT)
-  set(RT ${LIBRT})
-else()
-  set(RT)
+if(UNIX AND NOT APPLE AND NOT ANDROID)
+  set(RT rt)
 endif()
 
 # Group these objects together for later use.
