@@ -1,0 +1,51 @@
+name: Mac
+
+on:
+  push:
+    branches: master
+  pull_request:
+    branches: master
+
+jobs:
+  build:
+    runs-on: macOS-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache Boost
+      id: cache-boost
+      uses: actions/cache@v1
+      with:
+        path: boost_1_74_0/installdir
+        key: ${{ runner.os }}-boost_1_74_0
+    - name: Install Boost
+      if: steps.cache-boost.outputs.cache-hit != 'true'
+      run: |
+        PREFIX=$HOME/usr
+        LIBDIR=$PREFIX/lib
+        wget https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_74_0.tar.bz2
+        tar xjf boost_1_74_0.tar.bz2
+        cd boost_1_74_0
+        ./b2 --prefix=$PREFIX --libdir=$LIBDIR --layout=tagged link=static,shared threading=multi,single --with-libraries=program_options,system,thread,unit_test_framework install -j2
+    - name: cmake
+      run: |
+        PREFIX=$HOME/usr
+        LIBDIR=$PREFIX/lib
+        export CPATH=$PREFIX/include${CPATH:+:$CPATH}
+        export LIBRARY_PATH=$LIBDIR${LIBRARY_PATH:+:$LIBRARY_PATH}
+        export DYLD_LIBRARY_PATH=$LIBDIR${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+        cmake -E make_directory build
+        cd build
+        cmake ..
+    - name: Compile
+      working-directory: build
+      run: |
+        PREFIX=$HOME/usr
+        LIBDIR=$PREFIX/lib
+        export CPATH=$PREFIX/include${CPATH:+:$CPATH}
+        export LIBRARY_PATH=$LIBDIR${LIBRARY_PATH:+:$LIBRARY_PATH}
+        export DYLD_LIBRARY_PATH=$LIBDIR${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
+        cmake --build . -j2
+    - name: Test
+      working-directory: build
+      run: ctest -j2
