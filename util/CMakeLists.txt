@@ -57,23 +57,15 @@ set_source_files_properties(file_piece_test.cc PROPERTIES COMPILE_FLAGS ${READ_C
 add_subdirectory(double-conversion)
 add_subdirectory(stream)
 
-if (UNIX AND NOT APPLE)
-  set(TIMER_LINK rt)
-else()
-  set(TIMER_LINK)
-endif()
-
-if (NOT MSVC)
-	set(THREADS pthread)
-endif()
+find_library(LIBRT rt)
 
 # Group these objects together for later use.
 add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
 set_target_properties(kenlm_util PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(kenlm_util ${Boost_LIBRARIES} ${READ_COMPRESSED_LIBS} ${THREADS} ${TIMER_LINK})
+target_link_libraries(kenlm_util ${Boost_LIBRARIES} ${READ_COMPRESSED_LIBS} Threads::Threads ${LIBRT})
 
 AddExes(EXES probing_hash_table_benchmark
-        LIBRARIES kenlm_util ${Boost_LIBRARIES} ${THREADS})
+        LIBRARIES kenlm_util ${Boost_LIBRARIES} Threads::Threads)
 
 # Only compile and run unit tests if tests should be run
 if(BUILD_TESTING)
@@ -92,10 +84,10 @@ if(BUILD_TESTING)
   )
 
   AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}
-           LIBRARIES kenlm_util ${Boost_LIBRARIES} ${THREADS})
+           LIBRARIES kenlm_util ${Boost_LIBRARIES} Threads::Threads)
 
   # file_piece_test requires an extra command line parameter
   KenLMAddTest(TEST file_piece_test
-               LIBRARIES kenlm_util ${Boost_LIBRARIES} ${THREADS}
+               LIBRARIES kenlm_util ${Boost_LIBRARIES} Threads::Threads
                TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/file_piece.cc)
 endif()

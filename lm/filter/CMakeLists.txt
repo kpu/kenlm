@@ -25,10 +25,6 @@ set(KENLM_FILTER_SOURCE
 add_library(kenlm_filter ${KENLM_FILTER_SOURCE})
 target_link_libraries(kenlm_filter kenlm_util)
 
-if (NOT MSVC)
-	set(THREADS pthread)
-endif()
-
 AddExes(EXES filter phrase_table_vocab
         LIBRARIES kenlm_filter kenlm)
 

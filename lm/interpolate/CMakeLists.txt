@@ -32,11 +32,7 @@ if(EIGEN3_FOUND)
         interpolate
         streaming_example)
 		
-	if (NOT MSVC)
-	  set(THREADS pthread)
-	endif()
-
-      set(KENLM_INTERPOLATE_LIBS
+    set(KENLM_INTERPOLATE_LIBS
         kenlm_interpolate)
 
     AddExes(EXES ${KENLM_INTERPOLATE_EXES}
@@ -44,7 +40,7 @@ if(EIGEN3_FOUND)
 
     if(BUILD_TESTING)
         AddTests(TESTS backoff_reunification_test bounded_sequence_encoding_test merge_vocab_test normalize_test tune_derivatives_test
-                 LIBRARIES ${KENLM_INTERPOLATE_LIBS} pthread)
+                 LIBRARIES ${KENLM_INTERPOLATE_LIBS} Threads::Threads)
 
         # tune_instances_test needs an extra command line parameter
         KenLMAddTest(TEST tune_instances_test

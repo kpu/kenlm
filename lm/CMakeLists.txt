@@ -30,13 +30,9 @@ set(KENLM_LM_SOURCE
 #
 add_subdirectory(common)
 
-if (NOT MSVC)
-	set(THREADS pthread)
-endif()
-
 add_library(kenlm ${KENLM_LM_SOURCE} ${KENLM_LM_COMMON_SOURCE})
 set_target_properties(kenlm PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(kenlm kenlm_util ${Boost_LIBRARIES} ${THREADS})
+target_link_libraries(kenlm kenlm_util ${Boost_LIBRARIES} Threads::Threads)
 
 set(KENLM_MAX_ORDER 6 CACHE STRING "Maximum supported ngram order")
 target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=${KENLM_MAX_ORDER})
@@ -54,7 +50,7 @@ set(EXE_LIST
   kenlm_benchmark
 )
 
-set(LM_LIBS kenlm kenlm_util ${Boost_LIBRARIES} ${THREADS})
+set(LM_LIBS kenlm kenlm_util ${Boost_LIBRARIES} Threads::Threads)
 
 AddExes(EXES ${EXE_LIST}
         LIBRARIES ${LM_LIBS})

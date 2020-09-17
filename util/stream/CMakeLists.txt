@@ -35,5 +35,5 @@ if(BUILD_TESTING)
   )
 
   AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}
-           LIBRARIES kenlm_util ${Boost_LIBRARIES} pthread)
+           LIBRARIES kenlm_util ${Boost_LIBRARIES} Threads::Threads)
 endif()
