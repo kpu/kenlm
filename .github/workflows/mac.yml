@@ -24,7 +24,7 @@ jobs:
       run: cmake --build . -j2
     - name: Adjust counts
       working-directory: build
-      tests/adjust_counts_test
+      run: tests/adjust_counts_test
     - name: Test
       working-directory: build
       run: ctest -j2
