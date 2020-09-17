@@ -18,7 +18,7 @@ jobs:
       run: |
         cmake -E make_directory build
         cd build
-        cmake ..
+        cmake -DCOMPILE_TESTS=ON ..
     - name: Compile
       working-directory: build
       run: cmake --build . -j2
