@@ -23,7 +23,7 @@ jobs:
       run: |
         PREFIX=$HOME/usr
         LIBDIR=$PREFIX/lib
-        wget https://dl.bintray.com/boostorg/release/1.72.0/source/boost_1_74_0.tar.bz2
+        wget https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.tar.bz2
         tar xjf boost_1_74_0.tar.bz2
         cd boost_1_74_0
         ./b2 --prefix=$PREFIX --libdir=$LIBDIR --layout=tagged link=static,shared threading=multi,single --with-libraries=program_options,system,thread,unit_test_framework install -j2
