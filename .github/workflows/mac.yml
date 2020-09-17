@@ -19,7 +19,7 @@ jobs:
         path: boost_1_74_0/installdir
         key: ${{ runner.os }}-boost_1_74_0
     - name: Install Boost
-      brew install boost
+      run: brew install boost
     - name: cmake
       run: |
         cmake -E make_directory build
