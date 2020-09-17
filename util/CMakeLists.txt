@@ -58,11 +58,16 @@ add_subdirectory(double-conversion)
 add_subdirectory(stream)
 
 find_library(LIBRT rt)
+if (LIBRT)
+  set(RT ${LIBRT})
+else()
+  set(RT)
+endif()
 
 # Group these objects together for later use.
 add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
 set_target_properties(kenlm_util PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(kenlm_util ${Boost_LIBRARIES} ${READ_COMPRESSED_LIBS} Threads::Threads ${LIBRT})
+target_link_libraries(kenlm_util ${Boost_LIBRARIES} ${READ_COMPRESSED_LIBS} Threads::Threads ${RT})
 
 AddExes(EXES probing_hash_table_benchmark
         LIBRARIES kenlm_util ${Boost_LIBRARIES} Threads::Threads)
