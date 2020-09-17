@@ -12,19 +12,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Cache Boost
-      id: cache-boost
-      uses: actions/cache@v1
-      with:
-        path: boost_1_74_0/installdir
-        key: ${{ runner.os }}-boost_1_74_0
     - name: Install Boost
       run: brew install boost
     - name: cmake
       run: |
         cmake -E make_directory build
         cd build
-        cmake ..
+        cmake -DCOMPILE_TESTS=ON ..
     - name: Compile
       working-directory: build
       run: cmake --build . -j2
