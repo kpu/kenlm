@@ -78,8 +78,8 @@ BOOST_AUTO_TEST_CASE(Simple) {
     std::vector<uint64_t> prune_thresholds(4);
     DiscountConfig discount_config;
     discount_config.fallback = Discount();
-    discount_config.bad_action = THROW_UP;
-    BOOST_CHECK_THROW(AdjustCounts(prune_thresholds, counts, counts_pruned, std::vector<bool>(), discount_config, discount).Run(for_adjust), BadDiscountException);
+    discount_config.bad_action = SILENT;
+    AdjustCounts(prune_thresholds, counts, counts_pruned, std::vector<bool>(), discount_config, discount).Run(for_adjust);
   }
   BOOST_REQUIRE_EQUAL(4UL, counts.size());
   BOOST_CHECK_EQUAL(4UL, counts[0]);
