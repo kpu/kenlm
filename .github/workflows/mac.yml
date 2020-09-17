@@ -19,34 +19,15 @@ jobs:
         path: boost_1_74_0/installdir
         key: ${{ runner.os }}-boost_1_74_0
     - name: Install Boost
-      if: steps.cache-boost.outputs.cache-hit != 'true'
-      run: |
-        PREFIX=$HOME/usr
-        LIBDIR=$PREFIX/lib
-        wget https://dl.bintray.com/boostorg/release/1.74.0/source/boost_1_74_0.tar.bz2
-        tar xjf boost_1_74_0.tar.bz2
-        cd boost_1_74_0
-        ./bootstrap.sh
-        ./b2 --prefix=$PREFIX --libdir=$LIBDIR --layout=tagged link=static,shared threading=multi,single --with-program_options --with-test --with-system --with-thread
+      brew install boost
     - name: cmake
       run: |
-        PREFIX=$HOME/usr
-        LIBDIR=$PREFIX/lib
-        export CPATH=$PREFIX/include${CPATH:+:$CPATH}
-        export LIBRARY_PATH=$LIBDIR${LIBRARY_PATH:+:$LIBRARY_PATH}
-        export DYLD_LIBRARY_PATH=$LIBDIR${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
         cmake -E make_directory build
         cd build
         cmake ..
     - name: Compile
       working-directory: build
-      run: |
-        PREFIX=$HOME/usr
-        LIBDIR=$PREFIX/lib
-        export CPATH=$PREFIX/include${CPATH:+:$CPATH}
-        export LIBRARY_PATH=$LIBDIR${LIBRARY_PATH:+:$LIBRARY_PATH}
-        export DYLD_LIBRARY_PATH=$LIBDIR${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}
-        cmake --build . -j2
+      run: cmake --build . -j2
     - name: Test
       working-directory: build
       run: ctest -j2
