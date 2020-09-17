@@ -2,9 +2,9 @@ name: Mac
 
 on:
   push:
-    branches: master
+    branches: mac
   pull_request:
-    branches: master
+    branches: mac
 
 jobs:
   build:
@@ -22,6 +22,9 @@ jobs:
     - name: Compile
       working-directory: build
       run: cmake --build . -j2
+    - name: Adjust counts
+      working-directory: build
+      tests/adjust_counts_test
     - name: Test
       working-directory: build
       run: ctest -j2
