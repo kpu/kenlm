@@ -23,7 +23,7 @@ set(KENLM_FILTER_SOURCE
 # refer to these objects as $<TARGET_OBJECTS:foo>
 #
 add_library(kenlm_filter ${KENLM_FILTER_SOURCE})
-target_link_libraries(kenlm_filter kenlm_util)
+target_link_libraries(kenlm_filter PUBLIC kenlm_util)
 
 AddExes(EXES filter phrase_table_vocab
         LIBRARIES kenlm_filter kenlm)

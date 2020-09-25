@@ -28,7 +28,7 @@ set(KENLM_BUILDER_SOURCE
 #
 add_library(kenlm_builder ${KENLM_BUILDER_SOURCE})
 
-target_link_libraries(kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} Threads::Threads)
+target_link_libraries(kenlm_builder PUBLIC kenlm kenlm_util ${Boost_LIBRARIES} Threads::Threads)
 
 AddExes(EXES lmplz
         LIBRARIES kenlm_builder kenlm kenlm_util ${Boost_LIBRARIES} Threads::Threads)

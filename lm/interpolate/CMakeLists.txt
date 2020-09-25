@@ -26,7 +26,7 @@ if(EIGEN3_FOUND)
     endif()
 
     add_library(kenlm_interpolate ${KENLM_INTERPOLATE_SOURCE})
-    target_link_libraries(kenlm_interpolate kenlm)
+    target_link_libraries(kenlm_interpolate PUBLIC kenlm)
 
     set(KENLM_INTERPOLATE_EXES
         interpolate
