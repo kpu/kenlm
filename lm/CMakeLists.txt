@@ -37,6 +37,12 @@ target_link_libraries(kenlm PUBLIC kenlm_util ${Boost_LIBRARIES} Threads::Thread
 set(KENLM_MAX_ORDER 6 CACHE STRING "Maximum supported ngram order")
 target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=${KENLM_MAX_ORDER})
 
+install(TARGETS kenlm
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+
 # This directory has children that need to be processed
 add_subdirectory(builder)
 add_subdirectory(filter)

@@ -72,6 +72,13 @@ add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM
 set_target_properties(kenlm_util PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(kenlm_util PUBLIC ${Boost_LIBRARIES} ${READ_COMPRESSED_LIBS} Threads::Threads ${RT})
 
+install(TARGETS kenlm_util
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+
+
 if (NOT WIN32)
 AddExes(EXES probing_hash_table_benchmark
         LIBRARIES kenlm_util ${Boost_LIBRARIES} Threads::Threads)

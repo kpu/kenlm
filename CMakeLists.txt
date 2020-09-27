@@ -96,6 +96,11 @@ find_package(Threads REQUIRED)
 add_subdirectory(util)
 add_subdirectory(lm)
 
+foreach(SUBDIR IN ITEMS util util/double-conversion util/stream lm lm/builder lm/common lm/filter lm/interpolate)
+  file(GLOB HEADERS ${CMAKE_CURRENT_LIST_DIR}/${SUBDIR}/*.h ${CMAKE_CURRENT_LIST_DIR}/${SUBDIR}/*.hh)
+  install(FILES ${HEADERS} DESTINATION include/kenlm/${SUBDIR})
+endforeach(SUBDIR)
+
 option (ENABLE_PYTHON "python bindings" OFF)
 if(ENABLE_PYTHON)
   add_subdirectory(python)
