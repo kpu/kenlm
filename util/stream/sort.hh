@@ -186,7 +186,7 @@ template <class Compare> class MergeQueue {
           // Try to free the space, but don't be disappointed if we can't.
           try {
             HolePunch(fd, offset_, amount);
-          } catch (const util::Exception &e) {}
+          } catch (const util::Exception &) {}
           offset_ += amount;
           assert(current_ <= buffer_end_);
           remaining_ -= amount;

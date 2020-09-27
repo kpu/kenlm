@@ -1,0 +1,25 @@
+name: Windows
+
+on:
+  push:
+    branches: [win]
+  pull_request:
+    branches: [win]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: cmake
+      run: |
+        cmake -E make_directory build
+        cd build
+        cmake -DBOOST_ROOT="${env:BOOST_ROOT_1_72_0}" ..
+    - name: Compile
+      working-directory: build
+      run: cmake --build . -j2
+    - name: Test
+      working-directory: build
+      run: ctest -j2

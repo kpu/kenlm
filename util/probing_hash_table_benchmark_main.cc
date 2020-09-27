@@ -7,12 +7,12 @@
 #include <boost/thread/locks.hpp>
 
 #ifdef WIN32
+#include <windows.h>
 #include <processthreadsapi.h>
 #else
 #include <sys/resource.h>
-#endif
-
 #include <sys/time.h>
+#endif
 
 #include <iostream>
 

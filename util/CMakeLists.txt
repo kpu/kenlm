@@ -27,6 +27,10 @@ set(KENLM_UTIL_SOURCE
 		usage.cc
 	)
 
+if (WIN32)
+  set(KENLM_UTIL_SOURCE ${KENLM_UTIL_SOURCE} getopt.c)
+endif()
+
 set(READ_COMPRESSED_FLAGS)
 set(READ_COMPRESSED_LIBS)
 find_package(ZLIB)
@@ -49,9 +53,11 @@ if (LIBLZMA_FOUND)
   set(READ_COMPRESSED_LIBS ${READ_COMPRESSED_LIBS} ${LIBLZMA_LIBRARIES})
   include_directories(${LIBLZMA_INCLUDE_DIRS})
 endif()
-set_source_files_properties(read_compressed.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
-set_source_files_properties(read_compressed_test.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
-set_source_files_properties(file_piece_test.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
+if (NOT "${READ_COMPRESSED_FLAGS}" STREQUAL "")
+  set_source_files_properties(read_compressed.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
+  set_source_files_properties(read_compressed_test.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
+  set_source_files_properties(file_piece_test.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
+endif()
 
 # This directory has children that need to be processed
 add_subdirectory(double-conversion)
@@ -66,8 +72,10 @@ add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM
 set_target_properties(kenlm_util PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(kenlm_util PUBLIC ${Boost_LIBRARIES} ${READ_COMPRESSED_LIBS} Threads::Threads ${RT})
 
+if (NOT WIN32)
 AddExes(EXES probing_hash_table_benchmark
         LIBRARIES kenlm_util ${Boost_LIBRARIES} Threads::Threads)
+endif()
 
 # Only compile and run unit tests if tests should be run
 if(BUILD_TESTING)

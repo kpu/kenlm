@@ -81,7 +81,7 @@ template <class Output> void ReadCount(util::FilePiece &in_file, Output &out) {
       }
       out.AddNGram(*tabber, line);
     }
-  } catch (const util::EndOfFileException &e) {}
+  } catch (const util::EndOfFileException &) {}
 }
 
 } // namespace lm

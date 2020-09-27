@@ -292,7 +292,7 @@ void FilePiece::MMapShift(uint64_t desired_begin) {
   data_.reset();
   try {
     MapRead(POPULATE_OR_LAZY, *file_, mapped_offset, mapped_size, data_);
-  } catch (const util::ErrnoException &e) {
+  } catch (const util::ErrnoException &) {
     if (desired_begin) {
       SeekOrThrow(*file_, desired_begin);
     }
