@@ -1,7 +1,7 @@
 # Eigen3 less than 3.1.0 has a race condition: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=466
-find_package(Eigen3 3.1.0 CONFIG)
 
-if(EIGEN3_FOUND)
+if(ENABLE_INTERPOLATE)
+  find_package(Eigen3 3.1.0 CONFIG REQUIRED)
   include_directories(${EIGEN3_INCLUDE_DIR})
 
   set(KENLM_INTERPOLATE_SOURCE
@@ -47,10 +47,4 @@ if(EIGEN3_FOUND)
       LIBRARIES ${KENLM_INTERPOLATE_LIBS}
       TEST_ARGS -- ${CMAKE_CURRENT_SOURCE_DIR}/../common/test_data)
   endif()
-else()
-  message(WARNING "Not building interpolation. Eigen3 was not found.")
-  message(STATUS "To install Eigen3 in your home directory, copy paste this:\n"
-      "export EIGEN3_ROOT=$HOME/eigen-3.3.7\n"
-      "(cd $HOME; wget -O - https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.bz2 |tar xj)\n"
-      "rm CMakeCache.txt\n")
 endif()
