@@ -85,6 +85,11 @@ class LoadMethod:
     READ = _kenlm.READ
     PARALLEL_READ = _kenlm.PARALLEL_READ
 
+class ARPALoadComplain:
+    ALL = _kenlm.ALL
+    EXPENSIVE = _kenlm.EXPENSIVE
+    NONE = _kenlm.NONE
+
 cdef class Config:
     """
     Wrapper around lm::ngram::Config.
@@ -106,6 +111,12 @@ cdef class Config:
             return self._c_config.show_progress
         def __set__(self, to):
             self._c_config.show_progress = to
+
+    property arpa_complain:
+        def __get__(self):
+            return self._c_config.arpa_complain
+        def __set__(self, to):
+            self._c_config.arpa_complain = to
 
 cdef class Model:
     """
