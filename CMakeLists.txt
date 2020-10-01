@@ -19,7 +19,7 @@ option(ENABLE_PYTHON "Build Python bindings" OFF)
 # Eigen3 less than 3.1.0 has a race condition: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=466
 find_package(Eigen3 3.1.0 CONFIG)
 include(CMakeDependentOption)
-cmake_dependent_option(ENABLE_INTERPOLATE "Build interpolation program (depends on Eigen3)" ON EIGEN3_FOUND OFF)
+cmake_dependent_option(ENABLE_INTERPOLATE "Build interpolation program (depends on Eigen3)" ON "EIGEN3_FOUND AND NOT WIN32" OFF)
 
 if (FORCE_STATIC)
   #presumably overkill, is there a better way?
