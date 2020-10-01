@@ -17,16 +17,14 @@ if(ENABLE_INTERPOLATE)
     tune_weights.cc
     universal_vocab.cc)
 
-  find_package(OpenMP)
-  if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  else()
-    message(STATUS "OpenMP support would be nice for parallelizing matrix operations.")
-  endif()
-
   add_library(kenlm_interpolate ${KENLM_INTERPOLATE_SOURCE})
   target_link_libraries(kenlm_interpolate PUBLIC kenlm Eigen3::Eigen)
+
+  find_package(OpenMP)
+  if (OPENMP_CXX_FOUND)
+    target_link_libraries(kenlm_interpolate PUBLIC OpenMP::OpenMP_CXX)
+  endif()
+
 
   set(KENLM_INTERPOLATE_EXES
     interpolate
