@@ -264,7 +264,7 @@ cdef class Model:
     
     def BaseFullScore(self, State in_state, str word, State out_state):
         """
-        Wrapper around model.BaseScore(in_state, Index(word), out_state)
+        Wrapper around model.BaseFullScore(in_state, Index(word), out_state)
 
         :param word: the suffix
         :param state: the context (defaults to NullContext)
