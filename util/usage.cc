@@ -197,7 +197,7 @@ uint64_t RSSMax() {
 
 void PrintUsage(std::ostream &out) {
 #if !defined(_WIN32) && !defined(_WIN64)
-#if defined(__MACH__) || defined(__APPLE__)
+  #if defined(__MACH__) || defined(__APPLE__)
   struct mach_task_basic_info t_info;
   char name[2 * MAXCOMLEN] = {0};
 
@@ -205,15 +205,15 @@ void PrintUsage(std::ostream &out) {
   mach_msg_type_number_t t_info_count = MACH_TASK_BASIC_INFO_COUNT;
   task_info(mach_task_self(), MACH_TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count);
 
+  out << name << '\t';
   out << t_info.resident_size_max << '\t';
   out << t_info.resident_size << '\t';
-  out << name << '\t';
-#else
+  #else
   // Linux doesn't set memory usage in getrusage :-(
   std::set<std::string> headers;
+  headers.insert("Name:");
   headers.insert("VmPeak:");
   headers.insert("VmRSS:");
-  headers.insert("Name:");
 
   std::ifstream status("/proc/self/status", std::ios::in);
   std::string header, value;
@@ -222,7 +222,7 @@ void PrintUsage(std::ostream &out) {
       out << header << SkipSpaces(value.c_str()) << '\t';
     }
   }
-#endif
+  #endif
 
   struct rusage usage;
   if (getrusage(RUSAGE_SELF, &usage)) {
