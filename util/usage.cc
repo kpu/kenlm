@@ -171,16 +171,16 @@ double ThreadTime() {
   // GetThreadTimes() reports in units of 100 nanoseconds, i.e. ten-millionths
   // of a second.
   return ticks / (10 * 1000 * 1000);
+#elif defined(HAVE_CLOCKGETTIME)
+  struct timespec usage;
+  UTIL_THROW_IF(clock_gettime(CLOCK_THREAD_CPUTIME_ID, &usage), ErrnoException, "clock_gettime failed?!");
+  return DoubleSec(usage);
 #elif defined(__MACH__) || defined(__APPLE__)
   struct task_basic_info t_info;
   mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;  
   task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count);
   
   return 0.0;
-#else
-  struct timespec usage;
-  UTIL_THROW_IF(clock_gettime(CLOCK_THREAD_CPUTIME_ID, &usage), ErrnoException, "clock_gettime failed?!"); 
-  return DoubleSec(usage);
 #endif
 }
 

@@ -63,8 +63,18 @@ endif()
 add_subdirectory(double-conversion)
 add_subdirectory(stream)
 
-if(UNIX AND NOT APPLE AND NOT ANDROID)
-  set(RT rt)
+if(UNIX)
+  include(CheckLibraryExists)
+  check_library_exists(rt clock_gettime "clock_gettime from librt" HAVE_CLOCKGETTIME_RT)
+  if (HAVE_CLOCKGETTIME_RT)
+    set(RT rt)
+  else()
+    check_library_exists(c clock_gettime "clock_gettime from the libc" HAVE_CLOCKGETTIME)
+  endif()
+
+  if (HAVE_CLOCKGETTIME_RT OR HAVE_CLOCKGETTIME)
+    add_definitions(-DHAVE_CLOCKGETTIME)
+  endif()
 endif()
 
 # Group these objects together for later use.
