@@ -2,7 +2,7 @@ name: Windows
 
 on:
   push:
-    branches: [master]
+    branches: [master,semaphore]
   pull_request:
     branches: [master]
 
