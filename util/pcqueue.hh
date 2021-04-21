@@ -17,8 +17,7 @@
 #elif defined(__linux)
 #include <semaphore.h>
 #elif defined(_WIN32) || defined(_WIN64)
-#include <winbase.h>
-#include <synchapi.h>
+#include <windows.h>
 #else
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
 #endif
