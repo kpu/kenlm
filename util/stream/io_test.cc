@@ -6,8 +6,6 @@
 #define BOOST_TEST_MODULE IOTest
 #include <boost/test/unit_test.hpp>
 
-#include <unistd.h>
-
 namespace util { namespace stream { namespace {
 
 BOOST_AUTO_TEST_CASE(CopyFile) {
