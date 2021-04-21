@@ -1,15 +1,16 @@
 #include "util/read_compressed.hh"
 
+#define BOOST_TEST_MODULE ReadCompressedTest
+#include <boost/test/unit_test.hpp>
+
 // No windows support due to mkstemp
 #if defined(_WIN32) || defined(_WIN64)
-BOOST_AUTO_TEST_CASE(ReadCompressedTest) {}
+BOOST_AUTO_TEST_CASE(WindowsStub) {}
 #else
 
 #include "util/file.hh"
 #include "util/have.hh"
 
-#define BOOST_TEST_MODULE ReadCompressedTest
-#include <boost/test/unit_test.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include <fstream>
