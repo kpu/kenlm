@@ -32,4 +32,7 @@ jobs:
       run: cmake --build . -j2 
     - name: Test
       working-directory: build
-      run: ctest -C . -j2
+      run: |
+        New-Item -ItemType directory -Path "tests\Release"
+        Copy-Item -Path "tests\*.exe" -Destination "tests\Release"
+        ctest -C Release -j2
