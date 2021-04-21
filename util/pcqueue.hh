@@ -96,7 +96,7 @@ inline void WaitSemaphore(Semaphore &semaphore) {
 
 class Semaphore {
   public:
-    explicit Semaphore(LONG value) : sem_(CreateSemaphoreA(NULL, value, std::numeric_limits<LONG>::max(), NULL)) {
+    explicit Semaphore(LONG value) : sem_(CreateSemaphoreA(NULL, value, LONG_MAX, NULL)) {
       UTIL_THROW_IF(!sem_, Exception, "Could not CreateSemaphore " << GetLastError());
     }
 
