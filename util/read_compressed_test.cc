@@ -1,5 +1,10 @@
 #include "util/read_compressed.hh"
 
+// No windows support due to mkstemp
+#if defined(_WIN32) || defined(_WIN64)
+BOOST_AUTO_TEST_CASE(ReadCompressedTest) {}
+#else
+
 #include "util/file.hh"
 #include "util/have.hh"
 
@@ -128,3 +133,4 @@ BOOST_AUTO_TEST_CASE(IStream) {
 
 } // namespace
 } // namespace util
+#endif // no windows

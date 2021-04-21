@@ -5,8 +5,6 @@
 
 #include <algorithm>
 
-#include <unistd.h>
-
 namespace util { namespace stream { namespace {
 
 struct CompareUInt64 : public std::binary_function<const void *, const void *, bool> {
