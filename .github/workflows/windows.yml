@@ -22,18 +22,14 @@ jobs:
         C:\msys64\usr\bin\wget.exe -nv "${{ env.BOOST_URL }}" -O "${{ github.workspace }}/boost.exe"
         Start-Process -Wait -FilePath "${{ github.workspace }}/boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=${{ env.BOOST_ROOT }}"
       shell: powershell
-    - name: Build Release
-      uses: lukka/run-cmake@v3
-      with:
-        buildDirectory: ${{ github.workspace }}/build/
-        cmakeAppendedArgs: '-G Ninja
-          -DBOOST_ROOT="${{ env.BOOST_ROOT }}"
-          -DBOOST_INCLUDEDIR="${{ env.BOOST_ROOT }}/include"
-          -DBOOST_LIBRARYDIR="${{ env.BOOST_ROOT }}/lib"
-          -DCMAKE_BUILD_TYPE="Release"'
-        cmakeListsOrSettingsJson: CMakeListsTxtAdvanced
-        cmakeListsTxtPath: ${{ github.workspace }}/CMakeLists.txt
-        useVcpkgToolchainFile: true
+    - name: cmake
+      run: |
+        cmake -E make_directory build
+        cd build
+        cmake -DBOOST_ROOT="${env:BOOST_ROOT_1_72_0}" ..
+    - name: Compile
+      working-directory: build
+      run: cmake --build
     - name: Test
       working-directory: build
       run: ctest
