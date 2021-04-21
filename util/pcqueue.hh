@@ -16,6 +16,9 @@
 #include <mach/mach.h>
 #elif defined(__linux)
 #include <semaphore.h>
+#elif defined(_WIN32) || defined(_WIN64)
+#include <winbase.h>
+#include <synchapi.h>
 #else
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
 #endif
@@ -90,6 +93,46 @@ inline void WaitSemaphore(Semaphore &semaphore) {
   semaphore.wait();
 }
 
+#elif defined(_WIN32) || defined(_WIN64)
+
+class Semaphore {
+  public:
+    explicit Semaphore(LONG value) : sem_(CreateSemaphoreA(NULL, value, std::numeric_limits<LONG>::max(), NULL)) {
+      UTIL_THROW_IF(!sem_, Exception, "Could not CreateSemaphore " << GetLastError());
+    }
+
+    ~Semaphore() {
+      CloseHandle(sem_);
+    }
+
+
+    void wait() {
+      while (true) {
+        switch (WaitForSingleObject(sem_, 0L)) {
+          case WAIT_OBJECT_0:
+            return;
+          case WAIT_ABANDONED:
+            UTIL_THROW(Exception, "A semaphore can't be abandoned, confused by Windows");
+          case WAIT_TIMEOUT:
+            continue;
+          case WAIT_FAILED:
+            UTIL_THROW(Exception, "Waiting on Semaphore failed " << GetLastError());
+        }
+      }
+    }
+
+    void post() {
+      UTIL_THROW_IF(!ReleaseSemaphore(sem_, 1, NULL), Exception, "Failed to release Semaphore " << GetLastError());
+    }
+
+  private:
+    HANDLE sem_;
+};
+
+inline void WaitSemaphore(Semaphore &semaphore) {
+  semaphore.wait();
+}
+
 #else
 typedef boost::interprocess::interprocess_semaphore Semaphore;
 
@@ -107,7 +150,7 @@ inline void WaitSemaphore (Semaphore &on) {
   }
 }
 
-#endif // Apple
+#endif // Cases for semaphore support
 
 /**
  * Producer consumer queue safe for multiple producers and multiple consumers.
