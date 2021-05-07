@@ -111,3 +111,32 @@ if(ENABLE_PYTHON)
   add_subdirectory(python)
 endif()
 
+# Asset installation
+install(
+  TARGETS kenlm kenlm_util
+  EXPORT kenlmTargets
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+
+install(EXPORT kenlmTargets
+  FILE kenlmTargets.cmake
+  NAMESPACE kenlm::
+  DESTINATION share/kenlm/cmake
+)
+
+# Config
+include(CMakePackageConfigHelpers)
+# generate the config file that is includes the exports
+configure_package_config_file(${PROJECT_SOURCE_DIR}/cmake/kenlmConfig.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/kenlmConfig.cmake"
+  INSTALL_DESTINATION share/kenlm/cmake
+  NO_SET_AND_CHECK_MACRO
+  NO_CHECK_REQUIRED_COMPONENTS_MACRO
+  )
+# install the configuration file
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/kenlmConfig.cmake
+  DESTINATION share/kenlm/cmake
+  )

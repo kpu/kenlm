@@ -80,18 +80,15 @@ endif()
 # Group these objects together for later use.
 add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
 set_target_properties(kenlm_util PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(kenlm_util PUBLIC ${Boost_LIBRARIES} ${READ_COMPRESSED_LIBS} Threads::Threads ${RT})
-
-install(TARGETS kenlm_util
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-)
-
+target_link_libraries(kenlm_util PUBLIC
+  "$<BUILD_INTERFACE:${Boost_LIBRARIES}>"
+  "$<BUILD_INTERFACE:${READ_COMPRESSED_LIBS}>"
+  $<BUILD_INTERFACE:Threads::Threads>
+  $<BUILD_INTERFACE:${RT}>)
 
 if (NOT WIN32)
 AddExes(EXES probing_hash_table_benchmark
-        LIBRARIES kenlm_util ${Boost_LIBRARIES} Threads::Threads)
+        LIBRARIES kenlm_util Threads::Threads)
 endif()
 
 # Only compile and run unit tests if tests should be run
@@ -111,10 +108,10 @@ if(BUILD_TESTING)
   )
 
   AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}
-           LIBRARIES kenlm_util ${Boost_LIBRARIES} Threads::Threads)
+           LIBRARIES kenlm_util Threads::Threads)
 
   # file_piece_test requires an extra command line parameter
   KenLMAddTest(TEST file_piece_test
-               LIBRARIES kenlm_util ${Boost_LIBRARIES} Threads::Threads
+               LIBRARIES kenlm_util Threads::Threads
                TEST_ARGS ${CMAKE_CURRENT_SOURCE_DIR}/file_piece.cc)
 endif()
