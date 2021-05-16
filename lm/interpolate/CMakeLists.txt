@@ -36,6 +36,14 @@ if(ENABLE_INTERPOLATE)
   AddExes(EXES ${KENLM_INTERPOLATE_EXES}
     LIBRARIES ${KENLM_INTERPOLATE_LIBS})
 
+  install(
+    TARGETS kenlm_interpolate
+    EXPORT kenlmTargets
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+  )
+  
   if(BUILD_TESTING)
     AddTests(TESTS backoff_reunification_test bounded_sequence_encoding_test merge_vocab_test normalize_test tune_derivatives_test
       LIBRARIES ${KENLM_INTERPOLATE_LIBS} Threads::Threads)

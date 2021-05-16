@@ -4,8 +4,16 @@ include(CMakeFindDependencyMacro)
 
 find_dependency(Boost)
 find_dependency(Threads)
-find_dependency(ZLIB)
-find_dependency(BZip2)
-find_dependency(LibLZMA)
+
+# Compression libs
+if (@ZLIB_FOUND@)
+  find_dependency(ZLIB)
+endif()
+if (@BZIP2_FOUND@)
+  find_dependency(BZip2)
+endif()
+if (@LIBLZMA_FOUND@)
+  find_dependency(LibLZMA)
+endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/kenlmTargets.cmake")
