@@ -111,15 +111,7 @@ if(ENABLE_PYTHON)
   add_subdirectory(python)
 endif()
 
-# Asset installation
-install(
-  TARGETS kenlm kenlm_util
-  EXPORT kenlmTargets
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-)
-
+# Install targets
 install(EXPORT kenlmTargets
   FILE kenlmTargets.cmake
   NAMESPACE kenlm::

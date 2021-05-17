@@ -35,6 +35,14 @@ AddExes(EXES lmplz
 AddExes(EXES count_ngrams
         LIBRARIES kenlm_builder kenlm kenlm_util Threads::Threads)
 
+install(
+  TARGETS kenlm_builder
+  EXPORT kenlmTargets
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+      
 if(BUILD_TESTING)
 
   # Explicitly list the Boost test files to be compiled

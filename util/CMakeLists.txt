@@ -31,26 +31,31 @@ if (WIN32)
   set(KENLM_UTIL_SOURCE ${KENLM_UTIL_SOURCE} getopt.c)
 endif()
 
+# This directory has children that need to be processed
+add_subdirectory(double-conversion)
+add_subdirectory(stream)
+
+add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
+
 set(READ_COMPRESSED_FLAGS)
-set(READ_COMPRESSED_LIBS)
 find_package(ZLIB)
 if (ZLIB_FOUND)
   set(READ_COMPRESSED_FLAGS "${READ_COMPRESSED_FLAGS} -DHAVE_ZLIB")
-  set(READ_COMPRESSED_LIBS ${READ_COMPRESSED_LIBS} ${ZLIB_LIBRARIES})
+  target_link_libraries(kenlm_util PRIVATE ${ZLIB_LIBRARIES})
   include_directories(${ZLIB_INCLUDE_DIR})
 endif()
 
 find_package(BZip2)
 if (BZIP2_FOUND)
   set(READ_COMPRESSED_FLAGS "${READ_COMPRESSED_FLAGS} -DHAVE_BZLIB")
-  set(READ_COMPRESSED_LIBS ${READ_COMPRESSED_LIBS} ${BZIP2_LIBRARIES})
+    target_link_libraries(kenlm_util PRIVATE ${BZIP2_LIBRARIES})
   include_directories(${BZIP2_INCLUDE_DIR})
 endif()
 
 find_package(LibLZMA)
 if (LIBLZMA_FOUND)
   set(READ_COMPRESSED_FLAGS "${READ_COMPRESSED_FLAGS} -DHAVE_XZLIB")
-  set(READ_COMPRESSED_LIBS ${READ_COMPRESSED_LIBS} ${LIBLZMA_LIBRARIES})
+      target_link_libraries(kenlm_util PRIVATE ${LIBLZMA_LIBRARIES})
   include_directories(${LIBLZMA_INCLUDE_DIRS})
 endif()
 if (NOT "${READ_COMPRESSED_FLAGS}" STREQUAL "")
@@ -58,10 +63,6 @@ if (NOT "${READ_COMPRESSED_FLAGS}" STREQUAL "")
   set_source_files_properties(read_compressed_test.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
   set_source_files_properties(file_piece_test.cc PROPERTIES COMPILE_FLAGS ${READ_COMPRESSED_FLAGS})
 endif()
-
-# This directory has children that need to be processed
-add_subdirectory(double-conversion)
-add_subdirectory(stream)
 
 if(UNIX)
   include(CheckLibraryExists)
@@ -78,13 +79,22 @@ if(UNIX)
 endif()
 
 # Group these objects together for later use.
-add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
 set_target_properties(kenlm_util PROPERTIES POSITION_INDEPENDENT_CODE ON)
-target_link_libraries(kenlm_util PUBLIC
+target_link_libraries(kenlm_util
+  PUBLIC
+  # Boost is required for building binaries and tests
   "$<BUILD_INTERFACE:${Boost_LIBRARIES}>"
-  "$<BUILD_INTERFACE:${READ_COMPRESSED_LIBS}>"
-  $<BUILD_INTERFACE:Threads::Threads>
-  $<BUILD_INTERFACE:${RT}>)
+  PRIVATE
+  Threads::Threads
+  ${RT})
+
+install(
+  TARGETS kenlm_util
+  EXPORT kenlmTargets
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
 
 if (NOT WIN32)
 AddExes(EXES probing_hash_table_benchmark

@@ -48,9 +48,17 @@ set(EXE_LIST
   fragment
   build_binary
   kenlm_benchmark
-  )
+)
 
 set(LM_LIBS kenlm kenlm_util Threads::Threads)
+
+install(
+  TARGETS kenlm
+  EXPORT kenlmTargets
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
 
 AddExes(EXES ${EXE_LIST}
         LIBRARIES ${LM_LIBS})

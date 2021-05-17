@@ -28,3 +28,10 @@ target_link_libraries(kenlm_filter PUBLIC kenlm_util)
 AddExes(EXES filter phrase_table_vocab
         LIBRARIES kenlm_filter kenlm)
 
+install(
+  TARGETS kenlm_filter
+  EXPORT kenlmTargets
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
