@@ -102,11 +102,6 @@ find_package(Threads REQUIRED)
 add_subdirectory(util)
 add_subdirectory(lm)
 
-foreach(SUBDIR IN ITEMS util util/double-conversion util/stream lm lm/builder lm/common lm/filter lm/interpolate)
-  file(GLOB HEADERS ${CMAKE_CURRENT_LIST_DIR}/${SUBDIR}/*.h ${CMAKE_CURRENT_LIST_DIR}/${SUBDIR}/*.hh)
-  install(FILES ${HEADERS} DESTINATION include/kenlm/${SUBDIR})
-endforeach(SUBDIR)
-
 if(ENABLE_PYTHON)
   add_subdirectory(python)
 endif()
@@ -117,6 +112,11 @@ install(EXPORT kenlmTargets
   NAMESPACE kenlm::
   DESTINATION share/kenlm/cmake
 )
+
+foreach(SUBDIR IN ITEMS util util/double-conversion util/stream lm lm/builder lm/common lm/filter lm/interpolate)
+  file(GLOB HEADERS ${CMAKE_CURRENT_LIST_DIR}/${SUBDIR}/*.h ${CMAKE_CURRENT_LIST_DIR}/${SUBDIR}/*.hh)
+  install(FILES ${HEADERS} DESTINATION include/kenlm/${SUBDIR} COMPONENT headers)
+endforeach(SUBDIR)
 
 # Config
 include(CMakePackageConfigHelpers)
