@@ -36,6 +36,8 @@ add_subdirectory(double-conversion)
 add_subdirectory(stream)
 
 add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
+# Since headers are relative to `include/kenlm` at install time, not just `include`
+target_include_directories(kenlm_util PUBLIC $<INSTALL_INTERFACE:include/kenlm>)
 
 set(READ_COMPRESSED_FLAGS)
 find_package(ZLIB)

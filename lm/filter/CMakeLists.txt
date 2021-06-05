@@ -24,6 +24,8 @@ set(KENLM_FILTER_SOURCE
 #
 add_library(kenlm_filter ${KENLM_FILTER_SOURCE})
 target_link_libraries(kenlm_filter PUBLIC kenlm_util)
+# Since headers are relative to `include/kenlm` at install time, not just `include`
+target_include_directories(kenlm_filter PUBLIC $<INSTALL_INTERFACE:include/kenlm>)
 
 AddExes(EXES filter phrase_table_vocab
         LIBRARIES kenlm_filter kenlm)
