@@ -19,6 +19,9 @@ if(ENABLE_INTERPOLATE)
 
   add_library(kenlm_interpolate ${KENLM_INTERPOLATE_SOURCE})
   target_link_libraries(kenlm_interpolate PUBLIC kenlm Eigen3::Eigen)
+  # Since headers are relative to `include/kenlm` at install time, not just `include`
+  target_include_directories(kenlm_interpolate PUBLIC $<INSTALL_INTERFACE:include/kenlm>)
+
 
   find_package(OpenMP)
   if (OPENMP_CXX_FOUND)
@@ -42,6 +45,7 @@ if(ENABLE_INTERPOLATE)
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib
+    INCLUDES DESTINATION include
   )
   
   if(BUILD_TESTING)
