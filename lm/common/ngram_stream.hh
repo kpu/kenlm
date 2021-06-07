@@ -1,10 +1,10 @@
 #ifndef LM_BUILDER_NGRAM_STREAM_H
 #define LM_BUILDER_NGRAM_STREAM_H
 
-#include "lm/common/ngram.hh"
-#include "util/stream/chain.hh"
-#include "util/stream/multi_stream.hh"
-#include "util/stream/stream.hh"
+#include "ngram.hh"
+#include "../../util/stream/chain.hh"
+#include "../../util/stream/multi_stream.hh"
+#include "../../util/stream/stream.hh"
 
 #include <cstddef>
 

@@ -1,6 +1,6 @@
-#include "util/pool.hh"
+#include "pool.hh"
 
-#include "util/scoped.hh"
+#include "scoped.hh"
 
 #include <cstdlib>
 

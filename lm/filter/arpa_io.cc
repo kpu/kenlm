@@ -1,6 +1,6 @@
-#include "lm/filter/arpa_io.hh"
-#include "util/file_piece.hh"
-#include "util/string_stream.hh"
+#include "arpa_io.hh"
+#include "../../util/file_piece.hh"
+#include "../../util/string_stream.hh"
 
 #include <iostream>
 #include <ostream>

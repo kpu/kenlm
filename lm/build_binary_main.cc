@@ -1,7 +1,7 @@
-#include "lm/model.hh"
-#include "lm/sizes.hh"
-#include "util/file_piece.hh"
-#include "util/usage.hh"
+#include "model.hh"
+#include "sizes.hh"
+#include "../util/file_piece.hh"
+#include "../util/usage.hh"
 
 #include <algorithm>
 #include <cstdlib>
@@ -12,7 +12,7 @@
 #include <cmath>
 
 #ifdef WIN32
-#include "util/getopt.hh"
+#include "../util/getopt.hh"
 #else
 #include <unistd.h>
 #endif

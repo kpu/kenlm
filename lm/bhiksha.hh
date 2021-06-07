@@ -13,10 +13,10 @@
 #ifndef LM_BHIKSHA_H
 #define LM_BHIKSHA_H
 
-#include "lm/model_type.hh"
-#include "lm/trie.hh"
-#include "util/bit_packing.hh"
-#include "util/sorted_uniform.hh"
+#include "model_type.hh"
+#include "trie.hh"
+#include "../util/bit_packing.hh"
+#include "../util/sorted_uniform.hh"
 
 #include <algorithm>
 #include <stdint.h>

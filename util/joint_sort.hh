@@ -5,7 +5,7 @@
  * also permuting another range the same way.
  */
 
-#include "util/proxy_iterator.hh"
+#include "proxy_iterator.hh"
 
 #include <algorithm>
 #include <functional>

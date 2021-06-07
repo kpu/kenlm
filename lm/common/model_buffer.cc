@@ -1,14 +1,14 @@
-#include "lm/common/model_buffer.hh"
+#include "model_buffer.hh"
 
-#include "lm/common/compare.hh"
-#include "lm/state.hh"
-#include "lm/weights.hh"
-#include "util/exception.hh"
-#include "util/file_stream.hh"
-#include "util/file.hh"
-#include "util/file_piece.hh"
-#include "util/stream/io.hh"
-#include "util/stream/multi_stream.hh"
+#include "compare.hh"
+#include "../state.hh"
+#include "../weights.hh"
+#include "../../util/exception.hh"
+#include "../../util/file_stream.hh"
+#include "../../util/file.hh"
+#include "../../util/file_piece.hh"
+#include "../../util/stream/io.hh"
+#include "../../util/stream/multi_stream.hh"
 
 #include <boost/lexical_cast.hpp>
 

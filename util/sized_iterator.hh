@@ -1,8 +1,8 @@
 #ifndef UTIL_SIZED_ITERATOR_H
 #define UTIL_SIZED_ITERATOR_H
 
-#include "util/pool.hh"
-#include "util/proxy_iterator.hh"
+#include "pool.hh"
+#include "proxy_iterator.hh"
 
 #include <algorithm>
 #include <functional>

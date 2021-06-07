@@ -1,9 +1,9 @@
 #ifndef LM_WRAPPERS_NPLM_H
 #define LM_WRAPPERS_NPLM_H
 
-#include "lm/facade.hh"
-#include "lm/max_order.hh"
-#include "util/string_piece.hh"
+#include "../facade.hh"
+#include "../max_order.hh"
+#include "../../util/string_piece.hh"
 
 #include <boost/thread/tss.hpp>
 #include <boost/scoped_ptr.hpp>

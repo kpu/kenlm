@@ -1,4 +1,4 @@
-#include "lm/lm_exception.hh"
+#include "lm_exception.hh"
 
 #include <cerrno>
 #include <cstdio>

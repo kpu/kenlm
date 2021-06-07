@@ -1,7 +1,7 @@
 #ifndef LM_INTERPOLATE_TUNE_WEIGHTS_H
 #define LM_INTERPOLATE_TUNE_WEIGHTS_H
 
-#include "util/string_piece.hh"
+#include "../../util/string_piece.hh"
 
 #include <vector>
 

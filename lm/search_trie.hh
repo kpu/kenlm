@@ -1,14 +1,14 @@
 #ifndef LM_SEARCH_TRIE_H
 #define LM_SEARCH_TRIE_H
 
-#include "lm/config.hh"
-#include "lm/model_type.hh"
-#include "lm/return.hh"
-#include "lm/trie.hh"
-#include "lm/weights.hh"
+#include "config.hh"
+#include "model_type.hh"
+#include "return.hh"
+#include "trie.hh"
+#include "weights.hh"
 
-#include "util/file.hh"
-#include "util/file_piece.hh"
+#include "../util/file.hh"
+#include "../util/file_piece.hh"
 
 #include <vector>
 #include <cstdlib>

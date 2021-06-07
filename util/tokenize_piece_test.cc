@@ -1,5 +1,5 @@
-#include "util/tokenize_piece.hh"
-#include "util/string_piece.hh"
+#include "tokenize_piece.hh"
+#include "string_piece.hh"
 
 #define BOOST_TEST_MODULE TokenIteratorTest
 #include <boost/test/unit_test.hpp>

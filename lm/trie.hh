@@ -1,9 +1,9 @@
 #ifndef LM_TRIE_H
 #define LM_TRIE_H
 
-#include "lm/weights.hh"
-#include "lm/word_index.hh"
-#include "util/bit_packing.hh"
+#include "weights.hh"
+#include "word_index.hh"
+#include "../util/bit_packing.hh"
 
 #include <cstddef>
 

@@ -38,11 +38,11 @@
 #ifndef LM_LEFT_H
 #define LM_LEFT_H
 
-#include "lm/max_order.hh"
-#include "lm/state.hh"
-#include "lm/return.hh"
+#include "max_order.hh"
+#include "state.hh"
+#include "return.hh"
 
-#include "util/murmur_hash.hh"
+#include "../util/murmur_hash.hh"
 
 #include <algorithm>
 

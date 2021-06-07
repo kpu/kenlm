@@ -1,11 +1,11 @@
 #ifndef LM_NGRAM_QUERY_H
 #define LM_NGRAM_QUERY_H
 
-#include "lm/enumerate_vocab.hh"
-#include "lm/model.hh"
-#include "util/file_stream.hh"
-#include "util/file_piece.hh"
-#include "util/usage.hh"
+#include "enumerate_vocab.hh"
+#include "model.hh"
+#include "../util/file_stream.hh"
+#include "../util/file_piece.hh"
+#include "../util/usage.hh"
 
 #include <cstdlib>
 #include <string>

@@ -7,8 +7,8 @@
  * add.
  */
 
-#include "util/exception.hh"
-#include "util/fixed_array.hh"
+#include "../../util/exception.hh"
+#include "../../util/fixed_array.hh"
 
 #include <algorithm>
 #include <cstring>

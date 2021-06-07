@@ -1,11 +1,11 @@
 #ifndef LM_BUILDER_COMBINE_COUNTS_H
 #define LM_BUILDER_COMBINE_COUNTS_H
 
-#include "lm/builder/payload.hh"
-#include "lm/common/ngram.hh"
-#include "lm/common/compare.hh"
-#include "lm/word_index.hh"
-#include "util/stream/sort.hh"
+#include "payload.hh"
+#include "../common/ngram.hh"
+#include "../common/compare.hh"
+#include "../word_index.hh"
+#include "../../util/stream/sort.hh"
 
 #include <functional>
 #include <string>

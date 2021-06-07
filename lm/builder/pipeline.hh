@@ -1,13 +1,13 @@
 #ifndef LM_BUILDER_PIPELINE_H
 #define LM_BUILDER_PIPELINE_H
 
-#include "lm/builder/adjust_counts.hh"
-#include "lm/builder/initial_probabilities.hh"
-#include "lm/builder/header_info.hh"
-#include "lm/lm_exception.hh"
-#include "lm/word_index.hh"
-#include "util/stream/config.hh"
-#include "util/file_piece.hh"
+#include "adjust_counts.hh"
+#include "initial_probabilities.hh"
+#include "header_info.hh"
+#include "../lm_exception.hh"
+#include "../word_index.hh"
+#include "../../util/stream/config.hh"
+#include "../../util/file_piece.hh"
 
 #include <string>
 #include <cstddef>

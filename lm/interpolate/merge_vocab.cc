@@ -1,10 +1,10 @@
-#include "lm/interpolate/merge_vocab.hh"
+#include "merge_vocab.hh"
 
-#include "lm/enumerate_vocab.hh"
-#include "lm/interpolate/universal_vocab.hh"
-#include "lm/lm_exception.hh"
-#include "lm/vocab.hh"
-#include "util/file_piece.hh"
+#include "../enumerate_vocab.hh"
+#include "universal_vocab.hh"
+#include "../lm_exception.hh"
+#include "../vocab.hh"
+#include "../../util/file_piece.hh"
 
 #include <queue>
 #include <string>

@@ -1,15 +1,15 @@
 #ifndef LM_VOCAB_H
 #define LM_VOCAB_H
 
-#include "lm/enumerate_vocab.hh"
-#include "lm/lm_exception.hh"
-#include "lm/virtual_interface.hh"
-#include "util/file_stream.hh"
-#include "util/murmur_hash.hh"
-#include "util/pool.hh"
-#include "util/probing_hash_table.hh"
-#include "util/sorted_uniform.hh"
-#include "util/string_piece.hh"
+#include "enumerate_vocab.hh"
+#include "lm_exception.hh"
+#include "virtual_interface.hh"
+#include "../util/file_stream.hh"
+#include "../util/murmur_hash.hh"
+#include "../util/pool.hh"
+#include "../util/probing_hash_table.hh"
+#include "../util/sorted_uniform.hh"
+#include "../util/string_piece.hh"
 
 #include <limits>
 #include <string>

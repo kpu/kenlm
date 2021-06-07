@@ -1,9 +1,9 @@
-#include "lm/model.hh"
-#include "util/file_stream.hh"
-#include "util/file.hh"
-#include "util/file_piece.hh"
-#include "util/usage.hh"
-#include "util/thread_pool.hh"
+#include "model.hh"
+#include "../util/file_stream.hh"
+#include "../util/file.hh"
+#include "../util/file_piece.hh"
+#include "../util/usage.hh"
+#include "../util/thread_pool.hh"
 
 #include <boost/range/iterator_range.hpp>
 #include <boost/program_options.hpp>

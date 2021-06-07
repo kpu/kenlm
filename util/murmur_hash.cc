@@ -10,7 +10,7 @@
  * ARM port from NICT
  */
 
-#include "util/murmur_hash.hh"
+#include "murmur_hash.hh"
 #include <cstring>
 
 namespace util {

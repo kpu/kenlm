@@ -3,11 +3,11 @@
 #ifndef LM_TRIE_SORT_H
 #define LM_TRIE_SORT_H
 
-#include "lm/max_order.hh"
-#include "lm/word_index.hh"
+#include "max_order.hh"
+#include "word_index.hh"
 
-#include "util/file.hh"
-#include "util/scoped.hh"
+#include "../util/file.hh"
+#include "../util/scoped.hh"
 
 #include <cstddef>
 #include <functional>

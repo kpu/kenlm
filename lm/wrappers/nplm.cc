@@ -1,6 +1,6 @@
-#include "lm/wrappers/nplm.hh"
-#include "util/exception.hh"
-#include "util/file.hh"
+#include "nplm.hh"
+#include "../../util/exception.hh"
+#include "../../util/file.hh"
 
 #include <algorithm>
 #include <cstring>

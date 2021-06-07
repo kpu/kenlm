@@ -1,4 +1,4 @@
-#include "util/exception.hh"
+#include "exception.hh"
 
 #ifdef __GXX_RTTI
 #include <typeinfo>

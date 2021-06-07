@@ -1,7 +1,7 @@
-#include "lm/value_build.hh"
+#include "value_build.hh"
 
-#include "lm/model.hh"
-#include "lm/read_arpa.hh"
+#include "model.hh"
+#include "read_arpa.hh"
 
 namespace lm {
 namespace ngram {

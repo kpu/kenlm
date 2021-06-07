@@ -1,13 +1,13 @@
 #ifndef UTIL_FILE_PIECE_H
 #define UTIL_FILE_PIECE_H
 
-#include "util/ersatz_progress.hh"
-#include "util/exception.hh"
-#include "util/file.hh"
-#include "util/mmap.hh"
-#include "util/read_compressed.hh"
-#include "util/spaces.hh"
-#include "util/string_piece.hh"
+#include "ersatz_progress.hh"
+#include "exception.hh"
+#include "file.hh"
+#include "mmap.hh"
+#include "read_compressed.hh"
+#include "spaces.hh"
+#include "string_piece.hh"
 
 #include <cstddef>
 #include <iosfwd>

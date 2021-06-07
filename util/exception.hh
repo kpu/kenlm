@@ -1,7 +1,7 @@
 #ifndef UTIL_EXCEPTION_H
 #define UTIL_EXCEPTION_H
 
-#include "util/string_stream.hh"
+#include "string_stream.hh"
 
 #include <exception>
 #include <limits>

@@ -1,7 +1,7 @@
 #ifndef UTIL_STREAM_REWINDABLE_STREAM_H
 #define UTIL_STREAM_REWINDABLE_STREAM_H
 
-#include "util/stream/chain.hh"
+#include "chain.hh"
 
 #include <boost/noncopyable.hpp>
 

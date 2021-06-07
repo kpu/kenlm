@@ -1,13 +1,13 @@
 #ifndef LM_BINARY_FORMAT_H
 #define LM_BINARY_FORMAT_H
 
-#include "lm/config.hh"
-#include "lm/model_type.hh"
-#include "lm/read_arpa.hh"
+#include "config.hh"
+#include "model_type.hh"
+#include "read_arpa.hh"
 
-#include "util/file_piece.hh"
-#include "util/mmap.hh"
-#include "util/scoped.hh"
+#include "../util/file_piece.hh"
+#include "../util/mmap.hh"
+#include "../util/scoped.hh"
 
 #include <cstddef>
 #include <vector>

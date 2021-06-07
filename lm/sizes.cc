@@ -1,6 +1,6 @@
-#include "lm/sizes.hh"
-#include "lm/model.hh"
-#include "util/file_piece.hh"
+#include "sizes.hh"
+#include "model.hh"
+#include "../util/file_piece.hh"
 
 #include <vector>
 #include <iomanip>

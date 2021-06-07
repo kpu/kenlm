@@ -1,9 +1,9 @@
 #ifndef UTIL_TOKENIZE_PIECE_H
 #define UTIL_TOKENIZE_PIECE_H
 
-#include "util/exception.hh"
-#include "util/spaces.hh"
-#include "util/string_piece.hh"
+#include "exception.hh"
+#include "spaces.hh"
+#include "string_piece.hh"
 
 #include <algorithm>
 #include <cstring>

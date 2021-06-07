@@ -1,5 +1,5 @@
-#include "util/stream/count_records.hh"
-#include "util/stream/chain.hh"
+#include "count_records.hh"
+#include "chain.hh"
 
 namespace util { namespace stream {
 

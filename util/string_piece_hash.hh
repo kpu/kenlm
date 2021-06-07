@@ -1,8 +1,8 @@
 #ifndef UTIL_STRING_PIECE_HASH_H
 #define UTIL_STRING_PIECE_HASH_H
 
-#include "util/have.hh"
-#include "util/string_piece.hh"
+#include "have.hh"
+#include "string_piece.hh"
 
 #include <boost/functional/hash.hpp>
 #include <boost/version.hpp>

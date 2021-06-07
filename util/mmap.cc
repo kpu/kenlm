@@ -2,11 +2,11 @@
  * ARM and MinGW ports contributed by Hideo Okuma and Tomoyuki Yoshimura at
  * NICT.
  */
-#include "util/mmap.hh"
+#include "mmap.hh"
 
-#include "util/exception.hh"
-#include "util/file.hh"
-#include "util/scoped.hh"
+#include "exception.hh"
+#include "file.hh"
+#include "scoped.hh"
 
 #include <iostream>
 

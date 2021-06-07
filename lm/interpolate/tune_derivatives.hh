@@ -1,7 +1,7 @@
 #ifndef LM_INTERPOLATE_TUNE_DERIVATIVES_H
 #define LM_INTERPOLATE_TUNE_DERIVATIVES_H
 
-#include "lm/interpolate/tune_matrix.hh"
+#include "tune_matrix.hh"
 
 #include <Eigen/Core>
 #include <cmath>

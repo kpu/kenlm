@@ -1,5 +1,5 @@
-#include "lm/interpolate/split_worker.hh"
-#include "lm/common/ngram.hh"
+#include "split_worker.hh"
+#include "../common/ngram.hh"
 
 namespace lm {
 namespace interpolate {

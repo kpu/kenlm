@@ -1,11 +1,11 @@
 #ifndef LM_BUILDER_DEBUG_PRINT_H
 #define LM_BUILDER_DEBUG_PRINT_H
 
-#include "lm/builder/payload.hh"
-#include "lm/common/print.hh"
-#include "lm/common/ngram_stream.hh"
-#include "util/file_stream.hh"
-#include "util/file.hh"
+#include "payload.hh"
+#include "../common/print.hh"
+#include "../common/ngram_stream.hh"
+#include "../../util/file_stream.hh"
+#include "../../util/file.hh"
 
 #include <boost/lexical_cast.hpp>
 

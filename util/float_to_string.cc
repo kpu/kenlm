@@ -1,7 +1,7 @@
-#include "util/float_to_string.hh"
+#include "float_to_string.hh"
 
-#include "util/double-conversion/double-conversion.h"
-#include "util/double-conversion/utils.h"
+#include "double-conversion/double-conversion.h"
+#include "double-conversion/utils.h"
 
 namespace util {
 namespace {

@@ -2,11 +2,11 @@
 #define LM_FILTER_ARPA_IO_H
 /* Input and output for ARPA format language model files.
  */
-#include "lm/read_arpa.hh"
-#include "util/exception.hh"
-#include "util/file_stream.hh"
-#include "util/string_piece.hh"
-#include "util/tokenize_piece.hh"
+#include "../read_arpa.hh"
+#include "../../util/exception.hh"
+#include "../../util/file_stream.hh"
+#include "../../util/string_piece.hh"
+#include "../../util/tokenize_piece.hh"
 
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_array.hpp>

@@ -1,9 +1,9 @@
 #define _LARGEFILE64_SOURCE
 #define _FILE_OFFSET_BITS 64
 
-#include "util/file.hh"
+#include "file.hh"
 
-#include "util/exception.hh"
+#include "exception.hh"
 
 #include <algorithm>
 #include <cstdlib>

@@ -1,6 +1,6 @@
 #define BOOST_LEXICAL_CAST_ASSUME_C_LOCALE
-#include "util/integer_to_string.hh"
-#include "util/string_piece.hh"
+#include "integer_to_string.hh"
+#include "string_piece.hh"
 
 #define BOOST_TEST_MODULE IntegerToStringTest
 #include <boost/test/unit_test.hpp>

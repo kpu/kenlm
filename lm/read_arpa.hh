@@ -1,10 +1,10 @@
 #ifndef LM_READ_ARPA_H
 #define LM_READ_ARPA_H
 
-#include "lm/lm_exception.hh"
-#include "lm/word_index.hh"
-#include "lm/weights.hh"
-#include "util/file_piece.hh"
+#include "lm_exception.hh"
+#include "word_index.hh"
+#include "weights.hh"
+#include "../util/file_piece.hh"
 
 #include <cstddef>
 #include <iosfwd>

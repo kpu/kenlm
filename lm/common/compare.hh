@@ -1,8 +1,8 @@
 #ifndef LM_COMMON_COMPARE_H
 #define LM_COMMON_COMPARE_H
 
-#include "lm/common/ngram.hh"
-#include "lm/word_index.hh"
+#include "ngram.hh"
+#include "../word_index.hh"
 
 #include <functional>
 #include <string>

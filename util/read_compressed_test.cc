@@ -1,7 +1,7 @@
-#include "util/read_compressed.hh"
+#include "read_compressed.hh"
 
-#include "util/file.hh"
-#include "util/have.hh"
+#include "file.hh"
+#include "have.hh"
 
 #define BOOST_TEST_MODULE ReadCompressedTest
 #include <boost/test/unit_test.hpp>
