@@ -1,9 +1,9 @@
-#include "lm/bhiksha.hh"
+#include "bhiksha.hh"
 
-#include "lm/binary_format.hh"
-#include "lm/config.hh"
-#include "util/file.hh"
-#include "util/exception.hh"
+#include "binary_format.hh"
+#include "config.hh"
+#include "../util/file.hh"
+#include "../util/exception.hh"
 
 #include <limits>
 

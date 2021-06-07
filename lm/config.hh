@@ -1,8 +1,8 @@
 #ifndef LM_CONFIG_H
 #define LM_CONFIG_H
 
-#include "lm/lm_exception.hh"
-#include "util/mmap.hh"
+#include "lm_exception.hh"
+#include "../util/mmap.hh"
 
 #include <iosfwd>
 #include <string>

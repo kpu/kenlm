@@ -1,16 +1,16 @@
 #define BOOST_TEST_MODULE InterpolateMergeVocabTest
 #include <boost/test/unit_test.hpp>
 
-#include "lm/enumerate_vocab.hh"
-#include "lm/interpolate/merge_vocab.hh"
-#include "lm/interpolate/universal_vocab.hh"
-#include "lm/lm_exception.hh"
-#include "lm/vocab.hh"
-#include "lm/word_index.hh"
-#include "util/file.hh"
-#include "util/file_piece.hh"
-#include "util/file_stream.hh"
-#include "util/tokenize_piece.hh"
+#include "../enumerate_vocab.hh"
+#include "merge_vocab.hh"
+#include "universal_vocab.hh"
+#include "../lm_exception.hh"
+#include "../vocab.hh"
+#include "../word_index.hh"
+#include "../../util/file.hh"
+#include "../../util/file_piece.hh"
+#include "../../util/file_stream.hh"
+#include "../../util/tokenize_piece.hh"
 
 #include <algorithm>
 #include <cstring>

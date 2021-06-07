@@ -1,9 +1,9 @@
-#include "util/parallel_read.hh"
+#include "parallel_read.hh"
 
-#include "util/file.hh"
+#include "file.hh"
 
 #ifdef WITH_THREADS
-#include "util/thread_pool.hh"
+#include "thread_pool.hh"
 
 namespace util {
 namespace {

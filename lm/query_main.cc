@@ -1,8 +1,8 @@
-#include "lm/ngram_query.hh"
-#include "util/getopt.hh"
+#include "ngram_query.hh"
+#include "../util/getopt.hh"
 
 #ifdef WITH_NPLM
-#include "lm/wrappers/nplm.hh"
+#include "wrappers/nplm.hh"
 #endif
 
 #include <stdlib.h>

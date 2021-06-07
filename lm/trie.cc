@@ -1,9 +1,9 @@
-#include "lm/trie.hh"
+#include "trie.hh"
 
-#include "lm/bhiksha.hh"
-#include "util/bit_packing.hh"
-#include "util/exception.hh"
-#include "util/sorted_uniform.hh"
+#include "bhiksha.hh"
+#include "../util/bit_packing.hh"
+#include "../util/exception.hh"
+#include "../util/sorted_uniform.hh"
 
 #include <cassert>
 

@@ -1,14 +1,14 @@
-#include "lm/builder/corpus_count.hh"
+#include "corpus_count.hh"
 
-#include "lm/builder/payload.hh"
-#include "lm/common/ngram_stream.hh"
-#include "lm/common/ngram.hh"
+#include "payload.hh"
+#include "../common/ngram_stream.hh"
+#include "../common/ngram.hh"
 
-#include "util/file.hh"
-#include "util/file_piece.hh"
-#include "util/tokenize_piece.hh"
-#include "util/stream/chain.hh"
-#include "util/stream/stream.hh"
+#include "../../util/file.hh"
+#include "../../util/file_piece.hh"
+#include "../../util/tokenize_piece.hh"
+#include "../../util/stream/chain.hh"
+#include "../../util/stream/stream.hh"
 
 #define BOOST_TEST_MODULE CorpusCountTest
 #include <boost/test/unit_test.hpp>

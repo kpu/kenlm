@@ -1,8 +1,8 @@
 #ifndef KENLM_INTERPOLATE_BACKOFF_REUNIFICATION_
 #define KENLM_INTERPOLATE_BACKOFF_REUNIFICATION_
 
-#include "util/stream/stream.hh"
-#include "util/stream/multi_stream.hh"
+#include "../../util/stream/stream.hh"
+#include "../../util/stream/multi_stream.hh"
 
 namespace lm {
 namespace interpolate {

@@ -1,10 +1,10 @@
 #ifndef UTIL_STREAM_MULTI_STREAM_H
 #define UTIL_STREAM_MULTI_STREAM_H
 
-#include "util/fixed_array.hh"
-#include "util/scoped.hh"
-#include "util/stream/chain.hh"
-#include "util/stream/stream.hh"
+#include "../fixed_array.hh"
+#include "../scoped.hh"
+#include "chain.hh"
+#include "stream.hh"
 
 #include <cstddef>
 #include <new>

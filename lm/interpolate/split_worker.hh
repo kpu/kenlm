@@ -1,8 +1,8 @@
 #ifndef KENLM_INTERPOLATE_SPLIT_WORKER_H_
 #define KENLM_INTERPOLATE_SPLIT_WORKER_H_
 
-#include "util/stream/chain.hh"
-#include "util/stream/stream.hh"
+#include "../../util/stream/chain.hh"
+#include "../../util/stream/stream.hh"
 
 namespace lm {
 namespace interpolate {

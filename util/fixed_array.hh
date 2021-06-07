@@ -1,7 +1,7 @@
 #ifndef UTIL_FIXED_ARRAY_H
 #define UTIL_FIXED_ARRAY_H
 
-#include "util/scoped.hh"
+#include "scoped.hh"
 
 #include <cstddef>
 

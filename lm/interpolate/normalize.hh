@@ -1,7 +1,7 @@
 #ifndef LM_INTERPOLATE_NORMALIZE_H
 #define LM_INTERPOLATE_NORMALIZE_H
 
-#include "util/fixed_array.hh"
+#include "../../util/fixed_array.hh"
 
 /* Pass 2:
  * - Multiply backoff weights by the backed off probabilities from pass 1.

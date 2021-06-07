@@ -1,4 +1,4 @@
-#include "util/sized_iterator.hh"
+#include "sized_iterator.hh"
 
 #define BOOST_TEST_MODULE SizedIteratorTest
 #include <boost/test/unit_test.hpp>

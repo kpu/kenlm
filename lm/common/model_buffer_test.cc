@@ -1,6 +1,6 @@
-#include "lm/common/model_buffer.hh"
-#include "lm/model.hh"
-#include "lm/state.hh"
+#include "model_buffer.hh"
+#include "../model.hh"
+#include "../state.hh"
 
 #define BOOST_TEST_MODULE ModelBufferTest
 #include <boost/test/unit_test.hpp>

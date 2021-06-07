@@ -1,9 +1,9 @@
 #ifndef LM_INTERPOLATE_MERGE_VOCAB_H
 #define LM_INTERPOLATE_MERGE_VOCAB_H
 
-#include "lm/word_index.hh"
-#include "util/file.hh"
-#include "util/fixed_array.hh"
+#include "../word_index.hh"
+#include "../../util/file.hh"
+#include "../../util/fixed_array.hh"
 
 namespace lm {
 

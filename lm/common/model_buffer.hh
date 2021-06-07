@@ -4,10 +4,10 @@
 /* Format with separate files in suffix order.  Each file contains
  * n-grams of the same order.
  */
-#include "lm/word_index.hh"
-#include "util/file.hh"
-#include "util/fixed_array.hh"
-#include "util/string_piece.hh"
+#include "../word_index.hh"
+#include "../../util/file.hh"
+#include "../../util/fixed_array.hh"
+#include "../../util/string_piece.hh"
 
 #include <string>
 #include <vector>

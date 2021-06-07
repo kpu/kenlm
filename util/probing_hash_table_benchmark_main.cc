@@ -1,8 +1,8 @@
-#include "util/file.hh"
-#include "util/probing_hash_table.hh"
-#include "util/mmap.hh"
-#include "util/usage.hh"
-#include "util/thread_pool.hh"
+#include "file.hh"
+#include "probing_hash_table.hh"
+#include "mmap.hh"
+#include "usage.hh"
+#include "thread_pool.hh"
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/locks.hpp>
 

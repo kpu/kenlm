@@ -15,23 +15,23 @@
  * (tune_derivatives.hh) takes a stream of extensions ordered by tuning
  * instance, the word v, and the model the extension came from.
  */
-#include "lm/interpolate/tune_instances.hh"
+#include "tune_instances.hh"
 
-#include "lm/common/compare.hh"
-#include "lm/common/joint_order.hh"
-#include "lm/common/model_buffer.hh"
-#include "lm/common/ngram_stream.hh"
-#include "lm/common/renumber.hh"
-#include "lm/enumerate_vocab.hh"
-#include "lm/interpolate/merge_vocab.hh"
-#include "lm/interpolate/universal_vocab.hh"
-#include "lm/lm_exception.hh"
-#include "util/file_piece.hh"
-#include "util/murmur_hash.hh"
-#include "util/stream/chain.hh"
-#include "util/stream/io.hh"
-#include "util/stream/sort.hh"
-#include "util/tokenize_piece.hh"
+#include "../common/compare.hh"
+#include "../common/joint_order.hh"
+#include "../common/model_buffer.hh"
+#include "../common/ngram_stream.hh"
+#include "../common/renumber.hh"
+#include "../enumerate_vocab.hh"
+#include "merge_vocab.hh"
+#include "universal_vocab.hh"
+#include "../lm_exception.hh"
+#include "../../util/file_piece.hh"
+#include "../../util/murmur_hash.hh"
+#include "../../util/stream/chain.hh"
+#include "../../util/stream/io.hh"
+#include "../../util/stream/sort.hh"
+#include "../../util/tokenize_piece.hh"
 
 #include <boost/shared_ptr.hpp>
 #include <boost/unordered_map.hpp>

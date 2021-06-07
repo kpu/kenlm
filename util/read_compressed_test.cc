@@ -1,4 +1,4 @@
-#include "util/read_compressed.hh"
+#include "read_compressed.hh"
 
 #define BOOST_TEST_MODULE ReadCompressedTest
 #include <boost/test/unit_test.hpp>
@@ -8,8 +8,8 @@
 BOOST_AUTO_TEST_CASE(WindowsStub) {}
 #else
 
-#include "util/file.hh"
-#include "util/have.hh"
+#include "file.hh"
+#include "have.hh"
 
 #include <boost/scoped_ptr.hpp>
 

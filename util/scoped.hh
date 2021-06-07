@@ -2,7 +2,7 @@
 #define UTIL_SCOPED_H
 /* Other scoped objects in the style of scoped_ptr. */
 
-#include "util/exception.hh"
+#include "exception.hh"
 #include <cstddef>
 #include <cstdlib>
 

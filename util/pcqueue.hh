@@ -1,7 +1,7 @@
 #ifndef UTIL_PCQUEUE_H
 #define UTIL_PCQUEUE_H
 
-#include "util/exception.hh"
+#include "exception.hh"
 
 #include <algorithm>
 #include <cerrno>

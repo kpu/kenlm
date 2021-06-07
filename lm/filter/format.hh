@@ -1,8 +1,8 @@
 #ifndef LM_FILTER_FORMAT_H
 #define LM_FILTER_FORMAT_H
 
-#include "lm/filter/arpa_io.hh"
-#include "lm/filter/count_io.hh"
+#include "arpa_io.hh"
+#include "count_io.hh"
 
 #include <boost/lexical_cast.hpp>
 #include <boost/ptr_container/ptr_vector.hpp>

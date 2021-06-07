@@ -1,10 +1,10 @@
-#include "lm/interpolate/normalize.hh"
+#include "normalize.hh"
 
-#include "lm/interpolate/interpolate_info.hh"
-#include "lm/interpolate/merge_probabilities.hh"
-#include "lm/common/ngram_stream.hh"
-#include "util/stream/chain.hh"
-#include "util/stream/multi_stream.hh"
+#include "interpolate_info.hh"
+#include "merge_probabilities.hh"
+#include "../common/ngram_stream.hh"
+#include "../../util/stream/chain.hh"
+#include "../../util/stream/multi_stream.hh"
 
 #define BOOST_TEST_MODULE NormalizeTest
 #include <boost/test/unit_test.hpp>

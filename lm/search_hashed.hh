@@ -1,14 +1,14 @@
 #ifndef LM_SEARCH_HASHED_H
 #define LM_SEARCH_HASHED_H
 
-#include "lm/model_type.hh"
-#include "lm/config.hh"
-#include "lm/read_arpa.hh"
-#include "lm/return.hh"
-#include "lm/weights.hh"
+#include "model_type.hh"
+#include "config.hh"
+#include "read_arpa.hh"
+#include "return.hh"
+#include "weights.hh"
 
-#include "util/bit_packing.hh"
-#include "util/probing_hash_table.hh"
+#include "../util/bit_packing.hh"
+#include "../util/probing_hash_table.hh"
 
 #include <algorithm>
 #include <iostream>

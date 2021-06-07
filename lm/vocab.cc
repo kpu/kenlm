@@ -1,16 +1,16 @@
-#include "lm/vocab.hh"
+#include "vocab.hh"
 
-#include "lm/binary_format.hh"
-#include "lm/enumerate_vocab.hh"
-#include "lm/lm_exception.hh"
-#include "lm/config.hh"
-#include "lm/weights.hh"
-#include "util/exception.hh"
-#include "util/file_stream.hh"
-#include "util/file.hh"
-#include "util/joint_sort.hh"
-#include "util/murmur_hash.hh"
-#include "util/probing_hash_table.hh"
+#include "binary_format.hh"
+#include "enumerate_vocab.hh"
+#include "lm_exception.hh"
+#include "config.hh"
+#include "weights.hh"
+#include "../util/exception.hh"
+#include "../util/file_stream.hh"
+#include "../util/file.hh"
+#include "../util/joint_sort.hh"
+#include "../util/murmur_hash.hh"
+#include "../util/probing_hash_table.hh"
 
 #include <cstring>
 #include <string>

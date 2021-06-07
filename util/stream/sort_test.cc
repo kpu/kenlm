@@ -1,4 +1,4 @@
-#include "util/stream/sort.hh"
+#include "sort.hh"
 
 #define BOOST_TEST_MODULE SortTest
 #include <boost/test/unit_test.hpp>

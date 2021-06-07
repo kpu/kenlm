@@ -1,8 +1,8 @@
 #ifndef LM_BUILDER_PAYLOAD_H
 #define LM_BUILDER_PAYLOAD_H
 
-#include "lm/weights.hh"
-#include "lm/word_index.hh"
+#include "../weights.hh"
+#include "../word_index.hh"
 #include <stdint.h>
 
 namespace lm { namespace builder {

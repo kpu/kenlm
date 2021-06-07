@@ -1,7 +1,7 @@
 #ifndef LM_COMMON_SPECIAL_H
 #define LM_COMMON_SPECIAL_H
 
-#include "lm/word_index.hh"
+#include "../word_index.hh"
 
 namespace lm {
 

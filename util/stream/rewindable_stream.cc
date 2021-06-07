@@ -1,5 +1,5 @@
-#include "util/stream/rewindable_stream.hh"
-#include "util/pcqueue.hh"
+#include "rewindable_stream.hh"
+#include "../pcqueue.hh"
 
 #include <iostream>
 

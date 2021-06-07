@@ -1,4 +1,4 @@
-#include "lm/model.hh"
+#include "model.hh"
 
 #include <cstdlib>
 #include <cstring>

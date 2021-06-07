@@ -1,11 +1,11 @@
 #ifndef LM_COMMON_JOINT_ORDER_H
 #define LM_COMMON_JOINT_ORDER_H
 
-#include "lm/common/ngram_stream.hh"
-#include "lm/lm_exception.hh"
+#include "ngram_stream.hh"
+#include "../lm_exception.hh"
 
 #ifdef DEBUG
-#include "util/fixed_array.hh"
+#include "../../util/fixed_array.hh"
 #include <iostream>
 #endif
 

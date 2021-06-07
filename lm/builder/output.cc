@@ -1,9 +1,9 @@
-#include "lm/builder/output.hh"
+#include "output.hh"
 
-#include "lm/common/model_buffer.hh"
-#include "lm/common/print.hh"
-#include "util/file_stream.hh"
-#include "util/stream/multi_stream.hh"
+#include "../common/model_buffer.hh"
+#include "../common/print.hh"
+#include "../../util/file_stream.hh"
+#include "../../util/stream/multi_stream.hh"
 
 #include <iostream>
 

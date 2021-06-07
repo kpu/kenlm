@@ -6,11 +6,11 @@
  * tional Linguistics.
  */
 
-#include "lm/quantize.hh"
+#include "quantize.hh"
 
-#include "lm/binary_format.hh"
-#include "lm/lm_exception.hh"
-#include "util/file.hh"
+#include "binary_format.hh"
+#include "lm_exception.hh"
+#include "../util/file.hh"
 
 #include <algorithm>
 #include <numeric>

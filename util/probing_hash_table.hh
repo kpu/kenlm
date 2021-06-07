@@ -1,8 +1,8 @@
 #ifndef UTIL_PROBING_HASH_TABLE_H
 #define UTIL_PROBING_HASH_TABLE_H
 
-#include "util/exception.hh"
-#include "util/mmap.hh"
+#include "exception.hh"
+#include "mmap.hh"
 
 #include <algorithm>
 #include <cstddef>

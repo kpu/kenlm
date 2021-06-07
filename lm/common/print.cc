@@ -1,10 +1,10 @@
-#include "lm/common/print.hh"
+#include "print.hh"
 
-#include "lm/common/ngram_stream.hh"
-#include "util/file_stream.hh"
-#include "util/file.hh"
-#include "util/mmap.hh"
-#include "util/scoped.hh"
+#include "ngram_stream.hh"
+#include "../../util/file_stream.hh"
+#include "../../util/file.hh"
+#include "../../util/mmap.hh"
+#include "../../util/scoped.hh"
 
 #include <sstream>
 #include <cstring>

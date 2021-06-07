@@ -3,10 +3,10 @@
 
 // Vocabulary-based filters for language models.
 
-#include "util/multi_intersection.hh"
-#include "util/string_piece.hh"
-#include "util/string_piece_hash.hh"
-#include "util/tokenize_piece.hh"
+#include "../../util/multi_intersection.hh"
+#include "../../util/string_piece.hh"
+#include "../../util/string_piece_hash.hh"
+#include "../../util/tokenize_piece.hh"
 
 #include <boost/noncopyable.hpp>
 #include <boost/range/iterator_range.hpp>

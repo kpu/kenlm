@@ -1,8 +1,8 @@
 #ifndef UTIL_READ_COMPRESSED_H
 #define UTIL_READ_COMPRESSED_H
 
-#include "util/exception.hh"
-#include "util/scoped.hh"
+#include "exception.hh"
+#include "scoped.hh"
 
 #include <cstddef>
 #include <stdint.h>

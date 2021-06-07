@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in string_piece.hh.
 
-#include "util/string_piece.hh"
+#include "string_piece.hh"
 
 #include <algorithm>
 #include <climits>

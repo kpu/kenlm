@@ -1,11 +1,11 @@
-#include "lm/interpolate/tune_derivatives.hh"
+#include "tune_derivatives.hh"
 
-#include "lm/interpolate/tune_instances.hh"
+#include "tune_instances.hh"
 
-#include "util/stream/config.hh"
-#include "util/stream/chain.hh"
-#include "util/stream/io.hh"
-#include "util/stream/typed_stream.hh"
+#include "../../util/stream/config.hh"
+#include "../../util/stream/chain.hh"
+#include "../../util/stream/io.hh"
+#include "../../util/stream/typed_stream.hh"
 
 #define BOOST_TEST_MODULE DerivativeTest
 #include <boost/test/unit_test.hpp>

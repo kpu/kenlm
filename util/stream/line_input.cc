@@ -1,9 +1,9 @@
-#include "util/stream/line_input.hh"
+#include "line_input.hh"
 
-#include "util/exception.hh"
-#include "util/file.hh"
-#include "util/read_compressed.hh"
-#include "util/stream/chain.hh"
+#include "../exception.hh"
+#include "../file.hh"
+#include "../read_compressed.hh"
+#include "chain.hh"
 
 #include <algorithm>
 #include <vector>

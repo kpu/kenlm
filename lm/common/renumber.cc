@@ -1,7 +1,7 @@
-#include "lm/common/renumber.hh"
-#include "lm/common/ngram.hh"
+#include "renumber.hh"
+#include "ngram.hh"
 
-#include "util/stream/stream.hh"
+#include "../../util/stream/stream.hh"
 
 namespace lm {
 

@@ -1,8 +1,8 @@
-#include "lm/partial.hh"
+#include "partial.hh"
 
-#include "lm/left.hh"
-#include "lm/model.hh"
-#include "util/tokenize_piece.hh"
+#include "left.hh"
+#include "model.hh"
+#include "../util/tokenize_piece.hh"
 
 #define BOOST_TEST_MODULE PartialTest
 #include <boost/test/unit_test.hpp>

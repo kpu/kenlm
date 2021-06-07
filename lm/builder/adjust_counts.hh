@@ -1,9 +1,9 @@
 #ifndef LM_BUILDER_ADJUST_COUNTS_H
 #define LM_BUILDER_ADJUST_COUNTS_H
 
-#include "lm/builder/discount.hh"
-#include "lm/lm_exception.hh"
-#include "util/exception.hh"
+#include "discount.hh"
+#include "../lm_exception.hh"
+#include "../../util/exception.hh"
 
 #include <vector>
 

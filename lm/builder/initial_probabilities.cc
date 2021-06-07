@@ -1,15 +1,15 @@
-#include "lm/builder/initial_probabilities.hh"
+#include "initial_probabilities.hh"
 
-#include "lm/builder/discount.hh"
-#include "lm/builder/hash_gamma.hh"
-#include "lm/builder/payload.hh"
-#include "lm/common/special.hh"
-#include "lm/common/ngram_stream.hh"
-#include "util/murmur_hash.hh"
-#include "util/file.hh"
-#include "util/stream/chain.hh"
-#include "util/stream/io.hh"
-#include "util/stream/stream.hh"
+#include "discount.hh"
+#include "hash_gamma.hh"
+#include "payload.hh"
+#include "../common/special.hh"
+#include "../common/ngram_stream.hh"
+#include "../../util/murmur_hash.hh"
+#include "../../util/file.hh"
+#include "../../util/stream/chain.hh"
+#include "../../util/stream/io.hh"
+#include "../../util/stream/stream.hh"
 
 #include <vector>
 

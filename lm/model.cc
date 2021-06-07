@@ -1,12 +1,12 @@
-#include "lm/model.hh"
+#include "model.hh"
 
-#include "lm/blank.hh"
-#include "lm/lm_exception.hh"
-#include "lm/search_hashed.hh"
-#include "lm/search_trie.hh"
-#include "lm/read_arpa.hh"
-#include "util/have.hh"
-#include "util/murmur_hash.hh"
+#include "blank.hh"
+#include "lm_exception.hh"
+#include "search_hashed.hh"
+#include "search_trie.hh"
+#include "read_arpa.hh"
+#include "../util/have.hh"
+#include "../util/murmur_hash.hh"
 
 #include <algorithm>
 #include <functional>

@@ -1,9 +1,9 @@
 #ifndef LM_FILTER_PHRASE_H
 #define LM_FILTER_PHRASE_H
 
-#include "util/murmur_hash.hh"
-#include "util/string_piece.hh"
-#include "util/tokenize_piece.hh"
+#include "../../util/murmur_hash.hh"
+#include "../../util/string_piece.hh"
+#include "../../util/tokenize_piece.hh"
 
 #include <boost/unordered_map.hpp>
 

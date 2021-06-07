@@ -1,4 +1,4 @@
-#include "util/multi_intersection.hh"
+#include "multi_intersection.hh"
 
 #define BOOST_TEST_MODULE MultiIntersectionTest
 #include <boost/test/unit_test.hpp>

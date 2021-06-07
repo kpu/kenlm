@@ -1,4 +1,4 @@
-#include "lm/interpolate/bounded_sequence_encoding.hh"
+#include "bounded_sequence_encoding.hh"
 
 #include <algorithm>
 

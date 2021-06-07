@@ -1,7 +1,7 @@
 #ifndef UTIL_STRING_STREAM_H
 #define UTIL_STRING_STREAM_H
 
-#include "util/fake_ostream.hh"
+#include "fake_ostream.hh"
 
 #include <cassert>
 #include <string>

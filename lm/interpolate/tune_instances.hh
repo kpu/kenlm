@@ -1,11 +1,11 @@
 #ifndef LM_INTERPOLATE_TUNE_INSTANCE_H
 #define LM_INTERPOLATE_TUNE_INSTANCE_H
 
-#include "lm/interpolate/tune_matrix.hh"
-#include "lm/word_index.hh"
-#include "util/scoped.hh"
-#include "util/stream/config.hh"
-#include "util/string_piece.hh"
+#include "tune_matrix.hh"
+#include "../word_index.hh"
+#include "../../util/scoped.hh"
+#include "../../util/stream/config.hh"
+#include "../../util/string_piece.hh"
 
 #include <boost/optional.hpp>
 

@@ -1,6 +1,6 @@
-#include "lm/interpolate/bounded_sequence_encoding.hh"
+#include "bounded_sequence_encoding.hh"
 
-#include "util/scoped.hh"
+#include "../../util/scoped.hh"
 
 #define BOOST_TEST_MODULE BoundedSequenceEncodingTest
 #include <boost/test/unit_test.hpp>

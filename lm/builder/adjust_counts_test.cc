@@ -1,8 +1,8 @@
-#include "lm/builder/adjust_counts.hh"
+#include "adjust_counts.hh"
 
-#include "lm/common/ngram_stream.hh"
-#include "lm/builder/payload.hh"
-#include "util/scoped.hh"
+#include "../common/ngram_stream.hh"
+#include "payload.hh"
+#include "../../util/scoped.hh"
 
 #include <boost/thread/thread.hpp>
 #define BOOST_TEST_MODULE AdjustCounts

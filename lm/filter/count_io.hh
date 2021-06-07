@@ -5,9 +5,9 @@
 #include <iostream>
 #include <string>
 
-#include "util/file_stream.hh"
-#include "util/file.hh"
-#include "util/file_piece.hh"
+#include "../../util/file_stream.hh"
+#include "../../util/file.hh"
+#include "../../util/file_piece.hh"
 
 namespace lm {
 

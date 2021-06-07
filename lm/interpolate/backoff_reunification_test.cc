@@ -1,5 +1,5 @@
-#include "lm/interpolate/backoff_reunification.hh"
-#include "lm/common/ngram_stream.hh"
+#include "backoff_reunification.hh"
+#include "../common/ngram_stream.hh"
 
 #define BOOST_TEST_MODULE InterpolateBackoffReunificationTest
 #include <boost/test/unit_test.hpp>

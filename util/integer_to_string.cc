@@ -44,7 +44,7 @@ Which is based on: http://0x80.pl/snippets/asm/sse-utoa.c
   $Id$
 */
 
-#include "util/integer_to_string.hh"
+#include "integer_to_string.hh"
 #include <cassert>
 #include <stdint.h>
 
