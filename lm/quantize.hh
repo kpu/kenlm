@@ -1,11 +1,11 @@
 #ifndef LM_QUANTIZE_H
 #define LM_QUANTIZE_H
 
-#include "lm/blank.hh"
-#include "lm/config.hh"
-#include "lm/max_order.hh"
-#include "lm/model_type.hh"
-#include "util/bit_packing.hh"
+#include "blank.hh"
+#include "config.hh"
+#include "max_order.hh"
+#include "model_type.hh"
+#include "../util/bit_packing.hh"
 
 #include <algorithm>
 #include <vector>

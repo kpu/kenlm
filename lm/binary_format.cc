@@ -1,8 +1,8 @@
-#include "lm/binary_format.hh"
+#include "binary_format.hh"
 
-#include "lm/lm_exception.hh"
-#include "util/file.hh"
-#include "util/file_piece.hh"
+#include "lm_exception.hh"
+#include "../util/file.hh"
+#include "../util/file_piece.hh"
 
 #include <cstddef>
 #include <cstring>

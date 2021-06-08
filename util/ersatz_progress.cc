@@ -1,4 +1,4 @@
-#include "util/ersatz_progress.hh"
+#include "ersatz_progress.hh"
 
 #include <algorithm>
 #include <ostream>

@@ -2,7 +2,7 @@
 #define UTIL_STREAM_TYPED_STREAM_H
 // A typed wrapper to Stream for POD types.
 
-#include "util/stream/stream.hh"
+#include "stream.hh"
 
 namespace util { namespace stream {
 

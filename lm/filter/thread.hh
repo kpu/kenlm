@@ -1,7 +1,7 @@
 #ifndef LM_FILTER_THREAD_H
 #define LM_FILTER_THREAD_H
 
-#include "util/thread_pool.hh"
+#include "../../util/thread_pool.hh"
 
 #include <boost/utility/in_place_factory.hpp>
 

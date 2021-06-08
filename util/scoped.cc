@@ -1,4 +1,4 @@
-#include "util/scoped.hh"
+#include "scoped.hh"
 
 #include <cstdlib>
 #if !defined(_WIN32) && !defined(_WIN64)

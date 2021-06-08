@@ -1,16 +1,16 @@
-#include "lm/trie_sort.hh"
+#include "trie_sort.hh"
 
-#include "lm/config.hh"
-#include "lm/lm_exception.hh"
-#include "lm/read_arpa.hh"
-#include "lm/vocab.hh"
-#include "lm/weights.hh"
-#include "lm/word_index.hh"
-#include "util/file_piece.hh"
-#include "util/mmap.hh"
-#include "util/pool.hh"
-#include "util/proxy_iterator.hh"
-#include "util/sized_iterator.hh"
+#include "config.hh"
+#include "lm_exception.hh"
+#include "read_arpa.hh"
+#include "vocab.hh"
+#include "weights.hh"
+#include "word_index.hh"
+#include "../util/file_piece.hh"
+#include "../util/mmap.hh"
+#include "../util/pool.hh"
+#include "../util/proxy_iterator.hh"
+#include "../util/sized_iterator.hh"
 
 #include <algorithm>
 #include <cstring>

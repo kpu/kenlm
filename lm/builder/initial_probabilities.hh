@@ -1,9 +1,9 @@
 #ifndef LM_BUILDER_INITIAL_PROBABILITIES_H
 #define LM_BUILDER_INITIAL_PROBABILITIES_H
 
-#include "lm/builder/discount.hh"
-#include "lm/word_index.hh"
-#include "util/stream/config.hh"
+#include "discount.hh"
+#include "../word_index.hh"
+#include "../../util/stream/config.hh"
 
 #include <vector>
 

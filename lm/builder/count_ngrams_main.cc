@@ -1,12 +1,12 @@
-#include "lm/builder/combine_counts.hh"
-#include "lm/builder/corpus_count.hh"
-#include "lm/common/compare.hh"
-#include "util/stream/chain.hh"
-#include "util/stream/io.hh"
-#include "util/stream/sort.hh"
-#include "util/file.hh"
-#include "util/file_piece.hh"
-#include "util/usage.hh"
+#include "combine_counts.hh"
+#include "corpus_count.hh"
+#include "../common/compare.hh"
+#include "../../util/stream/chain.hh"
+#include "../../util/stream/io.hh"
+#include "../../util/stream/sort.hh"
+#include "../../util/file.hh"
+#include "../../util/file_piece.hh"
+#include "../../util/usage.hh"
 
 #include <boost/program_options.hpp>
 

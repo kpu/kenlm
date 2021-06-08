@@ -1,10 +1,10 @@
-#include "util/file_stream.hh"
-#include "util/file_piece.hh"
-#include "util/murmur_hash.hh"
-#include "util/pool.hh"
-#include "util/string_piece.hh"
-#include "util/string_piece_hash.hh"
-#include "util/tokenize_piece.hh"
+#include "../../util/file_stream.hh"
+#include "../../util/file_piece.hh"
+#include "../../util/murmur_hash.hh"
+#include "../../util/pool.hh"
+#include "../../util/string_piece.hh"
+#include "../../util/string_piece_hash.hh"
+#include "../../util/tokenize_piece.hh"
 
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>

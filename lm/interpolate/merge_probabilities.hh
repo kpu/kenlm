@@ -1,10 +1,10 @@
 #ifndef LM_INTERPOLATE_MERGE_PROBABILITIES_H
 #define LM_INTERPOLATE_MERGE_PROBABILITIES_H
 
-#include "lm/common/ngram.hh"
-#include "lm/interpolate/bounded_sequence_encoding.hh"
-#include "util/fixed_array.hh"
-#include "util/stream/multi_stream.hh"
+#include "../common/ngram.hh"
+#include "bounded_sequence_encoding.hh"
+#include "../../util/fixed_array.hh"
+#include "../../util/stream/multi_stream.hh"
 
 #include <stdint.h>
 

@@ -1,9 +1,9 @@
 #ifndef LM_COMMON_PRINT_H
 #define LM_COMMON_PRINT_H
 
-#include "lm/word_index.hh"
-#include "util/mmap.hh"
-#include "util/string_piece.hh"
+#include "../word_index.hh"
+#include "../../util/mmap.hh"
+#include "../../util/string_piece.hh"
 
 #include <cassert>
 #include <vector>

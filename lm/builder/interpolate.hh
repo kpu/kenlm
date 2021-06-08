@@ -1,9 +1,9 @@
 #ifndef LM_BUILDER_INTERPOLATE_H
 #define LM_BUILDER_INTERPOLATE_H
 
-#include "lm/common/special.hh"
-#include "lm/word_index.hh"
-#include "util/stream/multi_stream.hh"
+#include "../common/special.hh"
+#include "../word_index.hh"
+#include "../../util/stream/multi_stream.hh"
 
 #include <vector>
 

@@ -1,4 +1,4 @@
-#include "util/spaces.hh"
+#include "spaces.hh"
 
 namespace util {
 

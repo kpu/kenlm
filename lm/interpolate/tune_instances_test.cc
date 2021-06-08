@@ -1,11 +1,11 @@
-#include "lm/interpolate/tune_instances.hh"
+#include "tune_instances.hh"
 
-#include "util/file.hh"
-#include "util/file_stream.hh"
-#include "util/stream/chain.hh"
-#include "util/stream/config.hh"
-#include "util/stream/typed_stream.hh"
-#include "util/string_piece.hh"
+#include "../../util/file.hh"
+#include "../../util/file_stream.hh"
+#include "../../util/stream/chain.hh"
+#include "../../util/stream/config.hh"
+#include "../../util/stream/typed_stream.hh"
+#include "../../util/string_piece.hh"
 
 #define BOOST_TEST_MODULE InstanceTest
 #include <boost/test/unit_test.hpp>

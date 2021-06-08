@@ -1,7 +1,7 @@
-#include "util/stream/io.hh"
+#include "io.hh"
 
-#include "util/stream/rewindable_stream.hh"
-#include "util/file.hh"
+#include "rewindable_stream.hh"
+#include "../file.hh"
 
 #define BOOST_TEST_MODULE RewindableStreamTest
 #include <boost/test/unit_test.hpp>

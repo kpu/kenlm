@@ -1,7 +1,7 @@
-#include "lm/binary_format.hh"
-#include "lm/model.hh"
-#include "lm/left.hh"
-#include "util/tokenize_piece.hh"
+#include "binary_format.hh"
+#include "model.hh"
+#include "left.hh"
+#include "../util/tokenize_piece.hh"
 
 template <class Model> void Query(const char *name) {
   Model model(name);

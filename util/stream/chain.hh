@@ -1,10 +1,10 @@
 #ifndef UTIL_STREAM_CHAIN_H
 #define UTIL_STREAM_CHAIN_H
 
-#include "util/stream/block.hh"
-#include "util/stream/config.hh"
-#include "util/stream/multi_progress.hh"
-#include "util/scoped.hh"
+#include "block.hh"
+#include "config.hh"
+#include "multi_progress.hh"
+#include "../scoped.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/thread/thread.hpp>

@@ -1,8 +1,8 @@
 #ifndef LM_PARTIAL_H
 #define LM_PARTIAL_H
 
-#include "lm/return.hh"
-#include "lm/state.hh"
+#include "return.hh"
+#include "state.hh"
 
 #include <algorithm>
 #include <cassert>

@@ -1,6 +1,6 @@
-#include "lm/filter/phrase.hh"
+#include "phrase.hh"
 
-#include "lm/filter/format.hh"
+#include "format.hh"
 
 #include <algorithm>
 #include <functional>

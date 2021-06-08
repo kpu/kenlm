@@ -1,7 +1,7 @@
 #ifndef LM_FILTER_WRAPPER_H
 #define LM_FILTER_WRAPPER_H
 
-#include "util/string_piece.hh"
+#include "../../util/string_piece.hh"
 
 #include <algorithm>
 #include <string>

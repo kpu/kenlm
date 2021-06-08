@@ -1,8 +1,8 @@
-#include "lm/interpolate/backoff_reunification.hh"
-#include "lm/common/model_buffer.hh"
-#include "lm/common/ngram_stream.hh"
-#include "lm/common/ngram.hh"
-#include "lm/common/compare.hh"
+#include "backoff_reunification.hh"
+#include "../common/model_buffer.hh"
+#include "../common/ngram_stream.hh"
+#include "../common/ngram.hh"
+#include "../common/compare.hh"
 
 #include <algorithm>
 #include <cassert>

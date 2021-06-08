@@ -1,6 +1,6 @@
 // Like cat but interprets compressed files.
-#include "util/file.hh"
-#include "util/read_compressed.hh"
+#include "file.hh"
+#include "read_compressed.hh"
 
 #include <cstring>
 #include <iostream>

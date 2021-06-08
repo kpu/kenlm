@@ -1,4 +1,4 @@
-#include "lm/filter/vocab.hh"
+#include "vocab.hh"
 
 #include <istream>
 #include <iostream>

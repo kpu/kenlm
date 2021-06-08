@@ -1,9 +1,9 @@
 // Tests might fail if you have creative characters in your path.  Sue me.
-#include "util/file_piece.hh"
+#include "file_piece.hh"
 
-#include "util/file_stream.hh"
-#include "util/file.hh"
-#include "util/scoped.hh"
+#include "file_stream.hh"
+#include "file.hh"
+#include "scoped.hh"
 
 #define BOOST_TEST_MODULE FilePieceTest
 #include <boost/test/unit_test.hpp>

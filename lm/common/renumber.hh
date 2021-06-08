@@ -4,7 +4,7 @@
 #ifndef LM_COMMON_RENUMBER_H
 #define LM_COMMON_RENUMBER_H
 
-#include "lm/word_index.hh"
+#include "../word_index.hh"
 
 #include <cstddef>
 

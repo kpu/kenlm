@@ -1,9 +1,9 @@
-#include "util/file_piece.hh"
+#include "file_piece.hh"
 
-#include "util/double-conversion/double-conversion.h"
-#include "util/exception.hh"
-#include "util/file.hh"
-#include "util/mmap.hh"
+#include "double-conversion/double-conversion.h"
+#include "exception.hh"
+#include "file.hh"
+#include "mmap.hh"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <io.h>

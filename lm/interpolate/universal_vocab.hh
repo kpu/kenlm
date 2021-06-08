@@ -1,7 +1,7 @@
 #ifndef LM_INTERPOLATE_UNIVERSAL_VOCAB_H
 #define LM_INTERPOLATE_UNIVERSAL_VOCAB_H
 
-#include "lm/word_index.hh"
+#include "../word_index.hh"
 
 #include <vector>
 #include <cstddef>

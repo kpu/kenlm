@@ -4,9 +4,9 @@
 #ifndef UTIL_FILE_STREAM_H
 #define UTIL_FILE_STREAM_H
 
-#include "util/fake_ostream.hh"
-#include "util/file.hh"
-#include "util/scoped.hh"
+#include "fake_ostream.hh"
+#include "file.hh"
+#include "scoped.hh"
 
 #include <cassert>
 #include <cstring>

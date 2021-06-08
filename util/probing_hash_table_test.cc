@@ -1,7 +1,7 @@
-#include "util/probing_hash_table.hh"
+#include "probing_hash_table.hh"
 
-#include "util/murmur_hash.hh"
-#include "util/scoped.hh"
+#include "murmur_hash.hh"
+#include "scoped.hh"
 
 #define BOOST_TEST_MODULE ProbingHashTableTest
 #include <boost/test/unit_test.hpp>

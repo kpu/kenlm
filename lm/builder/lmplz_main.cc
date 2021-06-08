@@ -1,10 +1,10 @@
-#include "lm/builder/output.hh"
-#include "lm/builder/pipeline.hh"
-#include "lm/common/size_option.hh"
-#include "lm/lm_exception.hh"
-#include "util/file.hh"
-#include "util/file_piece.hh"
-#include "util/usage.hh"
+#include "output.hh"
+#include "pipeline.hh"
+#include "../common/size_option.hh"
+#include "../lm_exception.hh"
+#include "../../util/file.hh"
+#include "../../util/file_piece.hh"
+#include "../../util/usage.hh"
 
 #include <iostream>
 

@@ -1,9 +1,9 @@
 #ifndef LM_BUILDER_CORPUS_COUNT_H
 #define LM_BUILDER_CORPUS_COUNT_H
 
-#include "lm/lm_exception.hh"
-#include "lm/word_index.hh"
-#include "util/scoped.hh"
+#include "../lm_exception.hh"
+#include "../word_index.hh"
+#include "../../util/scoped.hh"
 
 #include <cstddef>
 #include <string>

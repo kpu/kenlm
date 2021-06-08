@@ -1,13 +1,13 @@
-#include "lm/filter/arpa_io.hh"
-#include "lm/filter/format.hh"
-#include "lm/filter/phrase.hh"
+#include "arpa_io.hh"
+#include "format.hh"
+#include "phrase.hh"
 #ifndef NTHREAD
-#include "lm/filter/thread.hh"
+#include "thread.hh"
 #endif
-#include "lm/filter/vocab.hh"
-#include "lm/filter/wrapper.hh"
-#include "util/exception.hh"
-#include "util/file_piece.hh"
+#include "vocab.hh"
+#include "wrapper.hh"
+#include "../../util/exception.hh"
+#include "../../util/file_piece.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
 

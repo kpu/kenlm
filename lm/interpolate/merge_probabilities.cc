@@ -1,7 +1,7 @@
-#include "lm/interpolate/merge_probabilities.hh"
-#include "lm/common/ngram_stream.hh"
-#include "lm/interpolate/bounded_sequence_encoding.hh"
-#include "lm/interpolate/interpolate_info.hh"
+#include "merge_probabilities.hh"
+#include "../common/ngram_stream.hh"
+#include "bounded_sequence_encoding.hh"
+#include "interpolate_info.hh"
 
 #include <algorithm>
 #include <limits>

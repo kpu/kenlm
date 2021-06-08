@@ -1,4 +1,4 @@
-#include "lm/interpolate/universal_vocab.hh"
+#include "universal_vocab.hh"
 
 namespace lm {
 namespace interpolate {

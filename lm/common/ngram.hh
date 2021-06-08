@@ -1,8 +1,8 @@
 #ifndef LM_COMMON_NGRAM_H
 #define LM_COMMON_NGRAM_H
 
-#include "lm/weights.hh"
-#include "lm/word_index.hh"
+#include "../weights.hh"
+#include "../word_index.hh"
 
 #include <cstddef>
 #include <cassert>

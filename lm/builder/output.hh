@@ -1,9 +1,9 @@
 #ifndef LM_BUILDER_OUTPUT_H
 #define LM_BUILDER_OUTPUT_H
 
-#include "lm/builder/header_info.hh"
-#include "lm/common/model_buffer.hh"
-#include "util/file.hh"
+#include "header_info.hh"
+#include "../common/model_buffer.hh"
+#include "../../util/file.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/utility.hpp>

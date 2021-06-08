@@ -1,7 +1,7 @@
 #ifndef UTIL_PCQUEUE_H
 #define UTIL_PCQUEUE_H
 
-#include "util/exception.hh"
+#include "exception.hh"
 
 #include <boost/interprocess/sync/interprocess_semaphore.hpp>
 #include <boost/scoped_array.hpp>

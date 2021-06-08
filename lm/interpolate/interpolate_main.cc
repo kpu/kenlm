@@ -1,10 +1,10 @@
-#include "lm/common/model_buffer.hh"
-#include "lm/common/size_option.hh"
-#include "lm/interpolate/pipeline.hh"
-#include "lm/interpolate/tune_instances.hh"
-#include "lm/interpolate/tune_weights.hh"
-#include "util/fixed_array.hh"
-#include "util/usage.hh"
+#include "../common/model_buffer.hh"
+#include "../common/size_option.hh"
+#include "pipeline.hh"
+#include "tune_instances.hh"
+#include "tune_weights.hh"
+#include "../../util/fixed_array.hh"
+#include "../../util/usage.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas" // Older gcc doesn't have "-Wunused-local-typedefs" and complains.

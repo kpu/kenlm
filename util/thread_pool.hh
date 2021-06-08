@@ -1,7 +1,7 @@
 #ifndef UTIL_THREAD_POOL_H
 #define UTIL_THREAD_POOL_H
 
-#include "util/pcqueue.hh"
+#include "pcqueue.hh"
 
 #include <boost/ptr_container/ptr_vector.hpp>
 #include <boost/optional.hpp>

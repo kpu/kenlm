@@ -1,10 +1,10 @@
-#include "lm/common/compare.hh"
-#include "lm/common/model_buffer.hh"
-#include "lm/common/ngram.hh"
-#include "util/stream/chain.hh"
-#include "util/stream/multi_stream.hh"
-#include "util/stream/sort.hh"
-#include "lm/interpolate/split_worker.hh"
+#include "../common/compare.hh"
+#include "../common/model_buffer.hh"
+#include "../common/ngram.hh"
+#include "../../util/stream/chain.hh"
+#include "../../util/stream/multi_stream.hh"
+#include "../../util/stream/sort.hh"
+#include "split_worker.hh"
 
 #include <boost/program_options.hpp>
 #include <boost/version.hpp>

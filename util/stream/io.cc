@@ -1,7 +1,7 @@
-#include "util/stream/io.hh"
+#include "io.hh"
 
-#include "util/file.hh"
-#include "util/stream/chain.hh"
+#include "../file.hh"
+#include "chain.hh"
 
 #include <cstddef>
 

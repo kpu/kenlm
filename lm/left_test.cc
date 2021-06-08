@@ -1,7 +1,7 @@
-#include "lm/left.hh"
-#include "lm/model.hh"
+#include "left.hh"
+#include "model.hh"
 
-#include "util/tokenize_piece.hh"
+#include "../util/tokenize_piece.hh"
 
 #include <vector>
 

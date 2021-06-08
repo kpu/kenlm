@@ -1,9 +1,9 @@
 #ifndef LM_INTERPOLATE_PIPELINE_H
 #define LM_INTERPOLATE_PIPELINE_H
 
-#include "lm/common/model_buffer.hh"
-#include "util/fixed_array.hh"
-#include "util/stream/config.hh"
+#include "../common/model_buffer.hh"
+#include "../../util/fixed_array.hh"
+#include "../../util/stream/config.hh"
 
 #include <cstddef>
 #include <string>

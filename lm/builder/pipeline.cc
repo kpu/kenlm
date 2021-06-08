@@ -1,21 +1,21 @@
-#include "lm/builder/pipeline.hh"
+#include "pipeline.hh"
 
-#include "lm/builder/adjust_counts.hh"
-#include "lm/builder/combine_counts.hh"
-#include "lm/builder/corpus_count.hh"
-#include "lm/builder/hash_gamma.hh"
-#include "lm/builder/initial_probabilities.hh"
-#include "lm/builder/interpolate.hh"
-#include "lm/builder/output.hh"
-#include "lm/common/compare.hh"
-#include "lm/common/renumber.hh"
+#include "adjust_counts.hh"
+#include "combine_counts.hh"
+#include "corpus_count.hh"
+#include "hash_gamma.hh"
+#include "initial_probabilities.hh"
+#include "interpolate.hh"
+#include "output.hh"
+#include "../common/compare.hh"
+#include "../common/renumber.hh"
 
-#include "lm/sizes.hh"
-#include "lm/vocab.hh"
+#include "../sizes.hh"
+#include "../vocab.hh"
 
-#include "util/exception.hh"
-#include "util/file.hh"
-#include "util/stream/io.hh"
+#include "../../util/exception.hh"
+#include "../../util/file.hh"
+#include "../../util/stream/io.hh"
 
 #include <algorithm>
 #include <iostream>

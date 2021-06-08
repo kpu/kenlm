@@ -1,8 +1,8 @@
 #ifndef LM_ENUMERATE_VOCAB_H
 #define LM_ENUMERATE_VOCAB_H
 
-#include "lm/word_index.hh"
-#include "util/string_piece.hh"
+#include "word_index.hh"
+#include "../util/string_piece.hh"
 
 namespace lm {
 

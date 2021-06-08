@@ -1,13 +1,13 @@
-#include "lm/builder/interpolate.hh"
+#include "interpolate.hh"
 
-#include "lm/builder/hash_gamma.hh"
-#include "lm/builder/payload.hh"
-#include "lm/common/compare.hh"
-#include "lm/common/joint_order.hh"
-#include "lm/common/ngram_stream.hh"
-#include "lm/lm_exception.hh"
-#include "util/fixed_array.hh"
-#include "util/murmur_hash.hh"
+#include "hash_gamma.hh"
+#include "payload.hh"
+#include "../common/compare.hh"
+#include "../common/joint_order.hh"
+#include "../common/ngram_stream.hh"
+#include "../lm_exception.hh"
+#include "../../util/fixed_array.hh"
+#include "../../util/murmur_hash.hh"
 
 #include <iostream>
 #include <cassert>

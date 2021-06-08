@@ -1,9 +1,9 @@
 #ifndef UTIL_FILE_H
 #define UTIL_FILE_H
 
-#include "util/exception.hh"
-#include "util/scoped.hh"
-#include "util/string_piece.hh"
+#include "exception.hh"
+#include "scoped.hh"
+#include "string_piece.hh"
 
 #include <cstddef>
 #include <cstdio>

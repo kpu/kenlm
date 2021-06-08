@@ -1,7 +1,7 @@
-#include "lm/read_arpa.hh"
+#include "read_arpa.hh"
 
-#include "lm/blank.hh"
-#include "util/file.hh"
+#include "blank.hh"
+#include "../util/file.hh"
 
 #include <cmath>
 #include <cstdlib>

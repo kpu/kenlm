@@ -1,9 +1,9 @@
-#include "lm/interpolate/tune_derivatives.hh"
+#include "tune_derivatives.hh"
 
-#include "lm/interpolate/tune_instances.hh"
-#include "lm/interpolate/tune_matrix.hh"
-#include "util/stream/chain.hh"
-#include "util/stream/typed_stream.hh"
+#include "tune_instances.hh"
+#include "tune_matrix.hh"
+#include "../../util/stream/chain.hh"
+#include "../../util/stream/typed_stream.hh"
 
 #include <Eigen/Core>
 

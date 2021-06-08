@@ -2,7 +2,7 @@
 #define UTIL_FLOAT_TO_STRING_H
 
 // Just for ToStringBuf
-#include "util/integer_to_string.hh"
+#include "integer_to_string.hh"
 
 namespace util {
 

@@ -1,5 +1,5 @@
-#include "util/bit_packing.hh"
-#include "util/exception.hh"
+#include "bit_packing.hh"
+#include "exception.hh"
 
 #include <cstring>
 

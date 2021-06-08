@@ -1,9 +1,9 @@
-#include "util/stream/chain.hh"
+#include "chain.hh"
 
-#include "util/stream/io.hh"
+#include "io.hh"
 
-#include "util/exception.hh"
-#include "util/pcqueue.hh"
+#include "../exception.hh"
+#include "../pcqueue.hh"
 
 #include <cstdlib>
 #include <new>

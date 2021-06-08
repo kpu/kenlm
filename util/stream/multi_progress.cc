@@ -1,7 +1,7 @@
-#include "util/stream/multi_progress.hh"
+#include "multi_progress.hh"
 
 // TODO: merge some functionality with the simple progress bar?
-#include "util/ersatz_progress.hh"
+#include "../ersatz_progress.hh"
 
 #include <iostream>
 #include <limits>

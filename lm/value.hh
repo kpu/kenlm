@@ -1,11 +1,11 @@
 #ifndef LM_VALUE_H
 #define LM_VALUE_H
 
-#include "lm/config.hh"
-#include "lm/model_type.hh"
-#include "lm/value_build.hh"
-#include "lm/weights.hh"
-#include "util/bit_packing.hh"
+#include "config.hh"
+#include "model_type.hh"
+#include "value_build.hh"
+#include "weights.hh"
+#include "../util/bit_packing.hh"
 
 #include <stdint.h>
 

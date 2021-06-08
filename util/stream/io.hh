@@ -1,8 +1,8 @@
 #ifndef UTIL_STREAM_IO_H
 #define UTIL_STREAM_IO_H
 
-#include "util/exception.hh"
-#include "util/file.hh"
+#include "../exception.hh"
+#include "../file.hh"
 
 namespace util {
 namespace stream {

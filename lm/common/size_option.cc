@@ -1,5 +1,5 @@
 #include <boost/program_options.hpp>
-#include "util/usage.hh"
+#include "../../util/usage.hh"
 
 namespace lm {
 

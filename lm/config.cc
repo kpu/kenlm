@@ -1,4 +1,4 @@
-#include "lm/config.hh"
+#include "config.hh"
 
 #include <iostream>
 

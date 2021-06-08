@@ -1,15 +1,15 @@
-#include "lm/search_hashed.hh"
+#include "search_hashed.hh"
 
-#include "lm/binary_format.hh"
-#include "lm/blank.hh"
-#include "lm/lm_exception.hh"
-#include "lm/model.hh"
-#include "lm/read_arpa.hh"
-#include "lm/value.hh"
-#include "lm/vocab.hh"
+#include "binary_format.hh"
+#include "blank.hh"
+#include "lm_exception.hh"
+#include "model.hh"
+#include "read_arpa.hh"
+#include "value.hh"
+#include "vocab.hh"
 
-#include "util/bit_packing.hh"
-#include "util/file_piece.hh"
+#include "../util/bit_packing.hh"
+#include "../util/file_piece.hh"
 
 #include <string>
 

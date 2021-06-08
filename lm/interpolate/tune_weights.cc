@@ -1,7 +1,7 @@
-#include "lm/interpolate/tune_weights.hh"
+#include "tune_weights.hh"
 
-#include "lm/interpolate/tune_derivatives.hh"
-#include "lm/interpolate/tune_instances.hh"
+#include "tune_derivatives.hh"
+#include "tune_instances.hh"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas" // Older gcc doesn't have "-Wunused-local-typedefs" and complains.

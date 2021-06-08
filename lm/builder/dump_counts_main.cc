@@ -1,7 +1,7 @@
-#include "lm/common/print.hh"
-#include "lm/word_index.hh"
-#include "util/file.hh"
-#include "util/read_compressed.hh"
+#include "../common/print.hh"
+#include "../word_index.hh"
+#include "../../util/file.hh"
+#include "../../util/read_compressed.hh"
 
 #include <boost/lexical_cast.hpp>
 

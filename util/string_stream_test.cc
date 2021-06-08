@@ -1,7 +1,7 @@
 #define BOOST_LEXICAL_CAST_ASSUME_C_LOCALE
 #define BOOST_TEST_MODULE FakeOStreamTest
 
-#include "util/string_stream.hh"
+#include "string_stream.hh"
 #include <boost/test/unit_test.hpp>
 #include <boost/lexical_cast.hpp>
 

@@ -1,19 +1,19 @@
 #ifndef LM_MODEL_H
 #define LM_MODEL_H
 
-#include "lm/bhiksha.hh"
-#include "lm/binary_format.hh"
-#include "lm/config.hh"
-#include "lm/facade.hh"
-#include "lm/quantize.hh"
-#include "lm/search_hashed.hh"
-#include "lm/search_trie.hh"
-#include "lm/state.hh"
-#include "lm/value.hh"
-#include "lm/vocab.hh"
-#include "lm/weights.hh"
+#include "bhiksha.hh"
+#include "binary_format.hh"
+#include "config.hh"
+#include "facade.hh"
+#include "quantize.hh"
+#include "search_hashed.hh"
+#include "search_trie.hh"
+#include "state.hh"
+#include "value.hh"
+#include "vocab.hh"
+#include "weights.hh"
 
-#include "util/murmur_hash.hh"
+#include "../util/murmur_hash.hh"
 
 #include <algorithm>
 #include <vector>

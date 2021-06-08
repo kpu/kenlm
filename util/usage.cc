@@ -1,6 +1,6 @@
-#include "util/usage.hh"
+#include "usage.hh"
 
-#include "util/exception.hh"
+#include "exception.hh"
 
 #include <fstream>
 #include <ostream>

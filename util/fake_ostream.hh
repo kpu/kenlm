@@ -1,9 +1,9 @@
 #ifndef UTIL_FAKE_OSTREAM_H
 #define UTIL_FAKE_OSTREAM_H
 
-#include "util/float_to_string.hh"
-#include "util/integer_to_string.hh"
-#include "util/string_piece.hh"
+#include "float_to_string.hh"
+#include "integer_to_string.hh"
+#include "string_piece.hh"
 
 #include <cassert>
 #include <limits>
