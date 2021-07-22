@@ -19,3 +19,8 @@ CMakeCache.txt
 CTestTestfile.cmake
 DartConfiguration.tcl
 Makefile
+
+# cnstrc ignores
+.idea/
+kenlm_bin/bin/
+wheels/
