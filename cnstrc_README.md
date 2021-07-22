@@ -1,7 +1,7 @@
 # cnstrc_kenlm
 
 This is a dedicated package to ship `kenlm` binary wheels along with binary executables
-via http://pypi.cnstrc.com.
+via _Internal PyPi server_.
 
 ## build
 
@@ -13,7 +13,7 @@ via http://pypi.cnstrc.com.
   ./build_cnstrc_wheel.sh
 ```
 
-3. Upload generated binary wheels to `s3://constructor-packages/pypi-packages/`
+3. Upload generated binary wheels to _Internal PyPi server_.
 
 ## usage
 
