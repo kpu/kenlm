@@ -59,7 +59,7 @@ setup(
     name='cnstrc_kenlm',
     ext_modules=ext_modules,
     include_package_data=True,
-    verion='0.0.1',
+    version='0.0.1',
     packages=['kenlm_bin'],
-    package_data={'kenlm_bin': ['lmplz']}
+    package_data={'kenlm_bin': ['bin/*']}
 )
