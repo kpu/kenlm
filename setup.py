@@ -49,14 +49,17 @@ if compile_test('lzma.h', 'lzma'):
 ext_modules = [
     Extension(name='kenlm',
         sources=FILES + ['python/kenlm.cpp'],
-        language='C++', 
+        language='C++',
         include_dirs=['.'],
-        libraries=LIBS, 
+        libraries=LIBS,
         extra_compile_args=ARGS)
 ]
 
 setup(
-    name='kenlm',
+    name='cnstrc_kenlm',
     ext_modules=ext_modules,
     include_package_data=True,
+    verion='0.0.1',
+    packages=['kenlm_bin'],
+    package_data={'kenlm_bin': ['lmplz']}
 )
