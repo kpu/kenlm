@@ -129,7 +129,7 @@ def from_hub(cls, model_id, Config config = Config()):
     # retrieve correct hub url
     file_path = hf_hub_download(repo_id=pretrained_path, filename="kenlm_model.binary")
 
-    return cls(model_id, config=config)
+    return cls(file_path, config=config)
 
 
 cdef class Model:
