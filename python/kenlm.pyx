@@ -118,6 +118,20 @@ cdef class Config:
         def __set__(self, to):
             self._c_config.arpa_complain = to
 
+
+def from_hub(cls, model_id, Config config = Config()):
+    """ load model from hugging face hub """
+    try:
+        from huggingface_hub import hf_hub_download
+    else:
+        raise ImportError("Please install `huggingface_hub` to use the `from_hub` method.")
+
+    # retrieve correct hub url
+    file_path = hf_hub_download(repo_id=pretrained_path, filename="kenlm_model.binary")
+
+    return cls(model_id, config=config)
+
+
 cdef class Model:
     """
     Wrapper around lm::ngram::Model.
@@ -142,6 +156,8 @@ cdef class Model:
             raise IOError('Cannot read model \'{}\' ({})'.format(path, exception_message))\
                     from exception
         self.vocab = &self.model.BaseVocabulary()
+
+    from_hub = classmethod(from_hub)
 
     def __dealloc__(self):
         del self.model
