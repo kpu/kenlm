@@ -1,6 +1,6 @@
 find_package(PythonInterp REQUIRED)
 find_package(PythonLibs ${PYTHON_VERSION_STRING} EXACT REQUIRED)
-include_directories(${PYTHON_INCLUDE_DIRS})
+include_directories(${PYTHON_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR})
 
 add_library(kenlm_python MODULE kenlm.cpp score_sentence.cc)
 set_target_properties(kenlm_python PROPERTIES OUTPUT_NAME kenlm)
