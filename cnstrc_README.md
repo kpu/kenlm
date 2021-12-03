@@ -54,7 +54,10 @@ Upload generated binary wheels to _Internal PyPi server_.
 Requirements:
  - be on macOS
  - have [delocate](https://github.com/matthew-brett/delocate) installed. You can install deloate by
- running `pip install delocate>=0.10.1`.
+ running 
+```console"
+pip install "delocate>=0.10.1"
+```
 
 To build **macOS** wheels with embedded libraries run the following from project root:
 ```console
