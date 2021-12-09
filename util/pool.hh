@@ -87,7 +87,9 @@ class Pool {
 class FreePool {
   public:
     explicit FreePool(std::size_t element_size)
-      : free_list_(NULL), element_size_(element_size) {}
+      : free_list_(NULL),
+        element_size_(element_size),
+        padded_size_(std::max(element_size_, sizeof(void*))) {}
 
     void *Allocate() {
       if (free_list_) {
@@ -95,7 +97,7 @@ class FreePool {
         free_list_ = *reinterpret_cast<void**>(free_list_);
         return ret;
       } else {
-        return backing_.Allocate(element_size_);
+        return backing_.Allocate(padded_size_);
       }
     }
 
@@ -112,6 +114,7 @@ class FreePool {
     Pool backing_;
 
     const std::size_t element_size_;
+    const std::size_t padded_size_;
 };
 
 } // namespace util
