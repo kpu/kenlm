@@ -22,7 +22,7 @@ jobs:
       run: |
         cmake -E make_directory build
         cd build
-        cmake -DBOOST_ROOT="C:\hostedtoolcache\windows\Boost\1.72.0" ..
+        cmake -DBOOST_ROOT="C:\hostedtoolcache\windows\Boost\1.72.0\x86_64" ..
     - name: Compile
       working-directory: build
       run: cmake --build . -j2
