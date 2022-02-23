@@ -20,15 +20,15 @@ build:
 
 requirements:
   build:
-    - python
-    - pip
-    - setuptools
+    - git
     - make
     - cmake
     - gcc_linux-64
     - gxx_linux-64
+    - python
+    - pip
+    - setuptools
     - libboost
-
   run:
     - python
     - libboost
