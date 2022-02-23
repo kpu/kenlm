@@ -4,6 +4,7 @@ import platform
 import os
 import sys
 import re
+from datetime import date
 
 #Does gcc compile with this header and library?
 def compile_test(header, library):
@@ -57,6 +58,7 @@ ext_modules = [
 
 setup(
     name='kenlm',
+    version=date.today().strftime('%Y%m%d'),
     ext_modules=ext_modules,
     include_package_data=True,
 )

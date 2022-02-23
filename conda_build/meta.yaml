@@ -1,0 +1,39 @@
+
+{% set rdir = ".." %}
+{% set data = load_setup_py_data(setup_file=''+rdir+'/setup.py', from_recipe_dir=True) %}
+
+package:
+  name: kenlm
+  version: {{ data.get('version') }}
+
+source:
+  path: {{ rdir }}
+
+build:
+  string: {{ environ.get('GIT_DESCRIBE_HASH') }}
+  script_env:
+    - RDIR={{ rdir }}
+    - KENLM_MAX_ORDER=7
+    - PIP_NO_INDEX=False # Allow requisites from PyPi
+    - PIP_NO_DEPENDENCIES=False # Install dependencies from our defined dependencies
+    - PIP_IGNORE_INSTALLED=False # Take into account the current installed dependencies
+
+requirements:
+  build:
+    - python
+    - pip
+    - setuptools
+    - make
+    - cmake
+    - gcc_linux-64
+    - gxx_linux-64
+    - libboost
+
+  run:
+    - python
+    - libboost
+
+about:
+  home: https://github.com/kpu/kenlm
+  license: LGPL
+  summary: Faster and Smaller Language Model Queries
