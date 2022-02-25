@@ -12,7 +12,6 @@ source:
 build:
   string: {{ environ.get('GIT_DESCRIBE_HASH') }}
   script_env:
-    - RDIR={{ rdir }}
     - KENLM_MAX_ORDER=7
     - PIP_NO_INDEX=False # Allow requisites from PyPi
     - PIP_NO_DEPENDENCIES=False # Install dependencies from our defined dependencies

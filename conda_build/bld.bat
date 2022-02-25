@@ -1,21 +1,18 @@
 
 @echo off
 
-set DIR="%RECIPE_DIR%/%RDIR%"
+set BDIR="./build"
 
-echo "DIR: %DIR%"
-echo "KENLM_MAX_ORDER: %KENLM_MAX_ORDER%"
-
-if exist %DIR%/build ( rmdir /S /Q %DIR%/build )
-mkdir %DIR%/build
+if exist %BDIR% ( rmdir /S /Q %BDIR% )
+mkdir %BDIR%
 
 echo " - Building..."
-cd %DIR%/build
+pushd %BDIR%
 cmake .. -DKENLM_MAX_ORDER=%KENLM_MAX_ORDER% -DCMAKE_INSTALL_PREFIX:PATH=%PREFIX%
 echo " - Installing..."
 make -j all install
-cd %DIR%
-rmdir /S /Q %DIR%/build
+popd
+rmdir /S /Q %BDIR%
 
 echo " - Installing python module..."
-"%PYTHON%" -m pip install "%DIR%" --install-option="--max_order %KENLM_MAX_ORDER%"
+"%PYTHON%" -m pip install . --install-option="--max_order %KENLM_MAX_ORDER%"
