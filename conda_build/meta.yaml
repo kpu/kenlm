@@ -19,14 +19,13 @@ build:
 
 requirements:
   build:
-    - git
+    - {{ compiler('cxx') }}
     - make
     - cmake
-    - gcc_linux-64
-    - gxx_linux-64
-    - python
+  host:
     - pip
     - setuptools
+    - python
     - libboost
   run:
     - python
