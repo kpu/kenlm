@@ -14,10 +14,12 @@ conda install -y -c conda-forge conda-build
 conda install -y -c conda-forge git
 ```
 
+If you are building for Windows, you will need Visual Studio as well before proceeding.
+
 Once the dependencies are installed, we can create the package:
 
 ```bash
-conda build --build-only -c conda-forge ./conda_build
+conda build --no-anaconda-upload --no-test -c conda-forge ./conda_build
 ```
 
 When the build finishes, the path to the package should be printed in the log. The path to the package should have the following structure:

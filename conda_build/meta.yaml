@@ -26,10 +26,18 @@ requirements:
     - pip
     - setuptools
     - python
-    - libboost
+    - libboost>=1.71.0
+    - eigen
+    - zlib
+    - bzip2
+    - xz
   run:
     - python
-    - libboost
+    - libboost>=1.71.0
+    - eigen
+    - zlib
+    - bzip2
+    - xz
 
 about:
   home: https://github.com/kpu/kenlm
