@@ -17,13 +17,22 @@ conda install -y -c conda-forge git
 Once the dependencies are installed, we can create the package:
 
 ```bash
-conda build --no-anaconda-upload -c conda-forge -c defaults ./conda_build
+conda build --build-only -c conda-forge ./conda_build
 ```
 
 When the build finishes, the path to the package should be printed in the log. The path to the package should have the following structure:
 
 ```
 ${CONDA_PREFIX}/conda-bld/{target_arch}/kenlm-{build_date}-{commit}.tar.bz2
+```
+
+If you install the generated package, the dependencies will not be installed. Run:
+
+```bash
+# Install kenlm
+conda install -y ${CONDA_PREFIX}/conda-bld/{target_arch}/kenlm-{build_date}-{commit}.tar.bz2
+# Install dependencies
+conda update -y --only-deps -c conda-forge kenlm
 ```
 
 ## Upload package
