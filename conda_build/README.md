@@ -28,10 +28,10 @@ When the build finishes, the path to the package should be printed in the log. T
 ${CONDA_PREFIX}/conda-bld/{target_arch}/kenlm-{build_date}-{commit}.tar.bz2
 ```
 
-If you install the generated package, the dependencies will not be installed. Run:
+If you install the generated package (i.e. local installation), the dependencies will not be installed. Be aware that, despite install the dependencies, the constraints might be ignored, what might lead to an inconsistent installation (this does not happen when the package is [uploaded](#upload-package) to the [anaconda repo](https://anaconda.org/anaconda/repo)). Run:
 
 ```bash
-# Install kenlm
+# Install kenlm (local package)
 conda install -y ${CONDA_PREFIX}/conda-bld/{target_arch}/kenlm-{build_date}-{commit}.tar.bz2
 # Install dependencies
 conda update -y --only-deps -c conda-forge kenlm
