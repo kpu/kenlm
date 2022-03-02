@@ -32,7 +32,7 @@ If you install the generated package (i.e. local installation), the dependencies
 
 ```bash
 # Install kenlm (local package)
-conda install -y ${CONDA_PREFIX}/conda-bld/{target_arch}/kenlm-{build_date}-{commit}.tar.bz2
+conda install -y /path/to/package
 # Install dependencies
 conda update -y --only-deps -c conda-forge kenlm
 ```
