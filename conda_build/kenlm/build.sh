@@ -1,4 +1,8 @@
 
+PIP_NO_INDEX=False # Allow requisites from PyPi
+PIP_NO_DEPENDENCIES=False # Install dependencies from our defined dependencies
+PIP_IGNORE_INSTALLED=False # Take into account the current installed dependencies
+
 BDIR="./build"
 
 [[ -d $BDIR ]] && rm -rf $BDIR
