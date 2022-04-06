@@ -67,3 +67,6 @@ To build **macOS** wheels with embedded libraries run the following from project
 The results of the build will be in `./wheels/macos`.
 
 Upload generated binary wheels to _Internal PyPi server_.
+
+_Note: Currently we support both Intel and M1 chips, 
+please ensure to have both binary wheels uploaded to _Internal PyPi server_._

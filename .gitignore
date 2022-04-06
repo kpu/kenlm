@@ -23,4 +23,5 @@ Makefile
 # cnstrc ignores
 .idea/
 kenlm_bin/bin/
+cnstrc_kenlm.egg-info/
 wheels/
