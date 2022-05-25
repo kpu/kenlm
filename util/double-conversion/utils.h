@@ -71,7 +71,11 @@ inline void abort_noreturn() { abort(); }
     defined(__ARMEL__) || defined(__avr32__) || \
     defined(__hppa__) || defined(__ia64__) || \
     defined(__mips__) || \
-    defined(__loongarch64__) || \
+    defined(__loongarch64) || defined(__loongarch64_grlen) \
+    defined(__loongarch64_hard_float) || defined(__loongarch64_frlen) || \
+    defined(__loongarch__) || defined(__loongarch_double_float) || \
+    defined(__loongarch_lp64) || \
+    defined(_LOONGARCH_ARCH) || \
     defined(__powerpc__) || defined(__ppc__) || defined(__ppc64__) || \
     defined(_POWER) || defined(_ARCH_PPC) || defined(_ARCH_PPC64) || \
     defined(__sparc__) || defined(__sparc) || defined(__s390__) || \
