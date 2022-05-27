@@ -18,10 +18,10 @@ set(KENLM_UTIL_DOUBLECONVERSION_SOURCE
 		${CMAKE_CURRENT_SOURCE_DIR}/bignum-dtoa.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/bignum.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/cached-powers.cc
-		${CMAKE_CURRENT_SOURCE_DIR}/diy-fp.cc
-		${CMAKE_CURRENT_SOURCE_DIR}/double-conversion.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/fast-dtoa.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/fixed-dtoa.cc
 		${CMAKE_CURRENT_SOURCE_DIR}/strtod.cc
+		${CMAKE_CURRENT_SOURCE_DIR}/double-to-string.cc
+		${CMAKE_CURRENT_SOURCE_DIR}/string-to-double.cc
 	PARENT_SCOPE)
 
