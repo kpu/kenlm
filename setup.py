@@ -1,6 +1,7 @@
 from setuptools import setup, Extension
 import glob
 import platform
+from distutils.command.install_headers import install_headers as install_headers_orig
 import os
 import sys
 import re
@@ -46,6 +47,20 @@ if compile_test('lzma.h', 'lzma'):
     ARGS.append('-DHAVE_XZLIB')
     LIBS.append('lzma')
 
+class install_headers(install_headers_orig):
+    def run(self):
+        """
+        Install headers so that they mirror internal dir structure
+        """
+        headers = self.distribution.headers or []
+        for header in headers:
+            dst = os.path.join(self.install_dir, os.path.dirname(header))
+            self.mkpath(dst)
+            (out, _) = self.copy_file(header, dst)
+            self.outfiles.append(out)
+
+headers = glob.glob('./**/*.hh', recursive=True)
+
 ext_modules = [
     Extension(name='kenlm',
         sources=FILES + ['python/kenlm.cpp'],
@@ -58,5 +73,7 @@ ext_modules = [
 setup(
     name='kenlm',
     ext_modules=ext_modules,
+    headers=headers,
+    cmdclass={'install_headers': install_headers},
     include_package_data=True,
 )
