@@ -180,7 +180,9 @@ double ThreadTime() {
   mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;  
   task_info(mach_task_self(), TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count);
   
-  return 0.0;
+  return 0.0; // TODO
+#else
+  return 0.0; // Weird platforms.
 #endif
 }
 
