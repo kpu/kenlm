@@ -1,0 +1,42 @@
+
+{% set rdir = "../.." %}
+{% set data = load_setup_py_data(setup_file=''+rdir+'/setup.py', from_recipe_dir=True) %}
+
+package:
+  name: kenlm
+  version: {{ data.get('version') }}
+
+source:
+  path: {{ rdir }}
+
+build:
+  string: "py{{ environ.get('CONDA_PY') }}_{{ environ.get('GIT_DESCRIBE_HASH') }}"
+  script_env:
+    - KENLM_MAX_ORDER=7
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - make
+    - cmake
+  host:
+    - pip
+    - setuptools
+    - python {{ python }}
+    - libboost>=1.71.0
+    - eigen
+    - zlib
+    - bzip2
+    - xz
+  run:
+    - python {{ python }}
+    - libboost>=1.71.0
+    - eigen
+    - zlib
+    - bzip2
+    - xz
+
+about:
+  home: https://github.com/kpu/kenlm
+  license: LGPL
+  summary: Faster and Smaller Language Model Queries
