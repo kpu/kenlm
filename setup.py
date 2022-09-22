@@ -60,7 +60,7 @@ setup(
     name='cnstrc_kenlm',
     ext_modules=ext_modules,
     include_package_data=True,
-    version='0.0.2',
+    version='0.0.3',
     packages=['kenlm_bin'],
     package_data={'kenlm_bin': ['bin/*']}
 )
