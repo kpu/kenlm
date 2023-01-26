@@ -7,10 +7,10 @@ via _Internal PyPi server_.
 
 1. Install platform dependencies listed in [BUILDING](BUILDING).
 
-2. Build wheels:
+2. Build wheels for Linux:
 
 ```shell
-  ./build_cnstrc_wheel.sh
+  ./build_multiarch_linux_wheels.sh
 ```
 
 3. Upload generated binary wheels to _Internal PyPi server_.
