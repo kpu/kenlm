@@ -7,11 +7,14 @@ via _Internal PyPi server_.
 
 1. Install platform dependencies listed in [BUILDING](BUILDING).
 
-2. Build wheels for Linux:
+2. Build wheels:
 
 ```shell
-  ./build_multiarch_linux_wheels.sh
+  ./build_cnstrc_wheel.sh
 ```
+
+NOTE: There is a stub implementation of building manylinux wheels - `build_multiarch_linux_wheels.sh`.
+This implementation doesn't copy binaries and isn't tested, but can be used as a starting point.
 
 3. Upload generated binary wheels to _Internal PyPi server_.
 
@@ -54,7 +57,7 @@ Upload generated binary wheels to _Internal PyPi server_.
 Requirements:
  - be on macOS
  - have [delocate](https://github.com/matthew-brett/delocate) installed. You can install deloate by
- running 
+ running
 ```console"
 pip install "delocate>=0.10.1"
 ```
@@ -68,5 +71,5 @@ The results of the build will be in `./wheels/macos`.
 
 Upload generated binary wheels to _Internal PyPi server_.
 
-_Note: Currently we support both Intel and M1 chips, 
+_Note: Currently we support both Intel and M1 chips,
 please ensure to have both binary wheels uploaded to _Internal PyPi server_._
