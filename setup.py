@@ -22,6 +22,7 @@ FILES = [fn for fn in FILES if not (fn.endswith('main.cc') or fn.endswith('test.
 
 #We don't need -std=c++11 but python seems to be compiled with it now.  https://github.com/kpu/kenlm/issues/86
 ARGS = ['-O3', '-DNDEBUG', '-DKENLM_MAX_ORDER='+max_order, '-std=c++11']
+INCLUDE_PATHS = []
 
 if platform.system() == 'Linux':
     LIBS = ['stdc++', 'rt']
@@ -38,6 +39,7 @@ else:
 #Attempted fix to https://github.com/kpu/kenlm/issues/186 and https://github.com/kpu/kenlm/issues/197
 if platform.system() == 'Darwin':
     ARGS += ["-stdlib=libc++", "-mmacosx-version-min=10.7"]
+    INCLUDE_PATHS.append("/usr/local/include")
 
 if compile_test('zlib.h', 'z'):
     ARGS.append('-DHAVE_ZLIB')
@@ -55,7 +57,7 @@ ext_modules = [
     Extension(name='kenlm',
         sources=FILES + ['python/kenlm.cpp'],
         language='C++', 
-        include_dirs=['.'],
+        include_dirs=['.'] + INCLUDE_PATHS,
         libraries=LIBS, 
         extra_compile_args=ARGS)
 ]
