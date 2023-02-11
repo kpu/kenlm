@@ -28,6 +28,10 @@ if platform.system() == 'Linux':
     ARGS.append('-DHAVE_CLOCKGETTIME')
 elif platform.system() == 'Darwin':
     LIBS = ['c++']
+    # Build a dylib on macOS
+    import sysconfig
+    vars = sysconfig.get_config_vars()
+    vars['LDSHARED'] = vars['LDSHARED'].replace('-bundle', '-dynamiclib')
 else:
     LIBS = []
 

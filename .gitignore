@@ -19,3 +19,4 @@ CMakeCache.txt
 CTestTestfile.cmake
 DartConfiguration.tcl
 Makefile
+*.egg-info/
