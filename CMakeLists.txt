@@ -16,10 +16,22 @@ project(kenlm)
 option(FORCE_STATIC "Build static executables" OFF)
 option(COMPILE_TESTS "Compile tests" OFF)
 option(ENABLE_PYTHON "Build Python bindings" OFF)
+option(BUILD_PYTHON_STANDALONE "Build standalone C++ lib with Python install" OFF)
 # Eigen3 less than 3.1.0 has a race condition: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=466
 find_package(Eigen3 3.1.0 CONFIG)
 include(CMakeDependentOption)
 cmake_dependent_option(ENABLE_INTERPOLATE "Build interpolation program (depends on Eigen3)" ON "EIGEN3_FOUND AND NOT WIN32" OFF)
+
+set(KENLM_MAX_ORDER 6 CACHE STRING "Maximum supported ngram order")
+
+if (BUILD_PYTHON_STANDALONE)
+  # Build a shared lib artifact in the same way the cpython setup.py builds
+  # and return. That lib can be dlopened by other Python packages that need
+  # cpp artifacts and can't use the bits compiled by setuptools Extension
+  include(${CMAKE_CURRENT_LIST_DIR}/python/BuildStandalone.cmake)
+  return()
+endif()
+
 
 if (FORCE_STATIC)
   #presumably overkill, is there a better way?
