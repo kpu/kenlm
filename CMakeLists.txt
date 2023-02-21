@@ -16,11 +16,14 @@ project(kenlm)
 option(FORCE_STATIC "Build static executables" OFF)
 option(COMPILE_TESTS "Compile tests" OFF)
 option(ENABLE_PYTHON "Build Python bindings" OFF)
+option(BUILD_UTIL "Build KenLM util library" ON)
 option(BUILD_PYTHON_STANDALONE "Build standalone C++ lib with Python install" OFF)
 # Eigen3 less than 3.1.0 has a race condition: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=466
 find_package(Eigen3 3.1.0 CONFIG)
 include(CMakeDependentOption)
 cmake_dependent_option(ENABLE_INTERPOLATE "Build interpolation program (depends on Eigen3)" ON "EIGEN3_FOUND AND NOT WIN32" OFF)
+cmake_dependent_option(BUILD_TOOLS "Build binary tools (filter, builder, etc)" ON "BUILD_UTIL" OFF)
+cmake_dependent_option(BUILD_BENCHMARKS "Build benchmarks" ON "BUILD_UTIL AND BUILD_TOOLS" OFF)
 
 set(KENLM_MAX_ORDER 6 CACHE STRING "Maximum supported ngram order")
 
@@ -93,13 +96,18 @@ endif()
 # And our helper modules
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
-# We need boost
-find_package(Boost 1.41.0 REQUIRED COMPONENTS
-  program_options
-  system
-  thread
-  unit_test_framework
-)
+if (BUILD_UTIL AND BUILD_TOOLS)
+  find_package(Boost 1.41.0 REQUIRED COMPONENTS
+    program_options
+    system
+    thread
+    )
+endif()
+if (BUILD_TESTING)
+  find_package(Boost 1.41.0 REQUIRED COMPONENTS
+    unit_test_framework
+    )
+endif()
 
 # Define where include files live
 include_directories(${Boost_INCLUDE_DIRS})
@@ -107,9 +115,12 @@ include_directories(${Boost_INCLUDE_DIRS})
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+
 # Process subdirectories
-add_subdirectory(util)
 add_subdirectory(lm)
+if (BUILD_UTIL)
+  add_subdirectory(util)
+endif()
 
 if(ENABLE_PYTHON)
   add_subdirectory(python)
@@ -122,7 +133,15 @@ install(EXPORT kenlmTargets
   DESTINATION share/kenlm/cmake
 )
 
-foreach(SUBDIR IN ITEMS util util/double-conversion util/stream lm lm/builder lm/common lm/filter lm/interpolate)
+set(_headers_to_install lm lm/common)
+if (BUILD_UTIL)
+  list(APPEND _headers_to_install util util/double-conversion util/stream)
+endif()
+if (BUILD_TOOLS)
+  list(APPEND _headers_to_install lm/builder lm/filter lm/interpolate)
+endif()
+
+foreach(SUBDIR IN ITEMS ${_headers_to_install})
   file(GLOB HEADERS ${CMAKE_CURRENT_LIST_DIR}/${SUBDIR}/*.h ${CMAKE_CURRENT_LIST_DIR}/${SUBDIR}/*.hh)
   install(FILES ${HEADERS} DESTINATION include/kenlm/${SUBDIR} COMPONENT headers)
 endforeach(SUBDIR)
