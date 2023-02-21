@@ -94,7 +94,7 @@ target_link_libraries(kenlm_util
   Threads::Threads
   ${RT})
 
-if (BUILD_TESTING OR BUILD_TOOLS AND Boost_FOUND)
+if (BUILD_TESTING OR COMPILE_TESTS OR BUILD_TOOLS)
   target_link_libraries(
     kenlm_util
     PUBLIC

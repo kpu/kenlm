@@ -95,17 +95,22 @@ endif()
 # And our helper modules
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
+
 if (BUILD_TOOLS)
-  find_package(Boost 1.41.0 REQUIRED COMPONENTS
+  set(BOOST_COMPONENTS
     program_options
     system
     thread
-    )
+  )
 endif()
-if (BUILD_TESTING)
+if (BUILD_TESTING OR COMPILE_TESTS)
+  list(APPEND BOOST_COMPONENTS unit_test_framework)
+endif()
+
+if (BUILD_TOOLS OR BUILD_TESTING OR COMPILE_TESTS)
   find_package(Boost 1.41.0 REQUIRED COMPONENTS
-    unit_test_framework
-    )
+    ${BOOST_COMPONENTS}
+  )
 endif()
 
 # Define where include files live
@@ -116,8 +121,8 @@ find_package(Threads REQUIRED)
 
 
 # Process subdirectories
+add_subdirectory(util)
 add_subdirectory(lm)
-  add_subdirectory(util)
 
 if(ENABLE_PYTHON)
   add_subdirectory(python)
