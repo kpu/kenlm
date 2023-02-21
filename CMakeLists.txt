@@ -15,7 +15,7 @@ project(kenlm)
 
 option(FORCE_STATIC "Build static executables" OFF)
 option(COMPILE_TESTS "Compile tests" OFF)
-option(BUILD_TOOLS "Build binary tools (filter, builder, etc). Requires Boost")
+option(BUILD_TOOLS "Build binary tools (filter, builder, etc). Requires Boost" ON)
 option(ENABLE_PYTHON "Build Python bindings" OFF)
 option(BUILD_PYTHON_STANDALONE "Build standalone C++ lib with Python install" OFF)
 # Eigen3 less than 3.1.0 has a race condition: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=466
