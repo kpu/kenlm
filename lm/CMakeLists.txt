@@ -28,7 +28,7 @@ set(KENLM_LM_SOURCE
 # Given add_library(foo OBJECT ${my_foo_sources}),
 # refer to these objects as $<TARGET_OBJECTS:foo>
 #
-if (BUILD_UTIL AND BUILD_TOOLS)
+if (BUILD_TOOLS)
   # only needed if building binaries
   add_subdirectory(common)
 endif()
