@@ -2,7 +2,7 @@
 
 include(CMakeFindDependencyMacro)
 
-if (@BUILD_UTIL@ AND @BUILD_TOOLS@)
+if (@BUILD_TOOLS@)
   find_dependency(Boost)
 endif()
 find_dependency(Threads)

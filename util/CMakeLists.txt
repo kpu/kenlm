@@ -36,7 +36,11 @@ endif()
 
 # This directory has children that need to be processed
 add_subdirectory(double-conversion)
-add_subdirectory(stream)
+
+if (BUILD_TOOLS)
+  # only required for building tools/binaries
+  add_subdirectory(stream)
+endif()
 
 add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
 # Since headers are relative to `include/kenlm` at install time, not just `include`

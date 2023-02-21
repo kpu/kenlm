@@ -36,9 +36,7 @@ endif()
 
 add_library(kenlm ${KENLM_LM_SOURCE} ${KENLM_LM_COMMON_SOURCE})
 set_target_properties(kenlm PROPERTIES POSITION_INDEPENDENT_CODE ON)
-if (BUILD_UTIL)
-  target_link_libraries(kenlm PUBLIC kenlm_util Threads::Threads)
-endif()
+target_link_libraries(kenlm PUBLIC kenlm_util Threads::Threads)
 # Since headers are relative to `include/kenlm` at install time, not just `include`
 target_include_directories(kenlm PUBLIC
   $<INSTALL_INTERFACE:include/kenlm>
@@ -64,10 +62,7 @@ if (BUILD_BENCHMARKS)
   list(APPEND EXE_LIST kenlm_benchmark)
 endif()
 
-set(LM_LIBS kenlm Threads::Threads)
-if (BUILD_UTIL)
-  list(APPEND LM_LIBS kenlm_util)
-endif()
+set(LM_LIBS kenlm kenlm_util Threads::Threads)
 
 install(
   TARGETS kenlm
