@@ -17,6 +17,12 @@ def compile_test(header, library):
 # Use an environment variable
 max_order = os.getenv("MAX_ORDER", "6")
 
+# Try to get from --config-settings, if present
+is_max_order = [s for s in sys.argv if "--max_order" in s]
+for element in is_max_order:
+    max_order = re.split('[= ]',element)[1]
+    sys.argv.remove(element)
+
 print(f"Will build with KenLM max_order set to {max_order}")
 
 FILES = glob.glob('util/*.cc') + glob.glob('lm/*.cc') + glob.glob('util/double-conversion/*.cc') + glob.glob('python/*.cc')
