@@ -1,6 +1,7 @@
 #ifndef UTIL_STRING_PIECE_HASH_H
 #define UTIL_STRING_PIECE_HASH_H
 
+#include <functional>
 #include "have.hh"
 #include "string_piece.hh"
 
