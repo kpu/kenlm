@@ -14,11 +14,16 @@ def compile_test(header, library):
     command = "bash -c \"g++ -include " + header + " -l" + library + " -x c++ - <<<'int main() {}' -o " + dummy_path + " >/dev/null 2>/dev/null && rm " + dummy_path + " 2>/dev/null\""
     return os.system(command) == 0
 
-max_order = "6"
+# Use an environment variable
+max_order = os.getenv("MAX_ORDER", "6")
+
+# Try to get from --config-settings, if present
 is_max_order = [s for s in sys.argv if "--max_order" in s]
 for element in is_max_order:
     max_order = re.split('[= ]',element)[1]
     sys.argv.remove(element)
+
+print(f"Will build with KenLM max_order set to {max_order}")
 
 FILES = glob.glob('util/*.cc') + glob.glob('lm/*.cc') + glob.glob('util/double-conversion/*.cc') + glob.glob('python/*.cc')
 FILES = [fn for fn in FILES if not (fn.endswith('main.cc') or fn.endswith('test.cc'))]
@@ -70,6 +75,7 @@ class build_ext(_build_ext):
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + ext_dir,
             "-DBUILD_SHARED_LIBS=ON",
             "-DBUILD_PYTHON_STANDALONE=ON",
+            f"-DKENLM_MAX_ORDER={max_order}",
         ]
         cfg = "Debug" if self.debug else "Release"
         build_args = ["--config", cfg]
