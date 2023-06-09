@@ -77,10 +77,8 @@ install(
   INCLUDES DESTINATION include
 )
 
-if (BUILD_WITH_BOOST)
-  AddExes(EXES ${EXE_LIST}
-    LIBRARIES ${LM_LIBS})
-endif()
+AddExes(EXES ${EXE_LIST}
+  LIBRARIES ${LM_LIBS})
 
 if(BUILD_TESTING)
   set(KENLM_BOOST_TESTS_LIST left_test partial_test)
