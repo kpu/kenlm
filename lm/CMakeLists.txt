@@ -28,7 +28,7 @@ set(KENLM_LM_SOURCE
 # Given add_library(foo OBJECT ${my_foo_sources}),
 # refer to these objects as $<TARGET_OBJECTS:foo>
 #
-if (BUILD_TOOLS)
+if (BUILD_WITH_BOOST)
   # only needed if building binaries
   add_subdirectory(common)
 endif()
@@ -43,10 +43,14 @@ target_include_directories(kenlm PUBLIC
   $<INSTALL_INTERFACE:include>
 )
 
+if (BUILD_WITH_BOOST)
+  target_compile_definitions(kenlm PUBLIC -DBUILD_WITH_BOOST=$<BOOL:${BUILD_WITH_BOOST}>)
+endif()
+
 target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=${KENLM_MAX_ORDER})
 
 # This directory has children that need to be processed
-if (BUILD_TOOLS)
+if (BUILD_WITH_BOOST)
   add_subdirectory(builder)
   add_subdirectory(filter)
 endif()
@@ -73,7 +77,7 @@ install(
   INCLUDES DESTINATION include
 )
 
-if (BUILD_TOOLS)
+if (BUILD_WITH_BOOST)
   AddExes(EXES ${EXE_LIST}
     LIBRARIES ${LM_LIBS})
 endif()

@@ -26,7 +26,7 @@ set(KENLM_UTIL_SOURCE
 		usage.cc
 	)
 
-if (Boost_FOUND)
+if (BUILD_WITH_BOOST AND Boost_FOUND)
   list(APPEND KENLM_UTIL_SOURCE parallel_read.cc)
 endif()
 
@@ -37,7 +37,7 @@ endif()
 # This directory has children that need to be processed
 add_subdirectory(double-conversion)
 
-if (BUILD_TOOLS)
+if (BUILD_WITH_BOOST)
   # only required for building tools/binaries
   add_subdirectory(stream)
 endif()
@@ -94,7 +94,7 @@ target_link_libraries(kenlm_util
   Threads::Threads
   ${RT})
 
-if (BUILD_TESTING OR COMPILE_TESTS OR BUILD_TOOLS)
+if (BUILD_TESTING OR COMPILE_TESTS OR BUILD_WITH_BOOST)
   target_link_libraries(
     kenlm_util
     PUBLIC
