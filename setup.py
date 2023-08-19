@@ -116,6 +116,7 @@ ext_modules = [
         sources=FILES + ['python/kenlm.cpp'],
         language='C++', 
         include_dirs=['.'] + INCLUDE_PATHS,
+        depends = ['python/BuildStandalone.cmake'],
         libraries=LIBS, 
         extra_compile_args=ARGS),
 ]
