@@ -123,6 +123,7 @@ ext_modules = [
 
 setup(
     name='kenlm',
+    version='0.2.0',
     ext_modules=ext_modules,
     cmdclass={"build_ext": build_ext},
     include_package_data=True,
