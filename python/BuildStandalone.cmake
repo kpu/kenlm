@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.17)
+project(kenlm-standalone)
+find_package(Python ${PYTHON_VERSION_STRING} REQUIRED COMPONENTS Development)
 
 file(GLOB
   KENLM_PYTHON_STANDALONE_SRCS
@@ -11,11 +13,12 @@ file(GLOB
 list(FILTER KENLM_PYTHON_STANDALONE_SRCS EXCLUDE REGEX ".*main.cc")
 list(FILTER KENLM_PYTHON_STANDALONE_SRCS EXCLUDE REGEX ".*test.cc")
 
-add_library(
+
+Python_add_library(
   kenlm
-  SHARED
-  ${KENLM_PYTHON_STANDALONE_SRCS}
-  )
+  MODULE WITH_SOABI
+  ${KENLM_PYTHON_STANDALONE_SRCS} python/kenlm.cpp
+)
 
 target_include_directories(kenlm PRIVATE ${PROJECT_SOURCE_DIR})
 target_compile_definitions(kenlm PRIVATE KENLM_MAX_ORDER=${KENLM_MAX_ORDER})
