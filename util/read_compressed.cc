@@ -168,11 +168,11 @@ class GZip {
 
     void SetOutput(void *to, std::size_t amount) {
       stream_.next_out = static_cast<Bytef*>(to);
-      stream_.avail_out = std::min<std::size_t>(std::numeric_limits<uInt>::max(), amount);
+      stream_.avail_out = std::min<std::size_t>((std::numeric_limits<uInt>::max)(), amount);
     }
 
     void SetInput(const void *base, std::size_t amount) {
-      assert(amount < static_cast<std::size_t>(std::numeric_limits<uInt>::max()));
+      assert(amount < static_cast<std::size_t>((std::numeric_limits<uInt>::max)()));
       stream_.next_in = const_cast<Bytef*>(static_cast<const Bytef*>(base));
       stream_.avail_in = amount;
     }
@@ -225,7 +225,7 @@ class BZip {
 
     void SetOutput(void *base, std::size_t amount) {
       stream_.next_out = static_cast<char*>(base);
-      stream_.avail_out = std::min<std::size_t>(std::numeric_limits<unsigned int>::max(), amount);
+      stream_.avail_out = std::min<std::size_t>((std::numeric_limits<unsigned int>::max)(), amount);
     }
 
     void SetInput(const void *base, std::size_t amount) {
