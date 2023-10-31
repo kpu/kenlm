@@ -20,6 +20,7 @@ Python_add_library(
   ${KENLM_PYTHON_STANDALONE_SRCS} python/kenlm.cpp
 )
 
+set_property(TARGET kenlm PROPERTY CXX_STANDARD 11)
 target_include_directories(kenlm PRIVATE ${PROJECT_SOURCE_DIR})
 target_compile_definitions(kenlm PRIVATE KENLM_MAX_ORDER=${KENLM_MAX_ORDER})
 

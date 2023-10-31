@@ -1,6 +1,5 @@
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext as _build_ext
-import glob
 import platform
 import subprocess
 import os
@@ -40,7 +39,6 @@ class build_ext(_build_ext):
             "-DBUILD_SHARED_LIBS=ON",
             "-DBUILD_PYTHON_STANDALONE=ON",
             f"-DKENLM_MAX_ORDER={max_order}",
-            f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_PROJECT_VERSION={VERSION}",
         ]
         cfg = "Debug" if self.debug else "Release"
@@ -55,8 +53,9 @@ class build_ext(_build_ext):
             ]
             if sys.maxsize > 2**32:
                 cmake_args += ["-A", "x64"]
+            # build_args += ["--", "/m"]
         else:
-            cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
+            cmake_args.append(f"-DCMAKE_BUILD_TYPE={cfg}")
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -fPIC -DVERSION_INFO=\\"{}\\"'.format(
