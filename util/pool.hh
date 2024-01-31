@@ -2,7 +2,6 @@
 #define UTIL_POOL_H
 
 #include <algorithm>
-#include <cassert>
 #include <cstring>
 #include <vector>
 

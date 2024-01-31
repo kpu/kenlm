@@ -11,8 +11,6 @@
 namespace lm {
 namespace base {
 
-template <class T, class U, class V> class ModelFacade;
-
 /* Vocabulary interface.  Call Index(string) and get a word index for use in
  * calling Model.  It provides faster convenience functions for <s>, </s>, and
  * <unk> although you can also find these using Index.

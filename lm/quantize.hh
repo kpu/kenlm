@@ -3,7 +3,6 @@
 
 #include "blank.hh"
 #include "config.hh"
-#include "max_order.hh"
 #include "model_type.hh"
 #include "../util/bit_packing.hh"
 
@@ -12,12 +11,9 @@
 
 #include <stdint.h>
 
-#include <iostream>
-
 namespace lm {
 namespace ngram {
 
-struct Config;
 class BinaryFormat;
 
 /* Store values directly and don't quantize. */

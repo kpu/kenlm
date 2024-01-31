@@ -18,7 +18,6 @@
  * NICT.
  */
 
-#include <cassert>
 #ifdef __APPLE__
 #include <architecture/byte_order.h>
 #elif __linux__
@@ -28,7 +27,6 @@
 #endif
 
 #include <stdint.h>
-#include <cstring>
 
 namespace util {
 

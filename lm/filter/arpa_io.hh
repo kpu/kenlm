@@ -9,16 +9,12 @@
 #include "../../util/tokenize_piece.hh"
 
 #include <boost/noncopyable.hpp>
-#include <boost/scoped_array.hpp>
 
 #include <fstream>
-#include <string>
 #include <vector>
 
 #include <cstring>
 #include <stdint.h>
-
-namespace util { class FilePiece; }
 
 namespace lm {
 

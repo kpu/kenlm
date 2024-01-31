@@ -1,4 +1,3 @@
-#include <iostream>
 /* Fast integer to string conversion.
 Source: https://github.com/miloyip/itoa-benchmark
 Local modifications:
@@ -43,6 +42,7 @@ Which is based on: http://0x80.pl/snippets/asm/sse-utoa.c
   initial release 2011-10-21
   $Id$
 */
+#include <iostream>
 
 #include "integer_to_string.hh"
 #include <cassert>

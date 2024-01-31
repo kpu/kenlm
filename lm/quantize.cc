@@ -10,7 +10,6 @@
 
 #include "binary_format.hh"
 #include "lm_exception.hh"
-#include "../util/file.hh"
 
 #include <algorithm>
 #include <numeric>

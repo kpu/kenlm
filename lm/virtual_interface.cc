@@ -1,7 +1,5 @@
 #include "virtual_interface.hh"
 
-#include "lm_exception.hh"
-
 namespace lm {
 namespace base {
 

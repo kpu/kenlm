@@ -3,8 +3,6 @@
 
 #include "chain.hh"
 
-#include <boost/noncopyable.hpp>
-
 #include <deque>
 
 namespace util {

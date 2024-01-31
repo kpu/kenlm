@@ -1,14 +1,9 @@
 #include "arpa_io.hh"
-#include "../../util/file_piece.hh"
 #include "../../util/string_stream.hh"
 
-#include <iostream>
-#include <ostream>
-#include <string>
 #include <vector>
 
 #include <cctype>
-#include <cerrno>
 #include <cstring>
 
 namespace lm {
