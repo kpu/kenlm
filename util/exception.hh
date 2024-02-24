@@ -14,10 +14,10 @@ template <class Except, class Data> typename Except::template ExceptionTag<Excep
 
 class Exception : public std::exception {
   public:
-    Exception() throw();
-    virtual ~Exception() throw();
+    Exception() noexcept;
+    virtual ~Exception() noexcept;
 
-    const char *what() const throw() { return what_.str().c_str(); }
+    const char *what() const noexcept { return what_.str().c_str(); }
 
     // For use by the UTIL_THROW macros.
     void SetLocation(
@@ -108,11 +108,11 @@ template <class Except, class Data> typename Except::template ExceptionTag<Excep
 // Exception that records errno and adds it to the message.
 class ErrnoException : public Exception {
   public:
-    ErrnoException() throw();
+    ErrnoException() noexcept;
 
-    virtual ~ErrnoException() throw();
+    virtual ~ErrnoException() noexcept;
 
-    int Error() const throw() { return errno_; }
+    int Error() const noexcept { return errno_; }
 
   private:
     int errno_;
@@ -121,15 +121,15 @@ class ErrnoException : public Exception {
 // file wasn't there, or couldn't be open for some reason
 class FileOpenException : public Exception {
   public:
-	FileOpenException() throw() {}
-    ~FileOpenException() throw() {}
+	FileOpenException() noexcept {}
+    ~FileOpenException() noexcept {}
 };
 
 // Utilities for overflow checking.
 class OverflowException : public Exception {
   public:
-    OverflowException() throw();
-    ~OverflowException() throw();
+    OverflowException() noexcept;
+    ~OverflowException() noexcept;
 };
 
 template <unsigned len> inline std::size_t CheckOverflowInternal(uint64_t value) {
@@ -149,8 +149,8 @@ inline std::size_t CheckOverflow(uint64_t value) {
 /* Thrown for Windows specific operations. */
 class WindowsException : public Exception {
   public:
-    WindowsException() throw();
-    ~WindowsException() throw();
+    WindowsException() noexcept;
+    ~WindowsException() noexcept;
 };
 #endif
 
