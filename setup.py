@@ -11,7 +11,7 @@ from pathlib import Path
 #Does gcc compile with this header and library?
 def compile_test(header, library):
     dummy_path = os.path.join(os.path.dirname(__file__), "dummy")
-    command = "bash -c \"g++ -include " + header + " -l" + library + " -x c++ - <<<'int main() {}' -o " + dummy_path + " >/dev/null 2>/dev/null && rm " + dummy_path + " 2>/dev/null\""
+    command = "bash -c \"g++ -include " + header + " -l" + library + " -x c++ - <<<'#include <" + header + ">\nint main() {}' -o " + dummy_path + " >/dev/null 2>/dev/null && rm " + dummy_path + " 2>/dev/null\""
     return os.system(command) == 0
 
 # Use an environment variable
