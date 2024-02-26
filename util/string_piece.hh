@@ -48,8 +48,6 @@
 #ifndef UTIL_STRING_PIECE_H
 #define UTIL_STRING_PIECE_H
 
-#include "have.hh"
-
 #include <cstring>
 #include <iosfwd>
 #include <ostream>
@@ -85,7 +83,6 @@ inline bool starts_with(const StringPiece& longer, const StringPiece& prefix) {
 #include <algorithm>
 #include <cstddef>
 #include <string>
-#include <cstring>
 
 #ifdef WIN32
 #undef max

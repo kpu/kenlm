@@ -11,9 +11,6 @@
 #include <iostream>
 
 #include <cassert>
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <cstdlib>
 
 #if defined(_WIN32) || defined(_WIN64)

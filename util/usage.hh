@@ -1,6 +1,5 @@
 #ifndef UTIL_USAGE_H
 #define UTIL_USAGE_H
-#include <cstddef>
 #include <iosfwd>
 #include <string>
 #include <stdint.h>

@@ -5,7 +5,6 @@
 #include "scoped.hh"
 #include "string_piece.hh"
 
-#include <cstddef>
 #include <cstdio>
 #include <string>
 #include <stdint.h>

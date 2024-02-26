@@ -27,7 +27,6 @@
 
 #include <climits>
 #include <locale>
-#include <cmath>
 
 #include "string-to-double.h"
 

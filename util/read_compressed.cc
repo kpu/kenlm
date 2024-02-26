@@ -1,14 +1,12 @@
 #include "read_compressed.hh"
 
 #include "file.hh"
-#include "have.hh"
 #include "scoped.hh"
 
 #include <algorithm>
 #include <iostream>
 
 #include <cassert>
-#include <climits>
 #include <cstdlib>
 #include <cstring>
 

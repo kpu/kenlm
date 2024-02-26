@@ -4,10 +4,6 @@
 // Named to avoid conflict with util/exception.hh.
 
 #include "../util/exception.hh"
-#include "../util/string_piece.hh"
-
-#include <exception>
-#include <string>
 
 namespace lm {
 

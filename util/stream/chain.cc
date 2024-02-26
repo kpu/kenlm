@@ -6,7 +6,6 @@
 #include "../pcqueue.hh"
 
 #include <cstdlib>
-#include <new>
 #include <iostream>
 #include <stdint.h>
 

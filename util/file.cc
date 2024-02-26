@@ -5,18 +5,12 @@
 
 #include "exception.hh"
 
-#include <algorithm>
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
-#include <limits>
-#include <stdexcept>
 #include <sstream>
 
-#include <cassert>
 #include <cerrno>
-#include <climits>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdint.h>

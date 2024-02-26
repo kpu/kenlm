@@ -1,8 +1,5 @@
 #include "lm_exception.hh"
 
-#include <cerrno>
-#include <cstdio>
-
 namespace lm {
 
 ConfigException::ConfigException() throw() {}

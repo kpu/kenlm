@@ -1,7 +1,6 @@
 #include "ersatz_progress.hh"
 
 #include <algorithm>
-#include <ostream>
 #include <limits>
 #include <string>
 

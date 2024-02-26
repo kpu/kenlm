@@ -1,6 +1,5 @@
 #ifndef UTIL_INTEGER_TO_STRING_H
 #define UTIL_INTEGER_TO_STRING_H
-#include <cstddef>
 #include <stdint.h>
 
 namespace util {

@@ -3,7 +3,6 @@
 /* Other scoped objects in the style of scoped_ptr. */
 
 #include "exception.hh"
-#include <cstddef>
 #include <cstdlib>
 
 namespace util {

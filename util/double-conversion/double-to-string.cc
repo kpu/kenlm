@@ -26,11 +26,7 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <algorithm>
-#include <climits>
-#include <cmath>
-
 #include "double-to-string.h"
-
 #include "bignum-dtoa.h"
 #include "fast-dtoa.h"
 #include "fixed-dtoa.h"

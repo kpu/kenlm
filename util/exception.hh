@@ -5,7 +5,6 @@
 
 #include <exception>
 #include <limits>
-#include <string>
 #include <stdint.h>
 
 namespace util {
