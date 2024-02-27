@@ -1,3 +1,4 @@
+
 # Explicitly list the source files for this subdirectory
 #
 # If you add any source files to this subdirectory
@@ -22,34 +23,48 @@ set(KENLM_LM_SOURCE
 	vocab.cc
 )
 
-
 # Group these objects together for later use.
 #
 # Given add_library(foo OBJECT ${my_foo_sources}),
 # refer to these objects as $<TARGET_OBJECTS:foo>
 #
-add_subdirectory(common)
+if (BUILD_WITH_BOOST)
+  # only needed if building binaries
+  add_subdirectory(common)
+endif()
+
 
 add_library(kenlm ${KENLM_LM_SOURCE} ${KENLM_LM_COMMON_SOURCE})
 set_target_properties(kenlm PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(kenlm PUBLIC kenlm_util Threads::Threads)
 # Since headers are relative to `include/kenlm` at install time, not just `include`
-target_include_directories(kenlm PUBLIC $<INSTALL_INTERFACE:include/kenlm>)
+target_include_directories(kenlm PUBLIC
+  $<INSTALL_INTERFACE:include/kenlm>
+  $<INSTALL_INTERFACE:include>
+)
+
+if (BUILD_WITH_BOOST)
+  target_compile_definitions(kenlm PUBLIC -DBUILD_WITH_BOOST=$<BOOL:${BUILD_WITH_BOOST}>)
+endif()
 
 target_compile_definitions(kenlm PUBLIC -DKENLM_MAX_ORDER=${KENLM_MAX_ORDER})
 
 # This directory has children that need to be processed
-add_subdirectory(builder)
-add_subdirectory(filter)
-add_subdirectory(interpolate)
+if (BUILD_WITH_BOOST)
+  add_subdirectory(builder)
+  add_subdirectory(filter)
+endif()
+add_subdirectory(interpolate) # gated inside by ENABLE_INTERPOLATE
 
 # Explicitly list the executable files to be compiled
 set(EXE_LIST
   query
   fragment
   build_binary
-  kenlm_benchmark
-)
+  )
+if (BUILD_BENCHMARKS)
+  list(APPEND EXE_LIST kenlm_benchmark)
+endif()
 
 set(LM_LIBS kenlm kenlm_util Threads::Threads)
 
@@ -63,10 +78,9 @@ install(
 )
 
 AddExes(EXES ${EXE_LIST}
-        LIBRARIES ${LM_LIBS})
+  LIBRARIES ${LM_LIBS})
 
 if(BUILD_TESTING)
-
   set(KENLM_BOOST_TESTS_LIST left_test partial_test)
   AddTests(TESTS ${KENLM_BOOST_TESTS_LIST}
            LIBRARIES ${LM_LIBS}

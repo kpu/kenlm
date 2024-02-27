@@ -2,7 +2,7 @@
 
 #include "file.hh"
 
-#ifdef WITH_THREADS
+#if BUILD_WITH_BOOST
 #include "thread_pool.hh"
 
 namespace util {
@@ -58,7 +58,7 @@ void ParallelRead(int fd, void *to, std::size_t amount, uint64_t offset) {
 
 } // namespace util
 
-#else // WITH_THREADS
+#else // defined(BUILD_WITH_BOOST)
 
 namespace util {
 void ParallelRead(int fd, void *to, std::size_t amount, uint64_t offset) {
@@ -66,4 +66,4 @@ void ParallelRead(int fd, void *to, std::size_t amount, uint64_t offset) {
 }
 } // namespace util
 
-#endif
+#endif // defined(BUILD_WITH_BOOST)
