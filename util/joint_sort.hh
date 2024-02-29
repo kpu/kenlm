@@ -57,11 +57,11 @@ template <class KeyIter, class ValueIter> class JointProxy {
     typedef JointIter<KeyIter, ValueIter> InnerIterator;
 
   public:
-    typedef struct {
+    struct value_type {
       typename std::iterator_traits<KeyIter>::value_type key;
       typename std::iterator_traits<ValueIter>::value_type value;
       const typename std::iterator_traits<KeyIter>::value_type &GetKey() const { return key; }
-    } value_type;
+    };
 
     JointProxy(const KeyIter &key_iter, const ValueIter &value_iter) : inner_(key_iter, value_iter) {}
     JointProxy(const JointProxy<KeyIter, ValueIter> &other) : inner_(other.inner_) {}
