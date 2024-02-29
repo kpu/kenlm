@@ -28,6 +28,7 @@
 #elif defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
 #include <io.h>
+#include <codecvt>
 #else
 #include <unistd.h>
 #endif
@@ -71,7 +72,13 @@ bool OutputFileIsStdout(StringPiece path) {
 int OpenReadOrThrow(const char *name) {
   int ret;
 #if defined(_WIN32) || defined(_WIN64)
-  UTIL_THROW_IF(-1 == (ret = _open(name, _O_BINARY | _O_RDONLY)), ErrnoException, "while opening " << name);
+  ret = _open(name, _O_BINARY | _O_RDONLY);
+  if (ret == -1) {
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
+    std::wstring wideName = convert.from_bytes(name);
+    ret = _wopen(wideName.data(), _O_BINARY | _O_RDONLY);
+  }
+  UTIL_THROW_IF(-1 == ret, ErrnoException, "while opening " << name);
 #else
   UTIL_THROW_IF(-1 == (ret = open(name, O_RDONLY)), ErrnoException, "while opening " << name);
 #endif
@@ -81,7 +88,13 @@ int OpenReadOrThrow(const char *name) {
 int CreateOrThrow(const char *name) {
   int ret;
 #if defined(_WIN32) || defined(_WIN64)
-  UTIL_THROW_IF(-1 == (ret = _open(name, _O_CREAT | _O_TRUNC | _O_RDWR | _O_BINARY, _S_IREAD | _S_IWRITE)), ErrnoException, "while creating " << name);
+  ret = _open(name, _O_CREAT | _O_TRUNC | _O_RDWR | _O_BINARY, _S_IREAD | _S_IWRITE);
+  if (ret == -1) {
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> convert;
+    std::wstring wideName = convert.from_bytes(name);
+    ret = _wopen(wideName.data(), _O_CREAT | _O_TRUNC | _O_RDWR | _O_BINARY, _S_IREAD | _S_IWRITE);
+  }
+  UTIL_THROW_IF(-1 == ret, ErrnoException, "while creating " << name);
 #else
   UTIL_THROW_IF(-1 == (ret = open(name, O_CREAT | O_TRUNC | O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)), ErrnoException, "while creating " << name);
 #endif
