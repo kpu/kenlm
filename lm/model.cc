@@ -339,11 +339,11 @@ std::pair<std::string, float> GenericModel<Search, VocabularyT>::predict_next(co
 
     // 初始化状态
     State state;
-    this->GetState(context_words.rbegin().base(), context_words.rend().base(), state);
+    this->GetState(&context_words[0], &context_words[0] + context_words.size(), state);
 
     float max_prob = -std::numeric_limits<float>::infinity();
     WordIndex best_word = this->vocab_.Index("<unk>");
-    for (WordIndex i = 0; i < this->vocab_.size(); ++i) {
+    for (WordIndex i = 0; i < this->vocab_.Bound(); ++i) {
         State out_state;
         FullScoreReturn ret = this->FullScore(state, i, out_state);
         if (ret.prob > max_prob) {
@@ -352,7 +352,16 @@ std::pair<std::string, float> GenericModel<Search, VocabularyT>::predict_next(co
         }
     }
 
-    return {this->vocab_.word(best_word), max_prob};
+    // 查找 best_word 的字符串表示
+    std::string best_word_str;
+    for (const auto& entry : this->vocab_) {
+        if (entry.second == best_word) {
+            best_word_str = entry.first;
+            break;
+        }
+    }
+
+    return {best_word_str, max_prob};
 }
 
 
