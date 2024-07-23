@@ -150,6 +150,38 @@ cdef class Model:
         def __get__(self):
             return self.model.Order()
 
+    def predict_next(self, context):
+    """
+    预测给定上下文后的下一个最可能的词。
+
+    :param context: 上下文句子
+    :return: 预测的下一个词和其对应的概率
+    """
+    cdef State state = State()
+    cdef State out_state = State()
+    cdef float max_prob = float('-inf')
+    cdef str best_word = ""
+    
+    # 初始化状态
+    words = as_str(context).split()
+    self.BeginSentenceWrite(state)
+    
+    # 处理上下文
+    for word in words:
+        self.BaseScore(state, word, out_state)
+        state = out_state
+    
+    # 对词表中的每个词计算概率
+    for i in range(self.vocab.Bound()):
+        word = self.vocab.Word(i)
+        prob = self.BaseScore(state, word, out_state)
+        
+        if prob > max_prob:
+            max_prob = prob
+            best_word = word
+    
+    return best_word, max_prob
+
     def score(self, sentence, bos = True, eos = True):
         """
         Return the log10 probability of a string.  By default, the string is
