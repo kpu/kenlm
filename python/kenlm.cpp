@@ -11481,5 +11481,95 @@ static CYTHON_INLINE PyObject * __Pyx_PyInt_FromSize_t(size_t ival) {
     return PyInt_FromSize_t(ival);
 }
 
+//predict_next方法对应的变更（包括：-a 到 -f 共6个改变）
+// 定义 PyModel 结构体 -a
+typedef struct {
+    PyObject_HEAD
+    lm::ngram::Model* model;
+} PyModel;
+
+// 定义新的 Python 方法 -b
+static PyObject* PyModel_predict_next(PyObject* self, PyObject* args) {
+    const char* context;
+    if (!PyArg_ParseTuple(args, "s", &context)) {
+        return NULL;
+    }
+
+    std::pair<std::string, float> result = ((PyModel*)self)->model->predict_next(context);
+    return Py_BuildValue("sf", result.first.c_str(), result.second);
+}
+
+// 方法定义数组 -c
+static PyMethodDef PyModel_methods[] = {
+    {"predict_next", (PyCFunction)PyModel_predict_next, METH_VARARGS, "Predict the next word given a context"},
+    {NULL}  /* Sentinel */
+};
+
+// 类型定义 -d
+static PyTypeObject PyModelType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "kenlm.Model",             /* tp_name */
+    sizeof(PyModel),           /* tp_basicsize */
+    0,                         /* tp_itemsize */
+    0,                         /* tp_dealloc */
+    0,                         /* tp_print */
+    0,                         /* tp_getattr */
+    0,                         /* tp_setattr */
+    0,                         /* tp_reserved */
+    0,                         /* tp_repr */
+    0,                         /* tp_as_number */
+    0,                         /* tp_as_sequence */
+    0,                         /* tp_as_mapping */
+    0,                         /* tp_hash  */
+    0,                         /* tp_call */
+    0,                         /* tp_str */
+    0,                         /* tp_getattro */
+    0,                         /* tp_setattro */
+    0,                         /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+    "Model objects",           /* tp_doc */
+    0,                         /* tp_traverse */
+    0,                         /* tp_clear */
+    0,                         /* tp_richcompare */
+    0,                         /* tp_weaklistoffset */
+    0,                         /* tp_iter */
+    0,                         /* tp_iternext */
+    PyModel_methods,           /* tp_methods */
+    0,                         /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    0,                         /* tp_init */
+    0,                         /* tp_alloc */
+    0,                         /* tp_new */
+};
+
+// 模块定义 -e
+static PyModuleDef kenlmmodule = {
+    PyModuleDef_HEAD_INIT,
+    "kenlm",
+    "KenLM Python bindings",
+    -1,
+    NULL, NULL, NULL, NULL, NULL
+};
+
+// 模块初始化函数 -f
+PyMODINIT_FUNC PyInit_kenlm(void) {
+    PyObject* m;
+
+    if (PyType_Ready(&PyModelType) < 0)
+        return NULL;
+
+    m = PyModule_Create(&kenlmmodule);
+    if (m == NULL)
+        return NULL;
+
+    Py_INCREF(&PyModelType);
+    PyModule_AddObject(m, "Model", (PyObject *)&PyModelType);
+    return m;
+}
 
 #endif /* Py_PYTHON_H */
