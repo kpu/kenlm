@@ -1,6 +1,12 @@
 import os
 cimport _kenlm
 
+# 在 cdef extern from 块中声明 C++ 方法(predict_next)
+cdef extern from "lm/model.hh":
+    cdef cppclass Model:
+        pair[string, float] predict_next(const string &context) const
+
+
 cdef bytes as_str(data):
     if isinstance(data, bytes):
         return data
@@ -305,6 +311,12 @@ cdef class Model:
         cdef _kenlm.WordIndex wid = self.vocab.Index(as_str(word))
         cdef _kenlm.FullScoreReturn ret = self.model.BaseFullScore(&in_state._c_state, wid, &out_state._c_state)
         return FullScoreReturn(ret.prob, ret.ngram_length, wid == 0)
+    
+    # 增加predict_next方法
+    def predict_next(self, context):
+        cdef string cpp_context = context.encode('utf-8')
+        result = self.thisptr.predict_next(cpp_context)
+        return result.first.decode('utf-8'), result.second
     
     def __contains__(self, word):
         cdef bytes w = as_str(word)
