@@ -376,10 +376,10 @@ std::pair<std::string, float> GenericModel<Search, VocabularyT>::predict_next(co
 
     // Enumerate vocabulary to find the best_word's string representation
     VocabEnumerator enumerator(this->vocab_);
-    this->Enumerate(enumerator);
+    this->vocab_.Enumerate(enumerator);
 
     auto vocab_map = enumerator.GetVocabMap();
-    std::string best_word_str = vocab_map[best_word];
+    std::string best_word_str = vocab_map.at(best_word);
 
     return {best_word_str, max_prob};
 }
