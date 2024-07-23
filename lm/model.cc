@@ -323,6 +323,37 @@ template class GenericModel<trie::TrieSearch<DontQuantize, trie::ArrayBhiksha>, 
 template class GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::DontBhiksha>, SortedVocabulary>;
 template class GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::ArrayBhiksha>, SortedVocabulary>;
 
+//predict_next方法
+#include <limits>
+template <class Search, class VocabularyT>
+std::pair<std::string, float> GenericModel<Search, VocabularyT>::predict_next(const std::string &context) const {
+    // 将 context 转换为 WordIndex 序列
+    std::vector<WordIndex> context_words;
+    std::istringstream iss(context);
+    std::string word;
+    while (iss >> word) {
+        context_words.push_back(vocab_.Index(word));
+    }
+
+    // 初始化状态
+    State state;
+    GetState(context_words.rbegin(), context_words.rend(), state);
+
+    float max_prob = -std::numeric_limits<float>::infinity();
+    WordIndex best_word = vocab_.Index("UNKNOWN");
+    for (WordIndex i = 0; i < vocab_.Size(); ++i) {
+        State out_state;
+        FullScoreReturn ret = FullScore(state, i, out_state);
+        if (ret.prob > max_prob) {
+            max_prob = ret.prob;
+            best_word = i;
+        }
+    }
+
+    return {vocab_.Word(best_word), max_prob};
+}
+
+
 } // namespace detail
 
 base::Model *LoadVirtual(const char *file_name, const Config &config, ModelType model_type) {
