@@ -16,6 +16,8 @@
 //predict_next函数所需包含的头文件
 #include <limits>
 #include <sstream>
+#include <string>
+#include "enumerate_vocab.hh"  // Include EnumerateVocab header
 
 namespace lm {
 namespace ngram {
@@ -327,9 +329,28 @@ template class GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::DontBhiks
 template class GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::ArrayBhiksha>, SortedVocabulary>;
 
 //predict_next方法
+
+// Define a class for enumerating the vocabulary
+class VocabEnumerator : public lm::EnumerateVocab {
+public:
+    VocabEnumerator(const lm::ngram::Vocabulary &vocab) : vocab_(vocab) {}
+
+    void Add(lm::WordIndex index, const lm::StringPiece &str) override {
+        vocab_map_[index] = str.as_string();
+    }
+
+    const std::unordered_map<lm::WordIndex, std::string>& GetVocabMap() const {
+        return vocab_map_;
+    }
+
+private:
+    const lm::ngram::Vocabulary &vocab_;
+    std::unordered_map<lm::WordIndex, std::string> vocab_map_;
+};
+
 template <class Search, class VocabularyT>
 std::pair<std::string, float> GenericModel<Search, VocabularyT>::predict_next(const std::string &context) const {
-    // 将 context 转换为 WordIndex 序列
+    // Convert context to WordIndex sequence
     std::vector<WordIndex> context_words;
     std::istringstream iss(context);
     std::string word;
@@ -337,13 +358,14 @@ std::pair<std::string, float> GenericModel<Search, VocabularyT>::predict_next(co
         context_words.push_back(this->vocab_.Index(word));
     }
 
-    // 初始化状态
+    // Initialize state
     State state;
     this->GetState(&context_words[0], &context_words[0] + context_words.size(), state);
 
     float max_prob = -std::numeric_limits<float>::infinity();
     WordIndex best_word = this->vocab_.Index("<unk>");
-    for (WordIndex i = 0; i < this->vocab_.Bound(); ++i) {
+
+    for (WordIndex i = 0; i < this->vocab_.Size(); ++i) {
         State out_state;
         FullScoreReturn ret = this->FullScore(state, i, out_state);
         if (ret.prob > max_prob) {
@@ -352,14 +374,12 @@ std::pair<std::string, float> GenericModel<Search, VocabularyT>::predict_next(co
         }
     }
 
-    // 查找 best_word 的字符串表示
-    std::string best_word_str;
-    for (const auto& entry : this->vocab_) {
-        if (entry.second == best_word) {
-            best_word_str = entry.first;
-            break;
-        }
-    }
+    // Enumerate vocabulary to find the best_word's string representation
+    VocabEnumerator enumerator(this->vocab_);
+    this->Enumerate(enumerator);
+
+    auto vocab_map = enumerator.GetVocabMap();
+    std::string best_word_str = vocab_map[best_word];
 
     return {best_word_str, max_prob};
 }
