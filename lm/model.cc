@@ -19,7 +19,7 @@
 #include <string>
 #include "enumerate_vocab.hh"  // Include EnumerateVocab header
 #include "vocab.hh"            // Include Vocabulary header
-#include "string_piece.hh"     // Include StringPiece header
+#include "../util/string_piece.hh"     // Include StringPiece header
 
 namespace lm {
 namespace ngram {
