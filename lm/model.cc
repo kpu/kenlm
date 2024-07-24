@@ -18,6 +18,8 @@
 #include <sstream>
 #include <string>
 #include "enumerate_vocab.hh"  // Include EnumerateVocab header
+#include "vocab.hh"            // Include Vocabulary header
+#include "string_piece.hh"     // Include StringPiece header
 
 namespace lm {
 namespace ngram {
@@ -349,7 +351,7 @@ private:
 };
 
 template <class Search, class VocabularyT>
-std::pair<std::string, float> GenericModel<Search, VocabularyT>::predict_next(const std::string &context) const {
+std::unordered_map<std::string, float> GenericModel<Search, VocabularyT>::predict_next(const std::string &context) const {
     // Convert context to WordIndex sequence
     std::vector<WordIndex> context_words;
     std::istringstream iss(context);
@@ -360,30 +362,20 @@ std::pair<std::string, float> GenericModel<Search, VocabularyT>::predict_next(co
 
     // Initialize state
     State state;
-    this->GetState(&context_words[0], &context_words[0] + context_words.size(), state);
+    this->GetState(&context_words[0], &context_words[0] + context_words.size(), &state);
 
-    float max_prob = -std::numeric_limits<float>::infinity();
-    WordIndex best_word = this->vocab_.Index("<unk>");
+    std::unordered_map<std::string, float> word_probs;
 
+    // Calculate the score for each word in the vocabulary
     for (WordIndex i = 0; i < this->vocab_.Size(); ++i) {
         State out_state;
         FullScoreReturn ret = this->FullScore(state, i, out_state);
-        if (ret.prob > max_prob) {
-            max_prob = ret.prob;
-            best_word = i;
-        }
+        std::string word = this->vocab_.Word(i);
+        word_probs[word] = ret.prob;
     }
 
-    // Enumerate vocabulary to find the best_word's string representation
-    VocabEnumerator enumerator(this->vocab_);
-    this->vocab_.Enumerate(enumerator);
-
-    auto vocab_map = enumerator.GetVocabMap();
-    std::string best_word_str = vocab_map.at(best_word);
-
-    return {best_word_str, max_prob};
+    return word_probs;
 }
-
 
 } // namespace detail
 
