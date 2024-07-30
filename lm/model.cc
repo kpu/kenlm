@@ -12,7 +12,14 @@
 #include <functional>
 #include <numeric>
 #include <cmath>
+
+//predict_next函数所需包含的头文件
 #include <limits>
+#include <sstream>
+#include <string>
+#include "enumerate_vocab.hh"  // Include EnumerateVocab header
+#include "vocab.hh"            // Include Vocabulary header
+#include "../util/string_piece.hh"     // Include StringPiece header
 
 namespace lm {
 namespace ngram {
@@ -322,6 +329,53 @@ template class GenericModel<trie::TrieSearch<DontQuantize, trie::DontBhiksha>, S
 template class GenericModel<trie::TrieSearch<DontQuantize, trie::ArrayBhiksha>, SortedVocabulary>;
 template class GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::DontBhiksha>, SortedVocabulary>;
 template class GenericModel<trie::TrieSearch<SeparatelyQuantize, trie::ArrayBhiksha>, SortedVocabulary>;
+
+//predict_next方法
+
+// Define a class for enumerating the vocabulary
+class VocabEnumerator : public lm::EnumerateVocab {
+public:
+    VocabEnumerator(const lm::ngram::Vocabulary &vocab) : vocab_(vocab) {}
+
+    void Add(lm::WordIndex index, const lm::StringPiece &str) override {
+        vocab_map_[index] = str.as_string();
+    }
+
+    const std::unordered_map<lm::WordIndex, std::string>& GetVocabMap() const {
+        return vocab_map_;
+    }
+
+private:
+    const lm::ngram::Vocabulary &vocab_;
+    std::unordered_map<lm::WordIndex, std::string> vocab_map_;
+};
+
+template <class Search, class VocabularyT>
+std::unordered_map<std::string, float> GenericModel<Search, VocabularyT>::predict_next(const std::string &context) const {
+    // Convert context to WordIndex sequence
+    std::vector<WordIndex> context_words;
+    std::istringstream iss(context);
+    std::string word;
+    while (iss >> word) {
+        context_words.push_back(this->vocab_.Index(word));
+    }
+
+    // Initialize state
+    State state;
+    this->GetState(&context_words[0], &context_words[0] + context_words.size(), &state);
+
+    std::unordered_map<std::string, float> word_probs;
+
+    // Calculate the score for each word in the vocabulary
+    for (WordIndex i = 0; i < this->vocab_.Size(); ++i) {
+        State out_state;
+        FullScoreReturn ret = this->FullScore(state, i, out_state);
+        std::string word = this->vocab_.Word(i);
+        word_probs[word] = ret.prob;
+    }
+
+    return word_probs;
+}
 
 } // namespace detail
 
