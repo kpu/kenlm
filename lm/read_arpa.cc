@@ -101,7 +101,7 @@ void ReadBackoff(util::FilePiece &in, Prob &/*weights*/) {
       break;
     case '\r':
       ConsumeNewline(in);
-      // Intentionally no break.
+      [[fallthrough]];
     case '\n':
       break;
     default:
@@ -131,6 +131,7 @@ void ReadBackoff(util::FilePiece &in, float &backoff) {
       switch (char got = in.get()) {
         case '\r':
           ConsumeNewline(in);
+	  [[fallthrough]];
         case '\n':
           break;
         default:
@@ -139,7 +140,7 @@ void ReadBackoff(util::FilePiece &in, float &backoff) {
       break;
     case '\r':
       ConsumeNewline(in);
-      // Intentionally no break.
+      [[fallthrough]];
     case '\n':
       backoff = ngram::kNoExtensionBackoff;
       break;
