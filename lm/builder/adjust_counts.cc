@@ -335,7 +335,7 @@ void AdjustCounts::Run(const util::stream::ChainPositions &positions) {
       }
     }
 
-    stats.Add(s - streams.begin(), lower_count, (*s)->Value().IsMarked());
+    stats.Add(s - streams.begin(), (*s)->Value().UnmarkedCount(), (*s)->Value().IsMarked());
     ++*s;
   }
   // Poison everyone!  Except the N-grams which were already poisoned by the input.
