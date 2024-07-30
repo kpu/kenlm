@@ -264,7 +264,7 @@ void SortedFiles::ConvertToSorted(util::FilePiece &f, const SortedVocabulary &vo
   std::deque<FILE*> files, contexts;
   Closer files_closer(files), contexts_closer(contexts);
 
-  for (std::size_t batch = 0, done = 0; done < count; ++batch) {
+  for (std::size_t done = 0; done < count; ) {
     uint8_t *out = begin;
     uint8_t *out_end = out + std::min(count - done, batch_size) * entry_size;
     if (order == counts.size()) {
