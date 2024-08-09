@@ -2,7 +2,9 @@
 
 include(CMakeFindDependencyMacro)
 
-find_dependency(Boost)
+if (@BUILD_WITH_BOOST@)
+  find_dependency(Boost)
+endif()
 find_dependency(Threads)
 
 # Compression libs
