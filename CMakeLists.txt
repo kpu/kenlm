@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-
+set(CMAKE_CXX_STANDARD 11)
 if (WIN32)
     set(Boost_USE_STATIC_LIBS OFF)
     # The auto-linking feature has problems with USE_STATIC_LIBS off, so we use
