@@ -1,2 +1,2 @@
 [build-system]
-requires = ["setuptools", "wheel", "cmake"]
+requires = ["setuptools", "wheel", "cmake>=3.1,<4.0"]
