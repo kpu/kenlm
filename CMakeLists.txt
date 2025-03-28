@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.10)
 
 if (WIN32)
     set(Boost_USE_STATIC_LIBS OFF)
