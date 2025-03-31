@@ -19,12 +19,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(FORCE_STATIC "Build static executables" OFF)
 option(COMPILE_TESTS "Compile tests" OFF)
+option(BUILD_WITH_BOOST "Build binary tools (filter, builder, etc). Requires Boost" ON)
 option(ENABLE_PYTHON "Build Python bindings" OFF)
 option(BUILD_PYTHON_STANDALONE "Build standalone C++ lib with Python install" OFF)
 # Eigen3 less than 3.1.0 has a race condition: http://eigen.tuxfamily.org/bz/show_bug.cgi?id=466
 find_package(Eigen3 3.1.0 CONFIG)
 include(CMakeDependentOption)
-cmake_dependent_option(ENABLE_INTERPOLATE "Build interpolation program (depends on Eigen3)" ON "EIGEN3_FOUND AND NOT WIN32" OFF)
+cmake_dependent_option(ENABLE_INTERPOLATE "Build interpolation program (depends on Eigen3)" ON "BUILD_WITH_BOOST AND EIGEN3_FOUND AND NOT WIN32" OFF)
+cmake_dependent_option(BUILD_BENCHMARKS "Build benchmarks" ON "BUILD_WITH_BOOST" OFF)
 
 set(KENLM_MAX_ORDER 6 CACHE STRING "Maximum supported ngram order")
 
@@ -36,6 +38,9 @@ if (BUILD_PYTHON_STANDALONE)
   return()
 endif()
 
+if (NOT BUILD_WITH_BOOST AND COMPILE_TEST)
+  message(FATAL_ERROR "Cannot compile tests with BUILD_WITH_BOOST=OFF. Boost required for building tests")
+endif()
 
 if (FORCE_STATIC)
   #presumably overkill, is there a better way?
@@ -97,19 +102,29 @@ endif()
 # And our helper modules
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
-# We need boost
-find_package(Boost 1.41.0 REQUIRED COMPONENTS
-  program_options
-  system
-  thread
-  unit_test_framework
-)
+if (BUILD_WITH_BOOST)
+  set(BOOST_COMPONENTS
+    program_options
+    system
+    thread
+  )
+endif()
+if (BUILD_TESTING OR COMPILE_TESTS)
+  list(APPEND BOOST_COMPONENTS unit_test_framework)
+endif()
+
+if (BUILD_WITH_BOOST OR BUILD_TESTING OR COMPILE_TESTS)
+  find_package(Boost 1.41.0 REQUIRED COMPONENTS
+    ${BOOST_COMPONENTS}
+  )
+endif()
 
 # Define where include files live
 include_directories(${Boost_INCLUDE_DIRS})
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
+
 
 # Process subdirectories
 add_subdirectory(util)
@@ -126,7 +141,12 @@ install(EXPORT kenlmTargets
   DESTINATION share/kenlm/cmake
 )
 
-foreach(SUBDIR IN ITEMS util util/double-conversion util/stream lm lm/builder lm/common lm/filter lm/interpolate)
+set(_headers_to_install lm util util/double-conversion )  
+if (BUILD_WITH_BOOST)
+  list(APPEND _headers_to_install lm/builder lm/filter lm/interpolate lm/common util/stream)
+endif()
+
+foreach(SUBDIR IN ITEMS ${_headers_to_install})
   file(GLOB HEADERS ${CMAKE_CURRENT_LIST_DIR}/${SUBDIR}/*.h ${CMAKE_CURRENT_LIST_DIR}/${SUBDIR}/*.hh)
   install(FILES ${HEADERS} DESTINATION include/kenlm/${SUBDIR} COMPONENT headers)
 endforeach(SUBDIR)

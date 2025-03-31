@@ -18,7 +18,6 @@ set(KENLM_UTIL_SOURCE
 		integer_to_string.cc
 		mmap.cc
 		murmur_hash.cc
-		parallel_read.cc
 		pool.cc
 		read_compressed.cc
 		scoped.cc
@@ -27,13 +26,21 @@ set(KENLM_UTIL_SOURCE
 		usage.cc
 	)
 
+if (BUILD_WITH_BOOST AND Boost_FOUND)
+  list(APPEND KENLM_UTIL_SOURCE parallel_read.cc)
+endif()
+
 if (WIN32)
   set(KENLM_UTIL_SOURCE ${KENLM_UTIL_SOURCE} getopt.c)
 endif()
 
 # This directory has children that need to be processed
 add_subdirectory(double-conversion)
-add_subdirectory(stream)
+
+if (BUILD_WITH_BOOST)
+  # only required for building tools/binaries
+  add_subdirectory(stream)
+endif()
 
 add_library(kenlm_util ${KENLM_UTIL_DOUBLECONVERSION_SOURCE} ${KENLM_UTIL_STREAM_SOURCE} ${KENLM_UTIL_SOURCE})
 # Since headers are relative to `include/kenlm` at install time, not just `include`
@@ -83,12 +90,18 @@ endif()
 # Group these objects together for later use.
 set_target_properties(kenlm_util PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_link_libraries(kenlm_util
-  PUBLIC
-  # Boost is required for building binaries and tests
-  "$<BUILD_INTERFACE:${Boost_LIBRARIES}>"
   PRIVATE
   Threads::Threads
   ${RT})
+
+if (BUILD_TESTING OR COMPILE_TESTS OR BUILD_WITH_BOOST)
+  target_link_libraries(
+    kenlm_util
+    PUBLIC
+    # Boost is required for building binaries and tests
+    "$<BUILD_INTERFACE:${Boost_LIBRARIES}>"
+    )
+endif()
 
 install(
   TARGETS kenlm_util
@@ -99,7 +112,7 @@ install(
   INCLUDES DESTINATION include
 )
 
-if (NOT WIN32)
+if (NOT WIN32 AND BUILD_BENCHMARKS)
 AddExes(EXES probing_hash_table_benchmark
         LIBRARIES kenlm_util Threads::Threads)
 endif()
