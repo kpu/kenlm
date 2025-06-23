@@ -2,16 +2,16 @@ name: Mac
 
 on:
   push:
-    branches: master
+    branches: [master]
   pull_request:
-    branches: master
+    branches: [master]
 
 jobs:
   build:
     runs-on: macOS-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Install Boost
       run: |
         brew install boost
@@ -21,7 +21,7 @@ jobs:
       run: |
         cmake -E make_directory build
         cd build
-        cmake ..
+        cmake .. -DCMAKE_CXX_STANDARD=11 -DCMAKE_CXX_STANDARD_REQUIRED=ON
     - name: Compile
       working-directory: build
       run: cmake --build . -j2
