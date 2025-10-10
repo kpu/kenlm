@@ -98,9 +98,8 @@ endif()
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 # We need boost
-find_package(Boost 1.41.0 REQUIRED COMPONENTS
+find_package(Boost 1.89.0 REQUIRED COMPONENTS
   program_options
-  system
   thread
   unit_test_framework
 )
